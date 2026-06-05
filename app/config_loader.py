@@ -2,7 +2,13 @@
 from pathlib import Path
 import yaml
 
-_REQUIRED = ("downloads_folder", "filename_stem", "defects_sheet_name")
+_REQUIRED = (
+    "downloads_folder",
+    "filename_stem",
+    "defects_sheet_name",
+    "database_path",
+    "skiplog_folder",
+)
 
 _DEFAULT_CONFIG = Path(__file__).parent.parent / "config" / "settings.yaml"
 

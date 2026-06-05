@@ -11,3 +11,9 @@ filename_stem: "DTC_UAT_testtracking_ROE"
 
 # Name of the sheet to read
 defects_sheet_name: "Defects"
+
+# Path to the SQLite database (created on first run; relative to repo root or absolute)
+database_path: 'data/test_coordination.db'
+
+# Folder for per-run skip-log CSV files
+skiplog_folder: 'output/skiplog'
