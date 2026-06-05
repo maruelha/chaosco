@@ -6,6 +6,10 @@
   <h1>Defects</h1>
 </div>
 
+{% if note_added %}
+<div class="saved-banner" style="max-width:800px;margin-bottom:1rem">&#10003;&nbsp; Note added.</div>
+{% endif %}
+
 <form method="get" action="/defects" class="filters-bar">
   <div class="filter-group">
     <label for="f-search">Defect ID</label>
@@ -64,6 +68,7 @@
         <th>Priority</th>
         <th>Assigned To</th>
         <th>Row</th>
+        <th>Notes</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -77,6 +82,13 @@
         <td>{{ d.priority or '—' }}</td>
         <td>{{ d.assigned_to or '—' }}</td>
         <td class="num">{{ d.excel_row }}</td>
+        <td class="notes-cell">
+          {% if d.note_count > 0 %}
+          <a href="/defects/{{ d.defect_id }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
+          <span class="notes-sep">·</span>
+          {% endif %}
+          <a href="/defects/{{ d.defect_id }}/notes/add?return_to=list" class="btn btn-sm">+ Note</a>
+        </td>
         <td>
           {% if d.action_needed %}
           <span class="pill pill--red">&#9873; Action</span>
@@ -84,7 +96,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="8" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="9" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>

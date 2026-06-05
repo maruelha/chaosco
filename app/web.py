@@ -48,6 +48,7 @@ def defects_list():
     channel = request.args.get("channel", "")
     status = request.args.get("status", "")
     action_needed = request.args.get("action_needed", "")
+    note_added = request.args.get("note_added") == "1"
 
     conn = _get_conn()
     defects = database.list_defects(
@@ -68,6 +69,7 @@ def defects_list():
         channel=channel,
         status=status,
         action_needed=action_needed,
+        note_added=note_added,
     )
 
 
@@ -98,9 +100,86 @@ def defect_detail(defect_id: str):
         conn.close()
         return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
 
+    notes = database.list_notes_for_defect(conn, defect_id)
     conn.close()
     saved = request.args.get("saved") == "1"
-    return render_template("defect_detail.html", defect=defect, saved=saved)
+    note_added = request.args.get("note_added") == "1"
+    note_saved = request.args.get("note_saved") == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
+    return render_template(
+        "defect_detail.html",
+        defect=defect,
+        saved=saved,
+        notes=notes,
+        note_added=note_added,
+        note_saved=note_saved,
+        note_deleted=note_deleted,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Note routes
+# ---------------------------------------------------------------------------
+
+@app.route("/defects/<defect_id>/notes/add")
+def note_add_form(defect_id: str):
+    conn = _get_conn()
+    defect = database.get_defect(conn, defect_id)
+    conn.close()
+    if defect is None:
+        return render_template("404.html", defect_id=defect_id), 404
+    return_to = request.args.get("return_to", "detail")
+    return render_template("note_add.html", defect=defect, return_to=return_to)
+
+
+@app.route("/defects/<defect_id>/notes", methods=["POST"])
+def note_add(defect_id: str):
+    conn = _get_conn()
+    defect = database.get_defect(conn, defect_id)
+    if defect is None:
+        conn.close()
+        return render_template("404.html", defect_id=defect_id), 404
+    heading = request.form.get("heading", "").strip() or None
+    note_text = request.form.get("note", "").strip() or None
+    return_to = request.form.get("return_to", "detail")
+    if note_text:
+        database.add_note(conn, defect_id, heading, note_text)
+    conn.close()
+    if return_to == "list":
+        return redirect(url_for("defects_list", note_added="1"))
+    return redirect(url_for("defect_detail", defect_id=defect_id, note_added="1"))
+
+
+@app.route("/defects/<defect_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def note_edit(defect_id: str, note_id: int):
+    conn = _get_conn()
+    note = database.get_note(conn, note_id)
+    if note is None or note["defect_id"] != defect_id:
+        conn.close()
+        return render_template("404.html", defect_id=defect_id), 404
+    if request.method == "POST":
+        heading = request.form.get("heading", "").strip() or None
+        note_text = request.form.get("note", "").strip() or None
+        database.update_note(conn, note_id, heading, note_text)
+        conn.close()
+        return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
+    conn.close()
+    return render_template("note_edit.html", defect_id=defect_id, note=note)
+
+
+@app.route("/defects/<defect_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def note_delete(defect_id: str, note_id: int):
+    conn = _get_conn()
+    note = database.get_note(conn, note_id)
+    if note is None or note["defect_id"] != defect_id:
+        conn.close()
+        return render_template("404.html", defect_id=defect_id), 404
+    if request.method == "POST":
+        database.delete_note(conn, note_id)
+        conn.close()
+        return redirect(url_for("defect_detail", defect_id=defect_id, note_deleted="1"))
+    conn.close()
+    return render_template("note_confirm_delete.html", defect_id=defect_id, note=note)
 
 
 # ---------------------------------------------------------------------------

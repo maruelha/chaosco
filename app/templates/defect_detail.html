@@ -113,6 +113,39 @@
   </form>
 </div>
 
+{# ---------------------------------------------------------------- Section 3: notes #}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Notes</h2>
+    {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
+    <a href="/defects/{{ defect.defect_id }}/notes/add?return_to=detail" class="btn btn-sm">+ Add note</a>
+  </div>
+
+  {% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if note_saved %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if note_deleted %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+
+  {% if notes %}
+  <div class="notes-list">
+    {% for n in notes %}
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ n.created_at }}</span>
+      </div>
+      <p class="note-text">{{ n.note or '' }}</p>
+      <div class="note-actions">
+        <a href="/defects/{{ defect.defect_id }}/notes/{{ n.id }}/edit" class="btn btn-sm">Edit</a>
+        <a href="/defects/{{ defect.defect_id }}/notes/{{ n.id }}/delete" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="notes-empty">No notes yet. <a href="/defects/{{ defect.defect_id }}/notes/add?return_to=detail">Add the first one.</a></p>
+  {% endif %}
+</div>
+
 <div class="btn-row">
   <a href="/defects" class="btn">&#8592; Back to Defects</a>
 </div>

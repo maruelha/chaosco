@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Delete Note — {{ defect_id }} — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="/">Dashboard</a>
+  <span>›</span>
+  <a href="/defects">Defects</a>
+  <span>›</span>
+  <a href="/defects/{{ defect_id }}">{{ defect_id }}</a>
+  <span>›</span>
+  <span>Delete note</span>
+</nav>
+
+<div class="page-header">
+  <h1>Delete note?</h1>
+</div>
+
+<div class="detail-card" style="max-width:600px">
+  <p class="delete-warning">This cannot be undone.</p>
+
+  {% if note.heading %}
+  <p class="note-preview-heading">{{ note.heading }}</p>
+  {% endif %}
+  <p class="note-preview-text">{{ note.note or '(empty)' }}</p>
+
+  <form method="post" action="/defects/{{ defect_id }}/notes/{{ note.id }}/delete">
+    <div class="btn-row" style="margin-top:1.5rem">
+      <a href="/defects/{{ defect_id }}" class="btn">Cancel</a>
+      <button type="submit" class="btn btn-primary btn-delete">Delete note</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

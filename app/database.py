@@ -148,7 +148,8 @@ def list_defects(
     sql = """
         SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
                d.assigned_to, d.excel_row, d.solman_name,
-               COALESCE(a.action_needed, 0) AS action_needed
+               COALESCE(a.action_needed, 0) AS action_needed,
+               (SELECT COUNT(*) FROM defect_notes n WHERE n.defect_id = d.defect_id) AS note_count
         FROM defects d
         LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
         WHERE 1=1
@@ -228,6 +229,54 @@ def upsert_defect_annotation(
             (defect_id, description, business_impact, reach, retest_needs,
              next_step, 1 if action_needed else 0, comments, now),
         )
+
+
+def list_notes_for_defect(conn: sqlite3.Connection, defect_id: str) -> list[dict]:
+    """All notes for a defect, newest first."""
+    return _rows_to_dicts(conn.execute(
+        "SELECT * FROM defect_notes WHERE defect_id = ? ORDER BY created_at DESC",
+        (defect_id,),
+    ))
+
+
+def get_note(conn: sqlite3.Connection, note_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM defect_notes WHERE id = ?", (note_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def add_note(
+    conn: sqlite3.Connection,
+    defect_id: str,
+    heading: str | None,
+    note_text: str | None,
+) -> None:
+    from datetime import datetime
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "INSERT INTO defect_notes (defect_id, created_at, heading, note) VALUES (?, ?, ?, ?)",
+            (defect_id, now, heading, note_text),
+        )
+
+
+def update_note(
+    conn: sqlite3.Connection,
+    note_id: int,
+    heading: str | None,
+    note_text: str | None,
+) -> None:
+    with conn:
+        conn.execute(
+            "UPDATE defect_notes SET heading = ?, note = ? WHERE id = ?",
+            (heading, note_text, note_id),
+        )
+
+
+def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM defect_notes WHERE id = ?", (note_id,))
 
 
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:

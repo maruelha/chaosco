@@ -450,3 +450,150 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
 
 /* --------------------------------------------------------------- util */
 .mono { font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace; font-size: 0.8125rem; }
+
+/* --------------------------------------------------------------- small button + danger */
+.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+  border-radius: 6px;
+}
+.btn-danger {
+  background: #fff0f0;
+  color: #c00;
+  border-color: #ffc5c5;
+}
+.btn-danger:hover { background: #ffdede; border-color: #ffaaaa; }
+.btn-delete {
+  background: #ff3b30;
+  color: #fff;
+  border-color: #ff3b30;
+}
+.btn-delete:hover { background: #d92d22; border-color: #d92d22; }
+
+/* --------------------------------------------------------------- notes card */
+.notes-card {
+  background: #fff;
+  border: 1px solid #d2d2d7;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 800px;
+  margin-bottom: 1rem;
+}
+
+.notes-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  background: #e8f4ff;
+  color: #0071e3;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 20px;
+  padding: 0 0.45rem;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-item {
+  border: 1px solid #e5e5ea;
+  border-radius: 9px;
+  padding: 0.9rem 1rem;
+}
+
+.note-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.note-heading {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  flex: 1;
+}
+.note-date {
+  font-family: 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  font-size: 0.75rem;
+  color: #aaa;
+  white-space: nowrap;
+}
+.note-text {
+  font-size: 0.875rem;
+  color: #3a3a3c;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 0.75rem;
+}
+.note-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.notes-empty {
+  font-size: 0.875rem;
+  color: #aaa;
+  padding: 0.75rem 0;
+}
+.notes-empty a {
+  color: #0071e3;
+  text-decoration: none;
+}
+.notes-empty a:hover { text-decoration: underline; }
+
+/* --------------------------------------------------------------- list notes column */
+.notes-cell {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.note-count-link {
+  color: #0071e3;
+  text-decoration: none;
+  font-size: 0.8125rem;
+}
+.note-count-link:hover { text-decoration: underline; }
+.notes-sep {
+  color: #c7c7cc;
+  margin: 0 0.1rem;
+}
+
+/* --------------------------------------------------------------- delete confirm */
+.delete-warning {
+  font-size: 0.875rem;
+  color: #c00;
+  margin-bottom: 1rem;
+}
+.note-preview-heading {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.note-preview-text {
+  font-size: 0.875rem;
+  color: #3a3a3c;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --------------------------------------------------------------- field hint */
+.field-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #aaa;
+}
+
+/* --------------------------------------------------------------- saved banner variant (info/neutral) */
+.saved-banner--info {
+  background: #f0f0f5;
+  border-color: #c7c7cc;
+  color: #3a3a3c;
+}
