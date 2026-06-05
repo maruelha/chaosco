@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 _DATE_FIELDS = frozenset({"date_reported", "date_closed"})
@@ -207,7 +208,6 @@ def upsert_defect_annotation(
     comments: str | None,
 ) -> None:
     """Insert or update the annotation row for defect_id. Never touches the defects table."""
-    from datetime import datetime
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
@@ -232,7 +232,7 @@ def upsert_defect_annotation(
 
 
 def list_notes_for_defect(conn: sqlite3.Connection, defect_id: str) -> list[dict]:
-    """All notes for a defect, newest first."""
+    """All notes for a defect, newest-first."""
     return _rows_to_dicts(conn.execute(
         "SELECT * FROM defect_notes WHERE defect_id = ? ORDER BY created_at DESC",
         (defect_id,),
@@ -252,7 +252,6 @@ def add_note(
     heading: str | None,
     note_text: str | None,
 ) -> None:
-    from datetime import datetime
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(

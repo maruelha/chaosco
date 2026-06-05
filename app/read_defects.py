@@ -11,7 +11,6 @@ import re
 import sys
 from pathlib import Path
 
-import openpyxl
 import pandas as pd
 
 from app.config_loader import load_config
@@ -118,17 +117,13 @@ def parse_defects(cfg: dict) -> dict:
             f"  Expected name matching: {stem}[optional (n)].xlsx"
         )
 
-    wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
-    available_sheets = wb.sheetnames
-    wb.close()
-
-    if sheet_name not in available_sheets:
-        raise ParseError(
-            f"Sheet '{sheet_name}' not found in workbook.\n"
-            f"  Sheets present: {available_sheets}"
-        )
-
-    df = pd.read_excel(xlsx_path, sheet_name=sheet_name, header=0, dtype=str)
+    with pd.ExcelFile(xlsx_path) as xf:
+        if sheet_name not in xf.sheet_names:
+            raise ParseError(
+                f"Sheet '{sheet_name}' not found in workbook.\n"
+                f"  Sheets present: {xf.sheet_names}"
+            )
+        df = xf.parse(sheet_name, header=0, dtype=str)
 
     raw_headers = list(df.columns)
     col_rename: dict[str, str] = {}
