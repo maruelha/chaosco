@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if mode == "edit" else "Add" }} Note — {{ defect_id }} — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('defects_list') }}">Defects</a>
+  <span>›</span>
+  {% if mode == "edit" or return_to == "detail" %}
+  <a href="{{ url_for('defect_detail', defect_id=defect_id) }}">{{ defect_id }}</a>
+  {% else %}
+  <span>{{ defect_id }}</span>
+  {% endif %}
+  <span>›</span>
+  <span>{{ "Edit note" if mode == "edit" else "Add note" }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ "Edit note" if mode == "edit" else "Add note" }}</h1>
+  <p class="page-subtitle">{{ defect_id }}{% if solman_name %} — {{ solman_name }}{% endif %}</p>
+</div>
+
+<div class="annotation-card">
+  <form method="post" action="{{ action_url }}">
+    {% if mode == "add" %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
+    <div class="form-stack">
+
+      {% if error %}
+      <div class="form-error">{{ error }}</div>
+      {% endif %}
+
+      <div class="form-field">
+        <label for="f-heading">Heading <span class="field-hint">(optional)</span></label>
+        <input id="f-heading" type="text" name="heading" value="{{ heading or '' }}"
+               placeholder="Short topic label…" autofocus>
+      </div>
+
+      <div class="form-field">
+        <label for="f-note">Note</label>
+        <textarea id="f-note" name="note" rows="6"
+                  placeholder="What do you want to record?">{{ note_text or '' }}</textarea>
+      </div>
+
+    </div>
+    <div class="form-footer">
+      {% if mode == "edit" %}
+      <span class="last-edited">Created: {{ created_at }}</span>
+      {% else %}
+      <span></span>
+      {% endif %}
+      <div style="display:flex;gap:.5rem">
+        <a href="{{ cancel_url }}" class="btn">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          {{ "Save changes" if mode == "edit" else "Add note" }}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
