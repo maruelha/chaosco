@@ -1,5 +1,6 @@
 Download/
 test_data/
+archive/*.xlsx
 __pycache__/
 *.pyc
 data/*.db
