@@ -15,14 +15,14 @@
   {% if defect.solman_name %}<p class="page-subtitle">{{ defect.solman_name }}</p>{% endif %}
 </div>
 
-<div class="stub-banner">
-  &#9998;&nbsp; Annotation editing and notes are coming in Pass B.
-</div>
-
+{# ---------------------------------------------------------------- Section 1: imported fields #}
 <div class="detail-card">
-  <h2>Imported fields</h2>
+  <div class="card-header-row">
+    <h2>Imported fields</h2>
+    <span class="readonly-badge">&#128274; From import — read only</span>
+  </div>
   <dl class="field-list">
-    {% set rows = [
+    {% set imported = [
       ("Channel",          defect.channel),
       ("Country",          defect.country),
       ("Status",           defect.solman_status),
@@ -43,11 +43,74 @@
       ("First Seen",       defect.first_seen),
       ("Last Seen",        defect.last_seen),
     ] %}
-    {% for label, value in rows %}
+    {% for label, value in imported %}
     <dt>{{ label }}</dt>
     <dd>{{ value if value is not none and value != '' else '—' }}</dd>
     {% endfor %}
   </dl>
+</div>
+
+{# ---------------------------------------------------------------- Section 2: annotation form #}
+<div class="annotation-card">
+  <div class="card-header-row">
+    <h2>My annotations</h2>
+    <span class="editable-badge">&#9998; Editable — saved by you</span>
+  </div>
+
+  {% if saved %}
+  <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
+  {% endif %}
+
+  <form method="post" action="/defects/{{ defect.defect_id }}">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" rows="3">{{ defect.description or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-business_impact">Business impact</label>
+        <textarea id="f-business_impact" name="business_impact" rows="2">{{ defect.business_impact or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-reach">Reach</label>
+        <input id="f-reach" type="text" name="reach" value="{{ defect.reach or '' }}"
+               placeholder="e.g. Blocks full scenario, affects 3 countries">
+      </div>
+
+      <div class="form-field">
+        <label for="f-retest_needs">Retest needs</label>
+        <textarea id="f-retest_needs" name="retest_needs" rows="2">{{ defect.retest_needs or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-next_step">Next step</label>
+        <input id="f-next_step" type="text" name="next_step" value="{{ defect.next_step or '' }}"
+               placeholder="What needs to happen next?">
+      </div>
+
+      <div class="checkbox-row">
+        <input id="f-action_needed" type="checkbox" name="action_needed" value="1"
+               {% if defect.action_needed %}checked{% endif %}>
+        <label for="f-action_needed">Action needed</label>
+      </div>
+
+      <div class="form-field">
+        <label for="f-comments">Comments</label>
+        <textarea id="f-comments" name="comments" rows="3">{{ defect.comments or '' }}</textarea>
+      </div>
+
+    </div>{# /form-stack #}
+
+    <div class="form-footer">
+      <span class="last-edited">
+        {% if defect.updated_at %}Last edited: {{ defect.updated_at }}{% endif %}
+      </span>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
 </div>
 
 <div class="btn-row">

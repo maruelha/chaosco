@@ -186,6 +186,50 @@ def get_defect(conn: sqlite3.Connection, defect_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
+def get_defect_annotation(conn: sqlite3.Connection, defect_id: str) -> dict | None:
+    """Return the annotation row for a defect, or None if none exists yet."""
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM defect_annotations WHERE defect_id = ?", (defect_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def upsert_defect_annotation(
+    conn: sqlite3.Connection,
+    defect_id: str,
+    description: str | None,
+    business_impact: str | None,
+    reach: str | None,
+    retest_needs: str | None,
+    next_step: str | None,
+    action_needed: bool,
+    comments: str | None,
+) -> None:
+    """Insert or update the annotation row for defect_id. Never touches the defects table."""
+    from datetime import datetime
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO defect_annotations
+                (defect_id, description, business_impact, reach, retest_needs,
+                 next_step, action_needed, comments, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(defect_id) DO UPDATE SET
+                description     = excluded.description,
+                business_impact = excluded.business_impact,
+                reach           = excluded.reach,
+                retest_needs    = excluded.retest_needs,
+                next_step       = excluded.next_step,
+                action_needed   = excluded.action_needed,
+                comments        = excluded.comments,
+                updated_at      = excluded.updated_at
+            """,
+            (defect_id, description, business_impact, reach, retest_needs,
+             next_step, 1 if action_needed else 0, comments, now),
+        )
+
+
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
     """Process rows and upsert into defects.  All writes are in one transaction.
 

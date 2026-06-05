@@ -71,14 +71,36 @@ def defects_list():
     )
 
 
-@app.route("/defects/<defect_id>")
+@app.route("/defects/<defect_id>", methods=["GET", "POST"])
 def defect_detail(defect_id: str):
     conn = _get_conn()
     defect = database.get_defect(conn, defect_id)
-    conn.close()
     if defect is None:
+        conn.close()
         return render_template("404.html", defect_id=defect_id), 404
-    return render_template("defect_detail.html", defect=defect)
+
+    if request.method == "POST":
+        def _field(name: str) -> str | None:
+            v = request.form.get(name, "").strip()
+            return v or None
+
+        database.upsert_defect_annotation(
+            conn,
+            defect_id,
+            description=_field("description"),
+            business_impact=_field("business_impact"),
+            reach=_field("reach"),
+            retest_needs=_field("retest_needs"),
+            next_step=_field("next_step"),
+            action_needed=bool(request.form.get("action_needed")),
+            comments=_field("comments"),
+        )
+        conn.close()
+        return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
+
+    conn.close()
+    saved = request.args.get("saved") == "1"
+    return render_template("defect_detail.html", defect=defect, saved=saved)
 
 
 # ---------------------------------------------------------------------------
