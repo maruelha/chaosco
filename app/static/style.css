@@ -584,6 +584,16 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
   word-break: break-word;
 }
 
+/* --------------------------------------------------------------- form error */
+.form-error {
+  background: #fff0f0;
+  border: 1px solid #ffc5c5;
+  border-radius: 7px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.875rem;
+  color: #c00;
+}
+
 /* --------------------------------------------------------------- field hint */
 .field-hint {
   font-size: 0.75rem;

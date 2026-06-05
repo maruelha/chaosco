@@ -26,9 +26,13 @@
     <input type="hidden" name="return_to" value="{{ return_to }}">
     <div class="form-stack">
 
+      {% if error %}
+      <div class="form-error">{{ error }}</div>
+      {% endif %}
+
       <div class="form-field">
         <label for="f-heading">Heading <span class="field-hint">(optional)</span></label>
-        <input id="f-heading" type="text" name="heading" placeholder="Short topic label…" autofocus>
+        <input id="f-heading" type="text" name="heading" value="{{ heading or '' }}" placeholder="Short topic label…" autofocus>
       </div>
 
       <div class="form-field">

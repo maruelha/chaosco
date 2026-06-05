@@ -142,8 +142,11 @@ def note_add(defect_id: str):
     heading = request.form.get("heading", "").strip() or None
     note_text = request.form.get("note", "").strip() or None
     return_to = request.form.get("return_to", "detail")
-    if note_text:
-        database.add_note(conn, defect_id, heading, note_text)
+    if not note_text:
+        conn.close()
+        return render_template("note_add.html", defect=defect, return_to=return_to,
+                               heading=heading or "", error="Note text is required.")
+    database.add_note(conn, defect_id, heading, note_text)
     conn.close()
     if return_to == "list":
         return redirect(url_for("defects_list", note_added="1"))
