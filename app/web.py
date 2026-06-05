@@ -47,7 +47,7 @@ def defects_list():
     search = request.args.get("search", "").strip()
     channel = request.args.get("channel", "")
     status = request.args.get("status", "")
-    action_needed = request.args.get("action_needed", "")
+    action_needed = request.args.get("action_needed", "no")
     note_added = request.args.get("note_added") == "1"
 
     conn = _get_conn()

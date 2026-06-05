@@ -45,7 +45,7 @@
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if search or channel or status or action_needed %}
+  {% if search or channel or status or action_needed != "no" %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="/defects" class="btn">Clear</a>
@@ -61,13 +61,14 @@
   <table>
     <thead>
       <tr>
+        <th>Row</th>
         <th>Defect ID</th>
+        <th>Solman Name</th>
         <th>Channel</th>
         <th>Country</th>
         <th>Status</th>
         <th>Priority</th>
         <th>Assigned To</th>
-        <th>Row</th>
         <th>Notes</th>
         <th>Action</th>
       </tr>
@@ -75,13 +76,14 @@
     <tbody>
     {% for d in defects %}
       <tr>
+        <td class="num">{{ d.excel_row }}</td>
         <td><a href="/defects/{{ d.defect_id }}" class="row-link">{{ d.defect_id }}</a></td>
+        <td>{{ d.solman_name or '—' }}</td>
         <td>{{ d.channel or '—' }}</td>
         <td>{{ d.country or '—' }}</td>
         <td><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
         <td>{{ d.priority or '—' }}</td>
         <td>{{ d.assigned_to or '—' }}</td>
-        <td class="num">{{ d.excel_row }}</td>
         <td class="notes-cell">
           {% if d.note_count > 0 %}
           <a href="/defects/{{ d.defect_id }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
@@ -96,7 +98,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="9" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="10" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
