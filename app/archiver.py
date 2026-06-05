@@ -6,13 +6,13 @@ Config keys (all optional):
     archive_folder  : str   — default "archive"
 
 once_per_file: archives the file only if its SHA-256 content hash has not been seen
-before in archive_folder. Repeated runs on the same unchanged download → archived once.
-A genuinely new daily export → archived again.
+before. A manifest file (archive_folder/hashes.txt) stores one hash+filename per line
+so existing archives are never re-read on subsequent runs.
 
 always: archives on every run with a fresh timestamp.
 
 Raises RuntimeError if archive_enabled is True and the copy fails.
-Caller (main.py) must treat this as fatal and stop before any DB write.
+Caller (importer.py) treats this as fatal and stops before any DB write.
 """
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from pathlib import Path
 
 _DEFAULT_MODE = "once_per_file"
 _DEFAULT_FOLDER = "archive"
+_MANIFEST = "hashes.txt"
 
 
 def _sha256(path: Path) -> str:
@@ -36,6 +37,27 @@ def _sha256(path: Path) -> str:
 def _timestamped_name(xlsx_path: Path) -> str:
     ts = datetime.now().strftime("%Y-%m-%d_%H%M")
     return f"{ts}_{xlsx_path.name}"
+
+
+def _load_manifest(archive_folder: Path) -> dict[str, str]:
+    """Return {hash: filename} from hashes.txt, or empty dict if it doesn't exist."""
+    manifest_path = archive_folder / _MANIFEST
+    if not manifest_path.exists():
+        return {}
+    result: dict[str, str] = {}
+    for line in manifest_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                result[parts[0]] = parts[1]
+    return result
+
+
+def _append_manifest(archive_folder: Path, file_hash: str, filename: str) -> None:
+    manifest_path = archive_folder / _MANIFEST
+    with manifest_path.open("a", encoding="utf-8") as fh:
+        fh.write(f"{file_hash}  {filename}\n")
 
 
 def archive_file(xlsx_path: Path, cfg: dict) -> dict:
@@ -61,16 +83,20 @@ def archive_file(xlsx_path: Path, cfg: dict) -> dict:
 
         if mode == "once_per_file":
             source_hash = _sha256(xlsx_path)
-            for existing in sorted(archive_folder.glob("*.xlsx")):
-                if _sha256(existing) == source_hash:
-                    return {
-                        "status": "skipped_duplicate",
-                        "archive_path": None,
-                        "matched_archive": existing.name,
-                    }
+            manifest = _load_manifest(archive_folder)
+            if source_hash in manifest:
+                return {
+                    "status": "skipped_duplicate",
+                    "archive_path": None,
+                    "matched_archive": manifest[source_hash],
+                }
 
-        dest = archive_folder / _timestamped_name(xlsx_path)
+        dest_name = _timestamped_name(xlsx_path)
+        dest = archive_folder / dest_name
         shutil.copy2(str(xlsx_path), str(dest))
+
+        if mode == "once_per_file":
+            _append_manifest(archive_folder, source_hash, dest_name)
 
         return {"status": "archived", "archive_path": dest, "matched_archive": None}
 

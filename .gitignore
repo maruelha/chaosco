@@ -1,6 +1,7 @@
 Download/
 test_data/
 archive/*.xlsx
+archive/hashes.txt
 __pycache__/
 *.pyc
 data/*.db
