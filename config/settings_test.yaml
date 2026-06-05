@@ -1,0 +1,5 @@
+downloads_folder: 'test_data'
+filename_stem: "DTC_UAT_testtracking_ROE_TEST"
+defects_sheet_name: "Defects"
+database_path: 'data/test_coordination_TEST.db'
+skiplog_folder: 'output/skiplog'

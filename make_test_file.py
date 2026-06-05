@@ -1,8 +1,10 @@
 """Create a synthetic Defects Excel file for testing Step 2 edge cases.
 
-Places the file in the configured downloads_folder so you can run
-  python -m app.main
-immediately after.
+Writes to test_data/ (NOT downloads_folder) with a _TEST suffix so it
+can NEVER collide with or overwrite a real export.
+
+To run a test import, use the dedicated test config:
+    python -m app.main --config config/settings_test.yaml
 
 Rows produced:
   row 2  DEF-001  normal row
@@ -26,9 +28,12 @@ if not config_path.exists():
     sys.exit(1)
 
 cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-folder = Path(cfg["downloads_folder"])
 stem = cfg["filename_stem"]
-out_path = folder / f"{stem}.xlsx"
+
+# Always write to test_data/ with a _TEST suffix — never touches downloads_folder
+test_folder = Path("test_data")
+test_folder.mkdir(exist_ok=True)
+out_path = test_folder / f"{stem}_TEST.xlsx"
 
 headers = [
     "ECOM/\nRETAIL", "SOLMAN STATUS", "Defect ID", "Solman name",
@@ -60,9 +65,11 @@ rows = [
 ]
 
 df = pd.DataFrame(rows, columns=headers)
-folder.mkdir(parents=True, exist_ok=True)
 df.to_excel(out_path, sheet_name="Defects", index=False)
 print(f"Written: {out_path}")
+print()
+print("To import this test file:")
+print("  python -m app.main --config config/settings_test.yaml")
 print()
 print("Expected import result:")
 print("  Inserted : 3  (DEF-001, DEF-002, DEF-003)")
