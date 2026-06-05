@@ -1,8 +1,18 @@
 """Storage layer — the ONLY module that writes SQL.
 
 Public API:
-    init_db(db_path)              -> sqlite3.Connection
-    upsert_defects(conn, rows, today) -> dict
+    init_db(db_path)                        -> sqlite3.Connection  (startup only)
+    get_connection(db_path)                 -> sqlite3.Connection  (per request)
+    get_filter_options(conn)                -> dict
+    list_defects(conn, ...)                 -> list[dict]
+    get_defect(conn, defect_id)             -> dict | None
+    upsert_defect_annotation(conn, ...)     -> None
+    list_notes_for_defect(conn, defect_id) -> list[dict]
+    get_note(conn, note_id)                 -> dict | None
+    add_note(conn, ...)                     -> None
+    update_note(conn, ...)                  -> None
+    delete_note(conn, note_id)              -> None
+    upsert_defects(conn, rows, today)       -> dict
 """
 from __future__ import annotations
 
@@ -89,7 +99,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at       TEXT
         );
 
-        -- User's append-only notes log — created here, NEVER written by the importer.
+        -- User's notes log (add/edit/delete) — created here, NEVER written by the importer.
         CREATE TABLE IF NOT EXISTS defect_notes (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             defect_id   TEXT REFERENCES defects(defect_id),
@@ -192,14 +202,6 @@ def get_defect(conn: sqlite3.Connection, defect_id: str) -> dict | None:
         WHERE d.defect_id = ?
     """
     rows = _rows_to_dicts(conn.execute(sql, (defect_id,)))
-    return rows[0] if rows else None
-
-
-def get_defect_annotation(conn: sqlite3.Connection, defect_id: str) -> dict | None:
-    """Return the annotation row for a defect, or None if none exists yet."""
-    rows = _rows_to_dicts(conn.execute(
-        "SELECT * FROM defect_annotations WHERE defect_id = ?", (defect_id,)
-    ))
     return rows[0] if rows else None
 
 

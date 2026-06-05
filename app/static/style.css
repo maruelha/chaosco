@@ -584,6 +584,9 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
   word-break: break-word;
 }
 
+/* btn-row inside form-footer is already spaced by form-footer's padding-top */
+.form-footer .btn-row { margin-top: 0; }
+
 /* --------------------------------------------------------------- form error */
 .form-error {
   background: #fff0f0;

@@ -49,7 +49,7 @@
       {% else %}
       <span></span>
       {% endif %}
-      <div style="display:flex;gap:.5rem">
+      <div class="btn-row">
         <a href="{{ cancel_url }}" class="btn">Cancel</a>
         <button type="submit" class="btn btn-primary">
           {{ "Save changes" if mode == "edit" else "Add note" }}

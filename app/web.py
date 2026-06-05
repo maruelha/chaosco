@@ -35,6 +35,17 @@ def _not_found(defect_id: str):
     return render_template("404.html", defect_id=defect_id), 404
 
 
+def _render_note_add_form(defect_id, solman_name, return_to, *, heading="", error=None):
+    return render_template(
+        "note_form.html", mode="add", defect_id=defect_id,
+        solman_name=solman_name, return_to=return_to,
+        action_url=url_for("note_add", defect_id=defect_id),
+        cancel_url=(url_for("defects_list") if return_to == "list"
+                    else url_for("defect_detail", defect_id=defect_id)),
+        heading=heading, error=error,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -142,13 +153,7 @@ def note_add_form(defect_id: str):
     if defect is None:
         return _not_found(defect_id)
     return_to = request.args.get("return_to", "detail")
-    return render_template(
-        "note_form.html", mode="add", defect_id=defect_id,
-        solman_name=defect.get("solman_name"), return_to=return_to,
-        action_url=url_for("note_add", defect_id=defect_id),
-        cancel_url=url_for("defects_list") if return_to == "list"
-                   else url_for("defect_detail", defect_id=defect_id),
-    )
+    return _render_note_add_form(defect_id, defect.get("solman_name"), return_to)
 
 
 @app.route("/defects/<defect_id>/notes", methods=["POST"])
@@ -162,12 +167,8 @@ def note_add(defect_id: str):
         note_text = request.form.get("note", "").strip() or None
         return_to = request.form.get("return_to", "detail")
         if not note_text:
-            return render_template(
-                "note_form.html", mode="add", defect_id=defect_id,
-                solman_name=defect.get("solman_name"), return_to=return_to,
-                action_url=url_for("note_add", defect_id=defect_id),
-                cancel_url=url_for("defects_list") if return_to == "list"
-                           else url_for("defect_detail", defect_id=defect_id),
+            return _render_note_add_form(
+                defect_id, defect.get("solman_name"), return_to,
                 heading=heading or "", error="Note text is required.",
             )
         database.add_note(conn, defect_id, heading, note_text)
@@ -185,19 +186,32 @@ def note_edit(defect_id: str, note_id: int):
         note = database.get_note(conn, note_id)
         if note is None or note["defect_id"] != defect_id:
             return _not_found(defect_id)
+        defect = database.get_defect(conn, defect_id)
         if request.method == "POST":
             heading = request.form.get("heading", "").strip() or None
             note_text = request.form.get("note", "").strip() or None
-            database.update_note(conn, note_id, heading, note_text)
-            return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
     finally:
         conn.close()
+    solman_name = defect.get("solman_name") if defect else None
+    if request.method == "POST":
+        return render_template(
+            "note_form.html", mode="edit", defect_id=defect_id,
+            solman_name=solman_name,
+            action_url=url_for("note_edit", defect_id=defect_id, note_id=note_id),
+            cancel_url=url_for("defect_detail", defect_id=defect_id),
+            heading=heading or "", note_text="",
+            created_at=note["created_at"],
+            error="Note text is required.",
+        )
     return render_template(
         "note_form.html", mode="edit", defect_id=defect_id,
-        solman_name=None,
+        solman_name=solman_name,
         action_url=url_for("note_edit", defect_id=defect_id, note_id=note_id),
         cancel_url=url_for("defect_detail", defect_id=defect_id),
-        heading=note["heading"], note_text=note["note"],
+        heading=note["heading"] or "", note_text=note["note"] or "",
         created_at=note["created_at"],
     )
 
