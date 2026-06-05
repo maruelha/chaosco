@@ -39,8 +39,15 @@ _UPSERT_SQL = """
 )
 
 
+def get_connection(db_path: Path) -> sqlite3.Connection:
+    """Open and return a connection. Schema must already exist (call init_db once first)."""
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
 def init_db(db_path: Path) -> sqlite3.Connection:
-    """Create database + all three tables (if they don't exist), return open connection."""
+    """Create schema if needed, return open connection. Call once at startup."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA journal_mode=WAL")

@@ -21,10 +21,18 @@ app = Flask(
 )
 
 _cfg = load_config()
+_db_path = Path(_cfg["database_path"])
+
+# Create schema once at startup; routes use get_connection() after this.
+database.init_db(_db_path).close()
 
 
 def _get_conn():
-    return database.init_db(Path(_cfg["database_path"]))
+    return database.get_connection(_db_path)
+
+
+def _not_found(defect_id: str):
+    return render_template("404.html", defect_id=defect_id), 404
 
 
 # ---------------------------------------------------------------------------
@@ -51,15 +59,17 @@ def defects_list():
     note_added = request.args.get("note_added") == "1"
 
     conn = _get_conn()
-    defects = database.list_defects(
-        conn,
-        search=search or None,
-        channel=channel or None,
-        status=status or None,
-        action_needed=action_needed or None,
-    )
-    options = database.get_filter_options(conn)
-    conn.close()
+    try:
+        defects = database.list_defects(
+            conn,
+            search=search or None,
+            channel=channel or None,
+            status=status or None,
+            action_needed=action_needed or None,
+        )
+        options = database.get_filter_options(conn)
+    finally:
+        conn.close()
 
     return render_template(
         "defects.html",
@@ -76,32 +86,33 @@ def defects_list():
 @app.route("/defects/<defect_id>", methods=["GET", "POST"])
 def defect_detail(defect_id: str):
     conn = _get_conn()
-    defect = database.get_defect(conn, defect_id)
-    if defect is None:
+    try:
+        defect = database.get_defect(conn, defect_id)
+        if defect is None:
+            return _not_found(defect_id)
+
+        if request.method == "POST":
+            def _field(name: str) -> str | None:
+                v = request.form.get(name, "").strip()
+                return v or None
+
+            database.upsert_defect_annotation(
+                conn,
+                defect_id,
+                description=_field("description"),
+                business_impact=_field("business_impact"),
+                reach=_field("reach"),
+                retest_needs=_field("retest_needs"),
+                next_step=_field("next_step"),
+                action_needed=bool(request.form.get("action_needed")),
+                comments=_field("comments"),
+            )
+            return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
+
+        notes = database.list_notes_for_defect(conn, defect_id)
+    finally:
         conn.close()
-        return render_template("404.html", defect_id=defect_id), 404
 
-    if request.method == "POST":
-        def _field(name: str) -> str | None:
-            v = request.form.get(name, "").strip()
-            return v or None
-
-        database.upsert_defect_annotation(
-            conn,
-            defect_id,
-            description=_field("description"),
-            business_impact=_field("business_impact"),
-            reach=_field("reach"),
-            retest_needs=_field("retest_needs"),
-            next_step=_field("next_step"),
-            action_needed=bool(request.form.get("action_needed")),
-            comments=_field("comments"),
-        )
-        conn.close()
-        return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
-
-    notes = database.list_notes_for_defect(conn, defect_id)
-    conn.close()
     saved = request.args.get("saved") == "1"
     note_added = request.args.get("note_added") == "1"
     note_saved = request.args.get("note_saved") == "1"
@@ -124,10 +135,12 @@ def defect_detail(defect_id: str):
 @app.route("/defects/<defect_id>/notes/add")
 def note_add_form(defect_id: str):
     conn = _get_conn()
-    defect = database.get_defect(conn, defect_id)
-    conn.close()
+    try:
+        defect = database.get_defect(conn, defect_id)
+    finally:
+        conn.close()
     if defect is None:
-        return render_template("404.html", defect_id=defect_id), 404
+        return _not_found(defect_id)
     return_to = request.args.get("return_to", "detail")
     return render_template("note_add.html", defect=defect, return_to=return_to)
 
@@ -135,19 +148,19 @@ def note_add_form(defect_id: str):
 @app.route("/defects/<defect_id>/notes", methods=["POST"])
 def note_add(defect_id: str):
     conn = _get_conn()
-    defect = database.get_defect(conn, defect_id)
-    if defect is None:
+    try:
+        defect = database.get_defect(conn, defect_id)
+        if defect is None:
+            return _not_found(defect_id)
+        heading = request.form.get("heading", "").strip() or None
+        note_text = request.form.get("note", "").strip() or None
+        return_to = request.form.get("return_to", "detail")
+        if not note_text:
+            return render_template("note_add.html", defect=defect, return_to=return_to,
+                                   heading=heading or "", error="Note text is required.")
+        database.add_note(conn, defect_id, heading, note_text)
+    finally:
         conn.close()
-        return render_template("404.html", defect_id=defect_id), 404
-    heading = request.form.get("heading", "").strip() or None
-    note_text = request.form.get("note", "").strip() or None
-    return_to = request.form.get("return_to", "detail")
-    if not note_text:
-        conn.close()
-        return render_template("note_add.html", defect=defect, return_to=return_to,
-                               heading=heading or "", error="Note text is required.")
-    database.add_note(conn, defect_id, heading, note_text)
-    conn.close()
     if return_to == "list":
         return redirect(url_for("defects_list", note_added="1"))
     return redirect(url_for("defect_detail", defect_id=defect_id, note_added="1"))
@@ -156,32 +169,32 @@ def note_add(defect_id: str):
 @app.route("/defects/<defect_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
 def note_edit(defect_id: str, note_id: int):
     conn = _get_conn()
-    note = database.get_note(conn, note_id)
-    if note is None or note["defect_id"] != defect_id:
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["defect_id"] != defect_id:
+            return _not_found(defect_id)
+        if request.method == "POST":
+            heading = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            database.update_note(conn, note_id, heading, note_text)
+            return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
+    finally:
         conn.close()
-        return render_template("404.html", defect_id=defect_id), 404
-    if request.method == "POST":
-        heading = request.form.get("heading", "").strip() or None
-        note_text = request.form.get("note", "").strip() or None
-        database.update_note(conn, note_id, heading, note_text)
-        conn.close()
-        return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
-    conn.close()
     return render_template("note_edit.html", defect_id=defect_id, note=note)
 
 
 @app.route("/defects/<defect_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
 def note_delete(defect_id: str, note_id: int):
     conn = _get_conn()
-    note = database.get_note(conn, note_id)
-    if note is None or note["defect_id"] != defect_id:
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["defect_id"] != defect_id:
+            return _not_found(defect_id)
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("defect_detail", defect_id=defect_id, note_deleted="1"))
+    finally:
         conn.close()
-        return render_template("404.html", defect_id=defect_id), 404
-    if request.method == "POST":
-        database.delete_note(conn, note_id)
-        conn.close()
-        return redirect(url_for("defect_detail", defect_id=defect_id, note_deleted="1"))
-    conn.close()
     return render_template("note_confirm_delete.html", defect_id=defect_id, note=note)
 
 
