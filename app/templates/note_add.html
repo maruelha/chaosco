@@ -3,12 +3,12 @@
 
 {% block content %}
 <nav class="breadcrumb">
-  <a href="/">Dashboard</a>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <span>›</span>
-  <a href="/defects">Defects</a>
+  <a href="{{ url_for('defects_list') }}">Defects</a>
   <span>›</span>
   {% if return_to == "detail" %}
-  <a href="/defects/{{ defect.defect_id }}">{{ defect.defect_id }}</a>
+  <a href="{{ url_for('defect_detail', defect_id=defect.defect_id) }}">{{ defect.defect_id }}</a>
   {% else %}
   <span>{{ defect.defect_id }}</span>
   {% endif %}
@@ -22,7 +22,7 @@
 </div>
 
 <div class="annotation-card">
-  <form method="post" action="/defects/{{ defect.defect_id }}/notes">
+  <form method="post" action="{{ url_for('note_add', defect_id=defect.defect_id) }}">
     <input type="hidden" name="return_to" value="{{ return_to }}">
     <div class="form-stack">
 
@@ -45,9 +45,9 @@
       <span></span>
       <div style="display:flex;gap:.5rem">
         {% if return_to == "list" %}
-        <a href="/defects" class="btn">Cancel</a>
+        <a href="{{ url_for('defects_list') }}" class="btn">Cancel</a>
         {% else %}
-        <a href="/defects/{{ defect.defect_id }}" class="btn">Cancel</a>
+        <a href="{{ url_for('defect_detail', defect_id=defect.defect_id) }}" class="btn">Cancel</a>
         {% endif %}
         <button type="submit" class="btn btn-primary">Add note</button>
       </div>

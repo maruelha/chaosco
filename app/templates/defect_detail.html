@@ -3,9 +3,9 @@
 
 {% block content %}
 <nav class="breadcrumb">
-  <a href="/">Dashboard</a>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <span>›</span>
-  <a href="/defects">Defects</a>
+  <a href="{{ url_for('defects_list') }}">Defects</a>
   <span>›</span>
   <span>{{ defect.defect_id }}</span>
 </nav>
@@ -61,7 +61,7 @@
   <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
   {% endif %}
 
-  <form method="post" action="/defects/{{ defect.defect_id }}">
+  <form method="post" action="{{ url_for('defect_detail', defect_id=defect.defect_id) }}">
     <div class="form-stack">
 
       <div class="form-field">
@@ -118,7 +118,7 @@
   <div class="card-header-row">
     <h2>Notes</h2>
     {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
-    <a href="/defects/{{ defect.defect_id }}/notes/add?return_to=detail" class="btn btn-sm">+ Add note</a>
+    <a href="{{ url_for('note_add_form', defect_id=defect.defect_id, return_to='detail') }}" class="btn btn-sm">+ Add note</a>
   </div>
 
   {% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
@@ -135,18 +135,18 @@
       </div>
       <p class="note-text">{{ n.note or '' }}</p>
       <div class="note-actions">
-        <a href="/defects/{{ defect.defect_id }}/notes/{{ n.id }}/edit" class="btn btn-sm">Edit</a>
-        <a href="/defects/{{ defect.defect_id }}/notes/{{ n.id }}/delete" class="btn btn-sm btn-danger">Delete</a>
+        <a href="{{ url_for('note_edit', defect_id=defect.defect_id, note_id=n.id) }}" class="btn btn-sm">Edit</a>
+        <a href="{{ url_for('note_delete', defect_id=defect.defect_id, note_id=n.id) }}" class="btn btn-sm btn-danger">Delete</a>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <p class="notes-empty">No notes yet. <a href="/defects/{{ defect.defect_id }}/notes/add?return_to=detail">Add the first one.</a></p>
+  <p class="notes-empty">No notes yet. <a href="{{ url_for('note_add_form', defect_id=defect.defect_id, return_to='detail') }}">Add the first one.</a></p>
   {% endif %}
 </div>
 
 <div class="btn-row">
-  <a href="/defects" class="btn">&#8592; Back to Defects</a>
+  <a href="{{ url_for('defects_list') }}" class="btn">&#8592; Back to Defects</a>
 </div>
 {% endblock %}

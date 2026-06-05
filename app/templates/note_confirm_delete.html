@@ -3,11 +3,11 @@
 
 {% block content %}
 <nav class="breadcrumb">
-  <a href="/">Dashboard</a>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <span>›</span>
-  <a href="/defects">Defects</a>
+  <a href="{{ url_for('defects_list') }}">Defects</a>
   <span>›</span>
-  <a href="/defects/{{ defect_id }}">{{ defect_id }}</a>
+  <a href="{{ url_for('defect_detail', defect_id=defect_id) }}">{{ defect_id }}</a>
   <span>›</span>
   <span>Delete note</span>
 </nav>
@@ -24,9 +24,9 @@
   {% endif %}
   <p class="note-preview-text">{{ note.note or '(empty)' }}</p>
 
-  <form method="post" action="/defects/{{ defect_id }}/notes/{{ note.id }}/delete">
+  <form method="post" action="{{ url_for('note_delete', defect_id=defect_id, note_id=note.id) }}">
     <div class="btn-row" style="margin-top:1.5rem">
-      <a href="/defects/{{ defect_id }}" class="btn">Cancel</a>
+      <a href="{{ url_for('defect_detail', defect_id=defect_id) }}" class="btn">Cancel</a>
       <button type="submit" class="btn btn-primary btn-delete">Delete note</button>
     </div>
   </form>

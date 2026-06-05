@@ -10,7 +10,7 @@
 <div class="saved-banner" style="max-width:800px;margin-bottom:1rem">&#10003;&nbsp; Note added.</div>
 {% endif %}
 
-<form method="get" action="/defects" class="filters-bar">
+<form method="get" action="{{ url_for('defects_list') }}" class="filters-bar">
   <div class="filter-group">
     <label for="f-search">Defect ID</label>
     <input id="f-search" type="text" name="search" value="{{ search }}" placeholder="Search…">
@@ -48,7 +48,7 @@
   {% if search or channel or status or action_needed != "no" %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
-    <a href="/defects" class="btn">Clear</a>
+    <a href="{{ url_for('defects_list') }}" class="btn">Clear</a>
   </div>
   {% endif %}
 </form>
@@ -77,7 +77,7 @@
     {% for d in defects %}
       <tr>
         <td class="num">{{ d.excel_row }}</td>
-        <td><a href="/defects/{{ d.defect_id }}" class="row-link">{{ d.defect_id }}</a></td>
+        <td><a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}" class="row-link">{{ d.defect_id }}</a></td>
         <td>{{ d.solman_name or '—' }}</td>
         <td>{{ d.channel or '—' }}</td>
         <td>{{ d.country or '—' }}</td>
@@ -86,10 +86,10 @@
         <td>{{ d.assigned_to or '—' }}</td>
         <td class="notes-cell">
           {% if d.note_count > 0 %}
-          <a href="/defects/{{ d.defect_id }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
+          <a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
           <span class="notes-sep">·</span>
           {% endif %}
-          <a href="/defects/{{ d.defect_id }}/notes/add?return_to=list" class="btn btn-sm">+ Note</a>
+          <a href="{{ url_for('note_add_form', defect_id=d.defect_id, return_to='list') }}" class="btn btn-sm">+ Note</a>
         </td>
         <td>
           {% if d.action_needed %}

@@ -66,9 +66,9 @@
 {% endif %}
 
 <div class="btn-row">
-  <a href="/" class="btn">&#8592; Dashboard</a>
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
   {% if r.ok %}
-  <a href="/defects" class="btn btn-primary">View Defects &#8594;</a>
+  <a href="{{ url_for('defects_list') }}" class="btn btn-primary">View Defects &#8594;</a>
   {% endif %}
 </div>
 {% endblock %}

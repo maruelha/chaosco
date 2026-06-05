@@ -3,11 +3,11 @@
 
 {% block content %}
 <nav class="breadcrumb">
-  <a href="/">Dashboard</a>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <span>›</span>
-  <a href="/defects">Defects</a>
+  <a href="{{ url_for('defects_list') }}">Defects</a>
   <span>›</span>
-  <a href="/defects/{{ defect_id }}">{{ defect_id }}</a>
+  <a href="{{ url_for('defect_detail', defect_id=defect_id) }}">{{ defect_id }}</a>
   <span>›</span>
   <span>Edit note</span>
 </nav>
@@ -18,7 +18,7 @@
 </div>
 
 <div class="annotation-card">
-  <form method="post" action="/defects/{{ defect_id }}/notes/{{ note.id }}/edit">
+  <form method="post" action="{{ url_for('note_edit', defect_id=defect_id, note_id=note.id) }}">
     <div class="form-stack">
 
       <div class="form-field">
