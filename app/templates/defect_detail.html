@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ defect.defect_id }} — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="/">Dashboard</a>
+  <span>›</span>
+  <a href="/defects">Defects</a>
+  <span>›</span>
+  <span>{{ defect.defect_id }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ defect.defect_id }}</h1>
+  {% if defect.solman_name %}<p class="page-subtitle">{{ defect.solman_name }}</p>{% endif %}
+</div>
+
+<div class="stub-banner">
+  &#9998;&nbsp; Annotation editing and notes are coming in Pass B.
+</div>
+
+<div class="detail-card">
+  <h2>Imported fields</h2>
+  <dl class="field-list">
+    {% set rows = [
+      ("Channel",          defect.channel),
+      ("Country",          defect.country),
+      ("Status",           defect.solman_status),
+      ("Priority",         defect.priority),
+      ("Assigned To",      defect.assigned_to),
+      ("Tech Team",        defect.tech_team),
+      ("Raised By",        defect.raised_by),
+      ("Order Number",     defect.order_number),
+      ("Date Reported",    defect.date_reported),
+      ("Date Closed",      defect.date_closed),
+      ("Scenario",         defect.scenario),
+      ("Affected TCs",     defect.affected_testcases_raw),
+      ("Retest Dep.",      defect.retest_dependency),
+      ("Blocks Execution", defect.blocks_execution),
+      ("In Production",    defect.exists_in_production),
+      ("Defect Reason",    defect.defect_reason),
+      ("Excel Row",        defect.excel_row),
+      ("First Seen",       defect.first_seen),
+      ("Last Seen",        defect.last_seen),
+    ] %}
+    {% for label, value in rows %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
+</div>
+
+<div class="btn-row">
+  <a href="/defects" class="btn">&#8592; Back to Defects</a>
+</div>
+{% endblock %}

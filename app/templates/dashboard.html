@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+</div>
+
+<div class="action-grid">
+
+  <div class="action-card">
+    <h2>Import DTC ROE Tracking</h2>
+    <p>Find the newest export, archive it, and upsert all defects into the database.</p>
+    <p class="card-note">Currently imports the Defects tab only.</p>
+    <form method="post" action="/import">
+      <button type="submit" class="btn btn-primary">Run Import</button>
+    </form>
+  </div>
+
+  <div class="action-card">
+    <h2>Defects</h2>
+    <p>View, search and filter all imported defects.</p>
+    <a href="/defects" class="btn">View Defects</a>
+  </div>
+
+</div>
+{% endblock %}

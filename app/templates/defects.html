@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Defects — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Defects</h1>
+</div>
+
+<form method="get" action="/defects" class="filters-bar">
+  <div class="filter-group">
+    <label for="f-search">Defect ID</label>
+    <input id="f-search" type="text" name="search" value="{{ search }}" placeholder="Search…">
+  </div>
+  <div class="filter-group">
+    <label for="f-channel">Channel</label>
+    <select id="f-channel" name="channel">
+      <option value="">All</option>
+      {% for ch in options.channels %}
+      <option value="{{ ch }}" {% if channel == ch %}selected{% endif %}>{{ ch }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-status">Status</label>
+    <select id="f-status" name="status">
+      <option value="">All</option>
+      {% for st in options.statuses %}
+      <option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-action">Action needed</label>
+    <select id="f-action" name="action_needed">
+      <option value="">All</option>
+      <option value="yes" {% if action_needed == "yes" %}selected{% endif %}>Flagged</option>
+      <option value="no"  {% if action_needed == "no"  %}selected{% endif %}>Not flagged</option>
+    </select>
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if search or channel or status or action_needed %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="/defects" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<p class="list-meta">
+  {{ defects | length }} defect{{ 's' if defects | length != 1 else '' }} found
+</p>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Defect ID</th>
+        <th>Channel</th>
+        <th>Country</th>
+        <th>Status</th>
+        <th>Priority</th>
+        <th>Assigned To</th>
+        <th>Row</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in defects %}
+      <tr>
+        <td><a href="/defects/{{ d.defect_id }}" class="row-link">{{ d.defect_id }}</a></td>
+        <td>{{ d.channel or '—' }}</td>
+        <td>{{ d.country or '—' }}</td>
+        <td><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
+        <td>{{ d.priority or '—' }}</td>
+        <td>{{ d.assigned_to or '—' }}</td>
+        <td class="num">{{ d.excel_row }}</td>
+        <td>
+          {% if d.action_needed %}
+          <span class="pill pill--red">&#9873; Action</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="table-empty">No defects match the current filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

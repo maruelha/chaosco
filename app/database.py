@@ -121,6 +121,71 @@ def _build_record(row: dict, defect_id: str, today: str) -> dict:
     return rec
 
 
+def _rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
+    cols = [d[0] for d in cursor.description]
+    return [dict(zip(cols, row)) for row in cursor.fetchall()]
+
+
+def get_filter_options(conn: sqlite3.Connection) -> dict:
+    """Return distinct channel and solman_status values for building filter dropdowns."""
+    channels = [r[0] for r in conn.execute(
+        "SELECT DISTINCT channel FROM defects WHERE channel IS NOT NULL ORDER BY channel"
+    ).fetchall()]
+    statuses = [r[0] for r in conn.execute(
+        "SELECT DISTINCT solman_status FROM defects WHERE solman_status IS NOT NULL ORDER BY solman_status"
+    ).fetchall()]
+    return {"channels": channels, "statuses": statuses}
+
+
+def list_defects(
+    conn: sqlite3.Connection,
+    search: str | None = None,
+    channel: str | None = None,
+    status: str | None = None,
+    action_needed: str | None = None,
+) -> list[dict]:
+    """Return defects rows with optional filters, LEFT JOINed with defect_annotations."""
+    sql = """
+        SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
+               d.assigned_to, d.excel_row, d.solman_name,
+               COALESCE(a.action_needed, 0) AS action_needed
+        FROM defects d
+        LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
+        WHERE 1=1
+    """
+    params: list = []
+    if search:
+        sql += " AND d.defect_id LIKE ?"
+        params.append(f"%{search}%")
+    if channel:
+        sql += " AND d.channel = ?"
+        params.append(channel)
+    if status:
+        sql += " AND d.solman_status = ?"
+        params.append(status)
+    if action_needed == "yes":
+        sql += " AND COALESCE(a.action_needed, 0) = 1"
+    elif action_needed == "no":
+        sql += " AND COALESCE(a.action_needed, 0) = 0"
+    sql += " ORDER BY d.excel_row"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_defect(conn: sqlite3.Connection, defect_id: str) -> dict | None:
+    """Return one defect with its annotation fields (NULL if no annotation row exists)."""
+    sql = """
+        SELECT d.*,
+               a.description, a.business_impact, a.reach, a.retest_needs,
+               a.next_step, COALESCE(a.action_needed, 0) AS action_needed,
+               a.comments, a.updated_at
+        FROM defects d
+        LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
+        WHERE d.defect_id = ?
+    """
+    rows = _rows_to_dicts(conn.execute(sql, (defect_id,)))
+    return rows[0] if rows else None
+
+
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
     """Process rows and upsert into defects.  All writes are in one transaction.
 

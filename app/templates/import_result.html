@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Import Result — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Import Result</h1>
+</div>
+
+{% if not r.ok %}
+<div class="result-box result-box--error">
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ r.error }}</span>
+  </div>
+</div>
+
+{% else %}
+<div class="result-box">
+  <div class="result-row">
+    <span class="result-label">File</span>
+    <span class="result-value mono">{{ r.xlsx_path }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Date</span>
+    <span class="result-value">{{ r.today }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ r.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ r.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">
+      {{ r.skipped_blank_id }} blank defect_id &nbsp;&middot;&nbsp; {{ r.skipped_duplicate }} duplicate
+    </span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Ignored</span>
+    <span class="result-value">{{ r.ignored_blank }} fully blank rows</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if r.skiplog_path %}{{ r.skiplog_path }}{% else %}none — no rows skipped{% endif %}
+    </span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Archive</span>
+    <span class="result-value">
+      {% if r.archive_status == "archived" %}
+        <span class="pill pill--green">Archived</span>
+        <span class="mono">{{ r.archive_path }}</span>
+      {% elif r.archive_status == "skipped_duplicate" %}
+        <span class="pill pill--gray">Already archived</span>
+        matched <span class="mono">{{ r.matched_archive }}</span>
+      {% else %}
+        <span class="pill pill--gray">Disabled</span> in config
+      {% endif %}
+    </span>
+  </div>
+</div>
+{% endif %}
+
+<div class="btn-row">
+  <a href="/" class="btn">&#8592; Dashboard</a>
+  {% if r.ok %}
+  <a href="/defects" class="btn btn-primary">View Defects &#8594;</a>
+  {% endif %}
+</div>
+{% endblock %}

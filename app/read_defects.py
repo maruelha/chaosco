@@ -86,6 +86,10 @@ def _clean(val) -> str:
     return str(val)
 
 
+class ParseError(Exception):
+    """Raised by parse_defects() when the source file cannot be read."""
+
+
 def parse_defects(cfg: dict) -> dict:
     """Find the latest Excel export, parse the Defects sheet, return structured result.
 
@@ -98,36 +102,31 @@ def parse_defects(cfg: dict) -> dict:
             "missing_fields":   list[str],
         }
 
-    Calls sys.exit(1) on fatal errors (folder missing, file not found, sheet not found).
+    Raises ParseError on fatal errors (folder missing, file not found, sheet not found).
     """
     folder = Path(cfg["downloads_folder"])
     stem = cfg["filename_stem"]
     sheet_name = cfg["defects_sheet_name"]
 
     if not folder.exists():
-        print(f"ERROR: downloads_folder does not exist: {folder}", file=sys.stderr)
-        sys.exit(1)
+        raise ParseError(f"downloads_folder does not exist: {folder}")
 
     xlsx_path = _find_latest_xlsx(folder, stem)
     if xlsx_path is None:
-        print(
-            f"ERROR: No matching .xlsx file found in {folder}\n"
-            f"       Expected name matching: {stem}[optional (n)].xlsx",
-            file=sys.stderr,
+        raise ParseError(
+            f"No matching .xlsx file found in {folder}\n"
+            f"  Expected name matching: {stem}[optional (n)].xlsx"
         )
-        sys.exit(1)
 
     wb = openpyxl.load_workbook(xlsx_path, read_only=True, data_only=True)
     available_sheets = wb.sheetnames
     wb.close()
 
     if sheet_name not in available_sheets:
-        print(
-            f"ERROR: Sheet '{sheet_name}' not found in workbook.\n"
-            f"       Sheets present: {available_sheets}",
-            file=sys.stderr,
+        raise ParseError(
+            f"Sheet '{sheet_name}' not found in workbook.\n"
+            f"  Sheets present: {available_sheets}"
         )
-        sys.exit(1)
 
     df = pd.read_excel(xlsx_path, sheet_name=sheet_name, header=0, dtype=str)
 
@@ -178,7 +177,11 @@ def _print_row(row: dict) -> None:
 
 def main(config_path: str | None = None) -> None:
     cfg = load_config(config_path)
-    result = parse_defects(cfg)
+    try:
+        result = parse_defects(cfg)
+    except ParseError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"Read: {result['xlsx_path']}")
     print(f"Defects sheet: {len(result['rows'])} data rows\n")
