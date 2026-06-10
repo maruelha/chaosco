@@ -500,9 +500,15 @@ def get_spillover(
     status: str | None = None,
     area: str | None = None,
     type_: str | None = None,
+    assigned_to: str | None = None,
     search: str | None = None,
+    exclude_statuses: list[str] | None = None,
 ) -> list[dict]:
-    """Return spillover rows LEFT JOINed with annotations. All filters are optional."""
+    """Return spillover rows LEFT JOINed with annotations. All filters are optional.
+
+    exclude_statuses: rows whose status is in this list are hidden (default-view exclusion).
+    Ignored when a specific status filter is active.
+    """
     sql = """
         SELECT s.*,
                a.importance_for_signoff, a.next_step, a.comment_history,
@@ -521,11 +527,32 @@ def get_spillover(
     if type_:
         sql += " AND s.type = ?"
         params.append(type_)
+    if assigned_to:
+        sql += " AND s.assigned_to = ?"
+        params.append(assigned_to)
     if search:
         sql += " AND (s.name LIKE ? OR s.external_id LIKE ?)"
         params.extend([f"%{search}%", f"%{search}%"])
+    if exclude_statuses and not status:
+        placeholders = ",".join("?" * len(exclude_statuses))
+        sql += f" AND (s.status IS NULL OR s.status NOT IN ({placeholders}))"
+        params.extend(exclude_statuses)
     sql += " ORDER BY s.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_spillover_filter_options(conn: sqlite3.Connection) -> dict:
+    """Return distinct values for each filter dropdown."""
+    def _vals(col: str) -> list:
+        return [r[0] for r in conn.execute(
+            f"SELECT DISTINCT {col} FROM spillover WHERE {col} IS NOT NULL ORDER BY {col}"
+        ).fetchall()]
+    return {
+        "areas":     _vals("area"),
+        "types":     _vals("type"),
+        "statuses":  _vals("status"),
+        "assignees": _vals("assigned_to"),
+    }
 
 
 def get_spillover_by_id(conn: sqlite3.Connection, spillover_id: int) -> dict | None:

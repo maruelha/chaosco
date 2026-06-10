@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Core South Spillover — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Core South Spillover</h1>
+</div>
+
+{# ---- Filters ---- #}
+<form method="get" action="{{ url_for('spillover_list') }}" class="filters-bar" id="filters-form">
+  <div class="filter-group">
+    <label for="f-area">Area</label>
+    <select id="f-area" name="area">
+      <option value="">All</option>
+      {% for v in options.areas %}
+      <option value="{{ v }}" {% if area == v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-type">Type</label>
+    <select id="f-type" name="type">
+      <option value="">All</option>
+      {% for v in options.types %}
+      <option value="{{ v }}" {% if type_ == v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-status">Status</label>
+    <select id="f-status" name="status">
+      <option value="">All visible</option>
+      {% for v in options.statuses %}
+      <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-assignee">Assigned to</label>
+    <select id="f-assignee" name="assigned_to">
+      <option value="">All</option>
+      {% for v in options.assignees %}
+      <option value="{{ v }}" {% if assigned_to == v %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if area or type_ or status or assigned_to or show_all %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('spillover_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<div class="toggle-row">
+  <input type="checkbox" id="toggle-all" name="show_all" value="1"
+         form="filters-form"
+         {% if show_all %}checked{% endif %}
+         onchange="this.form.submit()">
+  <label for="toggle-all">Show passed &amp; dropped</label>
+</div>
+
+<p class="list-meta">
+  {{ rows | length }} item{{ 's' if rows | length != 1 else '' }}
+  {% if not show_all and not status %}
+    — passed &amp; dropped hidden
+    (<a href="{{ url_for('spillover_list', area=area, type=type_, assigned_to=assigned_to, show_all='1') }}">show all</a>)
+  {% endif %}
+</p>
+
+{# ---- Table ---- #}
+<div class="table-wrap table-wrap--scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Type</th>
+        <th>Area</th>
+        <th>Status</th>
+        <th style="min-width:200px">Name</th>
+        <th>Country</th>
+        <th>Assigned to</th>
+        <th>Ext. ID</th>
+        <th style="min-width:160px">Content</th>
+        <th style="min-width:140px">Importance for sign-off</th>
+        <th style="min-width:140px">Next step</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr data-id="{{ row.spillover_id }}"
+          data-name="{{ row.name | e }}"
+          data-importance="{{ (row.importance_for_signoff or '') | e }}"
+          data-nextstep="{{ (row.next_step or '') | e }}"
+          data-commenthistory="{{ (row.comment_history or '') | e }}"
+          data-importedcomment="{{ (row.comment or '') | e }}">
+        <td class="num">{{ row.excel_row }}</td>
+        <td>{{ row.type or '—' }}</td>
+        <td>{{ row.area or '—' }}</td>
+        <td><span class="status-pill">{{ row.status or '—' }}</span></td>
+        <td title="{{ row.name | e }}">
+          {% if row.name %}
+            {{ row.name[:70] }}{% if row.name | length > 70 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ row.country or '—' }}</td>
+        <td>{{ row.assigned_to or '—' }}</td>
+        <td>{{ row.external_id or '—' }}</td>
+        <td title="{{ row.content | e }}">
+          {% if row.content %}
+            {{ row.content[:80] }}{% if row.content | length > 80 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="cell-importance">
+          <span class="cell-edit js-open-ann">
+            {% if row.importance_for_signoff %}
+              {{ row.importance_for_signoff }}
+            {% else %}
+              <span class="cell-placeholder">— click to edit</span>
+            {% endif %}
+          </span>
+        </td>
+        <td class="cell-nextstep">
+          <span class="cell-edit js-open-ann">
+            {% if row.next_step %}
+              {{ row.next_step }}
+            {% else %}
+              <span class="cell-placeholder">— click to edit</span>
+            {% endif %}
+          </span>
+        </td>
+        <td>
+          <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ---- Annotation popup (Importance + Next step) ---- #}
+<dialog id="dlg-ann">
+  <div class="dlg-header">
+    <div class="dlg-title">Edit annotation</div>
+    <div class="dlg-subtitle" id="ann-row-name"></div>
+  </div>
+  <form id="frm-ann" method="post">
+    <div class="dlg-body">
+      <div class="form-field">
+        <label for="ann-importance">Importance for sign-off</label>
+        <textarea id="ann-importance" name="importance_for_signoff" rows="3"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="ann-nextstep">Next step</label>
+        <textarea id="ann-nextstep" name="next_step" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="dlg-footer">
+      <button type="button" class="btn" onclick="document.getElementById('dlg-ann').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+  <input type="hidden" id="ann-id">
+</dialog>
+
+{# ---- Comment history popup ---- #}
+<dialog id="dlg-cmt">
+  <div class="dlg-header">
+    <div class="dlg-title">Comment history</div>
+    <div class="dlg-subtitle" id="cmt-row-name"></div>
+  </div>
+  <form id="frm-cmt" method="post">
+    <div class="dlg-body">
+      <div>
+        <div class="ref-label">Imported comment (read-only reference)</div>
+        <div class="ref-box" id="cmt-imported-ref"></div>
+      </div>
+      <div class="form-field">
+        <label for="cmt-history">Your comment history</label>
+        <textarea id="cmt-history" name="comment_history" rows="6"
+                  placeholder="Your clean, maintained version of the comment history…"></textarea>
+      </div>
+    </div>
+    <div class="dlg-footer">
+      <button type="button" class="btn" onclick="document.getElementById('dlg-cmt').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+  <input type="hidden" id="cmt-id">
+</dialog>
+
+{# ---- JavaScript ---- #}
+<script>
+(function () {
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+  }
+
+  const annDlg = document.getElementById('dlg-ann');
+  const annForm = document.getElementById('frm-ann');
+  const annId   = document.getElementById('ann-id');
+
+  document.querySelectorAll('.js-open-ann').forEach(el => {
+    el.addEventListener('click', () => {
+      const tr = el.closest('tr');
+      annId.value = tr.dataset.id;
+      document.getElementById('ann-row-name').textContent = tr.dataset.name;
+      document.getElementById('ann-importance').value = tr.dataset.importance;
+      document.getElementById('ann-nextstep').value   = tr.dataset.nextstep;
+      annDlg.showModal();
+    });
+  });
+
+  annForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id   = annId.value;
+    const resp = await fetch(`/spillover/${id}/annotation`, { method: 'POST', body: new FormData(annForm) });
+    const d    = await resp.json();
+    if (!d.ok) return;
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    tr.dataset.importance = d.importance_for_signoff;
+    tr.dataset.nextstep   = d.next_step;
+    tr.querySelector('.cell-importance').innerHTML =
+      d.importance_for_signoff
+        ? `<span class="cell-edit js-open-ann">${escHtml(d.importance_for_signoff)}</span>`
+        : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
+    tr.querySelector('.cell-nextstep').innerHTML =
+      d.next_step
+        ? `<span class="cell-edit js-open-ann">${escHtml(d.next_step)}</span>`
+        : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
+    // re-attach listeners to the new spans
+    tr.querySelectorAll('.js-open-ann').forEach(el => attachAnnListener(el));
+    annDlg.close();
+  });
+
+  function attachAnnListener(el) {
+    el.addEventListener('click', () => {
+      const tr = el.closest('tr');
+      annId.value = tr.dataset.id;
+      document.getElementById('ann-row-name').textContent = tr.dataset.name;
+      document.getElementById('ann-importance').value = tr.dataset.importance;
+      document.getElementById('ann-nextstep').value   = tr.dataset.nextstep;
+      annDlg.showModal();
+    });
+  }
+
+  const cmtDlg = document.getElementById('dlg-cmt');
+  const cmtForm = document.getElementById('frm-cmt');
+  const cmtId   = document.getElementById('cmt-id');
+
+  document.querySelectorAll('.js-open-cmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      cmtId.value = tr.dataset.id;
+      document.getElementById('cmt-row-name').textContent  = tr.dataset.name;
+      document.getElementById('cmt-history').value         = tr.dataset.commenthistory;
+      document.getElementById('cmt-imported-ref').textContent = tr.dataset.importedcomment || '(none)';
+      cmtDlg.showModal();
+    });
+  });
+
+  cmtForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id   = cmtId.value;
+    const resp = await fetch(`/spillover/${id}/comment`, { method: 'POST', body: new FormData(cmtForm) });
+    const d    = await resp.json();
+    if (!d.ok) return;
+    document.querySelector(`tr[data-id="${id}"]`).dataset.commenthistory = d.comment_history;
+    cmtDlg.close();
+  });
+
+  // Close on backdrop click
+  [annDlg, cmtDlg].forEach(dlg => {
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  });
+}());
+</script>
+{% endblock %}

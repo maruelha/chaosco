@@ -24,6 +24,14 @@ imports:
     enabled: true
     sheet_name: "Core South Spillover"
 
+# Spillover statuses hidden from the default list view.
+# Override with the "Show passed & dropped" toggle or by selecting one explicitly.
+spillover_hidden_statuses:
+  - "Passed"
+  - "Passed, pending solman"
+  - "Passed pending Solman"
+  - "Dropped"
+
 # ---------------------------------------------------------------------------
 # Step 2 — database + skip log
 # ---------------------------------------------------------------------------

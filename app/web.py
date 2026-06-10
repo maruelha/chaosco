@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from app import database
 from app.config_loader import load_config
@@ -137,6 +137,85 @@ def defect_detail(defect_id: str):
         note_saved=note_saved,
         note_deleted=note_deleted,
     )
+
+
+# ---------------------------------------------------------------------------
+# Spillover routes
+# ---------------------------------------------------------------------------
+
+@app.route("/spillover")
+def spillover_list():
+    area        = request.args.get("area", "")
+    type_       = request.args.get("type", "")
+    status      = request.args.get("status", "")
+    assigned_to = request.args.get("assigned_to", "")
+    show_all    = request.args.get("show_all") == "1"
+
+    hidden = _cfg.get("spillover_hidden_statuses", [])
+    exclude = [] if (show_all or status) else hidden
+
+    conn = _get_conn()
+    try:
+        rows    = database.get_spillover(
+            conn,
+            status=status or None,
+            area=area or None,
+            type_=type_ or None,
+            assigned_to=assigned_to or None,
+            exclude_statuses=exclude or None,
+        )
+        options = database.get_spillover_filter_options(conn)
+    finally:
+        conn.close()
+
+    return render_template(
+        "spillover.html",
+        rows=rows,
+        options=options,
+        area=area,
+        type_=type_,
+        status=status,
+        assigned_to=assigned_to,
+        show_all=show_all,
+        hidden_statuses=hidden,
+    )
+
+
+@app.route("/spillover/<int:spillover_id>/annotation", methods=["POST"])
+def spillover_annotation_save(spillover_id: int):
+    importance = request.form.get("importance_for_signoff", "").strip() or None
+    next_step  = request.form.get("next_step", "").strip() or None
+    conn = _get_conn()
+    try:
+        existing       = database.get_spillover_annotation(conn, spillover_id)
+        comment_history = existing["comment_history"] if existing else None
+        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history)
+        ann = database.get_spillover_annotation(conn, spillover_id)
+    finally:
+        conn.close()
+    return jsonify({
+        "ok": True,
+        "importance_for_signoff": ann["importance_for_signoff"] or "",
+        "next_step":              ann["next_step"] or "",
+    })
+
+
+@app.route("/spillover/<int:spillover_id>/comment", methods=["POST"])
+def spillover_comment_save(spillover_id: int):
+    comment_history = request.form.get("comment_history", "").strip() or None
+    conn = _get_conn()
+    try:
+        existing  = database.get_spillover_annotation(conn, spillover_id)
+        importance = existing["importance_for_signoff"] if existing else None
+        next_step  = existing["next_step"] if existing else None
+        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history)
+        ann = database.get_spillover_annotation(conn, spillover_id)
+    finally:
+        conn.close()
+    return jsonify({
+        "ok": True,
+        "comment_history": ann["comment_history"] or "",
+    })
 
 
 # ---------------------------------------------------------------------------
