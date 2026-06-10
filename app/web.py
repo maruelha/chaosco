@@ -335,6 +335,7 @@ def prod_defect_new():
                 refs=_f("refs"),
                 next_steps=_f("next_steps"),
                 comments=_f("comments"),
+                confluence=_f("confluence"),
             )
         finally:
             conn.close()
@@ -361,6 +362,7 @@ def prod_defect_detail(record_id: int):
                 refs=_f("refs"),
                 next_steps=_f("next_steps"),
                 comments=_f("comments"),
+                confluence=_f("confluence"),
             )
     finally:
         conn.close()

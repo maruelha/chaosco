@@ -67,6 +67,11 @@
         <textarea id="f-comments" name="comments" rows="4">{{ record.comments or '' }}</textarea>
       </div>
 
+      <div class="form-field">
+        <label for="f-confluence">Confluence</label>
+        <input type="text" id="f-confluence" name="confluence" value="{{ record.confluence or '' }}" placeholder="Confluence page URL or title">
+      </div>
+
     </div>
   </div>
 

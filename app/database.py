@@ -196,7 +196,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("comments TEXT",):
+    for col in ("comments TEXT", "confluence TEXT"):
         try:
             conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()
@@ -640,16 +640,17 @@ def create_known_prod_defect(
     refs: str | None,
     next_steps: str | None,
     comments: str | None,
+    confluence: str | None,
 ) -> dict:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         cur = conn.execute(
             """INSERT INTO known_prod_defects
                (short_description, scenario, description, biz_impact,
-                numbers, refs, next_steps, comments, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                numbers, refs, next_steps, comments, confluence, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (short_description, scenario, description, biz_impact,
-             numbers, refs, next_steps, comments, now, now),
+             numbers, refs, next_steps, comments, confluence, now, now),
         )
         new_id = cur.lastrowid
     return get_known_prod_defect(conn, new_id)
@@ -666,16 +667,17 @@ def update_known_prod_defect(
     refs: str | None,
     next_steps: str | None,
     comments: str | None,
+    confluence: str | None,
 ) -> dict | None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
             """UPDATE known_prod_defects SET
                short_description=?, scenario=?, description=?, biz_impact=?,
-               numbers=?, refs=?, next_steps=?, comments=?, updated_at=?
+               numbers=?, refs=?, next_steps=?, comments=?, confluence=?, updated_at=?
                WHERE id=?""",
             (short_description, scenario, description, biz_impact,
-             numbers, refs, next_steps, comments, now, record_id),
+             numbers, refs, next_steps, comments, confluence, now, record_id),
         )
     return get_known_prod_defect(conn, record_id)
 
