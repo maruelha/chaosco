@@ -755,6 +755,19 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .sc-signoffcmt { width: 220px; }
 .sc-cmtbtn   { width: 90px; }
 
+/* --------------------------------------------------------------- retail columns */
+.rc-tcid     { width: 110px; }
+.rc-country  { width: 80px; }
+.rc-scenario { width: 200px; }
+.rc-status   { width: 140px; }
+.rc-assignee { width: 130px; }
+.rc-keyuser  { width: 130px; }
+.rc-order    { width: 120px; }
+.rc-defect   { width: 110px; }
+.rc-billing  { width: 140px; }
+.rc-next     { width: 220px; }
+.rc-cmtbtn   { width: 90px; }
+
 /* --------------------------------------------------------------- spillover inline select */
 .inline-select {
   padding: 0.2rem 0.35rem;

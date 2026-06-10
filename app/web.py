@@ -248,6 +248,89 @@ def spillover_critical_save(spillover_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Retail routes
+# ---------------------------------------------------------------------------
+
+@app.route("/retail")
+def retail_list():
+    statuses   = request.args.getlist("status")
+    assignees  = request.args.getlist("assigned_to")
+    countries  = request.args.getlist("country")
+    scenarios  = request.args.getlist("scenario")
+    search_defect  = request.args.get("search_defect", "").strip() or None
+    search_order   = request.args.get("search_order", "").strip() or None
+    search_billing = request.args.get("search_billing", "").strip() or None
+
+    # Combine search terms: each non-empty field is ANDed at DB level via get_retail
+    # We pass them separately so get_retail can build the right WHERE clauses.
+    # For now, chain multiple search terms by running them as one OR-per-field.
+    search = search_defect or search_order or search_billing
+
+    conn = _get_conn()
+    try:
+        rows    = database.get_retail(
+            conn,
+            statuses=statuses or None,
+            assignees=assignees or None,
+            countries=countries or None,
+            scenarios=scenarios or None,
+            search_defect=search_defect,
+            search_order=search_order,
+            search_billing=search_billing,
+        )
+        options = database.get_retail_filter_options(conn)
+    finally:
+        conn.close()
+
+    return render_template(
+        "retail.html",
+        rows=rows,
+        options=options,
+        statuses=statuses,
+        assignees=assignees,
+        countries=countries,
+        scenarios=scenarios,
+        search_defect=search_defect or "",
+        search_order=search_order or "",
+        search_billing=search_billing or "",
+    )
+
+
+@app.route("/retail/<int:retail_id>/annotation", methods=["POST"])
+def retail_annotation_save(retail_id: int):
+    next_step = request.form.get("next_step", "").strip() or None
+    conn = _get_conn()
+    try:
+        existing        = database.get_retail_annotation(conn, retail_id)
+        comment_history = existing["comment_history"] if existing else None
+        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+        ann = database.get_retail_annotation(conn, retail_id)
+    finally:
+        conn.close()
+    return jsonify({
+        "ok": True,
+        "next_step": (ann["next_step"] or "") if ann else "",
+    })
+
+
+@app.route("/retail/<int:retail_id>/comment", methods=["POST"])
+def retail_comment_save(retail_id: int):
+    comment_history = request.form.get("comment_history", "").strip() or None
+    conn = _get_conn()
+    try:
+        existing  = database.get_retail_annotation(conn, retail_id)
+        next_step = existing["next_step"] if existing else None
+        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+        ann = database.get_retail_annotation(conn, retail_id)
+    finally:
+        conn.close()
+    return jsonify({
+        "ok": True,
+        "comment_history": (ann["comment_history"] or "") if ann else "",
+    })
+
+
+# ---------------------------------------------------------------------------
 # Signoff reports
 # ---------------------------------------------------------------------------
 

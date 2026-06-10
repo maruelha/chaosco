@@ -750,9 +750,11 @@ def get_retail(
     assignees: list[str] | None = None,
     countries: list[str] | None = None,
     scenarios: list[str] | None = None,
-    search: str | None = None,
+    search_defect: str | None = None,
+    search_order: str | None = None,
+    search_billing: str | None = None,
 ) -> list[dict]:
-    """Return retail rows LEFT JOINed with annotations. All filters optional."""
+    """Return retail rows LEFT JOINed with annotations. All filters/searches optional and ANDed."""
     sql = """
         SELECT r.*,
                a.next_step, a.comment_history,
@@ -775,10 +777,15 @@ def get_retail(
     if scenarios:  _in("r.testcase_scenario", scenarios)
     sql += "".join(sql_parts)
 
-    if search:
-        sql += """ AND (r.defect_id_ref LIKE ? OR r.order_number LIKE ?
-                        OR r.s4_billing_documents LIKE ?)"""
-        params.extend([f"%{search}%"] * 3)
+    if search_defect:
+        sql += " AND r.defect_id_ref LIKE ?"
+        params.append(f"%{search_defect}%")
+    if search_order:
+        sql += " AND r.order_number LIKE ?"
+        params.append(f"%{search_order}%")
+    if search_billing:
+        sql += " AND r.s4_billing_documents LIKE ?"
+        params.append(f"%{search_billing}%")
 
     sql += " ORDER BY r.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))

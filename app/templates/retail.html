@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block title %}Retail — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Retail</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+    </div>
+  </div>
+</div>
+
+{# ---- Filters + Search ---- #}
+<form method="get" action="{{ url_for('retail_list') }}" class="filters-bar" id="filters-form">
+
+  <div class="filter-group">
+    <label>Status</label>
+    <button type="button" class="filter-btn js-filter-btn {% if statuses %}filter-btn--active{% endif %}" data-filter="status">
+      <span>{% if statuses %}{{ statuses|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Assigned to</label>
+    <button type="button" class="filter-btn js-filter-btn {% if assignees %}filter-btn--active{% endif %}" data-filter="assigned_to">
+      <span>{% if assignees %}{{ assignees|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Country</label>
+    <button type="button" class="filter-btn js-filter-btn {% if countries %}filter-btn--active{% endif %}" data-filter="country">
+      <span>{% if countries %}{{ countries|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Scenario</label>
+    <button type="button" class="filter-btn js-filter-btn {% if scenarios %}filter-btn--active{% endif %}" data-filter="scenario">
+      <span>{% if scenarios %}{{ scenarios|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+
+  <div class="filter-group">
+    <label>Defect ID</label>
+    <input type="text" name="search_defect" value="{{ search_defect }}" class="filter-input" placeholder="contains…">
+  </div>
+  <div class="filter-group">
+    <label>Order number</label>
+    <input type="text" name="search_order" value="{{ search_order }}" class="filter-input" placeholder="contains…">
+  </div>
+  <div class="filter-group">
+    <label>S4 Billing Doc</label>
+    <input type="text" name="search_billing" value="{{ search_billing }}" class="filter-input" placeholder="contains…">
+  </div>
+
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if statuses or assignees or countries or scenarios or search_defect or search_order or search_billing %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('retail_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+{# ---- Filter dialogs ---- #}
+<dialog id="dlg-filter-status" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Status</div></div>
+  <div class="dlg-body">
+    {% for v in options.statuses %}
+    <label class="cb-row">
+      <input type="checkbox" name="status" value="{{ v }}" form="filters-form"
+             {% if v in statuses %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="status">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="status">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-assigned_to" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Assignee</div></div>
+  <div class="dlg-body">
+    {% for v in options.assignees %}
+    <label class="cb-row">
+      <input type="checkbox" name="assigned_to" value="{{ v }}" form="filters-form"
+             {% if v in assignees %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="assigned_to">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="assigned_to">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-country" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Country</div></div>
+  <div class="dlg-body">
+    {% for v in options.countries %}
+    <label class="cb-row">
+      <input type="checkbox" name="country" value="{{ v }}" form="filters-form"
+             {% if v in countries %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="country">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="country">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-scenario" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Scenario</div></div>
+  <div class="dlg-body">
+    {% for v in options.scenarios %}
+    <label class="cb-row">
+      <input type="checkbox" name="scenario" value="{{ v }}" form="filters-form"
+             {% if v in scenarios %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="scenario">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="scenario">Apply</button>
+  </div>
+</dialog>
+
+<p class="list-meta">{{ rows | length }} item{{ 's' if rows | length != 1 else '' }}</p>
+
+{# ---- Table ---- #}
+<div class="spillover-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="sc-row num">#</th>
+        <th class="rc-tcid">Test Case</th>
+        <th class="rc-country">Country</th>
+        <th class="rc-scenario">Scenario</th>
+        <th class="rc-status">Status</th>
+        <th class="rc-assignee">Assigned to</th>
+        <th class="rc-keyuser">Key User</th>
+        <th class="rc-order">Order #</th>
+        <th class="rc-defect">Defect ID</th>
+        <th class="rc-billing">S4 Billing</th>
+        <th class="rc-next">Next step</th>
+        <th class="rc-cmtbtn"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr data-id="{{ row.retail_id }}"
+          data-name="{{ (row.test_case_id ~ ' / ' ~ row.country) | e }}"
+          data-nextstep="{{ (row.next_step or '') | e }}"
+          data-commenthistory="{{ (row.comment_history or '') | e }}"
+          data-importedcomment="{{ (row.comment or '') | e }}">
+        <td class="sc-row num">{{ row.excel_row }}</td>
+        <td class="rc-tcid">{{ row.test_case_id or '—' }}</td>
+        <td class="rc-country">{{ row.country or '—' }}</td>
+        <td class="rc-scenario" title="{{ row.testcase_scenario | e }}">
+          {% if row.testcase_scenario %}
+            {{ row.testcase_scenario[:60] }}{% if row.testcase_scenario | length > 60 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="rc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
+        <td class="rc-assignee">{{ row.assigned_to or '—' }}</td>
+        <td class="rc-keyuser">{{ row.key_user_responsible or '—' }}</td>
+        <td class="rc-order">{{ row.order_number or '—' }}</td>
+        <td class="rc-defect">{{ row.defect_id_ref or '—' }}</td>
+        <td class="rc-billing" title="{{ row.s4_billing_documents | e }}">
+          {% if row.s4_billing_documents %}
+            {{ row.s4_billing_documents[:40] }}{% if row.s4_billing_documents | length > 40 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="rc-next cell-nextstep">
+          <span class="cell-edit js-open-ann">
+            {% if row.next_step %}
+              {{ row.next_step }}
+            {% else %}
+              <span class="cell-placeholder">— click to edit</span>
+            {% endif %}
+          </span>
+        </td>
+        <td class="rc-cmtbtn">
+          <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ---- Annotation popup (Next step only) ---- #}
+<dialog id="dlg-ann">
+  <div class="dlg-header">
+    <div class="dlg-title">Edit annotation</div>
+    <div class="dlg-subtitle" id="ann-row-name"></div>
+  </div>
+  <form id="frm-ann" method="post">
+    <div class="dlg-body">
+      <div class="form-field">
+        <label for="ann-nextstep">Next step</label>
+        <textarea id="ann-nextstep" name="next_step" rows="5"></textarea>
+      </div>
+    </div>
+    <div class="dlg-footer">
+      <button type="button" class="btn" onclick="document.getElementById('dlg-ann').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+  <input type="hidden" id="ann-id">
+</dialog>
+
+{# ---- Comment history popup ---- #}
+<dialog id="dlg-cmt">
+  <div class="dlg-header">
+    <div class="dlg-title">Comment history</div>
+    <div class="dlg-subtitle" id="cmt-row-name"></div>
+  </div>
+  <form id="frm-cmt" method="post">
+    <div class="dlg-body">
+      <div>
+        <div class="ref-label">Imported comment (read-only reference)</div>
+        <div class="ref-box" id="cmt-imported-ref"></div>
+      </div>
+      <div class="form-field">
+        <label for="cmt-history">Your comment history</label>
+        <textarea id="cmt-history" name="comment_history" rows="6"
+                  placeholder="Your clean, maintained version of the comment history…"></textarea>
+      </div>
+    </div>
+    <div class="dlg-footer">
+      <button type="button" class="btn" onclick="document.getElementById('dlg-cmt').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+  <input type="hidden" id="cmt-id">
+</dialog>
+
+{# ---- JavaScript ---- #}
+<script>
+(function () {
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+  }
+
+  const annDlg = document.getElementById('dlg-ann');
+  const annForm = document.getElementById('frm-ann');
+  const annId   = document.getElementById('ann-id');
+
+  function openAnnDialog(tr) {
+    annId.value = tr.dataset.id;
+    document.getElementById('ann-row-name').textContent = tr.dataset.name;
+    document.getElementById('ann-nextstep').value       = tr.dataset.nextstep;
+    annDlg.showModal();
+  }
+
+  document.querySelectorAll('.js-open-ann').forEach(el => {
+    el.addEventListener('click', () => openAnnDialog(el.closest('tr')));
+  });
+
+  annForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id   = annId.value;
+    const resp = await fetch(`/retail/${id}/annotation`, { method: 'POST', body: new FormData(annForm) });
+    const d    = await resp.json();
+    if (!d.ok) return;
+    const tr = document.querySelector(`tr[data-id="${id}"]`);
+    tr.dataset.nextstep = d.next_step;
+
+    function cellHtml(val) {
+      return val
+        ? `<span class="cell-edit js-open-ann">${escHtml(val)}</span>`
+        : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
+    }
+    tr.querySelector('.cell-nextstep').innerHTML = cellHtml(d.next_step);
+    tr.querySelectorAll('.js-open-ann').forEach(el => el.addEventListener('click', () => openAnnDialog(tr)));
+    annDlg.close();
+  });
+
+  const cmtDlg = document.getElementById('dlg-cmt');
+  const cmtForm = document.getElementById('frm-cmt');
+  const cmtId   = document.getElementById('cmt-id');
+
+  document.querySelectorAll('.js-open-cmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tr = btn.closest('tr');
+      cmtId.value = tr.dataset.id;
+      document.getElementById('cmt-row-name').textContent     = tr.dataset.name;
+      document.getElementById('cmt-history').value            = tr.dataset.commenthistory;
+      document.getElementById('cmt-imported-ref').textContent = tr.dataset.importedcomment || '(none)';
+      cmtDlg.showModal();
+    });
+  });
+
+  cmtForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id   = cmtId.value;
+    const resp = await fetch(`/retail/${id}/comment`, { method: 'POST', body: new FormData(cmtForm) });
+    const d    = await resp.json();
+    if (!d.ok) return;
+    document.querySelector(`tr[data-id="${id}"]`).dataset.commenthistory = d.comment_history;
+    cmtDlg.close();
+  });
+
+  // ---- Filter dialogs ----
+  const FILTER_NAMES = ['status', 'assigned_to', 'country', 'scenario'];
+
+  function updateFilterBtn(filter) {
+    const checked = document.querySelectorAll(
+      `input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`
+    );
+    const btn = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    if (checked.length) {
+      span.textContent = checked.length + ' selected';
+      btn.classList.add('filter-btn--active');
+    } else {
+      span.textContent = 'All';
+      btn.classList.remove('filter-btn--active');
+    }
+  }
+
+  document.querySelectorAll('.js-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('dlg-filter-' + btn.dataset.filter).showModal();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-apply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      updateFilterBtn(btn.dataset.filter);
+      document.getElementById('dlg-filter-' + btn.dataset.filter).close();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(
+        `input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`
+      ).forEach(cb => { cb.checked = false; });
+      updateFilterBtn(btn.dataset.filter);
+    });
+  });
+
+  // Close on backdrop click
+  [annDlg, cmtDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
+    if (dlg) dlg.addEventListener('click', e => {
+      if (e.target === dlg) {
+        if (dlg.id.startsWith('dlg-filter-')) updateFilterBtn(dlg.id.replace('dlg-filter-', ''));
+        dlg.close();
+      }
+    });
+  });
+}());
+</script>
+{% endblock %}
