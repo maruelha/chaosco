@@ -73,22 +73,21 @@
 </p>
 
 {# ---- Table ---- #}
-<div class="table-wrap table-wrap--scroll">
+<div class="spillover-scroll">
   <table>
     <thead>
       <tr>
-        <th>#</th>
-        <th>Type</th>
-        <th>Area</th>
-        <th>Status</th>
-        <th style="min-width:200px">Name</th>
-        <th>Country</th>
-        <th>Assigned to</th>
-        <th>Ext. ID</th>
-        <th style="min-width:160px">Content</th>
-        <th style="min-width:140px">Importance for sign-off</th>
-        <th style="min-width:140px">Next step</th>
-        <th></th>
+        <th class="sc-row num">#</th>
+        <th class="sc-type">Type</th>
+        <th class="sc-area">Area</th>
+        <th class="sc-status">Status</th>
+        <th class="sc-name">Name</th>
+        <th class="sc-country">Country</th>
+        <th class="sc-assignee">Assigned to</th>
+        <th class="sc-orders">Order numbers</th>
+        <th class="sc-imp">Importance for sign-off</th>
+        <th class="sc-next">Next step</th>
+        <th class="sc-cmtbtn"></th>
       </tr>
     </thead>
     <tbody>
@@ -99,24 +98,19 @@
           data-nextstep="{{ (row.next_step or '') | e }}"
           data-commenthistory="{{ (row.comment_history or '') | e }}"
           data-importedcomment="{{ (row.comment or '') | e }}">
-        <td class="num">{{ row.excel_row }}</td>
-        <td>{{ row.type or '—' }}</td>
-        <td>{{ row.area or '—' }}</td>
-        <td><span class="status-pill">{{ row.status or '—' }}</span></td>
-        <td title="{{ row.name | e }}">
+        <td class="sc-row num">{{ row.excel_row }}</td>
+        <td class="sc-type">{{ row.type or '—' }}</td>
+        <td class="sc-area">{{ row.area or '—' }}</td>
+        <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
+        <td class="sc-name" title="{{ row.name | e }}">
           {% if row.name %}
             {{ row.name[:70] }}{% if row.name | length > 70 %}…{% endif %}
           {% else %}—{% endif %}
         </td>
-        <td>{{ row.country or '—' }}</td>
-        <td>{{ row.assigned_to or '—' }}</td>
-        <td>{{ row.external_id or '—' }}</td>
-        <td title="{{ row.content | e }}">
-          {% if row.content %}
-            {{ row.content[:80] }}{% if row.content | length > 80 %}…{% endif %}
-          {% else %}—{% endif %}
-        </td>
-        <td class="cell-importance">
+        <td class="sc-country">{{ row.country or '—' }}</td>
+        <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
+        <td class="sc-orders">{{ row.order_numbers or '—' }}</td>
+        <td class="sc-imp cell-importance">
           <span class="cell-edit js-open-ann">
             {% if row.importance_for_signoff %}
               {{ row.importance_for_signoff }}
@@ -125,7 +119,7 @@
             {% endif %}
           </span>
         </td>
-        <td class="cell-nextstep">
+        <td class="sc-next cell-nextstep">
           <span class="cell-edit js-open-ann">
             {% if row.next_step %}
               {{ row.next_step }}
@@ -134,12 +128,12 @@
             {% endif %}
           </span>
         </td>
-        <td>
+        <td class="sc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="11" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
