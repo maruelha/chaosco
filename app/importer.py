@@ -12,6 +12,7 @@ from pathlib import Path
 
 from app import archiver, database
 from app.read_defects import ParseError, _find_latest_xlsx, parse_defects
+from app.retail_importer import parse_retail
 from app.spillover_importer import parse_spillover
 
 
@@ -69,8 +70,10 @@ def run_import(cfg: dict) -> dict:
 
     def_cfg  = imports.get("defects",  {})
     spl_cfg  = imports.get("spillover", {})
-    defects_enabled  = def_cfg.get("enabled", True)
+    ret_cfg  = imports.get("retail",   {})
+    defects_enabled   = def_cfg.get("enabled", True)
     spillover_enabled = spl_cfg.get("enabled", False)
+    retail_enabled    = ret_cfg.get("enabled", False)
 
     result: dict = {
         "ok": False,
@@ -94,6 +97,14 @@ def run_import(cfg: dict) -> dict:
             "error": None,
             "inserted": 0, "updated": 0,
             "skipped_blank_name": 0,
+            "skiplog_path": None,
+        },
+        "retail": {
+            "enabled": retail_enabled,
+            "ok": not retail_enabled,     # disabled counts as ok
+            "error": None,
+            "inserted": 0, "updated": 0,
+            "skipped_blank_key": 0,
             "skiplog_path": None,
         },
     }
@@ -124,8 +135,9 @@ def run_import(cfg: dict) -> dict:
     result["matched_archive"] = ar["matched_archive"]
 
     # 3. Parse all enabled importers (no DB yet — catch parse failures early)
-    defects_rows  = None
+    defects_rows   = None
     spillover_rows = None
+    retail_rows    = None
 
     if defects_enabled:
         defects_parse_cfg = {**cfg, "defects_sheet_name": def_cfg.get("sheet_name", "Defects")}
@@ -143,7 +155,15 @@ def run_import(cfg: dict) -> dict:
             result["spillover"]["error"] = str(exc)
             result["spillover"]["ok"] = False
 
-    # 4. DB writes — single connection for both importers
+    if retail_enabled:
+        ret_parse_cfg = {**cfg, "retail_sheet_name": ret_cfg.get("sheet_name", "Retail")}
+        try:
+            retail_rows = parse_retail(ret_parse_cfg, xlsx_path=xlsx_path)["rows"]
+        except ParseError as exc:
+            result["retail"]["error"] = str(exc)
+            result["retail"]["ok"] = False
+
+    # 4. DB writes — single connection for all importers
     skiplog_folder = Path(cfg["skiplog_folder"])
     db_path = Path(cfg["database_path"])
     conn = database.init_db(db_path)
@@ -185,8 +205,30 @@ def run_import(cfg: dict) -> dict:
                     "skipped_blank_name": upsert["skipped_blank_name"],
                     "skiplog_path":       str(skiplog_path) if skiplog_path else None,
                 })
+
+        if retail_rows is not None:
+            try:
+                upsert = database.upsert_retail_rows(conn, retail_rows, today)
+            except Exception as exc:
+                result["retail"]["error"] = f"Database write failed: {exc}"
+                result["retail"]["ok"] = False
+            else:
+                skiplog_path = None
+                if upsert["skipped_rows"]:
+                    skiplog_path = _write_skiplog(upsert["skipped_rows"], skiplog_folder, "retail")
+                result["retail"].update({
+                    "ok": True,
+                    "inserted":         upsert["inserted"],
+                    "updated":          upsert["updated"],
+                    "skipped_blank_key": upsert["skipped_blank_key"],
+                    "skiplog_path":     str(skiplog_path) if skiplog_path else None,
+                })
     finally:
         conn.close()
 
-    result["ok"] = result["defects"]["ok"] and result["spillover"]["ok"]
+    result["ok"] = (
+        result["defects"]["ok"]
+        and result["spillover"]["ok"]
+        and result["retail"]["ok"]
+    )
     return result

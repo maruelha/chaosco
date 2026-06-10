@@ -27,7 +27,7 @@ imports:
     enabled: true
     sheet_name: "Core South Spillover"
   retail:
-    enabled: false        # Step 2 will wire this into the main pipeline
+    enabled: true
     sheet_name: "Retail"
 
 # Spillover statuses hidden from the default list view.

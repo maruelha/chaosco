@@ -18,6 +18,12 @@ Public API:
     get_spillover_by_id(conn, spillover_id) -> dict | None
     get_spillover_annotation(conn, spillover_id) -> dict | None
     upsert_spillover_annotation(conn, ...)  -> None
+    upsert_retail_rows(conn, rows, today)   -> dict
+    get_retail(conn, ...)                   -> list[dict]
+    get_retail_filter_options(conn)         -> dict
+    get_retail_by_id(conn, retail_id)       -> dict | None
+    get_retail_annotation(conn, retail_id)  -> dict | None
+    upsert_retail_annotation(conn, ...)     -> None
     list_known_prod_defects(conn)           -> list[dict]
     get_known_prod_defect(conn, id)         -> dict | None
     create_known_prod_defect(conn, ...)     -> dict
@@ -80,6 +86,35 @@ _SPILLOVER_UPSERT_SQL = """
     # first_seen and spillover_id intentionally absent from UPDATE — set once on INSERT only
     updates=",\n        ".join(
         f"{c} = excluded.{c}" for c in _SPILLOVER_MUTABLE + ["last_seen"]
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# Retail upsert SQL
+# ---------------------------------------------------------------------------
+
+_RETAIL_MUTABLE = [
+    "test_case_id", "country",
+    "testcase_name", "testcase_scenario", "status", "assigned_to",
+    "key_user_responsible", "evidence_in_sharepoint", "sales_file",
+    "execution_started", "execution_completed", "order_number",
+    "old_order_numbers", "defect_id_ref", "s4_sales_order",
+    "s4_billing_documents", "s4_journal_invoice_entry", "delivery_note",
+    "comment", "reason_for_pass_with_reservation", "excel_row",
+]
+_RETAIL_INSERT_COLS = _RETAIL_MUTABLE + ["match_key", "first_seen", "last_seen"]
+
+_RETAIL_UPSERT_SQL = """
+    INSERT INTO retail ({cols})
+    VALUES ({placeholders})
+    ON CONFLICT(match_key) DO UPDATE SET
+        {updates}
+""".format(
+    cols=", ".join(_RETAIL_INSERT_COLS),
+    placeholders=", ".join(f":{c}" for c in _RETAIL_INSERT_COLS),
+    updates=",\n        ".join(
+        f"{c} = excluded.{c}" for c in _RETAIL_MUTABLE + ["last_seen"]
     ),
 )
 
@@ -162,6 +197,44 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             last_seen      TEXT
         );
         CREATE UNIQUE INDEX IF NOT EXISTS ux_spillover_match ON spillover(match_key);
+
+        -- Retail test-case rows — upserted each import, never deleted.
+        CREATE TABLE IF NOT EXISTS retail (
+            retail_id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+            test_case_id                     TEXT NOT NULL,
+            country                          TEXT NOT NULL,
+            testcase_name                    TEXT,
+            testcase_scenario                TEXT,
+            status                           TEXT,
+            assigned_to                      TEXT,
+            key_user_responsible             TEXT,
+            evidence_in_sharepoint           TEXT,
+            sales_file                       TEXT,
+            execution_started                TEXT,
+            execution_completed              TEXT,
+            order_number                     TEXT,
+            old_order_numbers                TEXT,
+            defect_id_ref                    TEXT,
+            s4_sales_order                   TEXT,
+            s4_billing_documents             TEXT,
+            s4_journal_invoice_entry         TEXT,
+            delivery_note                    TEXT,
+            comment                          TEXT,
+            reason_for_pass_with_reservation TEXT,
+            excel_row                        INTEGER,
+            match_key                        TEXT NOT NULL,
+            first_seen                       TEXT,
+            last_seen                        TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_retail_match ON retail(match_key);
+
+        -- Authored retail annotations — NEVER written by the importer.
+        CREATE TABLE IF NOT EXISTS retail_annotations (
+            retail_id       INTEGER PRIMARY KEY REFERENCES retail(retail_id),
+            next_step       TEXT,
+            comment_history TEXT,
+            updated_at      TEXT
+        );
 
         -- Authored working fields — NEVER written by the importer.
         CREATE TABLE IF NOT EXISTS spillover_annotations (
@@ -449,6 +522,13 @@ def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> di
 # Spillover storage
 # ---------------------------------------------------------------------------
 
+def _retail_match_key(test_case_id: str, country: str) -> str:
+    return "||".join(
+        re.sub(r"\s+", " ", str(p or "")).strip().lower()
+        for p in (test_case_id, country)
+    )
+
+
 def _spillover_match_key(type_: str, name: str, country: str) -> str:
     """Normalised composite match key: collapse whitespace, lowercase."""
     return "||".join(
@@ -615,6 +695,147 @@ def get_spillover_annotation(conn: sqlite3.Connection, spillover_id: int) -> dic
         "SELECT * FROM spillover_annotations WHERE spillover_id = ?", (spillover_id,)
     ))
     return rows[0] if rows else None
+
+
+def upsert_retail_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
+    """Match-key upsert for retail rows. Never deletes. Returns counts + skipped rows."""
+    n_inserted = 0
+    n_updated = 0
+    n_skipped = 0
+    skipped_rows: list[dict] = []
+
+    with conn:
+        existing_keys = {r[0] for r in conn.execute("SELECT match_key FROM retail")}
+
+        for row in rows:
+            if row.get("_skip_reason"):
+                n_skipped += 1
+                skipped_rows.append({**row, "reason": row["_skip_reason"]})
+                continue
+
+            mk = _retail_match_key(
+                row.get("test_case_id", "") or "",
+                row.get("country", "") or "",
+            )
+            is_new = mk not in existing_keys
+
+            def _s(field: str):
+                v = str(row.get(field, "") or "").strip()
+                return v if v else None
+
+            rec = {col: _s(col) for col in _RETAIL_MUTABLE if col != "excel_row"}
+            rec["excel_row"] = row.get("excel_row")
+            rec["match_key"] = mk
+            rec["first_seen"] = today
+            rec["last_seen"] = today
+
+            conn.execute(_RETAIL_UPSERT_SQL, rec)
+            if is_new:
+                n_inserted += 1
+                existing_keys.add(mk)
+            else:
+                n_updated += 1
+
+    return {
+        "inserted": n_inserted,
+        "updated": n_updated,
+        "skipped_blank_key": n_skipped,
+        "skipped_rows": skipped_rows,
+    }
+
+
+def get_retail(
+    conn: sqlite3.Connection,
+    statuses: list[str] | None = None,
+    assignees: list[str] | None = None,
+    countries: list[str] | None = None,
+    scenarios: list[str] | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    """Return retail rows LEFT JOINed with annotations. All filters optional."""
+    sql = """
+        SELECT r.*,
+               a.next_step, a.comment_history,
+               a.updated_at AS annotation_updated_at
+        FROM retail r
+        LEFT JOIN retail_annotations a ON a.retail_id = r.retail_id
+        WHERE 1=1
+    """
+    params: list = []
+    sql_parts: list[str] = []
+
+    def _in(col: str, values: list[str]) -> None:
+        ph = ",".join("?" * len(values))
+        sql_parts.append(f" AND {col} IN ({ph})")
+        params.extend(values)
+
+    if statuses:   _in("r.status", statuses)
+    if assignees:  _in("r.assigned_to", assignees)
+    if countries:  _in("r.country", countries)
+    if scenarios:  _in("r.testcase_scenario", scenarios)
+    sql += "".join(sql_parts)
+
+    if search:
+        sql += """ AND (r.defect_id_ref LIKE ? OR r.order_number LIKE ?
+                        OR r.s4_billing_documents LIKE ?)"""
+        params.extend([f"%{search}%"] * 3)
+
+    sql += " ORDER BY r.excel_row"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_retail_filter_options(conn: sqlite3.Connection) -> dict:
+    def _vals(col: str) -> list:
+        return [r[0] for r in conn.execute(
+            f"SELECT DISTINCT {col} FROM retail WHERE {col} IS NOT NULL ORDER BY {col}"
+        ).fetchall()]
+    return {
+        "statuses":  _vals("status"),
+        "assignees": _vals("assigned_to"),
+        "countries": _vals("country"),
+        "scenarios": _vals("testcase_scenario"),
+    }
+
+
+def get_retail_by_id(conn: sqlite3.Connection, retail_id: int) -> dict | None:
+    sql = """
+        SELECT r.*,
+               a.next_step, a.comment_history,
+               a.updated_at AS annotation_updated_at
+        FROM retail r
+        LEFT JOIN retail_annotations a ON a.retail_id = r.retail_id
+        WHERE r.retail_id = ?
+    """
+    rows = _rows_to_dicts(conn.execute(sql, (retail_id,)))
+    return rows[0] if rows else None
+
+
+def get_retail_annotation(conn: sqlite3.Connection, retail_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM retail_annotations WHERE retail_id = ?", (retail_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def upsert_retail_annotation(
+    conn: sqlite3.Connection,
+    retail_id: int,
+    next_step: str | None,
+    comment_history: str | None,
+) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO retail_annotations (retail_id, next_step, comment_history, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(retail_id) DO UPDATE SET
+                next_step       = excluded.next_step,
+                comment_history = excluded.comment_history,
+                updated_at      = excluded.updated_at
+            """,
+            (retail_id, next_step, comment_history, now),
+        )
 
 
 def list_known_prod_defects(conn: sqlite3.Connection) -> list[dict]:

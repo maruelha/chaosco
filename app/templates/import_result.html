@@ -115,6 +115,41 @@
   </div>
   {% endif %}
 </div>
+
+{# --- Retail --- #}
+<h2 style="margin-top:1.5rem">Retail</h2>
+<div class="result-box{% if r.retail.error %} result-box--error{% endif %}">
+  {% if not r.retail.enabled %}
+  <div class="result-row">
+    <span class="result-label">Status</span>
+    <span class="result-value"><span class="pill pill--gray">Disabled</span> in config</span>
+  </div>
+  {% elif r.retail.error %}
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ r.retail.error }}</span>
+  </div>
+  {% else %}
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ r.retail.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ r.retail.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">{{ r.retail.skipped_blank_key }} incomplete key</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if r.retail.skiplog_path %}{{ r.retail.skiplog_path }}{% else %}none{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</div>
 {% endif %}
 
 <div class="btn-row">
