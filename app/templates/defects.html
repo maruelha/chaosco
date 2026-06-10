@@ -15,7 +15,7 @@
 <div class="saved-banner" style="max-width:800px;margin-bottom:1rem">&#10003;&nbsp; Note added.</div>
 {% endif %}
 
-<form method="get" action="{{ url_for('defects_list') }}" class="filters-bar">
+<form method="get" action="{{ url_for('defects_list') }}" class="filters-bar" id="filters-form">
   <div class="filter-group">
     <label for="f-search">Defect ID</label>
     <input id="f-search" type="text" name="search" value="{{ search }}" placeholder="Search…">
@@ -30,13 +30,10 @@
     </select>
   </div>
   <div class="filter-group">
-    <label for="f-status">Status</label>
-    <select id="f-status" name="status">
-      <option value="">All</option>
-      {% for st in options.statuses %}
-      <option value="{{ st }}" {% if status == st %}selected{% endif %}>{{ st }}</option>
-      {% endfor %}
-    </select>
+    <label>Status</label>
+    <button type="button" class="filter-btn js-filter-btn {% if statuses %}filter-btn--active{% endif %}" data-filter="status">
+      <span>{% if statuses %}{{ statuses|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
   </div>
   <div class="filter-group">
     <label for="f-action">Action needed</label>
@@ -50,7 +47,7 @@
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if search or channel or status or action_needed != "no" %}
+  {% if search or channel or statuses or action_needed != "no" or show_all %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('defects_list') }}" class="btn">Clear</a>
@@ -58,8 +55,36 @@
   {% endif %}
 </form>
 
+{# ---- Status filter dialog ---- #}
+<dialog id="dlg-filter-status" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Status</div></div>
+  <div class="dlg-body">
+    {% for v in options.statuses %}
+    <label class="cb-row">
+      <input type="checkbox" name="status" value="{{ v }}" form="filters-form"
+             {% if v in statuses %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="status">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="status">Apply</button>
+  </div>
+</dialog>
+
+<div class="toggle-row">
+  <input type="checkbox" id="toggle-all" name="show_all" value="1"
+         form="filters-form"
+         {% if show_all %}checked{% endif %}
+         onchange="this.form.submit()">
+  <label for="toggle-all">Show withdrawn &amp; confirmed</label>
+</div>
+
 <p class="list-meta">
-  {{ defects | length }} defect{{ 's' if defects | length != 1 else '' }} found
+  {{ defects | length }} defect{{ 's' if defects | length != 1 else '' }}
+  {% if not show_all and not statuses and hidden %}
+    — {{ hidden | join(' &amp; ') | lower }} hidden
+  {% endif %}
 </p>
 
 <div class="table-wrap">
@@ -74,6 +99,7 @@
         <th>Status</th>
         <th>Priority</th>
         <th>Assigned To</th>
+        <th class="col-prod" title="Exists in production">Prod</th>
         <th>Notes</th>
         <th>Action</th>
       </tr>
@@ -89,6 +115,16 @@
         <td><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
         <td>{{ d.priority or '—' }}</td>
         <td>{{ d.assigned_to or '—' }}</td>
+        <td class="col-prod">
+          {% set prod = (d.exists_in_production or '') | lower %}
+          {% if prod == 'yes' %}
+            <span class="prod-pill prod-pill--yes" title="Exists in production">Y</span>
+          {% elif prod == 'no' %}
+            <span class="prod-pill prod-pill--no" title="Not in production">N</span>
+          {% else %}
+            <span class="prod-pill prod-pill--unset" title="{{ d.exists_in_production or 'not set' }}">—</span>
+          {% endif %}
+        </td>
         <td class="notes-cell">
           {% if d.note_count > 0 %}
           <a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
@@ -103,9 +139,57 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="10" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="11" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+{# ---- JavaScript for filter dialog ---- #}
+<script>
+(function () {
+  function updateFilterBtn(filter) {
+    const checked = document.querySelectorAll(
+      `input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`
+    );
+    const btn = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+    if (!btn) return;
+    const span = btn.querySelector('span');
+    if (checked.length) {
+      span.textContent = checked.length + ' selected';
+      btn.classList.add('filter-btn--active');
+    } else {
+      span.textContent = 'All';
+      btn.classList.remove('filter-btn--active');
+    }
+  }
+
+  document.querySelectorAll('.js-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('dlg-filter-' + btn.dataset.filter).showModal();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-apply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      updateFilterBtn(btn.dataset.filter);
+      document.getElementById('dlg-filter-' + btn.dataset.filter).close();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(
+        `input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`
+      ).forEach(cb => { cb.checked = false; });
+      updateFilterBtn(btn.dataset.filter);
+    });
+  });
+
+  const dlg = document.getElementById('dlg-filter-status');
+  if (dlg) dlg.addEventListener('click', e => {
+    if (e.target === dlg) { updateFilterBtn('status'); dlg.close(); }
+  });
+}());
+</script>
 {% endblock %}

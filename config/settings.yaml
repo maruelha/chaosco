@@ -30,6 +30,12 @@ imports:
     enabled: true
     sheet_name: "Retail"
 
+# Defect statuses hidden from the default list view.
+# Override with the "Show all" toggle or by selecting a status explicitly.
+defects_hidden_statuses:
+  - "Withdrawn"
+  - "Confirmed"
+
 # Spillover statuses hidden from the default list view.
 # Override with the "Show passed & dropped" toggle or by selecting one explicitly.
 spillover_hidden_statuses:

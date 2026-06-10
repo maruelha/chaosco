@@ -65,11 +65,15 @@ def do_import():
 
 @app.route("/defects")
 def defects_list():
-    search = request.args.get("search", "").strip()
-    channel = request.args.get("channel", "")
-    status = request.args.get("status", "")
+    search        = request.args.get("search", "").strip()
+    channel       = request.args.get("channel", "")
+    statuses      = request.args.getlist("status")
     action_needed = request.args.get("action_needed", "no")
-    note_added = request.args.get("note_added") == "1"
+    show_all      = request.args.get("show_all") == "1"
+    note_added    = request.args.get("note_added") == "1"
+
+    hidden = _cfg.get("defects_hidden_statuses", [])
+    exclude = [] if (show_all or statuses) else hidden
 
     conn = _get_conn()
     try:
@@ -77,8 +81,9 @@ def defects_list():
             conn,
             search=search or None,
             channel=channel or None,
-            status=status or None,
+            statuses=statuses or None,
             action_needed=action_needed or None,
+            exclude_statuses=exclude or None,
         )
         options = database.get_filter_options(conn)
     finally:
@@ -90,8 +95,10 @@ def defects_list():
         options=options,
         search=search,
         channel=channel,
-        status=status,
+        statuses=statuses,
         action_needed=action_needed,
+        show_all=show_all,
+        hidden=hidden,
         note_added=note_added,
     )
 

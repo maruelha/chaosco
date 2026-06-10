@@ -325,13 +325,14 @@ def list_defects(
     conn: sqlite3.Connection,
     search: str | None = None,
     channel: str | None = None,
-    status: str | None = None,
+    statuses: list[str] | None = None,
     action_needed: str | None = None,
+    exclude_statuses: list[str] | None = None,
 ) -> list[dict]:
     """Return defects rows with optional filters, LEFT JOINed with defect_annotations."""
     sql = """
         SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
-               d.assigned_to, d.excel_row, d.solman_name,
+               d.assigned_to, d.excel_row, d.solman_name, d.exists_in_production,
                COALESCE(a.action_needed, 0) AS action_needed,
                (SELECT COUNT(*) FROM defect_notes n WHERE n.defect_id = d.defect_id) AS note_count
         FROM defects d
@@ -345,9 +346,14 @@ def list_defects(
     if channel:
         sql += " AND d.channel = ?"
         params.append(channel)
-    if status:
-        sql += " AND d.solman_status = ?"
-        params.append(status)
+    if statuses:
+        ph = ",".join("?" * len(statuses))
+        sql += f" AND d.solman_status IN ({ph})"
+        params.extend(statuses)
+    elif exclude_statuses:
+        ph = ",".join("?" * len(exclude_statuses))
+        sql += f" AND (d.solman_status IS NULL OR d.solman_status NOT IN ({ph}))"
+        params.extend(exclude_statuses)
     if action_needed == "yes":
         sql += " AND COALESCE(a.action_needed, 0) = 1"
     elif action_needed == "no":
