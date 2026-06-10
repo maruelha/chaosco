@@ -695,7 +695,7 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .sc-assignee { width: 140px; }
 .sc-orders   { width: 130px; }
 .sc-imp      { width: 200px; }
-.sc-next     { width: 200px; }
+.sc-next     { width: 220px; }
 .sc-cmtbtn   { width: 90px; }
 
 /* --------------------------------------------------------------- spillover table misc */
