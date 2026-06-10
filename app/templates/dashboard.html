@@ -10,8 +10,7 @@
 
   <div class="action-card">
     <h2>Import DTC ROE Tracking</h2>
-    <p>Find the newest export, archive it, and upsert all defects into the database.</p>
-    <p class="card-note">Currently imports the Defects tab only.</p>
+    <p>Find the newest export, archive it, and upsert all enabled tabs into the database.</p>
     <form method="post" action="{{ url_for('do_import') }}">
       <button type="submit" class="btn btn-primary">Run Import</button>
     </form>

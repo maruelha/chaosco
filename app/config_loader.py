@@ -5,7 +5,6 @@ import yaml
 _REQUIRED = (
     "downloads_folder",
     "filename_stem",
-    "defects_sheet_name",
     "database_path",
     "skiplog_folder",
 )

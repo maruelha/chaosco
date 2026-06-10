@@ -41,8 +41,10 @@ _OUTPUT_FIELDS = [v for v in _HEADER_MAP.values() if not v.startswith("__")]
 _DEFAULT_SHEET = "Core South Spillover"
 
 
-def parse_spillover(cfg: dict) -> dict:
+def parse_spillover(cfg: dict, xlsx_path: Path | None = None) -> dict:
     """Find the latest Excel export, parse the Spillover sheet, return structured result.
+
+    If xlsx_path is provided the file-location step is skipped (caller already found it).
 
     Returns:
         {
@@ -59,19 +61,19 @@ def parse_spillover(cfg: dict) -> dict:
 
     Raises ParseError on fatal errors (folder missing, file not found, sheet not found).
     """
-    folder = Path(cfg["downloads_folder"])
-    stem = cfg["filename_stem"]
     sheet_name = cfg.get("spillover_sheet_name", _DEFAULT_SHEET)
 
-    if not folder.exists():
-        raise ParseError(f"downloads_folder does not exist: {folder}")
-
-    xlsx_path = _find_latest_xlsx(folder, stem)
     if xlsx_path is None:
-        raise ParseError(
-            f"No matching .xlsx file found in {folder}\n"
-            f"  Expected name matching: {stem}[optional (n)].xlsx"
-        )
+        folder = Path(cfg["downloads_folder"])
+        stem = cfg["filename_stem"]
+        if not folder.exists():
+            raise ParseError(f"downloads_folder does not exist: {folder}")
+        xlsx_path = _find_latest_xlsx(folder, stem)
+        if xlsx_path is None:
+            raise ParseError(
+                f"No matching .xlsx file found in {folder}\n"
+                f"  Expected name matching: {stem}[optional (n)].xlsx"
+            )
 
     with pd.ExcelFile(xlsx_path) as xf:
         if sheet_name not in xf.sheet_names:

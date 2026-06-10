@@ -6,7 +6,7 @@
   <h1>Import Result</h1>
 </div>
 
-{% if not r.ok %}
+{% if r.error %}
 <div class="result-box result-box--error">
   <div class="result-row">
     <span class="result-label">Error</span>
@@ -25,30 +25,6 @@
     <span class="result-value">{{ r.today }}</span>
   </div>
   <div class="result-row">
-    <span class="result-label">Inserted</span>
-    <span class="result-value">{{ r.inserted }}</span>
-  </div>
-  <div class="result-row">
-    <span class="result-label">Updated</span>
-    <span class="result-value">{{ r.updated }}</span>
-  </div>
-  <div class="result-row">
-    <span class="result-label">Skipped</span>
-    <span class="result-value">
-      {{ r.skipped_blank_id }} blank defect_id &nbsp;&middot;&nbsp; {{ r.skipped_duplicate }} duplicate
-    </span>
-  </div>
-  <div class="result-row">
-    <span class="result-label">Ignored</span>
-    <span class="result-value">{{ r.ignored_blank }} fully blank rows</span>
-  </div>
-  <div class="result-row">
-    <span class="result-label">Skip log</span>
-    <span class="result-value mono">
-      {% if r.skiplog_path %}{{ r.skiplog_path }}{% else %}none — no rows skipped{% endif %}
-    </span>
-  </div>
-  <div class="result-row">
     <span class="result-label">Archive</span>
     <span class="result-value">
       {% if r.archive_status == "archived" %}
@@ -62,6 +38,82 @@
       {% endif %}
     </span>
   </div>
+</div>
+
+{# --- Defects --- #}
+<h2 style="margin-top:1.5rem">Defects</h2>
+<div class="result-box{% if r.defects.error %} result-box--error{% endif %}">
+  {% if not r.defects.enabled %}
+  <div class="result-row">
+    <span class="result-label">Status</span>
+    <span class="result-value"><span class="pill pill--gray">Disabled</span> in config</span>
+  </div>
+  {% elif r.defects.error %}
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ r.defects.error }}</span>
+  </div>
+  {% else %}
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ r.defects.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ r.defects.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">
+      {{ r.defects.skipped_blank_id }} blank defect_id &nbsp;&middot;&nbsp; {{ r.defects.skipped_duplicate }} duplicate
+    </span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Ignored</span>
+    <span class="result-value">{{ r.defects.ignored_blank }} fully blank rows</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if r.defects.skiplog_path %}{{ r.defects.skiplog_path }}{% else %}none{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+{# --- Spillover --- #}
+<h2 style="margin-top:1.5rem">Core South Spillover</h2>
+<div class="result-box{% if r.spillover.error %} result-box--error{% endif %}">
+  {% if not r.spillover.enabled %}
+  <div class="result-row">
+    <span class="result-label">Status</span>
+    <span class="result-value"><span class="pill pill--gray">Disabled</span> in config</span>
+  </div>
+  {% elif r.spillover.error %}
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ r.spillover.error }}</span>
+  </div>
+  {% else %}
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ r.spillover.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ r.spillover.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">{{ r.spillover.skipped_blank_name }} blank name</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if r.spillover.skiplog_path %}{{ r.spillover.skiplog_path }}{% else %}none{% endif %}
+    </span>
+  </div>
+  {% endif %}
 </div>
 {% endif %}
 

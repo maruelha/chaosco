@@ -1,7 +1,8 @@
 """Shared import pipeline — called by both CLI (main.py) and web UI (web.py).
 
-run_import(cfg) runs the full pipeline and always returns a result dict;
-it never calls sys.exit so it is safe to call from a web request handler.
+run_import(cfg) runs the full pipeline for all enabled importers and always
+returns a result dict; it never calls sys.exit so it is safe to call from a
+web request handler.
 """
 from __future__ import annotations
 
@@ -10,12 +11,13 @@ from datetime import date, datetime
 from pathlib import Path
 
 from app import archiver, database
-from app.read_defects import ParseError, parse_defects
+from app.read_defects import ParseError, _find_latest_xlsx, parse_defects
+from app.spillover_importer import parse_spillover
 
 
-def _write_skiplog(skipped_rows: list[dict], skiplog_folder: Path) -> Path:
+def _write_skiplog(skipped_rows: list[dict], skiplog_folder: Path, label: str = "defects") -> Path:
     ts = datetime.now().strftime("%Y-%m-%d_%H%M")
-    path = skiplog_folder / f"{ts}_defects_skipped.csv"
+    path = skiplog_folder / f"{ts}_{label}_skipped.csv"
     skiplog_folder.mkdir(parents=True, exist_ok=True)
     sample = skipped_rows[0]
     data_keys = [k for k in sample if k not in ("excel_row", "reason")]
@@ -27,25 +29,49 @@ def _write_skiplog(skipped_rows: list[dict], skiplog_folder: Path) -> Path:
     return path
 
 
+def _resolve_imports(cfg: dict) -> dict:
+    """Return the imports config dict.
+
+    Falls back to defects-only if the 'imports' section is absent (old config shape).
+    """
+    if "imports" in cfg:
+        return cfg["imports"]
+    return {
+        "defects": {
+            "enabled": True,
+            "sheet_name": cfg.get("defects_sheet_name", "Defects"),
+        }
+    }
+
+
 def run_import(cfg: dict) -> dict:
-    """Parse → archive → upsert → skip-log.  Returns a result dict, never raises.
+    """Locate + archive file once, then run all enabled importers.  Never raises.
 
     Result keys:
-        ok                : bool
-        error             : str | None
-        today             : str  (ISO date)
-        xlsx_path         : str | None
-        archive_status    : "archived" | "skipped_duplicate" | "disabled"
-        archive_path      : str | None
-        matched_archive   : str | None
-        inserted          : int
-        updated           : int
-        skipped_blank_id  : int
-        skipped_duplicate : int
-        ignored_blank     : int
-        skiplog_path      : str | None
+        ok             : bool  — True if all enabled importers succeeded
+        error          : str | None  — set on pre-import failure (file/archive)
+        today          : str
+        xlsx_path      : str | None
+        archive_status : "archived" | "skipped_duplicate" | "disabled"
+        archive_path   : str | None
+        matched_archive: str | None
+        defects        : dict  — per-importer result (see below)
+        spillover      : dict  — per-importer result (see below)
+
+    Per-importer result keys:
+        enabled        : bool
+        ok             : bool
+        error          : str | None
+        inserted, updated, skiplog_path, ... (importer-specific counts)
     """
     today = date.today().isoformat()
+    imports = _resolve_imports(cfg)
+
+    def_cfg  = imports.get("defects",  {})
+    spl_cfg  = imports.get("spillover", {})
+    defects_enabled  = def_cfg.get("enabled", True)
+    spillover_enabled = spl_cfg.get("enabled", False)
+
     result: dict = {
         "ok": False,
         "error": None,
@@ -54,59 +80,113 @@ def run_import(cfg: dict) -> dict:
         "archive_status": "disabled",
         "archive_path": None,
         "matched_archive": None,
-        "inserted": 0,
-        "updated": 0,
-        "skipped_blank_id": 0,
-        "skipped_duplicate": 0,
-        "ignored_blank": 0,
-        "skiplog_path": None,
+        "defects": {
+            "enabled": defects_enabled,
+            "ok": not defects_enabled,   # disabled counts as ok
+            "error": None,
+            "inserted": 0, "updated": 0,
+            "skipped_blank_id": 0, "skipped_duplicate": 0, "ignored_blank": 0,
+            "skiplog_path": None,
+        },
+        "spillover": {
+            "enabled": spillover_enabled,
+            "ok": not spillover_enabled,  # disabled counts as ok
+            "error": None,
+            "inserted": 0, "updated": 0,
+            "skipped_blank_name": 0,
+            "skiplog_path": None,
+        },
     }
 
-    # 1. Parse
-    try:
-        parse_result = parse_defects(cfg)
-    except ParseError as exc:
-        result["error"] = str(exc)
+    # 1. Locate file
+    folder = Path(cfg["downloads_folder"])
+    stem   = cfg["filename_stem"]
+    if not folder.exists():
+        result["error"] = f"downloads_folder does not exist: {folder}"
         return result
-
-    xlsx_path = parse_result["xlsx_path"]
-    rows = parse_result["rows"]
+    xlsx_path = _find_latest_xlsx(folder, stem)
+    if xlsx_path is None:
+        result["error"] = (
+            f"No matching .xlsx file found in {folder}\n"
+            f"  Expected name matching: {stem}[optional (n)].xlsx"
+        )
+        return result
     result["xlsx_path"] = str(xlsx_path)
 
-    # 2. Archive (abort before DB write if this fails)
+    # 2. Archive once — abort before any DB writes if this fails
     try:
         ar = archiver.archive_file(xlsx_path, cfg)
     except RuntimeError as exc:
         result["error"] = str(exc)
         return result
-
-    result["archive_status"] = ar["status"]
-    result["archive_path"] = str(ar["archive_path"]) if ar["archive_path"] else None
+    result["archive_status"]  = ar["status"]
+    result["archive_path"]    = str(ar["archive_path"]) if ar["archive_path"] else None
     result["matched_archive"] = ar["matched_archive"]
 
-    # 3. Store
+    # 3. Parse all enabled importers (no DB yet — catch parse failures early)
+    defects_rows  = None
+    spillover_rows = None
+
+    if defects_enabled:
+        defects_parse_cfg = {**cfg, "defects_sheet_name": def_cfg.get("sheet_name", "Defects")}
+        try:
+            defects_rows = parse_defects(defects_parse_cfg, xlsx_path=xlsx_path)["rows"]
+        except ParseError as exc:
+            result["defects"]["error"] = str(exc)
+            result["defects"]["ok"] = False
+
+    if spillover_enabled:
+        spl_parse_cfg = {**cfg, "spillover_sheet_name": spl_cfg.get("sheet_name", "Core South Spillover")}
+        try:
+            spillover_rows = parse_spillover(spl_parse_cfg, xlsx_path=xlsx_path)["rows"]
+        except ParseError as exc:
+            result["spillover"]["error"] = str(exc)
+            result["spillover"]["ok"] = False
+
+    # 4. DB writes — single connection for both importers
+    skiplog_folder = Path(cfg["skiplog_folder"])
     db_path = Path(cfg["database_path"])
     conn = database.init_db(db_path)
     try:
-        upsert = database.upsert_defects(conn, rows, today)
-    except Exception as exc:
+        if defects_rows is not None:
+            try:
+                upsert = database.upsert_defects(conn, defects_rows, today)
+            except Exception as exc:
+                result["defects"]["error"] = f"Database write failed: {exc}"
+                result["defects"]["ok"] = False
+            else:
+                skiplog_path = None
+                if upsert["skipped_rows"]:
+                    skiplog_path = _write_skiplog(upsert["skipped_rows"], skiplog_folder, "defects")
+                result["defects"].update({
+                    "ok": True,
+                    "inserted":          upsert["inserted"],
+                    "updated":           upsert["updated"],
+                    "skipped_blank_id":  upsert["skipped_blank_id"],
+                    "skipped_duplicate": upsert["skipped_duplicate"],
+                    "ignored_blank":     upsert["ignored_blank"],
+                    "skiplog_path":      str(skiplog_path) if skiplog_path else None,
+                })
+
+        if spillover_rows is not None:
+            try:
+                upsert = database.upsert_spillover_rows(conn, spillover_rows, today)
+            except Exception as exc:
+                result["spillover"]["error"] = f"Database write failed: {exc}"
+                result["spillover"]["ok"] = False
+            else:
+                skiplog_path = None
+                if upsert["skipped_rows"]:
+                    skiplog_path = _write_skiplog(upsert["skipped_rows"], skiplog_folder, "spillover")
+                result["spillover"].update({
+                    "ok": True,
+                    "inserted":           upsert["inserted"],
+                    "updated":            upsert["updated"],
+                    "skipped_blank_name": upsert["skipped_blank_name"],
+                    "skiplog_path":       str(skiplog_path) if skiplog_path else None,
+                })
+    finally:
         conn.close()
-        result["error"] = f"Database write failed: {exc}"
-        return result
-    conn.close()
 
-    # 4. Skip log
-    skiplog_path = None
-    if upsert["skipped_rows"]:
-        skiplog_path = _write_skiplog(upsert["skipped_rows"], Path(cfg["skiplog_folder"]))
-
-    result.update({
-        "ok": True,
-        "inserted": upsert["inserted"],
-        "updated": upsert["updated"],
-        "skipped_blank_id": upsert["skipped_blank_id"],
-        "skipped_duplicate": upsert["skipped_duplicate"],
-        "ignored_blank": upsert["ignored_blank"],
-        "skiplog_path": str(skiplog_path) if skiplog_path else None,
-    })
+    result["ok"] = result["defects"]["ok"] and result["spillover"]["ok"]
     return result
