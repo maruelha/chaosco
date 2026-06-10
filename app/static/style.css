@@ -693,6 +693,7 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 /* Scrollable column widths */
 .sc-country  { width: 90px; }
 .sc-assignee { width: 140px; }
+.sc-extid    { width: 110px; }
 .sc-orders   { width: 130px; }
 .sc-critical { width: 110px; }
 .sc-imp      { width: 200px; }

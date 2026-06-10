@@ -84,6 +84,7 @@
         <th class="sc-name">Name</th>
         <th class="sc-country">Country</th>
         <th class="sc-assignee">Assigned to</th>
+        <th class="sc-extid">Ext. ID</th>
         <th class="sc-orders">Order numbers</th>
         <th class="sc-critical">Critical for sign-off</th>
         <th class="sc-imp">Importance for sign-off</th>
@@ -111,6 +112,7 @@
         </td>
         <td class="sc-country">{{ row.country or '—' }}</td>
         <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
+        <td class="sc-extid">{{ row.external_id or '—' }}</td>
         <td class="sc-orders">{{ row.order_numbers or '—' }}</td>
         <td class="sc-critical">
           <select class="inline-select js-critical">
@@ -143,7 +145,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
