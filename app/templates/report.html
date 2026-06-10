@@ -9,87 +9,111 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 13px; line-height: 1.6; color: #1d1d1f;
-      padding: 2rem 2.5rem; background: #fff;
+      padding: 2rem 2.5rem; background: #fff; max-width: 1100px;
     }
-    .report-header { margin-bottom: 1.5rem; }
+
     h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
     .report-meta { font-size: 0.8rem; color: #6e6e73; margin-bottom: 1rem; }
-    .report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .btn-report {
+
+    .report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .btn-r {
       padding: 0.38rem 0.9rem; border-radius: 7px; border: 1px solid #d2d2d7;
       background: #fff; font-size: 0.8125rem; font-family: inherit;
-      cursor: pointer; color: #1d1d1f; text-decoration: none; display: inline-block;
+      cursor: pointer; color: #1d1d1f;
     }
-    .btn-report:hover { background: #f0f0f5; }
-    .btn-report--primary { background: #0071e3; color: #fff; border-color: #0071e3; }
-    .btn-report--primary:hover { background: #005bbf; border-color: #005bbf; }
+    .btn-r:hover { background: #f0f0f5; }
+    .btn-r--primary { background: #0071e3; color: #fff; border-color: #0071e3; }
+    .btn-r--primary:hover { background: #005bbf; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-    thead tr { background: #f9f9fb; }
+    .section { margin-bottom: 2.5rem; }
+    .section-heading {
+      font-size: 0.9rem; font-weight: 700; color: #1d1d1f;
+      padding: 0.5rem 0.75rem;
+      background: #f9f9fb; border: 1px solid #e5e5ea; border-radius: 8px 8px 0 0;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .section-count {
+      font-size: 0.72rem; font-weight: 600; background: #e8f4ff;
+      color: #0071e3; padding: 0.15rem 0.5rem; border-radius: 20px;
+    }
+    .section-heading--yes    { border-left: 4px solid #ff3b30; }
+    .section-heading--slightly { border-left: 4px solid #ff9500; }
+    .section-heading--no     { border-left: 4px solid #34c759; }
+    .section-heading--unset  { border-left: 4px solid #c7c7cc; }
+
+    table { width: 100%; border-collapse: collapse; border: 1px solid #e5e5ea; border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+    thead tr { background: #fafafa; }
     th {
       text-align: left; font-size: 0.7rem; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73;
-      padding: 0.6rem 0.75rem; border-bottom: 2px solid #e5e5ea; white-space: nowrap;
+      padding: 0.55rem 0.75rem; border-bottom: 1px solid #e5e5ea; white-space: nowrap;
     }
     td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f0f0f5; vertical-align: top; }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td { background: #f5f7ff; }
 
     .col-type   { width: 110px; }
-    .col-status { width: 140px; white-space: nowrap; }
-    .col-name   { width: 280px; font-weight: 500; }
-    .col-imp    { width: 200px; white-space: pre-wrap; word-break: break-word; }
+    .col-status { width: 130px; }
+    .col-name   { width: 260px; font-weight: 500; }
     .col-cmt    { white-space: pre-wrap; word-break: break-word; }
 
     .status-pill {
       display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px;
-      font-size: 0.75rem; background: #f0f0f5; color: #3a3a3c;
+      font-size: 0.75rem; background: #f0f0f5; color: #3a3a3c; white-space: nowrap;
     }
-    .empty { text-align: center; color: #aaa; padding: 2.5rem; font-size: 0.875rem; }
+    .empty-section { padding: 1.5rem; text-align: center; color: #aaa; font-size: 0.875rem; }
 
     @media print {
       .no-print { display: none !important; }
-      body { padding: 0; }
+      body { padding: 0; max-width: none; }
       tbody tr:hover td { background: inherit; }
+      .section { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
 
-<div class="report-header">
-  <h1>{{ title }}</h1>
-  <p class="report-meta">Generated {{ report_date }} &nbsp;·&nbsp; {{ rows | length }} item{{ 's' if rows | length != 1 else '' }}</p>
-  <div class="report-actions no-print">
-    <button class="btn-report btn-report--primary" onclick="downloadPage()">Download HTML</button>
-    <button class="btn-report" onclick="window.print()">Print / Save PDF</button>
-    <button class="btn-report" onclick="window.close()">Close tab</button>
-  </div>
+<h1>{{ title }}</h1>
+<p class="report-meta">Generated {{ report_date }} &nbsp;·&nbsp; {{ total }} item{{ 's' if total != 1 else '' }}</p>
+
+<div class="report-actions no-print">
+  <button class="btn-r btn-r--primary" onclick="downloadPage()">Download HTML</button>
+  <button class="btn-r" onclick="window.print()">Print / Save PDF</button>
+  <button class="btn-r" onclick="window.close()">Close tab</button>
 </div>
 
-<table>
-  <thead>
-    <tr>
-      <th class="col-type">Type</th>
-      <th class="col-status">Status</th>
-      <th class="col-name">Name</th>
-      <th class="col-imp">Importance for sign-off</th>
-      <th class="col-cmt">Comment for sign-off</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for row in rows %}
-    <tr>
-      <td class="col-type">{{ row.type or '—' }}</td>
-      <td class="col-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
-      <td class="col-name" title="{{ row.name | e }}">{{ row.name or '—' }}</td>
-      <td class="col-imp">{{ row.importance_for_signoff or '' }}</td>
-      <td class="col-cmt">{{ row.comment_for_signoff or '' }}</td>
-    </tr>
-  {% else %}
-    <tr><td colspan="5" class="empty">No items found.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
+{% set modifiers = {"Critical for sign-off: Yes": "yes", "Critical for sign-off: Slightly": "slightly", "Critical for sign-off: No": "no", "Critical for sign-off: Not set": "unset"} %}
+
+{% for heading, rows in sections %}
+<div class="section">
+  <div class="section-heading section-heading--{{ modifiers.get(heading, 'unset') }}">
+    {{ heading }}
+    <span class="section-count">{{ rows | length }}</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-type">Type</th>
+        <th class="col-status">Status</th>
+        <th class="col-name">Name</th>
+        <th class="col-cmt">Comment for sign-off</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="col-type">{{ row.type or '—' }}</td>
+        <td class="col-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
+        <td class="col-name" title="{{ row.name | e }}">{{ row.name or '—' }}</td>
+        <td class="col-cmt">{{ row.comment_for_signoff or '' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p style="color:#aaa; padding:2rem 0;">No items found.</p>
+{% endfor %}
 
 <script>
 function downloadPage() {
