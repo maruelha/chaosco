@@ -7,7 +7,10 @@
 # ---------------------------------------------------------------------------
 
 # Folder where the Excel export is manually saved
-downloads_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download'
+#laptop downloadfolder
+#'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download'
+#desktop downloadfolder
+downloads_folder: 'E:\Downloads'
 
 # Base name of the file WITHOUT extension.
 # Matches both  DTC_UAT_testtracking_ROE.xlsx
