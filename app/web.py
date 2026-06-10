@@ -303,6 +303,62 @@ def ecom_report():
 
 
 # ---------------------------------------------------------------------------
+# Known production defects routes
+# ---------------------------------------------------------------------------
+
+@app.route("/prod_defects")
+def prod_defects_list():
+    conn = _get_conn()
+    try:
+        rows = database.list_known_prod_defects(conn)
+    finally:
+        conn.close()
+    return render_template("prod_defects.html", rows=rows)
+
+
+@app.route("/prod_defects/create", methods=["POST"])
+def prod_defect_create():
+    def _f(name): return request.form.get(name, "").strip() or None
+    conn = _get_conn()
+    try:
+        row = database.create_known_prod_defect(
+            conn, _f("technical_key"), _f("short_description"), _f("numbers"),
+            _f("biz_impact"), _f("description"), _f("scenario"),
+            _f("refs"), _f("next_steps"),
+        )
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "row": row})
+
+
+@app.route("/prod_defects/<int:record_id>/update", methods=["POST"])
+def prod_defect_update(record_id: int):
+    def _f(name): return request.form.get(name, "").strip() or None
+    conn = _get_conn()
+    try:
+        row = database.update_known_prod_defect(
+            conn, record_id, _f("technical_key"), _f("short_description"), _f("numbers"),
+            _f("biz_impact"), _f("description"), _f("scenario"),
+            _f("refs"), _f("next_steps"),
+        )
+    finally:
+        conn.close()
+    if row is None:
+        return jsonify({"ok": False}), 404
+    return jsonify({"ok": True, "row": row})
+
+
+@app.route("/prod_defects/<int:record_id>/delete", methods=["POST"])
+def prod_defect_delete(record_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Note routes
 # ---------------------------------------------------------------------------
 

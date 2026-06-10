@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Known Production Defects{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1>Known Production Defects</h1>
+      <p class="page-subtitle">Manually tracked defects for sign-off discussions</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
+      <button type="button" class="btn btn-primary" id="btn-add">+ Add Entry</button>
+    </div>
+  </div>
+</div>
+
+<div class="table-wrap" style="overflow-x:auto">
+  <table style="min-width:1200px">
+    <thead>
+      <tr>
+        <th style="width:120px">Key / ID</th>
+        <th style="width:160px">Short Description</th>
+        <th style="width:120px">Numbers</th>
+        <th style="width:160px">Biz Impact</th>
+        <th style="width:200px">Description</th>
+        <th style="width:200px">Scenario</th>
+        <th style="width:140px">References</th>
+        <th style="width:180px">Next Steps</th>
+        <th style="width:88px"></th>
+      </tr>
+    </thead>
+    <tbody id="kpd-tbody">
+    {% for row in rows %}
+      <tr data-id="{{ row.id }}"
+          data-techkey="{{ row.technical_key | e }}"
+          data-shortdesc="{{ row.short_description | e }}"
+          data-numbers="{{ row.numbers | e }}"
+          data-bizimpact="{{ row.biz_impact | e }}"
+          data-description="{{ row.description | e }}"
+          data-scenario="{{ row.scenario | e }}"
+          data-refs="{{ row.refs | e }}"
+          data-nextsteps="{{ row.next_steps | e }}">
+        <td style="font-weight:600">{{ row.technical_key or '' }}</td>
+        <td style="font-weight:500">{{ row.short_description or '' }}</td>
+        <td>{{ row.numbers or '' }}</td>
+        <td>{{ row.biz_impact or '' }}</td>
+        <td class="kpd-truncate" title="{{ row.description | e }}">{{ row.description or '' }}</td>
+        <td class="kpd-truncate" title="{{ row.scenario | e }}">{{ row.scenario or '' }}</td>
+        <td>{{ row.refs or '' }}</td>
+        <td class="kpd-truncate" title="{{ row.next_steps | e }}">{{ row.next_steps or '' }}</td>
+        <td class="kpd-actions">
+          <button class="btn btn-sm kpd-edit-btn">Edit</button>
+          <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="table-empty">No entries yet. Click "+ Add Entry" to get started.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<dialog id="dlg-kpd">
+  <div class="dlg-header">
+    <div class="dlg-title" id="dlg-kpd-title">Add Known Production Defect</div>
+  </div>
+  <div class="dlg-body">
+    <input type="hidden" id="kpd-id">
+    <div class="form-field">
+      <label for="kpd-techkey">Key / ID</label>
+      <input type="text" id="kpd-techkey" placeholder="e.g. SAP-12345 or PRD-001">
+    </div>
+    <div class="form-field">
+      <label for="kpd-shortdesc">Short Description</label>
+      <input type="text" id="kpd-shortdesc">
+    </div>
+    <div class="form-field">
+      <label for="kpd-numbers">Numbers</label>
+      <input type="text" id="kpd-numbers">
+    </div>
+    <div class="form-field">
+      <label for="kpd-bizimpact">Business Impact</label>
+      <textarea id="kpd-bizimpact" rows="3"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="kpd-description">Description</label>
+      <textarea id="kpd-description" rows="4"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="kpd-scenario">Scenario</label>
+      <textarea id="kpd-scenario" rows="4"></textarea>
+    </div>
+    <div class="form-field">
+      <label for="kpd-refs">References</label>
+      <input type="text" id="kpd-refs" placeholder="Ticket numbers, links, documents…">
+    </div>
+    <div class="form-field">
+      <label for="kpd-nextsteps">Next Steps</label>
+      <textarea id="kpd-nextsteps" rows="3"></textarea>
+    </div>
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn" id="kpd-cancel-btn">Cancel</button>
+    <button type="button" class="btn btn-primary" id="kpd-save-btn">Save</button>
+  </div>
+</dialog>
+
+<script>
+const dlg   = document.getElementById('dlg-kpd');
+const tbody = document.getElementById('kpd-tbody');
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function trunc(s, n=65) {
+  const str = s || '';
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
+
+function buildRow(row) {
+  const tr = document.createElement('tr');
+  tr.dataset.id          = row.id;
+  tr.dataset.techkey     = row.technical_key     || '';
+  tr.dataset.shortdesc   = row.short_description || '';
+  tr.dataset.numbers     = row.numbers           || '';
+  tr.dataset.bizimpact   = row.biz_impact        || '';
+  tr.dataset.description = row.description       || '';
+  tr.dataset.scenario    = row.scenario          || '';
+  tr.dataset.refs        = row.refs              || '';
+  tr.dataset.nextsteps   = row.next_steps        || '';
+  tr.innerHTML = `
+    <td style="font-weight:600">${esc(row.technical_key)}</td>
+    <td style="font-weight:500">${esc(row.short_description)}</td>
+    <td>${esc(row.numbers)}</td>
+    <td>${esc(row.biz_impact)}</td>
+    <td class="kpd-truncate" title="${esc(row.description)}">${esc(trunc(row.description))}</td>
+    <td class="kpd-truncate" title="${esc(row.scenario)}">${esc(trunc(row.scenario))}</td>
+    <td>${esc(row.refs)}</td>
+    <td class="kpd-truncate" title="${esc(row.next_steps)}">${esc(trunc(row.next_steps))}</td>
+    <td class="kpd-actions">
+      <button class="btn btn-sm kpd-edit-btn">Edit</button>
+      <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
+    </td>`;
+  wireRow(tr);
+  return tr;
+}
+
+function wireRow(tr) {
+  tr.querySelector('.kpd-edit-btn').addEventListener('click', () => openEditDlg(tr));
+  tr.querySelector('.kpd-del-btn').addEventListener('click',  () => deleteDef(tr));
+}
+
+function openAddDlg() {
+  document.getElementById('dlg-kpd-title').textContent = 'Add Known Production Defect';
+  ['kpd-id','kpd-techkey','kpd-shortdesc','kpd-numbers','kpd-bizimpact',
+   'kpd-description','kpd-scenario','kpd-refs','kpd-nextsteps']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  dlg.showModal();
+}
+
+function openEditDlg(tr) {
+  document.getElementById('dlg-kpd-title').textContent = 'Edit Known Production Defect';
+  document.getElementById('kpd-id').value          = tr.dataset.id;
+  document.getElementById('kpd-techkey').value     = tr.dataset.techkey;
+  document.getElementById('kpd-shortdesc').value   = tr.dataset.shortdesc;
+  document.getElementById('kpd-numbers').value     = tr.dataset.numbers;
+  document.getElementById('kpd-bizimpact').value   = tr.dataset.bizimpact;
+  document.getElementById('kpd-description').value = tr.dataset.description;
+  document.getElementById('kpd-scenario').value    = tr.dataset.scenario;
+  document.getElementById('kpd-refs').value        = tr.dataset.refs;
+  document.getElementById('kpd-nextsteps').value   = tr.dataset.nextsteps;
+  dlg.showModal();
+}
+
+async function saveDlg() {
+  const id  = document.getElementById('kpd-id').value;
+  const url = id ? `/prod_defects/${id}/update` : '/prod_defects/create';
+  const fd  = new FormData();
+  fd.append('technical_key',     document.getElementById('kpd-techkey').value);
+  fd.append('short_description', document.getElementById('kpd-shortdesc').value);
+  fd.append('numbers',           document.getElementById('kpd-numbers').value);
+  fd.append('biz_impact',        document.getElementById('kpd-bizimpact').value);
+  fd.append('description',       document.getElementById('kpd-description').value);
+  fd.append('scenario',          document.getElementById('kpd-scenario').value);
+  fd.append('refs',              document.getElementById('kpd-refs').value);
+  fd.append('next_steps',        document.getElementById('kpd-nextsteps').value);
+  const res  = await fetch(url, { method: 'POST', body: fd });
+  const json = await res.json();
+  if (!json.ok) return;
+  dlg.close();
+  const newTr = buildRow(json.row);
+  if (id) {
+    tbody.querySelector(`tr[data-id="${id}"]`)?.replaceWith(newTr);
+  } else {
+    const emptyRow = tbody.querySelector('td[colspan]')?.closest('tr');
+    if (emptyRow) emptyRow.remove();
+    tbody.insertBefore(newTr, tbody.firstChild);
+  }
+}
+
+async function deleteDef(tr) {
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+  const id   = tr.dataset.id;
+  const res  = await fetch(`/prod_defects/${id}/delete`, { method: 'POST' });
+  const json = await res.json();
+  if (!json.ok) return;
+  tr.remove();
+  if (!tbody.querySelector('tr[data-id]')) {
+    const emptyTr = document.createElement('tr');
+    emptyTr.innerHTML = '<td colspan="9" class="table-empty">No entries. Click "+ Add Entry" to get started.</td>';
+    tbody.appendChild(emptyTr);
+  }
+}
+
+document.getElementById('btn-add').addEventListener('click', openAddDlg);
+document.getElementById('kpd-save-btn').addEventListener('click', saveDlg);
+document.getElementById('kpd-cancel-btn').addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+document.querySelectorAll('#kpd-tbody tr[data-id]').forEach(wireRow);
+</script>
+{% endblock %}

@@ -18,6 +18,11 @@ Public API:
     get_spillover_by_id(conn, spillover_id) -> dict | None
     get_spillover_annotation(conn, spillover_id) -> dict | None
     upsert_spillover_annotation(conn, ...)  -> None
+    list_known_prod_defects(conn)           -> list[dict]
+    get_known_prod_defect(conn, id)         -> dict | None
+    create_known_prod_defect(conn, ...)     -> dict
+    update_known_prod_defect(conn, id, ...) -> dict | None
+    delete_known_prod_defect(conn, id)      -> None
 """
 from __future__ import annotations
 
@@ -165,6 +170,21 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             next_step              TEXT,
             comment_history        TEXT,
             updated_at             TEXT
+        );
+
+        -- Manually tracked production defects for sign-off discussions.
+        CREATE TABLE IF NOT EXISTS known_prod_defects (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            technical_key     TEXT,
+            short_description TEXT,
+            numbers           TEXT,
+            biz_impact        TEXT,
+            description       TEXT,
+            scenario          TEXT,
+            refs              TEXT,
+            next_steps        TEXT,
+            created_at        TEXT,
+            updated_at        TEXT
         );
     """)
     conn.commit()
@@ -588,6 +608,74 @@ def get_spillover_annotation(conn: sqlite3.Connection, spillover_id: int) -> dic
         "SELECT * FROM spillover_annotations WHERE spillover_id = ?", (spillover_id,)
     ))
     return rows[0] if rows else None
+
+
+def list_known_prod_defects(conn: sqlite3.Connection) -> list[dict]:
+    return _rows_to_dicts(conn.execute(
+        "SELECT * FROM known_prod_defects ORDER BY created_at DESC"
+    ))
+
+
+def get_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM known_prod_defects WHERE id = ?", (record_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def create_known_prod_defect(
+    conn: sqlite3.Connection,
+    technical_key: str | None,
+    short_description: str | None,
+    numbers: str | None,
+    biz_impact: str | None,
+    description: str | None,
+    scenario: str | None,
+    refs: str | None,
+    next_steps: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            """INSERT INTO known_prod_defects
+               (technical_key, short_description, numbers, biz_impact,
+                description, scenario, refs, next_steps, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (technical_key, short_description, numbers, biz_impact,
+             description, scenario, refs, next_steps, now, now),
+        )
+        new_id = cur.lastrowid
+    return get_known_prod_defect(conn, new_id)
+
+
+def update_known_prod_defect(
+    conn: sqlite3.Connection,
+    record_id: int,
+    technical_key: str | None,
+    short_description: str | None,
+    numbers: str | None,
+    biz_impact: str | None,
+    description: str | None,
+    scenario: str | None,
+    refs: str | None,
+    next_steps: str | None,
+) -> dict | None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """UPDATE known_prod_defects SET
+               technical_key=?, short_description=?, numbers=?, biz_impact=?,
+               description=?, scenario=?, refs=?, next_steps=?, updated_at=?
+               WHERE id=?""",
+            (technical_key, short_description, numbers, biz_impact,
+             description, scenario, refs, next_steps, now, record_id),
+        )
+    return get_known_prod_defect(conn, record_id)
+
+
+def delete_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM known_prod_defects WHERE id = ?", (record_id,))
 
 
 def upsert_spillover_annotation(

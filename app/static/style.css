@@ -636,6 +636,11 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
 /* btn-row inside form-footer is already spaced by form-footer's padding-top */
 .form-footer .btn-row { margin-top: 0; }
 
+/* --------------------------------------------------------------- known prod defects */
+.kpd-truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kpd-actions  { white-space: nowrap; }
+#dlg-kpd      { max-width: 700px; }
+
 /* --------------------------------------------------------------- spillover popup dialogs */
 dialog {
   border: 1px solid #d2d2d7;
