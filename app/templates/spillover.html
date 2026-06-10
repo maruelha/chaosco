@@ -85,6 +85,7 @@
         <th class="sc-country">Country</th>
         <th class="sc-assignee">Assigned to</th>
         <th class="sc-orders">Order numbers</th>
+        <th class="sc-critical">Critical for sign-off</th>
         <th class="sc-imp">Importance for sign-off</th>
         <th class="sc-next">Next step</th>
         <th class="sc-cmtbtn"></th>
@@ -97,7 +98,8 @@
           data-importance="{{ (row.importance_for_signoff or '') | e }}"
           data-nextstep="{{ (row.next_step or '') | e }}"
           data-commenthistory="{{ (row.comment_history or '') | e }}"
-          data-importedcomment="{{ (row.comment or '') | e }}">
+          data-importedcomment="{{ (row.comment or '') | e }}"
+          data-critical="{{ (row.critical_for_signoff or '') | e }}">
         <td class="sc-row num">{{ row.excel_row }}</td>
         <td class="sc-type">{{ row.type or '—' }}</td>
         <td class="sc-area">{{ row.area or '—' }}</td>
@@ -110,6 +112,14 @@
         <td class="sc-country">{{ row.country or '—' }}</td>
         <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
         <td class="sc-orders">{{ row.order_numbers or '—' }}</td>
+        <td class="sc-critical">
+          <select class="inline-select js-critical">
+            <option value="" {% if not row.critical_for_signoff %}selected{% endif %}>—</option>
+            <option value="yes"      {% if row.critical_for_signoff == 'yes'      %}selected{% endif %}>Yes</option>
+            <option value="no"       {% if row.critical_for_signoff == 'no'       %}selected{% endif %}>No</option>
+            <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
+          </select>
+        </td>
         <td class="sc-imp cell-importance">
           <span class="cell-edit js-open-ann">
             {% if row.importance_for_signoff %}
@@ -133,7 +143,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="11" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -198,6 +208,17 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&#34;');
   }
+
+  document.querySelectorAll('.js-critical').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const tr = sel.closest('tr');
+      const fd = new FormData();
+      fd.append('critical_for_signoff', sel.value);
+      const resp = await fetch(`/spillover/${tr.dataset.id}/critical`, { method: 'POST', body: fd });
+      const d = await resp.json();
+      if (d.ok) tr.dataset.critical = d.critical_for_signoff;
+    });
+  });
 
   const annDlg = document.getElementById('dlg-ann');
   const annForm = document.getElementById('frm-ann');

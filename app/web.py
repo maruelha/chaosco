@@ -187,9 +187,10 @@ def spillover_annotation_save(spillover_id: int):
     next_step  = request.form.get("next_step", "").strip() or None
     conn = _get_conn()
     try:
-        existing       = database.get_spillover_annotation(conn, spillover_id)
+        existing        = database.get_spillover_annotation(conn, spillover_id)
         comment_history = existing["comment_history"] if existing else None
-        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history)
+        critical        = existing["critical_for_signoff"] if existing else None
+        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -205,16 +206,36 @@ def spillover_comment_save(spillover_id: int):
     comment_history = request.form.get("comment_history", "").strip() or None
     conn = _get_conn()
     try:
-        existing  = database.get_spillover_annotation(conn, spillover_id)
+        existing   = database.get_spillover_annotation(conn, spillover_id)
         importance = existing["importance_for_signoff"] if existing else None
         next_step  = existing["next_step"] if existing else None
-        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history)
+        critical   = existing["critical_for_signoff"] if existing else None
+        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
     return jsonify({
         "ok": True,
         "comment_history": ann["comment_history"] or "",
+    })
+
+
+@app.route("/spillover/<int:spillover_id>/critical", methods=["POST"])
+def spillover_critical_save(spillover_id: int):
+    critical = request.form.get("critical_for_signoff", "").strip() or None
+    conn = _get_conn()
+    try:
+        existing   = database.get_spillover_annotation(conn, spillover_id)
+        importance = existing["importance_for_signoff"] if existing else None
+        next_step  = existing["next_step"] if existing else None
+        comment_history = existing["comment_history"] if existing else None
+        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
+        ann = database.get_spillover_annotation(conn, spillover_id)
+    finally:
+        conn.close()
+    return jsonify({
+        "ok": True,
+        "critical_for_signoff": ann["critical_for_signoff"] or "",
     })
 
 
