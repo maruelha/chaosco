@@ -13,6 +13,11 @@ Public API:
     update_note(conn, ...)                  -> None
     delete_note(conn, note_id)              -> None
     upsert_defects(conn, rows, today)       -> dict
+    upsert_spillover_rows(conn, rows, today) -> dict
+    get_spillover(conn, ...)                -> list[dict]
+    get_spillover_by_id(conn, spillover_id) -> dict | None
+    get_spillover_annotation(conn, spillover_id) -> dict | None
+    upsert_spillover_annotation(conn, ...)  -> None
 """
 from __future__ import annotations
 
@@ -45,6 +50,31 @@ _UPSERT_SQL = """
     # first_seen intentionally absent from the UPDATE clause — it is set once on INSERT only
     updates=",\n        ".join(
         f"{c} = excluded.{c}" for c in _UPSERT_COLS + ["last_seen"]
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# Spillover upsert SQL
+# ---------------------------------------------------------------------------
+
+_SPILLOVER_MUTABLE = [
+    "type", "name", "country", "area", "status", "assigned_to",
+    "external_id", "order_numbers", "content", "comment", "excel_row",
+]
+_SPILLOVER_INSERT_COLS = _SPILLOVER_MUTABLE + ["match_key", "first_seen", "last_seen"]
+
+_SPILLOVER_UPSERT_SQL = """
+    INSERT INTO spillover ({cols})
+    VALUES ({placeholders})
+    ON CONFLICT(match_key) DO UPDATE SET
+        {updates}
+""".format(
+    cols=", ".join(_SPILLOVER_INSERT_COLS),
+    placeholders=", ".join(f":{c}" for c in _SPILLOVER_INSERT_COLS),
+    # first_seen and spillover_id intentionally absent from UPDATE — set once on INSERT only
+    updates=",\n        ".join(
+        f"{c} = excluded.{c}" for c in _SPILLOVER_MUTABLE + ["last_seen"]
     ),
 )
 
@@ -106,6 +136,35 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             created_at  TEXT,
             heading     TEXT,
             note        TEXT
+        );
+
+        -- Spillover imported rows — upserted each import, never deleted.
+        CREATE TABLE IF NOT EXISTS spillover (
+            spillover_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+            type           TEXT,
+            name           TEXT,
+            country        TEXT,
+            area           TEXT,
+            status         TEXT,
+            assigned_to    TEXT,
+            external_id    TEXT,
+            order_numbers  TEXT,
+            content        TEXT,
+            comment        TEXT,
+            excel_row      INTEGER,
+            match_key      TEXT NOT NULL,
+            first_seen     TEXT,
+            last_seen      TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_spillover_match ON spillover(match_key);
+
+        -- Authored working fields — NEVER written by the importer.
+        CREATE TABLE IF NOT EXISTS spillover_annotations (
+            spillover_id           INTEGER PRIMARY KEY REFERENCES spillover(spillover_id),
+            importance_for_signoff TEXT,
+            next_step              TEXT,
+            comment_history        TEXT,
+            updated_at             TEXT
         );
     """)
     conn.commit()
@@ -350,3 +409,166 @@ def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> di
         "ignored_blank": n_ignored_blank,
         "skipped_rows": skipped_rows,
     }
+
+
+# ---------------------------------------------------------------------------
+# Spillover storage
+# ---------------------------------------------------------------------------
+
+def _spillover_match_key(type_: str, name: str, country: str) -> str:
+    """Normalised composite match key: collapse whitespace, lowercase."""
+    return "||".join(
+        re.sub(r"\s+", " ", str(p or "")).strip().lower()
+        for p in (type_, name, country)
+    )
+
+
+def upsert_spillover_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
+    """Process parsed spillover rows and upsert into the spillover table.
+
+    Rows with a non-empty _skip_reason (blank name) are collected and returned for
+    skip-log writing; they are never inserted. Fully blank rows are expected to have
+    been removed by parse_spillover before reaching here.
+
+    Returns:
+        {
+            "inserted": int,
+            "updated": int,
+            "skipped_blank_name": int,
+            "skipped_rows": list[dict],
+        }
+    """
+    n_inserted = 0
+    n_updated = 0
+    n_skipped = 0
+    skipped_rows: list[dict] = []
+
+    with conn:
+        existing_keys = {r[0] for r in conn.execute("SELECT match_key FROM spillover")}
+
+        for row in rows:
+            if row.get("_skip_reason"):
+                n_skipped += 1
+                skipped_rows.append({**row, "reason": row["_skip_reason"]})
+                continue
+
+            mk = _spillover_match_key(
+                row.get("type", "") or "",
+                row.get("name", "") or "",
+                row.get("country", "") or "",
+            )
+            is_new = mk not in existing_keys
+
+            def _s(field: str):
+                v = str(row.get(field, "") or "").strip()
+                return v if v else None
+
+            rec = {
+                "type":          _s("type"),
+                "name":          _s("name"),
+                "country":       _s("country"),
+                "area":          _s("area"),
+                "status":        _s("status"),
+                "assigned_to":   _s("assigned_to"),
+                "external_id":   _s("external_id"),
+                "order_numbers": _s("order_numbers"),
+                "content":       _s("content"),
+                "comment":       _s("comment"),
+                "excel_row":     row.get("excel_row"),
+                "match_key":     mk,
+                "first_seen":    today,
+                "last_seen":     today,
+            }
+            conn.execute(_SPILLOVER_UPSERT_SQL, rec)
+
+            if is_new:
+                n_inserted += 1
+                existing_keys.add(mk)
+            else:
+                n_updated += 1
+
+    return {
+        "inserted": n_inserted,
+        "updated": n_updated,
+        "skipped_blank_name": n_skipped,
+        "skipped_rows": skipped_rows,
+    }
+
+
+def get_spillover(
+    conn: sqlite3.Connection,
+    status: str | None = None,
+    area: str | None = None,
+    type_: str | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    """Return spillover rows LEFT JOINed with annotations. All filters are optional."""
+    sql = """
+        SELECT s.*,
+               a.importance_for_signoff, a.next_step, a.comment_history,
+               a.updated_at AS annotation_updated_at
+        FROM spillover s
+        LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
+        WHERE 1=1
+    """
+    params: list = []
+    if status:
+        sql += " AND s.status = ?"
+        params.append(status)
+    if area:
+        sql += " AND s.area = ?"
+        params.append(area)
+    if type_:
+        sql += " AND s.type = ?"
+        params.append(type_)
+    if search:
+        sql += " AND (s.name LIKE ? OR s.external_id LIKE ?)"
+        params.extend([f"%{search}%", f"%{search}%"])
+    sql += " ORDER BY s.excel_row"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_spillover_by_id(conn: sqlite3.Connection, spillover_id: int) -> dict | None:
+    """Return one spillover row with its annotation fields (NULL if no annotation exists)."""
+    sql = """
+        SELECT s.*,
+               a.importance_for_signoff, a.next_step, a.comment_history,
+               a.updated_at AS annotation_updated_at
+        FROM spillover s
+        LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
+        WHERE s.spillover_id = ?
+    """
+    rows = _rows_to_dicts(conn.execute(sql, (spillover_id,)))
+    return rows[0] if rows else None
+
+
+def get_spillover_annotation(conn: sqlite3.Connection, spillover_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM spillover_annotations WHERE spillover_id = ?", (spillover_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def upsert_spillover_annotation(
+    conn: sqlite3.Connection,
+    spillover_id: int,
+    importance_for_signoff: str | None,
+    next_step: str | None,
+    comment_history: str | None,
+) -> None:
+    """Insert or update the annotation for a spillover row. Never touches the spillover table."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO spillover_annotations
+                (spillover_id, importance_for_signoff, next_step, comment_history, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(spillover_id) DO UPDATE SET
+                importance_for_signoff = excluded.importance_for_signoff,
+                next_step              = excluded.next_step,
+                comment_history        = excluded.comment_history,
+                updated_at             = excluded.updated_at
+            """,
+            (spillover_id, importance_for_signoff, next_step, comment_history, now),
+        )

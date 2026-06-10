@@ -1,4 +1,4 @@
-"""Step 1: parse the Core South Spillover tab and print rows.
+"""Parse the Core South Spillover tab and upsert rows into SQLite.
 
 Usage:
     python -m app.spillover_importer
@@ -7,11 +7,14 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
+from datetime import date, datetime
 from pathlib import Path
 
 import pandas as pd
 
+from app import database
 from app.config_loader import load_config
 from app.read_defects import ParseError, _clean, _find_latest_xlsx, _normalise_header
 
@@ -118,6 +121,81 @@ def parse_spillover(cfg: dict) -> dict:
     }
 
 
+def _write_skip_log(skipped_rows: list[dict], skiplog_folder: Path) -> Path:
+    ts = datetime.now().strftime("%Y-%m-%d_%H%M")
+    path = skiplog_folder / f"{ts}_spillover_skipped.csv"
+    skiplog_folder.mkdir(parents=True, exist_ok=True)
+    sample = skipped_rows[0]
+    data_keys = [k for k in sample if k not in ("excel_row", "reason", "_skip_reason")]
+    fieldnames = ["excel_row", "reason"] + data_keys
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(skipped_rows)
+    return path
+
+
+def run_spillover_import(cfg: dict) -> dict:
+    """Parse → upsert → skip-log.  Returns a result dict, never raises.
+
+    Result keys:
+        ok                  : bool
+        error               : str | None
+        today               : str  (ISO date)
+        xlsx_path           : str | None
+        sheet_name          : str
+        inserted            : int
+        updated             : int
+        skipped_blank_name  : int
+        skiplog_path        : str | None
+    """
+    today = date.today().isoformat()
+    result: dict = {
+        "ok": False,
+        "error": None,
+        "today": today,
+        "xlsx_path": None,
+        "sheet_name": cfg.get("spillover_sheet_name", _DEFAULT_SHEET),
+        "inserted": 0,
+        "updated": 0,
+        "skipped_blank_name": 0,
+        "skiplog_path": None,
+    }
+
+    try:
+        parse_result = parse_spillover(cfg)
+    except ParseError as exc:
+        result["error"] = str(exc)
+        return result
+
+    result["xlsx_path"] = str(parse_result["xlsx_path"])
+    result["sheet_name"] = parse_result["sheet_name"]
+    rows = parse_result["rows"]
+
+    db_path = Path(cfg["database_path"])
+    conn = database.init_db(db_path)
+    try:
+        upsert = database.upsert_spillover_rows(conn, rows, today)
+    except Exception as exc:
+        conn.close()
+        result["error"] = f"Database write failed: {exc}"
+        return result
+    conn.close()
+
+    skiplog_path = None
+    if upsert["skipped_rows"]:
+        skiplog_path = _write_skip_log(upsert["skipped_rows"], Path(cfg["skiplog_folder"]))
+
+    result.update({
+        "ok": True,
+        "inserted": upsert["inserted"],
+        "updated": upsert["updated"],
+        "skipped_blank_name": upsert["skipped_blank_name"],
+        "skiplog_path": str(skiplog_path) if skiplog_path else None,
+    })
+    return result
+
+
 def _print_row(row: dict) -> None:
     flag = "  [WOULD SKIP — blank name]" if row.get("_skip_reason") == "blank name" else ""
     parts = [f"row {row['excel_row']:>4}"]
@@ -128,30 +206,20 @@ def _print_row(row: dict) -> None:
 
 def main(config_path: str | None = None) -> None:
     cfg = load_config(config_path)
-    try:
-        result = parse_spillover(cfg)
-    except ParseError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+    result = run_spillover_import(cfg)
+
+    print(f"File:  {result['xlsx_path'] or '(none)'}")
+    print(f"Sheet: {result['sheet_name']}")
+
+    if not result["ok"]:
+        print(f"ERROR: {result['error']}", file=sys.stderr)
         sys.exit(1)
 
-    rows = result["rows"]
-    would_skip = [r for r in rows if r["_skip_reason"]]
-    parsed = len(rows)
-
-    print(f"File:  {result['xlsx_path']}")
-    print(f"Sheet: {result['sheet_name']}")
-    print(f"Rows:  {parsed} parsed, {len(would_skip)} would be skipped (blank name)\n")
-
-    for row in rows:
-        _print_row(row)
-
-    print()
-    unmapped = result["unmapped_headers"]
-    missing = result["missing_fields"]
-    if unmapped:
-        print(f"WARNING — unexpected columns (not in mapping): {unmapped}")
-    if missing:
-        print(f"WARNING — expected columns not found in sheet:  {missing}")
+    print(f"Inserted : {result['inserted']}")
+    print(f"Updated  : {result['updated']}")
+    print(f"Skipped  : {result['skipped_blank_name']} (blank name)")
+    if result["skiplog_path"]:
+        print(f"Skip log : {result['skiplog_path']}")
 
 
 if __name__ == "__main__":
