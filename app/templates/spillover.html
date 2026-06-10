@@ -9,36 +9,28 @@
 {# ---- Filters ---- #}
 <form method="get" action="{{ url_for('spillover_list') }}" class="filters-bar" id="filters-form">
   <div class="filter-group">
-    <label for="f-area">Area <span class="filter-hint">Ctrl/⌘ for multi</span></label>
-    <select id="f-area" name="area" multiple>
-      {% for v in options.areas %}
-      <option value="{{ v }}" {% if v in area %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
+    <label>Area</label>
+    <button type="button" class="filter-btn js-filter-btn {% if area %}filter-btn--active{% endif %}" data-filter="area">
+      <span>{% if area %}{{ area|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
   </div>
   <div class="filter-group">
-    <label for="f-type">Type <span class="filter-hint">Ctrl/⌘ for multi</span></label>
-    <select id="f-type" name="type" multiple>
-      {% for v in options.types %}
-      <option value="{{ v }}" {% if v in type_ %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
+    <label>Type</label>
+    <button type="button" class="filter-btn js-filter-btn {% if type_ %}filter-btn--active{% endif %}" data-filter="type">
+      <span>{% if type_ %}{{ type_|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
   </div>
   <div class="filter-group">
-    <label for="f-status">Status <span class="filter-hint">Ctrl/⌘ for multi</span></label>
-    <select id="f-status" name="status" multiple>
-      {% for v in options.statuses %}
-      <option value="{{ v }}" {% if v in status %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
+    <label>Status</label>
+    <button type="button" class="filter-btn js-filter-btn {% if status %}filter-btn--active{% endif %}" data-filter="status">
+      <span>{% if status %}{{ status|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
   </div>
   <div class="filter-group">
-    <label for="f-assignee">Assigned to <span class="filter-hint">Ctrl/⌘ for multi</span></label>
-    <select id="f-assignee" name="assigned_to" multiple>
-      {% for v in options.assignees %}
-      <option value="{{ v }}" {% if v in assigned_to %}selected{% endif %}>{{ v }}</option>
-      {% endfor %}
-    </select>
+    <label>Assigned to</label>
+    <button type="button" class="filter-btn js-filter-btn {% if assigned_to %}filter-btn--active{% endif %}" data-filter="assigned_to">
+      <span>{% if assigned_to %}{{ assigned_to|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
   </div>
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
@@ -51,6 +43,71 @@
   </div>
   {% endif %}
 </form>
+
+{# ---- Filter dialogs (checkboxes carry form="filters-form" so they submit with the main form) ---- #}
+<dialog id="dlg-filter-area" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Area</div></div>
+  <div class="dlg-body">
+    {% for v in options.areas %}
+    <label class="cb-row">
+      <input type="checkbox" name="area" value="{{ v }}" form="filters-form"
+             {% if v in area %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="area">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="area">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-type" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Type</div></div>
+  <div class="dlg-body">
+    {% for v in options.types %}
+    <label class="cb-row">
+      <input type="checkbox" name="type" value="{{ v }}" form="filters-form"
+             {% if v in type_ %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="type">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="type">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-status" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Status</div></div>
+  <div class="dlg-body">
+    {% for v in options.statuses %}
+    <label class="cb-row">
+      <input type="checkbox" name="status" value="{{ v }}" form="filters-form"
+             {% if v in status %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="status">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="status">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-assigned_to" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Assignee</div></div>
+  <div class="dlg-body">
+    {% for v in options.assignees %}
+    <label class="cb-row">
+      <input type="checkbox" name="assigned_to" value="{{ v }}" form="filters-form"
+             {% if v in assigned_to %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="assigned_to">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="assigned_to">Apply</button>
+  </div>
+</dialog>
 
 <div class="toggle-row">
   <input type="checkbox" id="toggle-all" name="show_all" value="1"
@@ -291,9 +348,51 @@
     cmtDlg.close();
   });
 
+  // ---- Filter dialogs ----
+  const FILTER_NAMES = ['area', 'type', 'status', 'assigned_to'];
+
+  function updateFilterBtn(filter) {
+    const checked = document.querySelectorAll(
+      `input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`
+    );
+    const btn = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+    const span = btn.querySelector('span');
+    if (checked.length) {
+      span.textContent = checked.length + ' selected';
+      btn.classList.add('filter-btn--active');
+    } else {
+      span.textContent = 'All';
+      btn.classList.remove('filter-btn--active');
+    }
+  }
+
+  document.querySelectorAll('.js-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('dlg-filter-' + btn.dataset.filter).showModal();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-apply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      updateFilterBtn(btn.dataset.filter);
+      document.getElementById('dlg-filter-' + btn.dataset.filter).close();
+    });
+  });
+
+  document.querySelectorAll('.js-filter-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(
+        `input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`
+      ).forEach(cb => { cb.checked = false; });
+      updateFilterBtn(btn.dataset.filter);
+    });
+  });
+
   // Close on backdrop click
-  [annDlg, cmtDlg].forEach(dlg => {
-    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  [annDlg, cmtDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
+    if (dlg) dlg.addEventListener('click', e => {
+      if (e.target === dlg) { if (dlg.id.startsWith('dlg-filter-')) updateFilterBtn(dlg.id.replace('dlg-filter-', '')); dlg.close(); }
+    });
   });
 }());
 </script>
