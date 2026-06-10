@@ -3,7 +3,12 @@
 
 {% block content %}
 <div class="page-header">
-  <h1>Defects</h1>
+  <div class="page-header-row">
+    <h1>Defects</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+    </div>
+  </div>
 </div>
 
 {% if note_added %}

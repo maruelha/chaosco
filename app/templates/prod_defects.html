@@ -19,24 +19,24 @@
   <table style="min-width:1100px">
     <thead>
       <tr>
-        <th style="width:170px">Scenario</th>
-        <th style="width:150px">Short Description</th>
+        <th style="width:200px">Scenario</th>
+        <th style="width:170px">Short Description</th>
         <th style="width:160px">Biz Impact</th>
-        <th style="width:110px">Numbers</th>
         <th style="width:130px">References</th>
         <th style="width:160px">Next Steps</th>
+        <th style="width:140px">Confluence</th>
         <th style="width:88px"></th>
       </tr>
     </thead>
     <tbody id="kpd-tbody">
     {% for row in rows %}
       <tr data-id="{{ row.id }}">
-        <td class="kpd-truncate" title="{{ row.scenario | e }}">{{ row.scenario or '' }}</td>
-        <td style="font-weight:500">{{ row.short_description or '' }}</td>
+        <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
+        <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.short_description or '' }}</td>
         <td class="kpd-truncate" title="{{ row.biz_impact | e }}">{{ row.biz_impact or '' }}</td>
-        <td>{{ row.numbers or '' }}</td>
         <td>{{ row.refs or '' }}</td>
         <td class="kpd-truncate" title="{{ row.next_steps | e }}">{{ row.next_steps or '' }}</td>
+        <td>{% if row.confluence %}<a href="{{ row.confluence }}" target="_blank" rel="noopener" class="row-link" title="{{ row.confluence | e }}">Open ↗</a>{% endif %}</td>
         <td class="kpd-actions">
           <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit</a>
           <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>

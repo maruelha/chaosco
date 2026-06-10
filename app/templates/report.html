@@ -175,7 +175,6 @@
     <thead>
       <tr>
         <th class="col-pd-short">Short Description</th>
-        <th class="col-pd-desc">Description</th>
         <th class="col-pd-impact">Business Impact</th>
       </tr>
     </thead>
@@ -183,7 +182,6 @@
     {% for d in prod_defects %}
       <tr>
         <td class="col-pd-short">{{ d.short_description or '—' }}</td>
-        <td class="col-pd-desc">{{ d.description or '' }}</td>
         <td class="col-pd-impact">{{ d.biz_impact or '' }}</td>
       </tr>
     {% endfor %}
