@@ -3,7 +3,13 @@
 
 {% block content %}
 <div class="page-header">
-  <h1>Core South Spillover</h1>
+  <div class="page-header-row">
+    <h1>Core South Spillover</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('retail_report') }}" target="_blank" class="btn">Retail Report</a>
+      <a href="{{ url_for('ecom_report') }}" target="_blank" class="btn">ECOM Report</a>
+    </div>
+  </div>
 </div>
 
 {# ---- Filters ---- #}

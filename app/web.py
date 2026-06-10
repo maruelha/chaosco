@@ -4,6 +4,7 @@ Opens http://127.0.0.1:5000 in the browser automatically.
 """
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
@@ -244,6 +245,47 @@ def spillover_critical_save(spillover_id: int):
         "ok": True,
         "critical_for_signoff": ann["critical_for_signoff"] or "",
     })
+
+
+# ---------------------------------------------------------------------------
+# Signoff reports
+# ---------------------------------------------------------------------------
+
+def _sort_for_report(rows: list) -> list:
+    def key(r):
+        imp = r.get("importance_for_signoff") or ""
+        return (0 if imp else 1, imp.lower(), (r.get("name") or "").lower())
+    return sorted(rows, key=key)
+
+
+@app.route("/report/retail")
+def retail_report():
+    hidden = _cfg.get("spillover_hidden_statuses", [])
+    conn = _get_conn()
+    try:
+        rows = database.get_spillover(conn, exclude_statuses=hidden or None)
+    finally:
+        conn.close()
+    return render_template("report.html",
+        title="Retail Spillover Report",
+        report_date=date.today().isoformat(),
+        rows=_sort_for_report(rows))
+
+
+@app.route("/report/ecom")
+def ecom_report():
+    hidden = _cfg.get("spillover_hidden_statuses", [])
+    ecom_areas = {"ecom", "omni"}
+    conn = _get_conn()
+    try:
+        rows = database.get_spillover(conn, exclude_statuses=hidden or None)
+    finally:
+        conn.close()
+    rows = [r for r in rows if (r.get("area") or "").lower() in ecom_areas]
+    return render_template("report.html",
+        title="ECOM / Omni Spillover Report",
+        report_date=date.today().isoformat(),
+        rows=_sort_for_report(rows))
 
 
 # ---------------------------------------------------------------------------
