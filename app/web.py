@@ -145,10 +145,10 @@ def defect_detail(defect_id: str):
 
 @app.route("/spillover")
 def spillover_list():
-    area        = request.args.get("area", "")
-    type_       = request.args.get("type", "")
-    status      = request.args.get("status", "")
-    assigned_to = request.args.get("assigned_to", "")
+    area        = request.args.getlist("area")
+    type_       = request.args.getlist("type")
+    status      = request.args.getlist("status")
+    assigned_to = request.args.getlist("assigned_to")
     show_all    = request.args.get("show_all") == "1"
 
     hidden = _cfg.get("spillover_hidden_statuses", [])
@@ -158,10 +158,10 @@ def spillover_list():
     try:
         rows    = database.get_spillover(
             conn,
-            status=status or None,
-            area=area or None,
-            type_=type_ or None,
-            assigned_to=assigned_to or None,
+            statuses=status or None,
+            areas=area or None,
+            types=type_ or None,
+            assignees=assigned_to or None,
             exclude_statuses=exclude or None,
         )
         options = database.get_spillover_filter_options(conn)

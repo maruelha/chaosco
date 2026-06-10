@@ -141,6 +141,18 @@ header {
   min-width: 150px;
   height: 34px;
 }
+.filter-group select[multiple] {
+  height: auto;
+  min-height: 34px;
+  padding: 0.2rem 0.4rem;
+}
+.filter-hint {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: #aaa;
+  text-transform: none;
+  letter-spacing: 0;
+}
 .filter-group input:focus,
 .filter-group select:focus {
   outline: none;

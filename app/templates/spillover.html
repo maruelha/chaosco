@@ -9,38 +9,34 @@
 {# ---- Filters ---- #}
 <form method="get" action="{{ url_for('spillover_list') }}" class="filters-bar" id="filters-form">
   <div class="filter-group">
-    <label for="f-area">Area</label>
-    <select id="f-area" name="area">
-      <option value="">All</option>
+    <label for="f-area">Area <span class="filter-hint">Ctrl/⌘ for multi</span></label>
+    <select id="f-area" name="area" multiple>
       {% for v in options.areas %}
-      <option value="{{ v }}" {% if area == v %}selected{% endif %}>{{ v }}</option>
+      <option value="{{ v }}" {% if v in area %}selected{% endif %}>{{ v }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="filter-group">
-    <label for="f-type">Type</label>
-    <select id="f-type" name="type">
-      <option value="">All</option>
+    <label for="f-type">Type <span class="filter-hint">Ctrl/⌘ for multi</span></label>
+    <select id="f-type" name="type" multiple>
       {% for v in options.types %}
-      <option value="{{ v }}" {% if type_ == v %}selected{% endif %}>{{ v }}</option>
+      <option value="{{ v }}" {% if v in type_ %}selected{% endif %}>{{ v }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="filter-group">
-    <label for="f-status">Status</label>
-    <select id="f-status" name="status">
-      <option value="">All visible</option>
+    <label for="f-status">Status <span class="filter-hint">Ctrl/⌘ for multi</span></label>
+    <select id="f-status" name="status" multiple>
       {% for v in options.statuses %}
-      <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ v }}</option>
+      <option value="{{ v }}" {% if v in status %}selected{% endif %}>{{ v }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="filter-group">
-    <label for="f-assignee">Assigned to</label>
-    <select id="f-assignee" name="assigned_to">
-      <option value="">All</option>
+    <label for="f-assignee">Assigned to <span class="filter-hint">Ctrl/⌘ for multi</span></label>
+    <select id="f-assignee" name="assigned_to" multiple>
       {% for v in options.assignees %}
-      <option value="{{ v }}" {% if assigned_to == v %}selected{% endif %}>{{ v }}</option>
+      <option value="{{ v }}" {% if v in assigned_to %}selected{% endif %}>{{ v }}</option>
       {% endfor %}
     </select>
   </div>

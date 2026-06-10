@@ -503,17 +503,17 @@ def upsert_spillover_rows(conn: sqlite3.Connection, rows: list[dict], today: str
 
 def get_spillover(
     conn: sqlite3.Connection,
-    status: str | None = None,
-    area: str | None = None,
-    type_: str | None = None,
-    assigned_to: str | None = None,
+    statuses: list[str] | None = None,
+    areas: list[str] | None = None,
+    types: list[str] | None = None,
+    assignees: list[str] | None = None,
     search: str | None = None,
     exclude_statuses: list[str] | None = None,
 ) -> list[dict]:
     """Return spillover rows LEFT JOINed with annotations. All filters are optional.
 
-    exclude_statuses: rows whose status is in this list are hidden (default-view exclusion).
-    Ignored when a specific status filter is active.
+    Each filter accepts a list; multiple values are combined with IN (...).
+    exclude_statuses: hidden when no explicit status filter is active.
     """
     sql = """
         SELECT s.*,
@@ -525,24 +525,29 @@ def get_spillover(
         WHERE 1=1
     """
     params: list = []
-    if status:
-        sql += " AND s.status = ?"
-        params.append(status)
-    if area:
-        sql += " AND s.area = ?"
-        params.append(area)
-    if type_:
-        sql += " AND s.type = ?"
-        params.append(type_)
-    if assigned_to:
-        sql += " AND s.assigned_to = ?"
-        params.append(assigned_to)
+
+    def _in(col: str, values: list[str]) -> None:
+        ph = ",".join("?" * len(values))
+        sql_parts.append(f" AND {col} IN ({ph})")
+        params.extend(values)
+
+    sql_parts: list[str] = []
+    if statuses:
+        _in("s.status", statuses)
+    if areas:
+        _in("s.area", areas)
+    if types:
+        _in("s.type", types)
+    if assignees:
+        _in("s.assigned_to", assignees)
+    sql += "".join(sql_parts)
+
     if search:
         sql += " AND (s.name LIKE ? OR s.external_id LIKE ?)"
         params.extend([f"%{search}%", f"%{search}%"])
-    if exclude_statuses and not status:
-        placeholders = ",".join("?" * len(exclude_statuses))
-        sql += f" AND (s.status IS NULL OR s.status NOT IN ({placeholders}))"
+    if exclude_statuses and not statuses:
+        ph = ",".join("?" * len(exclude_statuses))
+        sql += f" AND (s.status IS NULL OR s.status NOT IN ({ph}))"
         params.extend(exclude_statuses)
     sql += " ORDER BY s.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))
