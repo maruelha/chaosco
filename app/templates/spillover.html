@@ -142,6 +142,7 @@
         <th class="sc-critical">Critical for sign-off</th>
         <th class="sc-imp">Importance for sign-off</th>
         <th class="sc-next">Next step</th>
+        <th class="sc-signoffcmt">Comment for sign-off</th>
         <th class="sc-cmtbtn"></th>
       </tr>
     </thead>
@@ -153,7 +154,8 @@
           data-nextstep="{{ (row.next_step or '') | e }}"
           data-commenthistory="{{ (row.comment_history or '') | e }}"
           data-importedcomment="{{ (row.comment or '') | e }}"
-          data-critical="{{ (row.critical_for_signoff or '') | e }}">
+          data-critical="{{ (row.critical_for_signoff or '') | e }}"
+          data-commentsignoff="{{ (row.comment_for_signoff or '') | e }}">
         <td class="sc-row num">{{ row.excel_row }}</td>
         <td class="sc-type">{{ row.type or '—' }}</td>
         <td class="sc-area">{{ row.area or '—' }}</td>
@@ -193,18 +195,27 @@
             {% endif %}
           </span>
         </td>
+        <td class="sc-signoffcmt cell-commentsignoff">
+          <span class="cell-edit js-open-ann">
+            {% if row.comment_for_signoff %}
+              {{ row.comment_for_signoff }}
+            {% else %}
+              <span class="cell-placeholder">— click to edit</span>
+            {% endif %}
+          </span>
+        </td>
         <td class="sc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="14" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
 
-{# ---- Annotation popup (Importance + Next step) ---- #}
+{# ---- Annotation popup (Importance + Next step + Comment for sign-off) ---- #}
 <dialog id="dlg-ann">
   <div class="dlg-header">
     <div class="dlg-title">Edit annotation</div>
@@ -219,6 +230,10 @@
       <div class="form-field">
         <label for="ann-nextstep">Next step</label>
         <textarea id="ann-nextstep" name="next_step" rows="3"></textarea>
+      </div>
+      <div class="form-field">
+        <label for="ann-commentsignoff">Comment for sign-off</label>
+        <textarea id="ann-commentsignoff" name="comment_for_signoff" rows="3"></textarea>
       </div>
     </div>
     <div class="dlg-footer">
@@ -279,15 +294,17 @@
   const annForm = document.getElementById('frm-ann');
   const annId   = document.getElementById('ann-id');
 
+  function openAnnDialog(tr) {
+    annId.value = tr.dataset.id;
+    document.getElementById('ann-row-name').textContent    = tr.dataset.name;
+    document.getElementById('ann-importance').value        = tr.dataset.importance;
+    document.getElementById('ann-nextstep').value          = tr.dataset.nextstep;
+    document.getElementById('ann-commentsignoff').value    = tr.dataset.commentsignoff;
+    annDlg.showModal();
+  }
+
   document.querySelectorAll('.js-open-ann').forEach(el => {
-    el.addEventListener('click', () => {
-      const tr = el.closest('tr');
-      annId.value = tr.dataset.id;
-      document.getElementById('ann-row-name').textContent = tr.dataset.name;
-      document.getElementById('ann-importance').value = tr.dataset.importance;
-      document.getElementById('ann-nextstep').value   = tr.dataset.nextstep;
-      annDlg.showModal();
-    });
+    el.addEventListener('click', () => openAnnDialog(el.closest('tr')));
   });
 
   annForm.addEventListener('submit', async e => {
@@ -297,30 +314,24 @@
     const d    = await resp.json();
     if (!d.ok) return;
     const tr = document.querySelector(`tr[data-id="${id}"]`);
-    tr.dataset.importance = d.importance_for_signoff;
-    tr.dataset.nextstep   = d.next_step;
-    tr.querySelector('.cell-importance').innerHTML =
-      d.importance_for_signoff
-        ? `<span class="cell-edit js-open-ann">${escHtml(d.importance_for_signoff)}</span>`
+    tr.dataset.importance     = d.importance_for_signoff;
+    tr.dataset.nextstep       = d.next_step;
+    tr.dataset.commentsignoff = d.comment_for_signoff;
+
+    function cellHtml(val) {
+      return val
+        ? `<span class="cell-edit js-open-ann">${escHtml(val)}</span>`
         : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
-    tr.querySelector('.cell-nextstep').innerHTML =
-      d.next_step
-        ? `<span class="cell-edit js-open-ann">${escHtml(d.next_step)}</span>`
-        : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
-    // re-attach listeners to the new spans
-    tr.querySelectorAll('.js-open-ann').forEach(el => attachAnnListener(el));
+    }
+    tr.querySelector('.cell-importance').innerHTML    = cellHtml(d.importance_for_signoff);
+    tr.querySelector('.cell-nextstep').innerHTML      = cellHtml(d.next_step);
+    tr.querySelector('.cell-commentsignoff').innerHTML = cellHtml(d.comment_for_signoff);
+    tr.querySelectorAll('.js-open-ann').forEach(el => el.addEventListener('click', () => openAnnDialog(tr)));
     annDlg.close();
   });
 
   function attachAnnListener(el) {
-    el.addEventListener('click', () => {
-      const tr = el.closest('tr');
-      annId.value = tr.dataset.id;
-      document.getElementById('ann-row-name').textContent = tr.dataset.name;
-      document.getElementById('ann-importance').value = tr.dataset.importance;
-      document.getElementById('ann-nextstep').value   = tr.dataset.nextstep;
-      annDlg.showModal();
-    });
+    el.addEventListener('click', () => openAnnDialog(el.closest('tr')));
   }
 
   const cmtDlg = document.getElementById('dlg-cmt');

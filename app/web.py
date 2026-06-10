@@ -183,14 +183,16 @@ def spillover_list():
 
 @app.route("/spillover/<int:spillover_id>/annotation", methods=["POST"])
 def spillover_annotation_save(spillover_id: int):
-    importance = request.form.get("importance_for_signoff", "").strip() or None
-    next_step  = request.form.get("next_step", "").strip() or None
+    importance        = request.form.get("importance_for_signoff", "").strip() or None
+    next_step         = request.form.get("next_step", "").strip() or None
+    comment_for_signoff = request.form.get("comment_for_signoff", "").strip() or None
     conn = _get_conn()
     try:
         existing        = database.get_spillover_annotation(conn, spillover_id)
         comment_history = existing["comment_history"] if existing else None
         critical        = existing["critical_for_signoff"] if existing else None
-        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
+        database.upsert_spillover_annotation(
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -198,6 +200,7 @@ def spillover_annotation_save(spillover_id: int):
         "ok": True,
         "importance_for_signoff": ann["importance_for_signoff"] or "",
         "next_step":              ann["next_step"] or "",
+        "comment_for_signoff":    ann["comment_for_signoff"] or "",
     })
 
 
@@ -206,11 +209,13 @@ def spillover_comment_save(spillover_id: int):
     comment_history = request.form.get("comment_history", "").strip() or None
     conn = _get_conn()
     try:
-        existing   = database.get_spillover_annotation(conn, spillover_id)
-        importance = existing["importance_for_signoff"] if existing else None
-        next_step  = existing["next_step"] if existing else None
-        critical   = existing["critical_for_signoff"] if existing else None
-        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
+        existing            = database.get_spillover_annotation(conn, spillover_id)
+        importance          = existing["importance_for_signoff"] if existing else None
+        next_step           = existing["next_step"] if existing else None
+        critical            = existing["critical_for_signoff"] if existing else None
+        comment_for_signoff = existing["comment_for_signoff"] if existing else None
+        database.upsert_spillover_annotation(
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -225,11 +230,13 @@ def spillover_critical_save(spillover_id: int):
     critical = request.form.get("critical_for_signoff", "").strip() or None
     conn = _get_conn()
     try:
-        existing   = database.get_spillover_annotation(conn, spillover_id)
-        importance = existing["importance_for_signoff"] if existing else None
-        next_step  = existing["next_step"] if existing else None
-        comment_history = existing["comment_history"] if existing else None
-        database.upsert_spillover_annotation(conn, spillover_id, importance, next_step, comment_history, critical)
+        existing            = database.get_spillover_annotation(conn, spillover_id)
+        importance          = existing["importance_for_signoff"] if existing else None
+        next_step           = existing["next_step"] if existing else None
+        comment_history     = existing["comment_history"] if existing else None
+        comment_for_signoff = existing["comment_for_signoff"] if existing else None
+        database.upsert_spillover_annotation(
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()

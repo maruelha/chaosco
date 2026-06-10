@@ -169,11 +169,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
-    try:
-        conn.execute("ALTER TABLE spillover_annotations ADD COLUMN critical_for_signoff TEXT")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass  # column already exists
+    for col in ("critical_for_signoff TEXT", "comment_for_signoff TEXT"):
+        try:
+            conn.execute(f"ALTER TABLE spillover_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     return conn
 
 
@@ -518,7 +519,7 @@ def get_spillover(
     sql = """
         SELECT s.*,
                a.importance_for_signoff, a.next_step, a.comment_history,
-               a.critical_for_signoff,
+               a.critical_for_signoff, a.comment_for_signoff,
                a.updated_at AS annotation_updated_at
         FROM spillover s
         LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
@@ -572,7 +573,7 @@ def get_spillover_by_id(conn: sqlite3.Connection, spillover_id: int) -> dict | N
     sql = """
         SELECT s.*,
                a.importance_for_signoff, a.next_step, a.comment_history,
-               a.critical_for_signoff,
+               a.critical_for_signoff, a.comment_for_signoff,
                a.updated_at AS annotation_updated_at
         FROM spillover s
         LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
@@ -596,6 +597,7 @@ def upsert_spillover_annotation(
     next_step: str | None,
     comment_history: str | None,
     critical_for_signoff: str | None = None,
+    comment_for_signoff: str | None = None,
 ) -> None:
     """Insert or update the annotation for a spillover row. Never touches the spillover table."""
     now = datetime.now().isoformat(timespec="seconds")
@@ -604,15 +606,16 @@ def upsert_spillover_annotation(
             """
             INSERT INTO spillover_annotations
                 (spillover_id, importance_for_signoff, next_step, comment_history,
-                 critical_for_signoff, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+                 critical_for_signoff, comment_for_signoff, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(spillover_id) DO UPDATE SET
                 importance_for_signoff = excluded.importance_for_signoff,
                 next_step              = excluded.next_step,
                 comment_history        = excluded.comment_history,
                 critical_for_signoff   = excluded.critical_for_signoff,
+                comment_for_signoff    = excluded.comment_for_signoff,
                 updated_at             = excluded.updated_at
             """,
             (spillover_id, importance_for_signoff, next_step, comment_history,
-             critical_for_signoff, now),
+             critical_for_signoff, comment_for_signoff, now),
         )

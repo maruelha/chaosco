@@ -737,8 +737,9 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .sc-extid    { width: 110px; }
 .sc-orders   { width: 130px; }
 .sc-critical { width: 110px; }
-.sc-imp      { width: 200px; }
-.sc-next     { width: 220px; }
+.sc-imp        { width: 200px; }
+.sc-next       { width: 220px; }
+.sc-signoffcmt { width: 220px; }
 .sc-cmtbtn   { width: 90px; }
 
 /* --------------------------------------------------------------- spillover inline select */
