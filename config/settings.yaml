@@ -26,6 +26,9 @@ imports:
   spillover:
     enabled: true
     sheet_name: "Core South Spillover"
+  retail:
+    enabled: false        # Step 2 will wire this into the main pipeline
+    sheet_name: "Retail"
 
 # Spillover statuses hidden from the default list view.
 # Override with the "Show passed & dropped" toggle or by selecting one explicitly.
