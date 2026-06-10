@@ -6,7 +6,7 @@
   <div class="page-header-row">
     <div>
       <h1>Known Production Defects</h1>
-      <p class="page-subtitle">Manually tracked defects for sign-off discussions</p>
+      <p class="page-subtitle">Defects that will not be fixed before production</p>
     </div>
     <div class="page-header-actions">
       <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
@@ -21,7 +21,6 @@
       <tr>
         <th style="width:170px">Scenario</th>
         <th style="width:150px">Short Description</th>
-        <th style="width:180px">Description</th>
         <th style="width:160px">Biz Impact</th>
         <th style="width:110px">Numbers</th>
         <th style="width:130px">References</th>
@@ -34,7 +33,6 @@
       <tr data-id="{{ row.id }}">
         <td class="kpd-truncate" title="{{ row.scenario | e }}">{{ row.scenario or '' }}</td>
         <td style="font-weight:500">{{ row.short_description or '' }}</td>
-        <td class="kpd-truncate" title="{{ row.description | e }}">{{ row.description or '' }}</td>
         <td class="kpd-truncate" title="{{ row.biz_impact | e }}">{{ row.biz_impact or '' }}</td>
         <td>{{ row.numbers or '' }}</td>
         <td>{{ row.refs or '' }}</td>
@@ -45,7 +43,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="8" class="table-empty">No entries yet. Click "+ Add New" to get started.</td></tr>
+      <tr><td colspan="7" class="table-empty">No entries yet. Click "+ Add New" to get started.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -62,7 +60,7 @@ async function deleteDef(tr) {
   const tbody = document.getElementById('kpd-tbody');
   if (!tbody.querySelector('tr[data-id]')) {
     const emptyTr = document.createElement('tr');
-    emptyTr.innerHTML = '<td colspan="8" class="table-empty">No entries. Click "+ Add New" to get started.</td>';
+    emptyTr.innerHTML = '<td colspan="7" class="table-empty">No entries. Click "+ Add New" to get started.</td>';
     tbody.appendChild(emptyTr);
   }
 }
