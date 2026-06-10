@@ -768,6 +768,70 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .rc-next     { width: 220px; }
 .rc-cmtbtn   { width: 90px; }
 
+/* --------------------------------------------------------------- retail report */
+.rr-section-title {
+  font-size: 1rem; font-weight: 700; margin: 1.75rem 0 0.75rem;
+  color: #1d1d1f;
+}
+.rr-informational {
+  font-size: 0.75rem; font-weight: 400; color: #6e6e73; margin-left: 0.4rem;
+}
+
+.rr-bucket-grid {
+  display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+}
+.rr-bucket {
+  flex: 1; min-width: 140px; border: 1px solid #d2d2d7; border-radius: 12px;
+  padding: 1.25rem 1.5rem; background: #fff; text-align: center;
+}
+.rr-bucket--dtc    { border-color: #0071e3; }
+.rr-bucket--inprog { border-color: #ff9500; }
+.rr-bucket--passed { border-color: #34c759; }
+.rr-bucket-number {
+  font-size: 2.8rem; font-weight: 700; line-height: 1; color: #1d1d1f; margin-bottom: 0.3rem;
+}
+.rr-bucket--dtc    .rr-bucket-number { color: #0071e3; }
+.rr-bucket--inprog .rr-bucket-number { color: #b36200; }
+.rr-bucket--passed .rr-bucket-number { color: #248a3d; }
+.rr-bucket-label { font-size: 0.78rem; font-weight: 600; color: #3a3a3c; text-transform: uppercase; letter-spacing: 0.05em; }
+.rr-bucket-sub   { margin-top: 0.4rem; font-size: 0.75rem; color: #6e6e73; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+.rr-breakdown-card {
+  flex: 1; min-width: 120px; border: 1px solid #e5e5ea; border-radius: 10px;
+  padding: 1rem 1.25rem; background: #fafafa; text-align: center;
+}
+.rr-breakdown-number { font-size: 2rem; font-weight: 700; color: #1d1d1f; line-height: 1; margin-bottom: 0.2rem; }
+.rr-breakdown-label  { font-size: 0.75rem; font-weight: 600; color: #3a3a3c; margin-bottom: 0.15rem; }
+.rr-breakdown-owner  { font-size: 0.7rem; color: #6e6e73; }
+
+.rr-sanity {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.75rem 1rem; border-radius: 8px; margin: 0.5rem 0 1.5rem;
+  font-size: 0.85rem;
+}
+.rr-sanity--pass { background: #f0faf3; border: 1px solid #34c759; color: #1a6b35; }
+.rr-sanity--fail { background: #fff5f5; border: 1px solid #ff3b30; color: #c0392b; }
+.rr-sanity-icon  { font-size: 1.1rem; font-weight: 700; flex-shrink: 0; margin-top: 0.05rem; }
+
+.rr-diag-row { display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem; }
+.rr-diag-key { font-size: 0.85rem; color: #3a3a3c; }
+.rr-diag-val { font-size: 1.1rem; font-weight: 700; color: #1d1d1f; }
+
+.rr-diag-heading {
+  font-size: 0.82rem; font-weight: 600; color: #6e6e73;
+  margin: 1rem 0 0.4rem; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.rr-diag-heading--warn { color: #b36200; }
+
+.rr-diag-table { border-collapse: collapse; margin-bottom: 1rem; min-width: 300px; }
+.rr-diag-table th, .rr-diag-table td {
+  text-align: left; padding: 0.4rem 0.8rem; font-size: 0.82rem;
+  border-bottom: 1px solid #e5e5ea;
+}
+.rr-diag-table th { font-weight: 600; color: #6e6e73; }
+.rr-diag-table--warn td:first-child { color: #b36200; font-weight: 600; }
+.rr-diag-none { font-size: 0.82rem; color: #aeaeb2; margin-bottom: 0.75rem; }
+
 /* --------------------------------------------------------------- spillover inline select */
 .inline-select {
   padding: 0.2rem 0.35rem;

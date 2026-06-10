@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Retail Status Report — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Retail Status Report</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+    </div>
+  </div>
+  <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} rows total</p>
+</div>
+
+{# ---- Top-level buckets ---- #}
+<h2 class="rr-section-title">Overview</h2>
+<div class="rr-bucket-grid rr-bucket-grid--top">
+
+  <div class="rr-bucket">
+    <div class="rr-bucket-number">{{ report.buckets.back_with_sales }}</div>
+    <div class="rr-bucket-label">Back with Sales</div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--dtc">
+    <div class="rr-bucket-number">{{ report.buckets.with_dtc }}</div>
+    <div class="rr-bucket-label">With DTC</div>
+    <div class="rr-bucket-sub">
+      <span>{{ report.buckets.in_progress_with_dtc }} in progress</span>
+      <span>{{ report.buckets.passed_with_dtc }} passed</span>
+    </div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--inprog">
+    <div class="rr-bucket-number">{{ report.buckets.in_progress_with_dtc }}</div>
+    <div class="rr-bucket-label">In Progress with DTC</div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--passed">
+    <div class="rr-bucket-number">{{ report.buckets.passed_with_dtc }}</div>
+    <div class="rr-bucket-label">Passed with DTC</div>
+  </div>
+
+</div>
+
+{# ---- Sanity check ---- #}
+<div class="rr-sanity {% if report.sanity.identity_ok %}rr-sanity--pass{% else %}rr-sanity--fail{% endif %}">
+  <span class="rr-sanity-icon">{% if report.sanity.identity_ok %}✓{% else %}✗{% endif %}</span>
+  <span class="rr-sanity-label">
+    Identity check: In Progress with DTC ({{ report.sanity.in_progress_with_dtc }})
+    + Passed with DTC ({{ report.sanity.passed_with_dtc }})
+    = {{ report.sanity.lhs }}
+    {% if report.sanity.identity_ok %}
+      = With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>PASS</strong>
+    {% else %}
+      ≠ With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>FAIL — discrepancy of {{ (report.sanity.with_dtc - report.sanity.lhs)|abs }}</strong>
+    {% endif %}
+  </span>
+</div>
+
+{# ---- In-progress breakdown ---- #}
+<h2 class="rr-section-title">In-Progress Breakdown <span class="rr-informational">(informational — does not reconcile to In Progress with DTC; Waiting for SF creation has no breakdown column)</span></h2>
+<div class="rr-bucket-grid rr-bucket-grid--breakdown">
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ report.buckets.incoming_gatekeeper }}</div>
+    <div class="rr-breakdown-label">Incoming (Gatekeeper)</div>
+    <div class="rr-breakdown-owner">Jose</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ report.buckets.ready_for_validation }}</div>
+    <div class="rr-breakdown-label">Ready for validation</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ report.buckets.in_progress }}</div>
+    <div class="rr-breakdown-label">In Progress</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ report.buckets.in_clarification }}</div>
+    <div class="rr-breakdown-label">In Clarification</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ report.buckets.blocked }}</div>
+    <div class="rr-breakdown-label">Blocked</div>
+    <div class="rr-breakdown-owner">Tech team</div>
+  </div>
+
+</div>
+
+{# ---- Diagnostics ---- #}
+<h2 class="rr-section-title" style="margin-top:2rem">Diagnostics</h2>
+
+<div class="rr-diag-row">
+  <span class="rr-diag-key">Total rows not in any bucket</span>
+  <span class="rr-diag-val">{{ report.diagnostics.leftover_count }}</span>
+</div>
+
+{% if report.diagnostics.unmapped_known %}
+<h3 class="rr-diag-heading">Unmapped — known exclusions (expected, informational)</h3>
+<table class="rr-diag-table">
+  <thead><tr><th>Status</th><th>Count</th></tr></thead>
+  <tbody>
+  {% for status, count in report.diagnostics.unmapped_known.items() %}
+    <tr><td>{{ status }}</td><td>{{ count }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="rr-diag-none">No known-unmapped statuses present in data.</p>
+{% endif %}
+
+{% if report.diagnostics.unknown %}
+<h3 class="rr-diag-heading rr-diag-heading--warn">⚠ Unknown statuses (not in master list — possible typo or new status)</h3>
+<table class="rr-diag-table rr-diag-table--warn">
+  <thead><tr><th>Status</th><th>Count</th></tr></thead>
+  <tbody>
+  {% for status, count in report.diagnostics.unknown.items() %}
+    <tr><td>{{ status }}</td><td>{{ count }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="rr-diag-none">No unknown statuses — all values are in the master list.</p>
+{% endif %}
+
+{% endblock %}

@@ -845,6 +845,18 @@ def upsert_retail_annotation(
         )
 
 
+def get_retail_status_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    """Return {status_value: count} for all rows in the retail table.
+
+    Kept as a standalone function so a future step can persist the raw counts
+    before passing them to reporter.compute_retail_report().
+    """
+    rows = conn.execute(
+        "SELECT COALESCE(status, '') AS status, COUNT(*) AS cnt FROM retail GROUP BY status"
+    ).fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
 def list_known_prod_defects(conn: sqlite3.Connection) -> list[dict]:
     return _rows_to_dicts(conn.execute(
         "SELECT * FROM known_prod_defects ORDER BY created_at DESC"

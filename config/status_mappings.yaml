@@ -1,0 +1,101 @@
+# Retail status bucket definitions — config-driven; no bucket logic in Python.
+#
+# known_statuses : the complete master list of 16 recognised statuses.
+# known_unmapped : statuses in the master list but intentionally excluded from all
+#                  buckets (expected, informational, NOT errors).
+# buckets        : inclusion lists only — a status counts toward a bucket ONLY if
+#                  explicitly listed here.
+
+known_statuses:
+  - "Blocked - returned to sales"
+  - "Ready for Validation"
+  - "In Progress"
+  - "Blocked DTC"
+  - "Passed"
+  - "conditionally passed"
+  - "Waiting for SF creation"
+  - "Clarification needed"
+  - "Gatekeeper Check"
+  - "Passed pending solman"
+  - "Ready for Validation Prio"
+  - "Failed"
+  - "Not Ready"
+  - "Yet to Upload"
+  - "Dropped"
+  - "Sales In Progress"
+
+known_unmapped:
+  - "Failed"
+  - "Not Ready"
+  - "Yet to Upload"
+  - "Dropped"
+  - "Sales In Progress"
+
+buckets:
+  back_with_sales:
+    label: "Back with Sales"
+    statuses:
+      - "Blocked - returned to sales"
+
+  with_dtc:
+    label: "With DTC"
+    statuses:
+      - "Ready for Validation"
+      - "In Progress"
+      - "Blocked DTC"
+      - "Passed"
+      - "conditionally passed"
+      - "Waiting for SF creation"
+      - "Clarification needed"
+      - "Gatekeeper Check"
+      - "Passed pending solman"
+      - "Ready for Validation Prio"
+
+  in_progress_with_dtc:
+    label: "In Progress with DTC"
+    statuses:
+      - "Ready for Validation"
+      - "In Progress"
+      - "Blocked DTC"
+      - "Waiting for SF creation"
+      - "Clarification needed"
+      - "Gatekeeper Check"
+      - "Ready for Validation Prio"
+
+  passed_with_dtc:
+    label: "Passed with DTC"
+    statuses:
+      - "Passed"
+      - "conditionally passed"
+      - "Passed pending solman"
+
+  incoming_gatekeeper:
+    label: "Incoming (Gatekeeper)"
+    owner: "Jose"
+    statuses:
+      - "Gatekeeper Check"
+
+  ready_for_validation:
+    label: "Ready for validation"
+    owner: "Key users"
+    statuses:
+      - "Ready for Validation"
+      - "Ready for Validation Prio"
+
+  in_progress:
+    label: "In Progress"
+    owner: "Key users"
+    statuses:
+      - "In Progress"
+
+  in_clarification:
+    label: "In Clarification"
+    owner: "Key users"
+    statuses:
+      - "Clarification needed"
+
+  blocked:
+    label: "Blocked"
+    owner: "Tech team"
+    statuses:
+      - "Blocked DTC"

@@ -12,6 +12,7 @@ from flask import Flask, jsonify, redirect, render_template, request, url_for
 from app import database
 from app.config_loader import load_config
 from app.importer import run_import
+from app.reporter import compute_retail_report, load_status_mappings
 
 _HERE = Path(__file__).parent
 
@@ -328,6 +329,18 @@ def retail_comment_save(retail_id: int):
         "ok": True,
         "comment_history": (ann["comment_history"] or "") if ann else "",
     })
+
+
+@app.route("/retail/report")
+def retail_status_report():
+    conn = _get_conn()
+    try:
+        status_counts = database.get_retail_status_counts(conn)
+    finally:
+        conn.close()
+    mappings = load_status_mappings()
+    report   = compute_retail_report(status_counts, mappings)
+    return render_template("retail_report.html", report=report, today=date.today().isoformat())
 
 
 # ---------------------------------------------------------------------------
