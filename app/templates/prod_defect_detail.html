@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New Production Defect{% else %}{{ record.scenario or record.short_description or 'Production Defect' }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('prod_defects_list') }}">Known Production Defects</a>
+  <span>›</span>
+  <span>{% if is_new %}New Entry{% else %}{{ record.scenario or record.short_description or ('ID ' ~ record.id) }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{% if is_new %}New Production Defect{% else %}Edit Production Defect{% endif %}</h1>
+    {% if not is_new %}
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if saved %}
+<div class="saved-banner">Changes saved.</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('prod_defect_new') if is_new else url_for('prod_defect_detail', record_id=record.id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-scenario">Scenario</label>
+        <textarea id="f-scenario" name="scenario" rows="3">{{ record.scenario or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-shortdesc">Short Description</label>
+        <input type="text" id="f-shortdesc" name="short_description" value="{{ record.short_description or '' }}">
+      </div>
+
+      <div class="form-field">
+        <label for="f-description">Description</label>
+        <textarea id="f-description" name="description" rows="5">{{ record.description or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-bizimpact">Business Impact</label>
+        <textarea id="f-bizimpact" name="biz_impact" rows="3">{{ record.biz_impact or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-numbers">Numbers</label>
+        <input type="text" id="f-numbers" name="numbers" value="{{ record.numbers or '' }}">
+      </div>
+
+      <div class="form-field">
+        <label for="f-refs">References</label>
+        <input type="text" id="f-refs" name="refs" value="{{ record.refs or '' }}" placeholder="Ticket numbers, links, documents…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-nextsteps">Next Steps</label>
+        <textarea id="f-nextsteps" name="next_steps" rows="3">{{ record.next_steps or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-comments">Comments</label>
+        <textarea id="f-comments" name="comments" rows="4">{{ record.comments or '' }}</textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{{ url_for('prod_defects_list') }}" class="btn">Cancel</a>
+    {% if not is_new %}
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+    {% endif %}
+  </div>
+</form>
+
+{% if not is_new %}
+<script>
+document.getElementById('btn-delete').addEventListener('click', async () => {
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+  const res  = await fetch('/prod_defects/{{ record.id }}/delete', { method: 'POST' });
+  const json = await res.json();
+  if (json.ok) window.location.href = '{{ url_for("prod_defects_list") }}';
+});
+</script>
+{% endif %}
+{% endblock %}

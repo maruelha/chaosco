@@ -183,6 +183,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             scenario          TEXT,
             refs              TEXT,
             next_steps        TEXT,
+            comments          TEXT,
             created_at        TEXT,
             updated_at        TEXT
         );
@@ -192,6 +193,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     for col in ("critical_for_signoff TEXT", "comment_for_signoff TEXT"):
         try:
             conn.execute(f"ALTER TABLE spillover_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col in ("comments TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
@@ -625,24 +632,24 @@ def get_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> dict | No
 
 def create_known_prod_defect(
     conn: sqlite3.Connection,
-    technical_key: str | None,
     short_description: str | None,
-    numbers: str | None,
-    biz_impact: str | None,
-    description: str | None,
     scenario: str | None,
+    description: str | None,
+    biz_impact: str | None,
+    numbers: str | None,
     refs: str | None,
     next_steps: str | None,
+    comments: str | None,
 ) -> dict:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         cur = conn.execute(
             """INSERT INTO known_prod_defects
-               (technical_key, short_description, numbers, biz_impact,
-                description, scenario, refs, next_steps, created_at, updated_at)
+               (short_description, scenario, description, biz_impact,
+                numbers, refs, next_steps, comments, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (technical_key, short_description, numbers, biz_impact,
-             description, scenario, refs, next_steps, now, now),
+            (short_description, scenario, description, biz_impact,
+             numbers, refs, next_steps, comments, now, now),
         )
         new_id = cur.lastrowid
     return get_known_prod_defect(conn, new_id)
@@ -651,24 +658,24 @@ def create_known_prod_defect(
 def update_known_prod_defect(
     conn: sqlite3.Connection,
     record_id: int,
-    technical_key: str | None,
     short_description: str | None,
-    numbers: str | None,
-    biz_impact: str | None,
-    description: str | None,
     scenario: str | None,
+    description: str | None,
+    biz_impact: str | None,
+    numbers: str | None,
     refs: str | None,
     next_steps: str | None,
+    comments: str | None,
 ) -> dict | None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
             """UPDATE known_prod_defects SET
-               technical_key=?, short_description=?, numbers=?, biz_impact=?,
-               description=?, scenario=?, refs=?, next_steps=?, updated_at=?
+               short_description=?, scenario=?, description=?, biz_impact=?,
+               numbers=?, refs=?, next_steps=?, comments=?, updated_at=?
                WHERE id=?""",
-            (technical_key, short_description, numbers, biz_impact,
-             description, scenario, refs, next_steps, now, record_id),
+            (short_description, scenario, description, biz_impact,
+             numbers, refs, next_steps, comments, now, record_id),
         )
     return get_known_prod_defect(conn, record_id)
 

@@ -77,6 +77,16 @@
     .col-name { width: 280px; font-weight: 600; }
     .col-cmt  { color: #3a3a3c; white-space: pre-wrap; word-break: break-word; }
 
+    .pd-section { margin-top: 3rem; }
+    .pd-heading {
+      font-size: 1rem; font-weight: 700; color: #1d1d1f;
+      padding: 0.85rem 1.1rem; background: #1d1d1f; color: #fff;
+      border-radius: 10px 10px 0 0;
+    }
+    .col-pd-short  { width: 180px; font-weight: 600; }
+    .col-pd-desc   { white-space: pre-wrap; word-break: break-word; color: #3a3a3c; }
+    .col-pd-impact { width: 220px; white-space: pre-wrap; word-break: break-word; color: #3a3a3c; }
+
     @media print {
       .no-print { display: none !important; }
       body { padding: 0; max-width: none; }
@@ -157,6 +167,30 @@
 {% else %}
 <p style="color:#aaa; padding:2rem 0;">No items found.</p>
 {% endfor %}
+
+{% if prod_defects %}
+<div class="pd-section">
+  <div class="pd-heading">Known Production Defects</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="col-pd-short">Short Description</th>
+        <th class="col-pd-desc">Description</th>
+        <th class="col-pd-impact">Business Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for d in prod_defects %}
+      <tr>
+        <td class="col-pd-short">{{ d.short_description or '—' }}</td>
+        <td class="col-pd-desc">{{ d.description or '' }}</td>
+        <td class="col-pd-impact">{{ d.biz_impact or '' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
 <script>
 function downloadPage() {

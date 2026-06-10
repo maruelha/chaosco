@@ -282,7 +282,8 @@ def retail_report():
         title="Retail Spillover Report",
         report_date=date.today().isoformat(),
         sections=_prepare_report(rows),
-        total=len(rows))
+        total=len(rows),
+        prod_defects=[])
 
 
 @app.route("/report/ecom")
@@ -292,6 +293,7 @@ def ecom_report():
     conn = _get_conn()
     try:
         rows = database.get_spillover(conn, exclude_statuses=hidden or None)
+        prod_defects = database.list_known_prod_defects(conn)
     finally:
         conn.close()
     rows = [r for r in rows if (r.get("area") or "").lower() in ecom_areas]
@@ -299,7 +301,8 @@ def ecom_report():
         title="ECOM / Omni Spillover Report",
         report_date=date.today().isoformat(),
         sections=_prepare_report(rows),
-        total=len(rows))
+        total=len(rows),
+        prod_defects=prod_defects)
 
 
 # ---------------------------------------------------------------------------
@@ -316,36 +319,55 @@ def prod_defects_list():
     return render_template("prod_defects.html", rows=rows)
 
 
-@app.route("/prod_defects/create", methods=["POST"])
-def prod_defect_create():
-    def _f(name): return request.form.get(name, "").strip() or None
-    conn = _get_conn()
-    try:
-        row = database.create_known_prod_defect(
-            conn, _f("technical_key"), _f("short_description"), _f("numbers"),
-            _f("biz_impact"), _f("description"), _f("scenario"),
-            _f("refs"), _f("next_steps"),
-        )
-    finally:
-        conn.close()
-    return jsonify({"ok": True, "row": row})
+@app.route("/prod_defects/new", methods=["GET", "POST"])
+def prod_defect_new():
+    if request.method == "POST":
+        def _f(name): return request.form.get(name, "").strip() or None
+        conn = _get_conn()
+        try:
+            row = database.create_known_prod_defect(
+                conn,
+                short_description=_f("short_description"),
+                scenario=_f("scenario"),
+                description=_f("description"),
+                biz_impact=_f("biz_impact"),
+                numbers=_f("numbers"),
+                refs=_f("refs"),
+                next_steps=_f("next_steps"),
+                comments=_f("comments"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("prod_defect_detail", record_id=row["id"], saved="1"))
+    return render_template("prod_defect_detail.html", record={}, is_new=True, saved=False)
 
 
-@app.route("/prod_defects/<int:record_id>/update", methods=["POST"])
-def prod_defect_update(record_id: int):
-    def _f(name): return request.form.get(name, "").strip() or None
+@app.route("/prod_defects/<int:record_id>", methods=["GET", "POST"])
+def prod_defect_detail(record_id: int):
     conn = _get_conn()
     try:
-        row = database.update_known_prod_defect(
-            conn, record_id, _f("technical_key"), _f("short_description"), _f("numbers"),
-            _f("biz_impact"), _f("description"), _f("scenario"),
-            _f("refs"), _f("next_steps"),
-        )
+        record = database.get_known_prod_defect(conn, record_id)
+        if record is None:
+            return _not_found(str(record_id))
+        if request.method == "POST":
+            def _f(name): return request.form.get(name, "").strip() or None
+            database.update_known_prod_defect(
+                conn, record_id,
+                short_description=_f("short_description"),
+                scenario=_f("scenario"),
+                description=_f("description"),
+                biz_impact=_f("biz_impact"),
+                numbers=_f("numbers"),
+                refs=_f("refs"),
+                next_steps=_f("next_steps"),
+                comments=_f("comments"),
+            )
     finally:
         conn.close()
-    if row is None:
-        return jsonify({"ok": False}), 404
-    return jsonify({"ok": True, "row": row})
+    if request.method == "POST":
+        return redirect(url_for("prod_defect_detail", record_id=record_id, saved="1"))
+    saved = request.args.get("saved") == "1"
+    return render_template("prod_defect_detail.html", record=record, is_new=False, saved=saved)
 
 
 @app.route("/prod_defects/<int:record_id>/delete", methods=["POST"])
