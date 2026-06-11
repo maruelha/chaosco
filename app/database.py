@@ -293,6 +293,11 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    # Spillover match key changed from type||name||country to excel_row.
+    # Old-format keys contain "||"; delete those rows so they re-insert cleanly
+    # on the next import. Safe because spillover has no authored annotations.
+    conn.execute("DELETE FROM spillover WHERE match_key LIKE '%||%'")
+    conn.commit()
     return conn
 
 
@@ -554,12 +559,9 @@ def _retail_match_key(test_case_id: str, country: str) -> str:
     )
 
 
-def _spillover_match_key(type_: str, name: str, country: str) -> str:
-    """Normalised composite match key: collapse whitespace, lowercase."""
-    return "||".join(
-        re.sub(r"\s+", " ", str(p or "")).strip().lower()
-        for p in (type_, name, country)
-    )
+def _spillover_match_key(excel_row: int | str) -> str:
+    """Match key is the Excel row number — stable regardless of name/country edits."""
+    return str(excel_row)
 
 
 def upsert_spillover_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
@@ -591,11 +593,7 @@ def upsert_spillover_rows(conn: sqlite3.Connection, rows: list[dict], today: str
                 skipped_rows.append({**row, "reason": row["_skip_reason"]})
                 continue
 
-            mk = _spillover_match_key(
-                row.get("type", "") or "",
-                row.get("name", "") or "",
-                row.get("country", "") or "",
-            )
+            mk = _spillover_match_key(row.get("excel_row", 0))
             is_new = mk not in existing_keys
 
             def _s(field: str):
