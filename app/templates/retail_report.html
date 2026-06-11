@@ -181,12 +181,17 @@
   });
 
   document.getElementById('btn-excel').addEventListener('click', async () => {
+    const dateVal = window.prompt('Date for this row:', today);
+    if (dateVal === null) return;
+
     const btn = document.getElementById('btn-excel');
     const orig = btn.textContent;
     btn.textContent = 'Saving…';
     btn.disabled = true;
+    const fd = new FormData();
+    fd.append('date', dateVal.trim() || today);
     try {
-      const resp = await fetch('{{ url_for("retail_report_save_excel") }}', { method: 'POST' });
+      const resp = await fetch('{{ url_for("retail_report_save_excel") }}', { method: 'POST', body: fd });
       const d = await resp.json();
       if (d.ok) {
         btn.textContent = '✓ Saved!';

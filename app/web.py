@@ -390,8 +390,7 @@ def _append_retail_report_to_excel(report: dict, today: str) -> str:
     else:
         ws = wb["Retail"]
 
-    # Add header row if the sheet is empty or the first cell is blank
-    if ws.max_row == 0 or ws.cell(1, 1).value is None:
+    if ws.cell(1, 1).value is None:
         ws.append(_RETAIL_REPORT_HEADERS)
 
     b = report["buckets"]
@@ -415,12 +414,12 @@ def _append_retail_report_to_excel(report: dict, today: str) -> str:
 @app.route("/retail/report/save-excel", methods=["POST"])
 def retail_report_save_excel():
     try:
-        report = _get_retail_report()
-        today  = date.today().isoformat()
-        path   = _append_retail_report_to_excel(report, today)
+        report     = _get_retail_report()
+        save_date  = request.form.get("date") or date.today().isoformat()
+        path       = _append_retail_report_to_excel(report, save_date)
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)})
-    return jsonify({"ok": True, "path": path, "date": today})
+    return jsonify({"ok": True, "path": path, "date": save_date})
 
 
 @app.route("/retail/report/download")
