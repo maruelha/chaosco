@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retail Status Report — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px; line-height: 1.6; color: #1d1d1f;
+      padding: 2rem 2.5rem; background: #fff; max-width: 1000px;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.15rem; }
+    .meta { font-size: 0.78rem; color: #aeaeb2; margin-bottom: 1.75rem; }
+    h2 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.65rem; color: #1d1d1f; }
+    .informational { font-size: 0.72rem; font-weight: 400; color: #6e6e73; margin-left: 0.4rem; }
+
+    .bucket-grid { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .bucket {
+      flex: 1; min-width: 130px; border: 1px solid #d2d2d7; border-radius: 10px;
+      padding: 1.1rem 1.25rem; text-align: center;
+    }
+    .bucket--dtc    { border-color: #0071e3; }
+    .bucket--inprog { border-color: #ff9500; }
+    .bucket--passed { border-color: #34c759; }
+    .bucket-number  { font-size: 2.6rem; font-weight: 700; line-height: 1; color: #1d1d1f; margin-bottom: 0.25rem; }
+    .bucket--dtc    .bucket-number { color: #0071e3; }
+    .bucket--inprog .bucket-number { color: #b36200; }
+    .bucket--passed .bucket-number { color: #248a3d; }
+    .bucket-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #3a3a3c; }
+    .bucket-sub   { margin-top: 0.35rem; font-size: 0.72rem; color: #6e6e73; }
+
+    .sanity {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      padding: 0.65rem 0.9rem; border-radius: 7px; margin: 0.5rem 0 1.25rem;
+      font-size: 0.82rem;
+    }
+    .sanity--pass { background: #f0faf3; border: 1px solid #34c759; color: #1a6b35; }
+    .sanity--fail { background: #fff5f5; border: 1px solid #ff3b30; color: #c0392b; }
+    .sanity-icon  { font-size: 1rem; font-weight: 700; }
+
+    .breakdown-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .breakdown-card {
+      flex: 1; min-width: 100px; border: 1px solid #e5e5ea; border-radius: 8px;
+      padding: 0.85rem 1rem; background: #fafafa; text-align: center;
+    }
+    .breakdown-number { font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 0.15rem; }
+    .breakdown-label  { font-size: 0.72rem; font-weight: 600; color: #3a3a3c; }
+    .breakdown-owner  { font-size: 0.68rem; color: #6e6e73; margin-top: 0.1rem; }
+  </style>
+</head>
+<body>
+
+<h1>Retail Status Report</h1>
+<p class="meta">{{ today }} &nbsp;·&nbsp; {{ report.total_rows }} rows total</p>
+
+<h2>Overview</h2>
+<div class="bucket-grid">
+  <div class="bucket">
+    <div class="bucket-number">{{ report.buckets.back_with_sales }}</div>
+    <div class="bucket-label">Back with Sales</div>
+  </div>
+  <div class="bucket bucket--dtc">
+    <div class="bucket-number">{{ report.buckets.with_dtc }}</div>
+    <div class="bucket-label">With DTC</div>
+    <div class="bucket-sub">{{ report.buckets.in_progress_with_dtc }} in progress &nbsp;·&nbsp; {{ report.buckets.passed_with_dtc }} passed</div>
+  </div>
+  <div class="bucket bucket--inprog">
+    <div class="bucket-number">{{ report.buckets.in_progress_with_dtc }}</div>
+    <div class="bucket-label">In Progress with DTC</div>
+  </div>
+  <div class="bucket bucket--passed">
+    <div class="bucket-number">{{ report.buckets.passed_with_dtc }}</div>
+    <div class="bucket-label">Passed with DTC</div>
+  </div>
+</div>
+
+<div class="sanity {% if report.sanity.identity_ok %}sanity--pass{% else %}sanity--fail{% endif %}">
+  <span class="sanity-icon">{% if report.sanity.identity_ok %}✓{% else %}✗{% endif %}</span>
+  <span>
+    Identity check: In Progress with DTC ({{ report.sanity.in_progress_with_dtc }})
+    + Passed with DTC ({{ report.sanity.passed_with_dtc }})
+    = {{ report.sanity.lhs }}
+    {% if report.sanity.identity_ok %}
+      = With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>PASS</strong>
+    {% else %}
+      ≠ With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>FAIL — discrepancy of {{ (report.sanity.with_dtc - report.sanity.lhs)|abs }}</strong>
+    {% endif %}
+  </span>
+</div>
+
+<h2>In-Progress Breakdown
+  <span class="informational">(informational — does not reconcile to In Progress with DTC)</span>
+</h2>
+<div class="breakdown-grid">
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ report.buckets.incoming_gatekeeper }}</div>
+    <div class="breakdown-label">Incoming (Gatekeeper)</div>
+    <div class="breakdown-owner">Jose</div>
+  </div>
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ report.buckets.ready_for_validation }}</div>
+    <div class="breakdown-label">Ready for validation</div>
+    <div class="breakdown-owner">Key users</div>
+  </div>
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ report.buckets.in_progress }}</div>
+    <div class="breakdown-label">In Progress</div>
+    <div class="breakdown-owner">Key users</div>
+  </div>
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ report.buckets.in_clarification }}</div>
+    <div class="breakdown-label">In Clarification</div>
+    <div class="breakdown-owner">Key users</div>
+  </div>
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ report.buckets.blocked }}</div>
+    <div class="breakdown-label">Blocked</div>
+    <div class="breakdown-owner">Tech team</div>
+  </div>
+</div>
+
+</body>
+</html>

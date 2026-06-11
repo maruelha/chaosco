@@ -341,16 +341,31 @@ def retail_comment_save(retail_id: int):
     })
 
 
-@app.route("/retail/report")
-def retail_status_report():
+def _get_retail_report():
     conn = _get_conn()
     try:
         status_counts = database.get_retail_status_counts(conn)
     finally:
         conn.close()
     mappings = load_status_mappings()
-    report   = compute_retail_report(status_counts, mappings)
+    return compute_retail_report(status_counts, mappings)
+
+
+@app.route("/retail/report")
+def retail_status_report():
+    report = _get_retail_report()
     return render_template("retail_report.html", report=report, today=date.today().isoformat())
+
+
+@app.route("/retail/report/download")
+def retail_report_download():
+    report = _get_retail_report()
+    today  = date.today().isoformat()
+    html   = render_template("retail_report_download.html", report=report, today=today)
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": f'attachment; filename="retail_report_{today}.html"',
+    }
 
 
 # ---------------------------------------------------------------------------

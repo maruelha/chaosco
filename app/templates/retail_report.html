@@ -7,6 +7,8 @@
     <h1>Retail Status Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+      <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
+      <a href="{{ url_for('retail_report_download') }}" class="btn">Download HTML</a>
     </div>
   </div>
   <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} rows total</p>
@@ -129,4 +131,53 @@
 <p class="rr-diag-none">No unknown statuses — all values are in the master list.</p>
 {% endif %}
 
+{# ---- Clipboard data (tab-separated, two rows: headers + values + breakdown) ---- #}
+<script>
+(function () {
+  const b = {{ report.buckets | tojson }};
+  const today = {{ today | tojson }};
+
+  // Two header rows + two value rows so Excel gets headers above numbers.
+  // Row 1: top-level headers + breakdown headers (all in one row, tab-separated)
+  // Row 2: top-level values + breakdown values
+  const topHeaders = [
+    'Date',
+    'Back with Sales',
+    'With DTC',
+    'In Progress with DTC',
+    'Passed with DTC',
+    'Incoming (Gatekeeper)',
+    'Ready for validation',
+    'In Progress',
+    'In Clarification',
+    'Blocked',
+  ];
+  const topValues = [
+    today,
+    b.back_with_sales,
+    b.with_dtc,
+    b.in_progress_with_dtc,
+    b.passed_with_dtc,
+    b.incoming_gatekeeper,
+    b.ready_for_validation,
+    b.in_progress,
+    b.in_clarification,
+    b.blocked,
+  ];
+
+  const tsv = topHeaders.join('\t') + '\n' + topValues.join('\t');
+
+  document.getElementById('btn-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(tsv);
+      const btn = document.getElementById('btn-copy');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    } catch (e) {
+      alert('Copy failed: ' + e.message);
+    }
+  });
+}());
+</script>
 {% endblock %}
