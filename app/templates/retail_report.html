@@ -9,6 +9,7 @@
       <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
       <a href="{{ url_for('retail_report_download') }}" class="btn">Download HTML</a>
+      <button type="button" class="btn" id="btn-excel">Save to Excel</button>
     </div>
   </div>
   <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} rows total</p>
@@ -176,6 +177,29 @@
       setTimeout(() => { btn.textContent = orig; }, 2000);
     } catch (e) {
       alert('Copy failed: ' + e.message);
+    }
+  });
+
+  document.getElementById('btn-excel').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-excel');
+    const orig = btn.textContent;
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+    try {
+      const resp = await fetch('{{ url_for("retail_report_save_excel") }}', { method: 'POST' });
+      const d = await resp.json();
+      if (d.ok) {
+        btn.textContent = '✓ Saved!';
+        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+      } else {
+        btn.textContent = orig;
+        btn.disabled = false;
+        alert('Save failed: ' + d.error);
+      }
+    } catch (e) {
+      btn.textContent = orig;
+      btn.disabled = false;
+      alert('Save failed: ' + e.message);
     }
   });
 }());

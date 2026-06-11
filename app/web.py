@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
+import openpyxl
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from app import database
@@ -355,6 +356,71 @@ def _get_retail_report():
 def retail_status_report():
     report = _get_retail_report()
     return render_template("retail_report.html", report=report, today=date.today().isoformat())
+
+
+_RETAIL_REPORT_HEADERS = [
+    "Date",
+    "Back with Sales",
+    "With DTC",
+    "In Progress with DTC",
+    "Passed with DTC",
+    "Incoming (Gatekeeper)",
+    "Ready for validation",
+    "In Progress",
+    "In Clarification",
+    "Blocked",
+]
+
+
+def _append_retail_report_to_excel(report: dict, today: str) -> str:
+    """Append one data row to the retail report Excel log. Returns the file path."""
+    xlsx_path = Path(_cfg.get("retail_report_xlsx", "output/retail_report_log.xlsx"))
+    xlsx_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if xlsx_path.exists():
+        wb = openpyxl.load_workbook(xlsx_path)
+    else:
+        wb = openpyxl.Workbook()
+        # Remove the default blank sheet openpyxl creates
+        if "Sheet" in wb.sheetnames:
+            del wb["Sheet"]
+
+    if "Retail" not in wb.sheetnames:
+        ws = wb.create_sheet("Retail")
+    else:
+        ws = wb["Retail"]
+
+    # Add header row if the sheet is empty or the first cell is blank
+    if ws.max_row == 0 or ws.cell(1, 1).value is None:
+        ws.append(_RETAIL_REPORT_HEADERS)
+
+    b = report["buckets"]
+    ws.append([
+        today,
+        b["back_with_sales"],
+        b["with_dtc"],
+        b["in_progress_with_dtc"],
+        b["passed_with_dtc"],
+        b["incoming_gatekeeper"],
+        b["ready_for_validation"],
+        b["in_progress"],
+        b["in_clarification"],
+        b["blocked"],
+    ])
+
+    wb.save(xlsx_path)
+    return str(xlsx_path)
+
+
+@app.route("/retail/report/save-excel", methods=["POST"])
+def retail_report_save_excel():
+    try:
+        report = _get_retail_report()
+        today  = date.today().isoformat()
+        path   = _append_retail_report_to_excel(report, today)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)})
+    return jsonify({"ok": True, "path": path, "date": today})
 
 
 @app.route("/retail/report/download")

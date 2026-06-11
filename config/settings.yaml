@@ -69,3 +69,11 @@ archive_mode: "once_per_file"
 
 # Folder where archived copies are stored
 archive_folder: 'archive'
+
+# ---------------------------------------------------------------------------
+# Step 4 — retail report Excel log
+# ---------------------------------------------------------------------------
+
+# Each click of "Save to Excel" on the retail report page appends one row here.
+# The file and a "Retail" sheet are created automatically on first use.
+retail_report_xlsx: 'output/retail_report_log.xlsx'
