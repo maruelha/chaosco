@@ -1,0 +1,214 @@
+{
+  "exported_at": "2026-06-11T21:20:59.453484",
+  "source_db": "D:\\AI Projects\\chaosco\\data\\test_coordinationSpillOver.db",
+  "annotations": [
+    {
+      "spillover_id": 7,
+      "excel_row": 8,
+      "name": "Fiori Rules for real EBS",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": null
+    },
+    {
+      "spillover_id": 8,
+      "excel_row": 9,
+      "name": "Return status not completed in Fiori",
+      "country": null,
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "sounds like a test environment issue as this has worked for so many orders before - but ideally would retest with one order"
+    },
+    {
+      "spillover_id": 9,
+      "excel_row": 10,
+      "name": "DTC1111MU03_offline refund process monitoring standard",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we are able to create one time customer - \r\nwe are able to post billing document on one time customer account \r\nwe able to update consumer bank details, remove payment block and send to payment run (functionality on our side is working)\r\n --> remaining E2E process is pending for validation (Source2Pay/Treasury pending for validation)"
+    },
+    {
+      "spillover_id": 10,
+      "excel_row": 11,
+      "name": "DTC1111MU04_offline refund process monitoring cross cur",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we are able to create one time customer - \r\nwe are able to post billing document on one time customer account \r\nwe able to update consumer bank details, remove payment block and send to payment run (functionality on our side is working)\r\n --> remaining E2E process is pending for validation (Source2Pay/Treasury pending for validation)"
+    },
+    {
+      "spillover_id": 11,
+      "excel_row": 12,
+      "name": "DTC1111MU11_Settlementfile Testing",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "3 points open\r\n- prodirect - small defect on date of merchant payout - eta 20.06. with PSS\r\n- JD Sports Italy --> sf not uploaded for test yet\r\n- JD Sports Spain --> waiting for clarifications"
+    },
+    {
+      "spillover_id": 12,
+      "excel_row": 13,
+      "name": "DTC1111MU18_Settlement file Testing Own eCom",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "It is still open because legacy topic for Bank payment for carte bancaire --> NEU\r\ns4 solution is on par with legacy. waiting for legacy to fix to have ONLY one payment instead of multiple for one order"
+    },
+    {
+      "spillover_id": 13,
+      "excel_row": 14,
+      "name": "DTC1001MS05_Amazon STH Partner Split fullshipment",
+      "country": "Italy",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "was not tested before so risk to go live \r\nMarina to check why it was not tested earlier"
+    },
+    {
+      "spillover_id": 14,
+      "excel_row": 15,
+      "name": "DTC3003MS10_CNC ParPikup Split STO_Store 1shpmnt cncl other",
+      "country": "Spain",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we have checked we have other CNC partial pick up cases tested, and other STO cases tested. That is enough for our confidence-"
+    },
+    {
+      "spillover_id": 15,
+      "excel_row": 16,
+      "name": "DTC3003MS15_CNC Fullpickup 2 STOs from DC",
+      "country": "Spain",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we have checked we have other CNC full pick up cases tested, and other STO cases tested. That is enough for our confidence-"
+    },
+    {
+      "spillover_id": 16,
+      "excel_row": 17,
+      "name": "DTC0028MS01_DC STO CNC not allocated in S4 partial canc",
+      "country": "Italy",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we have checked we have other CNC partial pick up cases tested, and other STO cases tested. That is enough for our confidence-"
+    },
+    {
+      "spillover_id": 17,
+      "excel_row": 18,
+      "name": "DTC3006MS04_ReturnInStore STH EmpDis MultiGWC Refund Paypal",
+      "country": "Spain",
+      "critical_for_signoff": "yes",
+      "comment_for_signoff": "there is a production defect for this - it was meant to be fixed in 2025 - however was deprioritized and closed.\r\nFor conditional signoff, we would expect a defect in omni team's backlog to be created."
+    },
+    {
+      "spillover_id": 18,
+      "excel_row": 19,
+      "name": "Amazon ES",
+      "country": "Spain",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "we have not tested this marketplace, so risk to go live without testing the basics once.\r\nMarina to check why not tested before"
+    },
+    {
+      "spillover_id": 19,
+      "excel_row": 20,
+      "name": "JD Sports IT",
+      "country": "Italy",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "this is retrofit partner (new partner integration in 2026) \r\n- and no basic sales and return was tested up to date - so risky to go live without it"
+    },
+    {
+      "spillover_id": 20,
+      "excel_row": 21,
+      "name": "STH GC exchange of exchange order",
+      "country": "Italy",
+      "critical_for_signoff": "yes",
+      "comment_for_signoff": "This has not been tested at all in Core South - and it can happen in production (we have examples) - so it needs to be checked that this works in S4."
+    },
+    {
+      "spillover_id": 21,
+      "excel_row": 22,
+      "name": "STH consumerApp CC Flocking SF partial shipment",
+      "country": "Italy",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "we have one with split shipment with shipping fee, not relevant for flocking -"
+    },
+    {
+      "spillover_id": 23,
+      "excel_row": 24,
+      "name": "2 returns of one order (first partial then full) with shipping fee to DC (we have for SFS)",
+      "country": "Spain",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "we do not have this example tested, so would be good. But is also testing omniHUB logic, so not critical"
+    },
+    {
+      "spillover_id": 24,
+      "excel_row": 25,
+      "name": "Sale Mixed Basket",
+      "country": "Italy",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "we are testing BOOK tax requirement: expected book posting with low VAT rate. Important because problemes here in the past. \r\nBut if this is tested in the other pure book sale case it would be sufficient"
+    },
+    {
+      "spillover_id": 25,
+      "excel_row": 26,
+      "name": "Exchange – Mixed return and exchange in 1 box to DC",
+      "country": null,
+      "critical_for_signoff": "yes",
+      "comment_for_signoff": "this has not been tested yet at all."
+    },
+    {
+      "spillover_id": 26,
+      "excel_row": 27,
+      "name": "DTCO2C-454 Book Sale - SF Posted",
+      "country": "Italy",
+      "critical_for_signoff": "yes",
+      "comment_for_signoff": "we have not tested this. Tax requirement: expected book posting with low VAT rate. Important because problems. For Italy a must have"
+    },
+    {
+      "spillover_id": 27,
+      "excel_row": 28,
+      "name": "exchange after multipleGWC",
+      "country": null,
+      "critical_for_signoff": "yes",
+      "comment_for_signoff": "not tested with multiple GWC yet.\r\nAlso this would help us identify if a defect in RSA for return after exchange after multiple GWC is also present in Core South"
+    },
+    {
+      "spillover_id": 29,
+      "excel_row": 30,
+      "name": "DPP1007MU02_Partial return in store CC",
+      "country": null,
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "originally the requirement was to test in all core south countries - but since we have tested twice successfully, it is ok"
+    },
+    {
+      "spillover_id": 31,
+      "excel_row": 32,
+      "name": "[O2CDTC-447] Test Return in Store for ZMAR discount - adidas JIRA",
+      "country": "Italy",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "we have not tested discount for return in store at all. in general there should not be a difference between return to DC and return in store. but would like to have one test case to check"
+    },
+    {
+      "spillover_id": 34,
+      "excel_row": 35,
+      "name": "Sale with Employee discount and manual discount (temporary markdown item discount)",
+      "country": "Portugal",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "nice to have as mixture - but we have them separately"
+    },
+    {
+      "spillover_id": 35,
+      "excel_row": 36,
+      "name": "Return with bags sale (all types of shopping bags)",
+      "country": "Portugal",
+      "critical_for_signoff": "no",
+      "comment_for_signoff": "waiting for official confirmation and screenshot that it was tried"
+    },
+    {
+      "spillover_id": 38,
+      "excel_row": 39,
+      "name": "Return with Illicado",
+      "country": "France",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "it is a specific payment method with unique tender debtor that was not tested."
+    },
+    {
+      "spillover_id": 42,
+      "excel_row": 43,
+      "name": "About You Portugal",
+      "country": "Portugal",
+      "critical_for_signoff": "slightly",
+      "comment_for_signoff": "this is retrofit partner (new partner integration in 2026) \r\n- and no basic sales and return was tested up to date - so risky to go live without it\r\nalso here a defect - sales - return not linked"
+    }
+  ]
+}
