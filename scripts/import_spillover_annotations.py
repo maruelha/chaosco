@@ -63,16 +63,14 @@ def _run_import(db_path: Path, export_data: dict, dry_run: bool,
         if not dry_run:
             conn.execute("""
                 INSERT INTO spillover_annotations
-                    (spillover_id, importance_for_signoff, next_step, comment_history)
-                VALUES (?, ?, ?, ?)
+                    (spillover_id, critical_for_signoff, comment_for_signoff)
+                VALUES (?, ?, ?)
                 ON CONFLICT(spillover_id) DO UPDATE SET
-                    importance_for_signoff = excluded.importance_for_signoff,
-                    next_step              = excluded.next_step,
-                    comment_history        = excluded.comment_history
+                    critical_for_signoff = excluded.critical_for_signoff,
+                    comment_for_signoff  = excluded.comment_for_signoff
             """, (new_id,
-                  a.get("importance_for_signoff"),
-                  a.get("next_step"),
-                  a.get("comment_history")))
+                  a.get("critical_for_signoff"),
+                  a.get("comment_for_signoff")))
         n_ok += 1
 
     if not dry_run:

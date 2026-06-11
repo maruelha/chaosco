@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import tempfile
+
 import tkinter as tk
 import webbrowser
 from datetime import datetime
@@ -20,12 +21,12 @@ def _read_annotations(db_path: Path) -> list[dict]:
             s.excel_row,
             s.name,
             s.country,
-            a.importance_for_signoff,
-            a.next_step,
-            a.comment_history,
-            a.updated_at
+            a.critical_for_signoff,
+            a.comment_for_signoff
         FROM spillover_annotations a
         LEFT JOIN spillover s ON s.spillover_id = a.spillover_id
+        WHERE a.critical_for_signoff IS NOT NULL
+           OR a.comment_for_signoff  IS NOT NULL
         ORDER BY COALESCE(s.excel_row, a.spillover_id)
     """).fetchall()
     conn.close()
@@ -37,26 +38,14 @@ def _build_html(annotations: list[dict], db_path: Path) -> str:
 
     rows_html = ""
     for a in annotations:
-        ch = a["comment_history"] or ""
-        try:
-            parsed = json.loads(ch)
-            comment_display = "<br>".join(
-                f"<b>{e.get('author','?')} {e.get('ts','')}:</b> {e.get('text','')}"
-                for e in (parsed if isinstance(parsed, list) else [])
-            )
-        except Exception:
-            comment_display = ch.replace("\n", "<br>")
-
         rows_html += f"""
         <tr>
             <td class="num">{a['spillover_id']}</td>
             <td class="num">{a['excel_row'] if a['excel_row'] is not None else '—'}</td>
             <td>{a['name'] or '—'}</td>
             <td>{a['country'] or '—'}</td>
-            <td>{a['importance_for_signoff'] or ''}</td>
-            <td>{a['next_step'] or ''}</td>
-            <td class="comment">{comment_display}</td>
-            <td class="dim">{a['updated_at'] or ''}</td>
+            <td>{a['critical_for_signoff'] or ''}</td>
+            <td>{a['comment_for_signoff'] or ''}</td>
         </tr>"""
 
     warning = ""
@@ -98,10 +87,8 @@ def _build_html(annotations: list[dict], db_path: Path) -> str:
       <th>excel_row</th>
       <th>Name</th>
       <th>Country</th>
-      <th>Importance for sign-off</th>
-      <th>Next step</th>
-      <th>Comment history</th>
-      <th>Updated</th>
+      <th>Critical for sign-off</th>
+      <th>Comment for sign-off</th>
     </tr>
   </thead>
   <tbody>
@@ -123,9 +110,8 @@ def _save_json(annotations: list[dict], db_path: Path) -> Path:
                 "excel_row": a["excel_row"],
                 "name": a["name"],
                 "country": a["country"],
-                "importance_for_signoff": a["importance_for_signoff"],
-                "next_step": a["next_step"],
-                "comment_history": a["comment_history"],
+                "critical_for_signoff": a["critical_for_signoff"],
+                "comment_for_signoff": a["comment_for_signoff"],
             }
             for a in annotations
         ],
