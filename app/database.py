@@ -294,9 +294,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         except sqlite3.OperationalError:
             pass  # column already exists
     # Spillover match key changed from type||name||country to excel_row.
-    # Old-format keys contain "||"; delete those rows so they re-insert cleanly
-    # on the next import. Safe because spillover has no authored annotations.
-    conn.execute("DELETE FROM spillover WHERE match_key LIKE '%||%'")
+    # UPDATE preserves spillover_id values so FK links in spillover_annotations
+    # stay intact.  The importer overwrites remaining columns on next run.
+    conn.execute(
+        "UPDATE spillover SET match_key = CAST(excel_row AS TEXT)"
+        " WHERE match_key LIKE '%||%'"
+    )
     conn.commit()
     return conn
 
