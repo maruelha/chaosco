@@ -148,6 +148,7 @@
         <th class="rc-defect">Defect ID</th>
         <th class="rc-billing">S4 Billing</th>
         <th class="rc-next">Next step</th>
+        <th class="rc-notes">Notes</th>
         <th class="rc-cmtbtn"></th>
       </tr>
     </thead>
@@ -185,12 +186,19 @@
             {% endif %}
           </span>
         </td>
+        <td class="rc-notes notes-cell">
+          {% if row.note_count > 0 %}
+          <a href="{{ url_for('retail_detail', retail_id=row.retail_id) }}#notes" class="note-count-link">{{ row.note_count }} note{{ 's' if row.note_count != 1 else '' }}</a>
+          <span class="notes-sep">·</span>
+          {% endif %}
+          <a href="{{ url_for('retail_note_add_form', retail_id=row.retail_id) }}" class="btn btn-sm">+ Note</a>
+        </td>
         <td class="rc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="12" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>

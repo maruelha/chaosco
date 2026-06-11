@@ -169,7 +169,19 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at       TEXT
         );
 
-        -- User's notes log (add/edit/delete) — created here, NEVER written by the importer.
+        -- Shared notes log — entity_type + entity_id identify the parent row.
+        -- entity_type: 'defect', 'retail', ... entity_id: TEXT representation of PK.
+        CREATE TABLE IF NOT EXISTS notes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_type TEXT NOT NULL,
+            entity_id   TEXT NOT NULL,
+            created_at  TEXT NOT NULL,
+            heading     TEXT,
+            note        TEXT
+        );
+        CREATE INDEX IF NOT EXISTS ix_notes_entity ON notes(entity_type, entity_id);
+
+        -- Legacy table kept for migration only — no longer written to.
         CREATE TABLE IF NOT EXISTS defect_notes (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             defect_id   TEXT REFERENCES defects(defect_id),
@@ -334,7 +346,7 @@ def list_defects(
         SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
                d.assigned_to, d.excel_row, d.solman_name, d.exists_in_production,
                COALESCE(a.action_needed, 0) AS action_needed,
-               (SELECT COUNT(*) FROM defect_notes n WHERE n.defect_id = d.defect_id) AS note_count
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'defect' AND n.entity_id = d.defect_id) AS note_count
         FROM defects d
         LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
         WHERE 1=1
@@ -412,32 +424,33 @@ def upsert_defect_annotation(
         )
 
 
-def list_notes_for_defect(conn: sqlite3.Connection, defect_id: str) -> list[dict]:
-    """All notes for a defect, newest-first."""
+def list_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> list[dict]:
+    """All notes for an entity, newest-first."""
     return _rows_to_dicts(conn.execute(
-        "SELECT * FROM defect_notes WHERE defect_id = ? ORDER BY created_at DESC",
-        (defect_id,),
+        "SELECT * FROM notes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at DESC",
+        (entity_type, str(entity_id)),
     ))
 
 
 def get_note(conn: sqlite3.Connection, note_id: int) -> dict | None:
     rows = _rows_to_dicts(conn.execute(
-        "SELECT * FROM defect_notes WHERE id = ?", (note_id,)
+        "SELECT * FROM notes WHERE id = ?", (note_id,)
     ))
     return rows[0] if rows else None
 
 
 def add_note(
     conn: sqlite3.Connection,
-    defect_id: str,
+    entity_type: str,
+    entity_id: str,
     heading: str | None,
     note_text: str | None,
 ) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
-            "INSERT INTO defect_notes (defect_id, created_at, heading, note) VALUES (?, ?, ?, ?)",
-            (defect_id, now, heading, note_text),
+            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note) VALUES (?, ?, ?, ?, ?)",
+            (entity_type, str(entity_id), now, heading, note_text),
         )
 
 
@@ -449,14 +462,14 @@ def update_note(
 ) -> None:
     with conn:
         conn.execute(
-            "UPDATE defect_notes SET heading = ?, note = ? WHERE id = ?",
+            "UPDATE notes SET heading = ?, note = ? WHERE id = ?",
             (heading, note_text, note_id),
         )
 
 
 def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
     with conn:
-        conn.execute("DELETE FROM defect_notes WHERE id = ?", (note_id,))
+        conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
 
 
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
@@ -764,7 +777,9 @@ def get_retail(
     sql = """
         SELECT r.*,
                a.next_step, a.comment_history,
-               a.updated_at AS annotation_updated_at
+               a.updated_at AS annotation_updated_at,
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'retail'
+                AND n.entity_id = CAST(r.retail_id AS TEXT)) AS note_count
         FROM retail r
         LEFT JOIN retail_annotations a ON a.retail_id = r.retail_id
         WHERE 1=1
@@ -814,7 +829,9 @@ def get_retail_by_id(conn: sqlite3.Connection, retail_id: int) -> dict | None:
     sql = """
         SELECT r.*,
                a.next_step, a.comment_history,
-               a.updated_at AS annotation_updated_at
+               a.updated_at AS annotation_updated_at,
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'retail'
+                AND n.entity_id = CAST(r.retail_id AS TEXT)) AS note_count
         FROM retail r
         LEFT JOIN retail_annotations a ON a.retail_id = r.retail_id
         WHERE r.retail_id = ?

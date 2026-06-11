@@ -38,13 +38,16 @@ def _not_found(defect_id: str):
 
 
 def _render_note_add_form(defect_id, solman_name, return_to, *, heading="", error=None):
+    label = defect_id + (f" — {solman_name}" if solman_name else "")
     return render_template(
-        "note_form.html", mode="add", defect_id=defect_id,
-        solman_name=solman_name, return_to=return_to,
+        "note_form.html", mode="add",
+        entity_label=label, list_label="Defects",
+        list_url=url_for("defects_list"),
+        detail_url=url_for("defect_detail", defect_id=defect_id),
         action_url=url_for("note_add", defect_id=defect_id),
         cancel_url=(url_for("defects_list") if return_to == "list"
                     else url_for("defect_detail", defect_id=defect_id)),
-        heading=heading, error=error,
+        return_to=return_to, heading=heading, error=error,
     )
 
 
@@ -129,7 +132,7 @@ def defect_detail(defect_id: str):
             )
             return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
 
-        notes = database.list_notes_for_defect(conn, defect_id)
+        notes = database.list_notes(conn, "defect", defect_id)
     finally:
         conn.close()
 
@@ -517,7 +520,7 @@ def note_add(defect_id: str):
                 defect_id, defect.get("solman_name"), return_to,
                 heading=heading or "", error="Note text is required.",
             )
-        database.add_note(conn, defect_id, heading, note_text)
+        database.add_note(conn, "defect", defect_id, heading, note_text)
     finally:
         conn.close()
     if return_to == "list":
@@ -530,7 +533,7 @@ def note_edit(defect_id: str, note_id: int):
     conn = _get_conn()
     try:
         note = database.get_note(conn, note_id)
-        if note is None or note["defect_id"] != defect_id:
+        if note is None or note["entity_type"] != "defect" or note["entity_id"] != defect_id:
             return _not_found(defect_id)
         defect = database.get_defect(conn, defect_id)
         if request.method == "POST":
@@ -541,25 +544,19 @@ def note_edit(defect_id: str, note_id: int):
                 return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
     finally:
         conn.close()
-    solman_name = defect.get("solman_name") if defect else None
-    if request.method == "POST":
-        return render_template(
-            "note_form.html", mode="edit", defect_id=defect_id,
-            solman_name=solman_name,
-            action_url=url_for("note_edit", defect_id=defect_id, note_id=note_id),
-            cancel_url=url_for("defect_detail", defect_id=defect_id),
-            heading=heading or "", note_text="",
-            created_at=note["created_at"],
-            error="Note text is required.",
-        )
-    return render_template(
-        "note_form.html", mode="edit", defect_id=defect_id,
-        solman_name=solman_name,
+    solman_name  = defect.get("solman_name") if defect else None
+    entity_label = defect_id + (f" — {solman_name}" if solman_name else "")
+    kwargs = dict(
+        mode="edit", entity_label=entity_label,
+        list_url=url_for("defects_list"), list_label="Defects",
+        detail_url=url_for("defect_detail", defect_id=defect_id),
         action_url=url_for("note_edit", defect_id=defect_id, note_id=note_id),
         cancel_url=url_for("defect_detail", defect_id=defect_id),
-        heading=note["heading"] or "", note_text=note["note"] or "",
         created_at=note["created_at"],
     )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
 
 
 @app.route("/defects/<defect_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
@@ -567,14 +564,156 @@ def note_delete(defect_id: str, note_id: int):
     conn = _get_conn()
     try:
         note = database.get_note(conn, note_id)
-        if note is None or note["defect_id"] != defect_id:
+        if note is None or note["entity_type"] != "defect" or note["entity_id"] != defect_id:
             return _not_found(defect_id)
         if request.method == "POST":
             database.delete_note(conn, note_id)
             return redirect(url_for("defect_detail", defect_id=defect_id, note_deleted="1"))
     finally:
         conn.close()
-    return render_template("note_confirm_delete.html", defect_id=defect_id, note=note)
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=defect_id,
+        cancel_url=url_for("defect_detail", defect_id=defect_id),
+        delete_url=url_for("note_delete", defect_id=defect_id, note_id=note_id),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Retail detail + note routes
+# ---------------------------------------------------------------------------
+
+@app.route("/retail/<int:retail_id>", methods=["GET", "POST"])
+def retail_detail(retail_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_retail_by_id(conn, retail_id)
+        if row is None:
+            conn.close()
+            return render_template("404.html", defect_id=str(retail_id)), 404
+        if request.method == "POST":
+            next_step       = request.form.get("next_step", "").strip() or None
+            comment_history = request.form.get("comment_history", "").strip() or None
+            database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+            conn.close()
+            return redirect(url_for("retail_detail", retail_id=retail_id, saved="1"))
+        notes = database.list_notes(conn, "retail", retail_id)
+    finally:
+        conn.close()
+    saved        = request.args.get("saved") == "1"
+    note_added   = request.args.get("note_added") == "1"
+    note_saved   = request.args.get("note_saved") == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
+    return render_template(
+        "retail_detail.html",
+        row=row, notes=notes,
+        saved=saved, note_added=note_added,
+        note_saved=note_saved, note_deleted=note_deleted,
+    )
+
+
+@app.route("/retail/<int:retail_id>/notes/add")
+def retail_note_add_form(retail_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_retail_by_id(conn, retail_id)
+    finally:
+        conn.close()
+    if row is None:
+        return render_template("404.html", defect_id=str(retail_id)), 404
+    entity_label = f"{row['test_case_id']} / {row['country']}"
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=entity_label,
+        list_url=url_for("retail_list"), list_label="Retail",
+        detail_url=url_for("retail_detail", retail_id=retail_id),
+        action_url=url_for("retail_note_add", retail_id=retail_id),
+        cancel_url=url_for("retail_detail", retail_id=retail_id),
+        heading="", return_to="detail", error=None,
+    )
+
+
+@app.route("/retail/<int:retail_id>/notes", methods=["POST"])
+def retail_note_add(retail_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_retail_by_id(conn, retail_id)
+        if row is None:
+            conn.close()
+            return render_template("404.html", defect_id=str(retail_id)), 404
+        heading   = request.form.get("heading", "").strip() or None
+        note_text = request.form.get("note", "").strip() or None
+        if not note_text:
+            entity_label = f"{row['test_case_id']} / {row['country']}"
+            conn.close()
+            return render_template(
+                "note_form.html", mode="add",
+                entity_label=entity_label,
+                list_url=url_for("retail_list"), list_label="Retail",
+                detail_url=url_for("retail_detail", retail_id=retail_id),
+                action_url=url_for("retail_note_add", retail_id=retail_id),
+                cancel_url=url_for("retail_detail", retail_id=retail_id),
+                heading=heading or "", return_to="detail",
+                error="Note text is required.",
+            )
+        database.add_note(conn, "retail", retail_id, heading, note_text)
+    finally:
+        conn.close()
+    return redirect(url_for("retail_detail", retail_id=retail_id, note_added="1"))
+
+
+@app.route("/retail/<int:retail_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def retail_note_edit(retail_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "retail" or note["entity_id"] != str(retail_id):
+            conn.close()
+            return render_template("404.html", defect_id=str(retail_id)), 404
+        row = database.get_retail_by_id(conn, retail_id)
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                conn.close()
+                return redirect(url_for("retail_detail", retail_id=retail_id, note_saved="1"))
+    finally:
+        conn.close()
+    entity_label = f"{row['test_case_id']} / {row['country']}" if row else str(retail_id)
+    kwargs = dict(
+        mode="edit", entity_label=entity_label,
+        list_url=url_for("retail_list"), list_label="Retail",
+        detail_url=url_for("retail_detail", retail_id=retail_id),
+        action_url=url_for("retail_note_edit", retail_id=retail_id, note_id=note_id),
+        cancel_url=url_for("retail_detail", retail_id=retail_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/retail/<int:retail_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def retail_note_delete(retail_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "retail" or note["entity_id"] != str(retail_id):
+            conn.close()
+            return render_template("404.html", defect_id=str(retail_id)), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            conn.close()
+            return redirect(url_for("retail_detail", retail_id=retail_id, note_deleted="1"))
+    finally:
+        conn.close()
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        cancel_url=url_for("retail_detail", retail_id=retail_id),
+        delete_url=url_for("retail_note_delete", retail_id=retail_id, note_id=note_id),
+        entity_label=f"retail #{retail_id}",
+    )
 
 
 # ---------------------------------------------------------------------------

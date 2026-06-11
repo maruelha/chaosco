@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}{{ "Edit" if mode == "edit" else "Add" }} Note — {{ defect_id }} — Test Coordination{% endblock %}
+{% block title %}{{ "Edit" if mode == "edit" else "Add" }} Note — {{ entity_label }} — Test Coordination{% endblock %}
 
 {% block content %}
 <nav class="breadcrumb">
   <a href="{{ url_for('dashboard') }}">Dashboard</a>
   <span>›</span>
-  <a href="{{ url_for('defects_list') }}">Defects</a>
+  <a href="{{ list_url }}">{{ list_label }}</a>
   <span>›</span>
   {% if mode == "edit" or return_to == "detail" %}
-  <a href="{{ url_for('defect_detail', defect_id=defect_id) }}">{{ defect_id }}</a>
+  <a href="{{ detail_url }}">{{ entity_label }}</a>
   {% else %}
-  <span>{{ defect_id }}</span>
+  <span>{{ entity_label }}</span>
   {% endif %}
   <span>›</span>
   <span>{{ "Edit note" if mode == "edit" else "Add note" }}</span>
@@ -18,7 +18,7 @@
 
 <div class="page-header">
   <h1>{{ "Edit note" if mode == "edit" else "Add note" }}</h1>
-  <p class="page-subtitle">{{ defect_id }}{% if solman_name %} — {{ solman_name }}{% endif %}</p>
+  <p class="page-subtitle">{{ entity_label }}</p>
 </div>
 
 <div class="annotation-card">

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ row.test_case_id }} / {{ row.country }} — Retail — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('retail_list') }}">Retail</a>
+  <span>›</span>
+  <span>{{ row.test_case_id }} / {{ row.country }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ row.test_case_id }} / {{ row.country }}</h1>
+  {% if row.testcase_name %}<p class="page-subtitle">{{ row.testcase_name }}</p>{% endif %}
+</div>
+
+{# ---- Section 1: Imported fields ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Imported fields</h2>
+    <span class="readonly-badge">&#128274; From import — read only</span>
+  </div>
+  <dl class="field-list">
+    {% set imported = [
+      ("Scenario",               row.testcase_scenario),
+      ("Status",                 row.status),
+      ("Assigned to",            row.assigned_to),
+      ("Key User Responsible",   row.key_user_responsible),
+      ("Order Number",           row.order_number),
+      ("Old Order Numbers",      row.old_order_numbers),
+      ("Defect ID",              row.defect_id_ref),
+      ("S4 Sales Order",         row.s4_sales_order),
+      ("S4 Billing Documents",   row.s4_billing_documents),
+      ("S4 Journal/Invoice",     row.s4_journal_invoice_entry),
+      ("Delivery Note",          row.delivery_note),
+      ("Evidence in SharePoint", row.evidence_in_sharepoint),
+      ("Sales File",             row.sales_file),
+      ("Execution Started",      row.execution_started),
+      ("Execution Completed",    row.execution_completed),
+      ("Imported Comment",       row.comment),
+      ("Reason for Pass w/ Res.", row.reason_for_pass_with_reservation),
+      ("Excel Row",              row.excel_row),
+      ("First Seen",             row.first_seen),
+      ("Last Seen",              row.last_seen),
+    ] %}
+    {% for label, value in imported %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
+</div>
+
+{# ---- Section 2: Annotation ---- #}
+<div class="annotation-card">
+  <div class="card-header-row">
+    <h2>My annotations</h2>
+    <span class="editable-badge">&#9998; Editable — saved by you</span>
+  </div>
+
+  {% if saved %}
+  <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('retail_detail', retail_id=row.retail_id) }}">
+    <div class="form-stack">
+      <div class="form-field">
+        <label for="f-nextstep">Next step</label>
+        <textarea id="f-nextstep" name="next_step" rows="3">{{ row.next_step or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="f-commenthistory">Comment history</label>
+        <textarea id="f-commenthistory" name="comment_history" rows="5"
+                  placeholder="Your maintained comment history (not linked to imported comment)…">{{ row.comment_history or '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-footer">
+      <span class="last-edited">
+        {% if row.annotation_updated_at %}Last edited: {{ row.annotation_updated_at }}{% endif %}
+      </span>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div>
+
+{# ---- Section 3: Notes ---- #}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Notes</h2>
+    {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
+    <a href="{{ url_for('retail_note_add_form', retail_id=row.retail_id) }}" class="btn btn-sm">+ Add note</a>
+  </div>
+
+  {% if note_added   %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if note_saved   %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if note_deleted %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+
+  {% if notes %}
+  <div class="notes-list">
+    {% for n in notes %}
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ n.created_at }}</span>
+      </div>
+      <p class="note-text">{{ n.note or '' }}</p>
+      <div class="note-actions">
+        <a href="{{ url_for('retail_note_edit', retail_id=row.retail_id, note_id=n.id) }}" class="btn btn-sm">Edit</a>
+        <a href="{{ url_for('retail_note_delete', retail_id=row.retail_id, note_id=n.id) }}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="notes-empty">No notes yet. <a href="{{ url_for('retail_note_add_form', retail_id=row.retail_id) }}">Add the first one.</a></p>
+  {% endif %}
+</div>
+
+<div class="btn-row">
+  <a href="{{ url_for('retail_list') }}" class="btn">&#8592; Back to Retail</a>
+</div>
+{% endblock %}
