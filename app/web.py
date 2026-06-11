@@ -391,10 +391,12 @@ def _append_retail_report_to_excel(report: dict, today: str) -> str:
         ws = wb["Retail"]
 
     if ws.cell(1, 1).value is None:
-        ws.append(_RETAIL_REPORT_HEADERS)
+        for col, header in enumerate(_RETAIL_REPORT_HEADERS, 1):
+            ws.cell(row=1, column=col).value = header
 
     b = report["buckets"]
-    ws.append([
+    next_row = ws.max_row + 1
+    for col, val in enumerate([
         today,
         b["back_with_sales"],
         b["with_dtc"],
@@ -405,7 +407,8 @@ def _append_retail_report_to_excel(report: dict, today: str) -> str:
         b["in_progress"],
         b["in_clarification"],
         b["blocked"],
-    ])
+    ], 1):
+        ws.cell(row=next_row, column=col).value = val
 
     wb.save(xlsx_path)
     return str(xlsx_path)
