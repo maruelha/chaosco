@@ -64,6 +64,12 @@
 
   <form method="post" action="{{ url_for('retail_detail', retail_id=row.retail_id) }}">
     <div class="form-stack">
+      <div class="checkbox-row">
+        <input id="f-action_needed" type="checkbox" name="action_needed" value="1"
+               {% if row.action_needed %}checked{% endif %}>
+        <label for="f-action_needed">Action needed</label>
+      </div>
+
       <div class="form-field">
         <label for="f-nextstep">Next step</label>
         <textarea id="f-nextstep" name="next_step" rows="3">{{ row.next_step or '' }}</textarea>

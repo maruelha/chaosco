@@ -41,6 +41,15 @@
   </div>
 
   <div class="filter-group">
+    <label for="f-action">Action needed</label>
+    <select id="f-action" name="action_needed">
+      <option value="">All</option>
+      <option value="yes" {% if action_needed == "yes" %}selected{% endif %}>Flagged</option>
+      <option value="no"  {% if action_needed == "no"  %}selected{% endif %}>Not flagged</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
     <label>Defect ID</label>
     <input type="text" name="search_defect" value="{{ search_defect }}" class="filter-input" placeholder="contains…">
   </div>
@@ -57,7 +66,7 @@
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if statuses or assignees or countries or scenarios or search_defect or search_order or search_billing %}
+  {% if statuses or assignees or countries or scenarios or action_needed or search_defect or search_order or search_billing %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('retail_list') }}" class="btn">Clear</a>
@@ -148,6 +157,7 @@
         <th class="rc-defect">Defect ID</th>
         <th class="rc-billing">S4 Billing</th>
         <th class="rc-next">Next step</th>
+        <th class="rc-action"></th>
         <th class="rc-notes">Notes</th>
         <th class="rc-cmtbtn"></th>
       </tr>
@@ -186,6 +196,9 @@
             {% endif %}
           </span>
         </td>
+        <td class="rc-action">
+          {% if row.action_needed %}<span class="pill pill--red">&#9873; Action</span>{% endif %}
+        </td>
         <td class="rc-notes notes-cell">
           {% if row.note_count > 0 %}
           <a href="{{ url_for('retail_detail', retail_id=row.retail_id) }}#notes" class="note-count-link">{{ row.note_count }} note{{ 's' if row.note_count != 1 else '' }}</a>
@@ -198,7 +211,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="14" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>

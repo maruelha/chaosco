@@ -766,6 +766,7 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .rc-defect   { width: 110px; }
 .rc-billing  { width: 140px; }
 .rc-next     { width: 220px; }
+.rc-action   { width: 80px; }
 .rc-notes    { width: 130px; }
 .rc-cmtbtn   { width: 90px; }
 

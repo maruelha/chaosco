@@ -264,18 +264,14 @@ def spillover_critical_save(spillover_id: int):
 
 @app.route("/retail")
 def retail_list():
-    statuses   = request.args.getlist("status")
-    assignees  = request.args.getlist("assigned_to")
-    countries  = request.args.getlist("country")
-    scenarios  = request.args.getlist("scenario")
+    statuses      = request.args.getlist("status")
+    assignees     = request.args.getlist("assigned_to")
+    countries     = request.args.getlist("country")
+    scenarios     = request.args.getlist("scenario")
+    action_needed = request.args.get("action_needed", "")
     search_defect  = request.args.get("search_defect", "").strip() or None
     search_order   = request.args.get("search_order", "").strip() or None
     search_billing = request.args.get("search_billing", "").strip() or None
-
-    # Combine search terms: each non-empty field is ANDed at DB level via get_retail
-    # We pass them separately so get_retail can build the right WHERE clauses.
-    # For now, chain multiple search terms by running them as one OR-per-field.
-    search = search_defect or search_order or search_billing
 
     conn = _get_conn()
     try:
@@ -288,6 +284,7 @@ def retail_list():
             search_defect=search_defect,
             search_order=search_order,
             search_billing=search_billing,
+            action_needed=action_needed or None,
         )
         options = database.get_retail_filter_options(conn)
     finally:
@@ -301,6 +298,7 @@ def retail_list():
         assignees=assignees,
         countries=countries,
         scenarios=scenarios,
+        action_needed=action_needed,
         search_defect=search_defect or "",
         search_order=search_order or "",
         search_billing=search_billing or "",
@@ -314,7 +312,8 @@ def retail_annotation_save(retail_id: int):
     try:
         existing        = database.get_retail_annotation(conn, retail_id)
         comment_history = existing["comment_history"] if existing else None
-        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+        action_needed   = existing["action_needed"] if existing else 0
+        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history, action_needed)
         ann = database.get_retail_annotation(conn, retail_id)
     finally:
         conn.close()
@@ -329,9 +328,10 @@ def retail_comment_save(retail_id: int):
     comment_history = request.form.get("comment_history", "").strip() or None
     conn = _get_conn()
     try:
-        existing  = database.get_retail_annotation(conn, retail_id)
-        next_step = existing["next_step"] if existing else None
-        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+        existing      = database.get_retail_annotation(conn, retail_id)
+        next_step     = existing["next_step"] if existing else None
+        action_needed = existing["action_needed"] if existing else 0
+        database.upsert_retail_annotation(conn, retail_id, next_step, comment_history, action_needed)
         ann = database.get_retail_annotation(conn, retail_id)
     finally:
         conn.close()
@@ -609,7 +609,8 @@ def retail_detail(retail_id: int):
         if request.method == "POST":
             next_step       = request.form.get("next_step", "").strip() or None
             comment_history = request.form.get("comment_history", "").strip() or None
-            database.upsert_retail_annotation(conn, retail_id, next_step, comment_history)
+            action_needed   = 1 if request.form.get("action_needed") == "1" else 0
+            database.upsert_retail_annotation(conn, retail_id, next_step, comment_history, action_needed)
             conn.close()
             return redirect(url_for("retail_detail", retail_id=retail_id, saved="1"))
         notes = database.list_notes(conn, "retail", retail_id)

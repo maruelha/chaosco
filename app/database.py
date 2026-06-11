@@ -287,6 +287,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    for col in ("action_needed INTEGER DEFAULT 0",):
+        try:
+            conn.execute(f"ALTER TABLE retail_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     return conn
 
 
@@ -772,12 +778,14 @@ def get_retail(
     search_defect: str | None = None,
     search_order: str | None = None,
     search_billing: str | None = None,
+    action_needed: str | None = None,
 ) -> list[dict]:
     """Return retail rows LEFT JOINed with annotations. All filters/searches optional and ANDed."""
     sql = """
         SELECT r.*,
                a.next_step, a.comment_history,
                a.updated_at AS annotation_updated_at,
+               COALESCE(a.action_needed, 0) AS action_needed,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'retail'
                 AND n.entity_id = CAST(r.retail_id AS TEXT)) AS note_count
         FROM retail r
@@ -808,6 +816,11 @@ def get_retail(
         sql += " AND r.s4_billing_documents LIKE ?"
         params.append(f"%{search_billing}%")
 
+    if action_needed == "yes":
+        sql += " AND COALESCE(a.action_needed, 0) = 1"
+    elif action_needed == "no":
+        sql += " AND COALESCE(a.action_needed, 0) = 0"
+
     sql += " ORDER BY r.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -830,6 +843,7 @@ def get_retail_by_id(conn: sqlite3.Connection, retail_id: int) -> dict | None:
         SELECT r.*,
                a.next_step, a.comment_history,
                a.updated_at AS annotation_updated_at,
+               COALESCE(a.action_needed, 0) AS action_needed,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'retail'
                 AND n.entity_id = CAST(r.retail_id AS TEXT)) AS note_count
         FROM retail r
@@ -852,19 +866,21 @@ def upsert_retail_annotation(
     retail_id: int,
     next_step: str | None,
     comment_history: str | None,
+    action_needed: int = 0,
 ) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
             """
-            INSERT INTO retail_annotations (retail_id, next_step, comment_history, updated_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO retail_annotations (retail_id, next_step, comment_history, action_needed, updated_at)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(retail_id) DO UPDATE SET
                 next_step       = excluded.next_step,
                 comment_history = excluded.comment_history,
+                action_needed   = excluded.action_needed,
                 updated_at      = excluded.updated_at
             """,
-            (retail_id, next_step, comment_history, now),
+            (retail_id, next_step, comment_history, action_needed, now),
         )
 
 
