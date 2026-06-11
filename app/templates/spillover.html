@@ -148,9 +148,9 @@
         <th class="sc-extid">Ext. ID</th>
         <th class="sc-orders">Order numbers</th>
         <th class="sc-critical">Critical for sign-off</th>
+        <th class="sc-signoffcmt">Comment for sign-off</th>
         <th class="sc-imp">Importance for sign-off</th>
         <th class="sc-next">Next step</th>
-        <th class="sc-signoffcmt">Comment for sign-off</th>
         <th class="sc-cmtbtn"></th>
       </tr>
     </thead>
@@ -185,6 +185,15 @@
             <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
           </select>
         </td>
+        <td class="sc-signoffcmt cell-commentsignoff">
+          <span class="cell-edit js-open-ann">
+            {% if row.comment_for_signoff %}
+              {{ row.comment_for_signoff }}
+            {% else %}
+              <span class="cell-placeholder">— click to edit</span>
+            {% endif %}
+          </span>
+        </td>
         <td class="sc-imp cell-importance">
           <span class="cell-edit js-open-ann">
             {% if row.importance_for_signoff %}
@@ -198,15 +207,6 @@
           <span class="cell-edit js-open-ann">
             {% if row.next_step %}
               {{ row.next_step }}
-            {% else %}
-              <span class="cell-placeholder">— click to edit</span>
-            {% endif %}
-          </span>
-        </td>
-        <td class="sc-signoffcmt cell-commentsignoff">
-          <span class="cell-edit js-open-ann">
-            {% if row.comment_for_signoff %}
-              {{ row.comment_for_signoff }}
             {% else %}
               <span class="cell-placeholder">— click to edit</span>
             {% endif %}
