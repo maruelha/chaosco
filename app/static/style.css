@@ -947,3 +947,40 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .enh-item-actions { display: flex; gap: 0.4rem; }
 .enh-status-sel { font-size: 0.78rem; }
 .enh-empty { color: #aaa; font-style: italic; font-size: 0.85rem; margin: 0.5rem 0; }
+
+/* --------------------------------------------------------------- to-do list */
+.todo-add-form { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+.todo-filters  { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: #f8f8f8; border-radius: 6px; }
+.todo-input    { font-size: 0.875rem; padding: 0.35rem 0.55rem; border: 1px solid #ccc; border-radius: 4px; }
+.todo-topic    { flex: 1; min-width: 220px; }
+.todo-short    { min-width: 100px; }
+.todo-filter   { min-width: 100px; }
+.todo-closed-toggle { font-size: 0.82rem; display: flex; align-items: center; gap: 0.3rem; color: #555; }
+.todo-table    { width: 100%; border-collapse: collapse; }
+.todo-table th { background: #f0f0f0; padding: 6px 10px; text-align: left; border-bottom: 2px solid #ccc; font-size: 0.83rem; white-space: nowrap; }
+.todo-table td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; font-size: 0.875rem; }
+.todo-row.todo-status--closed td { color: #aaa; text-decoration: line-through; }
+.todo-row.todo-status--blocked td { background: #fff8f0; }
+.todo-row.todo-status--in_progress td { background: #f0f5ff; }
+.td-prio  { width: 28px; text-align: center; }
+.td-area  { width: 100px; }
+.td-whom  { width: 100px; }
+.td-due   { width: 100px; white-space: nowrap; }
+.td-status { width: 130px; }
+.td-notes  { width: 110px; }
+.td-overdue { color: #c00 !important; font-weight: 600; }
+.td-today   { color: #b45309 !important; font-weight: 600; }
+.todo-prio  { display: inline-flex; align-items: center; justify-content: center;
+              width: 20px; height: 20px; border-radius: 50%; font-size: 0.72rem;
+              font-weight: 700; color: #fff; }
+.todo-prio--high   { background: #c00; }
+.todo-prio--medium { background: #d97706; }
+.todo-prio--low    { background: #aaa; }
+.todo-status-sel   { width: 100%; }
+.todo-notes-row td { background: #fafcff; padding: 0.7rem 1rem 0.7rem 2.5rem; }
+.todo-notes-cell   { }
+.todo-notes-list   { margin-bottom: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.todo-note-item    { font-size: 0.85rem; padding: 0.3rem 0.5rem; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; }
+.todo-note-ts      { color: #aaa; font-size: 0.78rem; margin-right: 0.5rem; }
+.todo-note-add     { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.4rem; }
+.todo-note-textarea { flex: 1; min-width: 0; font-size: 0.85rem; }

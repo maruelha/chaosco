@@ -258,6 +258,25 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         );
 
         -- Manually tracked production defects for sign-off discussions.
+        CREATE TABLE IF NOT EXISTS todos (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            area       TEXT,
+            topic      TEXT NOT NULL,
+            status     TEXT NOT NULL DEFAULT 'open',
+            priority   TEXT NOT NULL DEFAULT 'Medium',
+            due_date   TEXT,
+            for_whom   TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS todo_notes (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            todo_id    INTEGER NOT NULL REFERENCES todos(id),
+            note       TEXT NOT NULL,
+            created_at TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS meeting_prep (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             meeting    TEXT NOT NULL,
@@ -1139,3 +1158,97 @@ def set_enhancement_status(conn: sqlite3.Connection, item_id: int, status: str) 
         (status, now, item_id),
     )
     conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# To-do list
+# ---------------------------------------------------------------------------
+
+TODO_STATUSES   = ["open", "in_progress", "blocked", "closed"]
+TODO_PRIORITIES = ["High", "Medium", "Low"]
+
+
+def get_todos(conn: sqlite3.Connection,
+              area: str | None = None,
+              status: str | None = None,
+              priority: str | None = None,
+              for_whom: str | None = None,
+              due_date: str | None = None,
+              include_closed: bool = False) -> list[dict]:
+    where, params = [], []
+    if not include_closed:
+        where.append("t.status != 'closed'")
+    if area:
+        where.append("t.area = ?"); params.append(area)
+    if status:
+        where.append("t.status = ?"); params.append(status)
+    if priority:
+        where.append("t.priority = ?"); params.append(priority)
+    if for_whom:
+        where.append("t.for_whom = ?"); params.append(for_whom)
+    if due_date:
+        where.append("t.due_date = ?"); params.append(due_date)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    rows = conn.execute(f"""
+        SELECT t.*,
+               COUNT(n.id) AS note_count
+        FROM   todos t
+        LEFT JOIN todo_notes n ON n.todo_id = t.id
+        {clause}
+        GROUP BY t.id
+        ORDER BY
+          CASE t.status WHEN 'blocked' THEN 0 WHEN 'in_progress' THEN 1
+                        WHEN 'open' THEN 2 ELSE 3 END,
+          CASE t.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
+          t.due_date NULLS LAST
+    """, params).fetchall()
+    cols = [d[0] for d in rows[0].description] if rows else \
+           [d[0] for d in conn.execute("SELECT *, 0 AS note_count FROM todos LIMIT 0").description]
+    # simpler column list
+    col_names = [d[0] for d in conn.execute(
+        "SELECT t.*, 0 AS note_count FROM todos t LIMIT 0"
+    ).description]
+    return [dict(zip(col_names, r)) for r in rows]
+
+
+def get_todo_filter_options(conn: sqlite3.Connection) -> dict:
+    areas    = [r[0] for r in conn.execute(
+        "SELECT DISTINCT area FROM todos WHERE area IS NOT NULL ORDER BY area").fetchall()]
+    for_whom = [r[0] for r in conn.execute(
+        "SELECT DISTINCT for_whom FROM todos WHERE for_whom IS NOT NULL ORDER BY for_whom").fetchall()]
+    return {"areas": areas, "for_whom": for_whom}
+
+
+def add_todo(conn: sqlite3.Connection, area: str, topic: str, priority: str,
+             due_date: str, for_whom: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    cur = conn.execute(
+        "INSERT INTO todos (area, topic, status, priority, due_date, for_whom, created_at, updated_at)"
+        " VALUES (?, ?, 'open', ?, ?, ?, ?, ?)",
+        (area or None, topic, priority, due_date or None, for_whom or None, now, now),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def set_todo_status(conn: sqlite3.Connection, todo_id: int, status: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute("UPDATE todos SET status=?, updated_at=? WHERE id=?", (status, now, todo_id))
+    conn.commit()
+
+
+def get_todo_notes(conn: sqlite3.Connection, todo_id: int) -> list[dict]:
+    rows = conn.execute(
+        "SELECT id, note, created_at FROM todo_notes WHERE todo_id=? ORDER BY id", (todo_id,)
+    ).fetchall()
+    return [{"id": r[0], "note": r[1], "created_at": r[2]} for r in rows]
+
+
+def add_todo_note(conn: sqlite3.Connection, todo_id: int, note: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    cur = conn.execute(
+        "INSERT INTO todo_notes (todo_id, note, created_at) VALUES (?, ?, ?)",
+        (todo_id, note, now),
+    )
+    conn.commit()
+    return cur.lastrowid

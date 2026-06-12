@@ -863,6 +863,87 @@ def meeting_prep_note(item_id: int):
 
 
 # ---------------------------------------------------------------------------
+# To-do list
+# ---------------------------------------------------------------------------
+
+@app.route("/todos")
+def todo_list():
+    f_area    = request.args.get("area", "")
+    f_status  = request.args.get("status", "")
+    f_prio    = request.args.get("priority", "")
+    f_whom    = request.args.get("for_whom", "")
+    f_due     = request.args.get("due_date", "")
+    f_closed  = request.args.get("closed", "") == "1"
+    conn = _get_conn()
+    try:
+        items   = database.get_todos(conn,
+                    area=f_area or None, status=f_status or None,
+                    priority=f_prio or None, for_whom=f_whom or None,
+                    due_date=f_due or None, include_closed=f_closed)
+        opts    = database.get_todo_filter_options(conn)
+    finally:
+        conn.close()
+    today = date.today().isoformat()
+    return render_template("todo_list.html",
+        items=items, opts=opts, today=today,
+        statuses=database.TODO_STATUSES,
+        priorities=database.TODO_PRIORITIES,
+        f_area=f_area, f_status=f_status, f_prio=f_prio,
+        f_whom=f_whom, f_due=f_due, f_closed=f_closed)
+
+
+@app.route("/todos/add", methods=["POST"])
+def todo_add():
+    topic    = request.form.get("topic", "").strip()
+    area     = request.form.get("area", "").strip()
+    priority = request.form.get("priority", "Medium")
+    due_date = request.form.get("due_date", "").strip()
+    for_whom = request.form.get("for_whom", "").strip()
+    if topic:
+        conn = _get_conn()
+        try:
+            database.add_todo(conn, area, topic, priority, due_date, for_whom)
+        finally:
+            conn.close()
+    return redirect(url_for("todo_list"))
+
+
+@app.route("/todos/<int:todo_id>/status", methods=["POST"])
+def todo_status(todo_id: int):
+    status = request.form.get("status", "open")
+    conn = _get_conn()
+    try:
+        database.set_todo_status(conn, todo_id, status)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "status": status})
+
+
+@app.route("/todos/<int:todo_id>/notes")
+def todo_notes(todo_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.get_todo_notes(conn, todo_id)
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/todos/<int:todo_id>/notes/add", methods=["POST"])
+def todo_note_add(todo_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        nid = database.add_todo_note(conn, todo_id, note)
+        notes = database.get_todo_notes(conn, todo_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "id": nid, "notes": notes})
+
+
+# ---------------------------------------------------------------------------
 # Enhancements (floating panel, JSON API)
 # ---------------------------------------------------------------------------
 

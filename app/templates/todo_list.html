@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}To-Do — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>To-Do</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+</div>
+
+{# ---- Add form ---- #}
+<form method="post" action="{{ url_for('todo_add') }}" class="todo-add-form">
+  <input  name="topic"    type="text"  placeholder="Topic *"   required class="todo-input todo-topic">
+  <input  name="area"     type="text"  placeholder="Area"               class="todo-input todo-short">
+  <select name="priority"                                                class="todo-input todo-short">
+    {% for p in priorities %}
+      <option value="{{ p }}" {% if p == 'Medium' %}selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+  <input  name="due_date" type="date"                                   class="todo-input todo-short">
+  <input  name="for_whom" type="text"  placeholder="For whom"           class="todo-input todo-short">
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{# ---- Filters ---- #}
+<form method="get" action="{{ url_for('todo_list') }}" class="todo-filters">
+  <select name="area" class="todo-input todo-filter" onchange="this.form.submit()">
+    <option value="">All areas</option>
+    {% for a in opts.areas %}
+      <option value="{{ a }}" {% if f_area == a %}selected{% endif %}>{{ a }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="todo-input todo-filter" onchange="this.form.submit()">
+    <option value="">All statuses</option>
+    {% for s in statuses %}
+      <option value="{{ s }}" {% if f_status == s %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority" class="todo-input todo-filter" onchange="this.form.submit()">
+    <option value="">All priorities</option>
+    {% for p in priorities %}
+      <option value="{{ p }}" {% if f_prio == p %}selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+  <select name="for_whom" class="todo-input todo-filter" onchange="this.form.submit()">
+    <option value="">All owners</option>
+    {% for w in opts.for_whom %}
+      <option value="{{ w }}" {% if f_whom == w %}selected{% endif %}>{{ w }}</option>
+    {% endfor %}
+  </select>
+  <input name="due_date" type="date" value="{{ f_due }}" class="todo-input todo-filter"
+         onchange="this.form.submit()">
+  <label class="todo-closed-toggle">
+    <input type="checkbox" name="closed" value="1" {% if f_closed %}checked{% endif %}
+           onchange="this.form.submit()"> Show closed
+  </label>
+  {% if f_area or f_status or f_prio or f_whom or f_due %}
+    <a href="{{ url_for('todo_list', closed='1' if f_closed else '') }}" class="btn btn-sm">Clear</a>
+  {% endif %}
+  <span class="list-meta">{{ items|length }} item(s)</span>
+</form>
+
+{# ---- List ---- #}
+{% if items %}
+<table class="todo-table">
+  <thead>
+    <tr>
+      <th class="td-prio"></th>
+      <th class="td-area">Area</th>
+      <th class="td-topic">Topic</th>
+      <th class="td-whom">For whom</th>
+      <th class="td-due">Due</th>
+      <th class="td-status">Status</th>
+      <th class="td-notes"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in items %}
+    {% set overdue = item.due_date and item.due_date < today and item.status != 'closed' %}
+    {% set due_today = item.due_date == today and item.status != 'closed' %}
+    <tr class="todo-row todo-status--{{ item.status }}" data-id="{{ item.id }}">
+      <td class="td-prio">
+        <span class="todo-prio todo-prio--{{ item.priority|lower }}">{{ item.priority[0] }}</span>
+      </td>
+      <td class="td-area">{{ item.area or '—' }}</td>
+      <td class="td-topic">{{ item.topic }}</td>
+      <td class="td-whom">{{ item.for_whom or '—' }}</td>
+      <td class="td-due {% if overdue %}td-overdue{% elif due_today %}td-today{% endif %}">
+        {{ item.due_date or '—' }}
+      </td>
+      <td class="td-status">
+        <select class="todo-input todo-status-sel js-status-sel">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if item.status == s %}selected{% endif %}>
+              {{ s.replace('_',' ').title() }}
+            </option>
+          {% endfor %}
+        </select>
+      </td>
+      <td class="td-notes">
+        <button class="btn btn-sm js-notes-toggle">
+          Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
+        </button>
+      </td>
+    </tr>
+    <tr class="todo-notes-row" style="display:none" data-id="{{ item.id }}">
+      <td colspan="7" class="todo-notes-cell">
+        <div class="todo-notes-list js-notes-list">Loading…</div>
+        <div class="todo-note-add">
+          <textarea class="todo-input todo-note-textarea js-note-input" rows="2"
+                    placeholder="Add a note…"></textarea>
+          <button class="btn btn-sm btn-primary js-note-save">Save note</button>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="list-empty">No items. Add one above.</p>
+{% endif %}
+
+<script>
+(function () {
+  // Status select
+  document.querySelectorAll('.js-status-sel').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const row = sel.closest('tr');
+      const id  = row.dataset.id;
+      const fd  = new FormData();
+      fd.append('status', sel.value);
+      await fetch(`/todos/${id}/status`, { method: 'POST', body: fd });
+      location.reload();
+    });
+  });
+
+  // Notes toggle
+  document.querySelectorAll('.js-notes-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mainRow  = btn.closest('tr');
+      const notesRow = mainRow.nextElementSibling;
+      const id       = mainRow.dataset.id;
+      const open     = notesRow.style.display !== 'none';
+      if (open) {
+        notesRow.style.display = 'none';
+        return;
+      }
+      notesRow.style.display = '';
+      const list = notesRow.querySelector('.js-notes-list');
+      list.innerHTML = 'Loading…';
+      const resp  = await fetch(`/todos/${id}/notes`);
+      const notes = await resp.json();
+      renderNotes(list, notes);
+    });
+  });
+
+  function renderNotes(el, notes) {
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(n =>
+      `<div class="todo-note-item"><span class="todo-note-ts">${n.created_at}</span> ${n.note}</div>`
+    ).join('');
+  }
+
+  // Save note
+  document.querySelectorAll('.js-note-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const cell    = btn.closest('.todo-notes-cell');
+      const notesRow = btn.closest('tr');
+      const id      = notesRow.dataset.id;
+      const input   = cell.querySelector('.js-note-input');
+      const text    = input.value.trim();
+      if (!text) return;
+      const fd = new FormData();
+      fd.append('note', text);
+      const resp = await fetch(`/todos/${id}/notes/add`, { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.ok) {
+        input.value = '';
+        renderNotes(cell.querySelector('.js-notes-list'), data.notes);
+        // Update note count button
+        const mainRow = notesRow.previousElementSibling;
+        const toggleBtn = mainRow.querySelector('.js-notes-toggle');
+        toggleBtn.textContent = `Notes (${data.notes.length})`;
+      }
+    });
+  });
+}());
+</script>
+{% endblock %}
