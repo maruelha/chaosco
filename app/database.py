@@ -698,6 +698,7 @@ def get_spillover(
     areas: list[str] | None = None,
     types: list[str] | None = None,
     assignees: list[str] | None = None,
+    critical: list[str] | None = None,
     search: str | None = None,
     exclude_statuses: list[str] | None = None,
 ) -> list[dict]:
@@ -731,6 +732,8 @@ def get_spillover(
         _in("s.type", types)
     if assignees:
         _in("s.assigned_to", assignees)
+    if critical:
+        _in("a.critical_for_signoff", critical)
     sql += "".join(sql_parts)
 
     if search:

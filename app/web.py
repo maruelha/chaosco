@@ -162,6 +162,7 @@ def spillover_list():
     type_       = request.args.getlist("type")
     status      = request.args.getlist("status")
     assigned_to = request.args.getlist("assigned_to")
+    critical    = request.args.getlist("critical")
     show_all    = request.args.get("show_all") == "1"
 
     hidden = _cfg.get("spillover_hidden_statuses", [])
@@ -175,6 +176,7 @@ def spillover_list():
             areas=area or None,
             types=type_ or None,
             assignees=assigned_to or None,
+            critical=critical or None,
             exclude_statuses=exclude or None,
         )
         options = database.get_spillover_filter_options(conn)
@@ -189,6 +191,7 @@ def spillover_list():
         type_=type_,
         status=status,
         assigned_to=assigned_to,
+        critical=critical,
         show_all=show_all,
         hidden_statuses=hidden,
     )
