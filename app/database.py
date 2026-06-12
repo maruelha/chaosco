@@ -1258,6 +1258,16 @@ def set_todo_status(conn: sqlite3.Connection, todo_id: int, status: str) -> None
     conn.commit()
 
 
+def update_todo(conn: sqlite3.Connection, todo_id: int, area: str, kind: str,
+                topic: str, priority: str, due_date: str, for_whom: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE todos SET area=?, kind=?, topic=?, priority=?, due_date=?, for_whom=?, updated_at=? WHERE id=?",
+        (area or None, kind or None, topic, priority, due_date or None, for_whom or None, now, todo_id),
+    )
+    conn.commit()
+
+
 # ---------------------------------------------------------------------------
 # Follow-ups
 # ---------------------------------------------------------------------------

@@ -105,10 +105,29 @@
         <button class="btn btn-sm js-notes-toggle">
           Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
         </button>
+        <button class="btn btn-sm js-edit-toggle">Edit</button>
+      </td>
+    </tr>
+    <tr class="todo-edit-row" style="display:none" data-id="{{ item.id }}">
+      <td colspan="8" class="todo-edit-cell">
+        <div class="todo-edit-form">
+          <input  class="todo-input todo-topic  js-edit-topic"    type="text"  value="{{ item.topic }}"           placeholder="Topic *">
+          <input  class="todo-input todo-short  js-edit-area"     type="text"  value="{{ item.area or '' }}"      placeholder="Area">
+          <input  class="todo-input todo-short  js-edit-kind"     type="text"  value="{{ item.kind or '' }}"      placeholder="Kind">
+          <select class="todo-input todo-short  js-edit-priority">
+            {% for p in priorities %}
+              <option value="{{ p }}" {% if item.priority == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+          <input  class="todo-input todo-short  js-edit-due"      type="date"  value="{{ item.due_date or '' }}">
+          <input  class="todo-input todo-short  js-edit-whom"     type="text"  value="{{ item.for_whom or '' }}"  placeholder="For whom">
+          <button class="btn btn-sm btn-primary js-edit-save">Save</button>
+          <button class="btn btn-sm            js-edit-cancel">Cancel</button>
+        </div>
       </td>
     </tr>
     <tr class="todo-notes-row" style="display:none" data-id="{{ item.id }}">
-      <td colspan="7" class="todo-notes-cell">
+      <td colspan="8" class="todo-notes-cell">
         <div class="todo-notes-list js-notes-list">Loading…</div>
         <div class="todo-note-add">
           <textarea class="todo-input todo-note-textarea js-note-input" rows="2"
@@ -129,11 +148,42 @@
   // Status select
   document.querySelectorAll('.js-status-sel').forEach(sel => {
     sel.addEventListener('change', async () => {
-      const row = sel.closest('tr');
-      const id  = row.dataset.id;
-      const fd  = new FormData();
+      const id = sel.closest('tr').dataset.id;
+      const fd = new FormData();
       fd.append('status', sel.value);
       await fetch(`/todos/${id}/status`, { method: 'POST', body: fd });
+      location.reload();
+    });
+  });
+
+  // Edit toggle
+  document.querySelectorAll('.js-edit-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id      = btn.closest('tr').dataset.id;
+      const editRow = document.querySelector(`.todo-edit-row[data-id="${id}"]`);
+      editRow.style.display = editRow.style.display === 'none' ? '' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.js-edit-cancel').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.todo-edit-row').style.display = 'none';
+    });
+  });
+
+  document.querySelectorAll('.js-edit-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const editRow = btn.closest('.todo-edit-row');
+      const id      = editRow.dataset.id;
+      const fd      = new FormData();
+      fd.append('topic',    editRow.querySelector('.js-edit-topic').value.trim());
+      fd.append('area',     editRow.querySelector('.js-edit-area').value.trim());
+      fd.append('kind',     editRow.querySelector('.js-edit-kind').value.trim());
+      fd.append('priority', editRow.querySelector('.js-edit-priority').value);
+      fd.append('due_date', editRow.querySelector('.js-edit-due').value);
+      fd.append('for_whom', editRow.querySelector('.js-edit-whom').value.trim());
+      if (!fd.get('topic')) return;
+      await fetch(`/todos/${id}/edit`, { method: 'POST', body: fd });
       location.reload();
     });
   });
@@ -141,19 +191,14 @@
   // Notes toggle
   document.querySelectorAll('.js-notes-toggle').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const mainRow  = btn.closest('tr');
-      const notesRow = mainRow.nextElementSibling;
-      const id       = mainRow.dataset.id;
+      const id       = btn.closest('tr').dataset.id;
+      const notesRow = document.querySelector(`.todo-notes-row[data-id="${id}"]`);
       const open     = notesRow.style.display !== 'none';
-      if (open) {
-        notesRow.style.display = 'none';
-        return;
-      }
+      if (open) { notesRow.style.display = 'none'; return; }
       notesRow.style.display = '';
       const list = notesRow.querySelector('.js-notes-list');
       list.innerHTML = 'Loading…';
-      const resp  = await fetch(`/todos/${id}/notes`);
-      const notes = await resp.json();
+      const notes = await (await fetch(`/todos/${id}/notes`)).json();
       renderNotes(list, notes);
     });
   });
@@ -171,23 +216,18 @@
   // Save note
   document.querySelectorAll('.js-note-save').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const cell    = btn.closest('.todo-notes-cell');
-      const notesRow = btn.closest('tr');
-      const id      = notesRow.dataset.id;
-      const input   = cell.querySelector('.js-note-input');
-      const text    = input.value.trim();
+      const cell     = btn.closest('.todo-notes-cell');
+      const id       = btn.closest('tr').dataset.id;
+      const input    = cell.querySelector('.js-note-input');
+      const text     = input.value.trim();
       if (!text) return;
       const fd = new FormData();
       fd.append('note', text);
-      const resp = await fetch(`/todos/${id}/notes/add`, { method: 'POST', body: fd });
-      const data = await resp.json();
+      const data = await (await fetch(`/todos/${id}/notes/add`, { method: 'POST', body: fd })).json();
       if (data.ok) {
         input.value = '';
         renderNotes(cell.querySelector('.js-notes-list'), data.notes);
-        // Update note count button
-        const mainRow = notesRow.previousElementSibling;
-        const toggleBtn = mainRow.querySelector('.js-notes-toggle');
-        toggleBtn.textContent = `Notes (${data.notes.length})`;
+        document.querySelector(`.todo-row[data-id="${id}"] .js-notes-toggle`).textContent = `Notes (${data.notes.length})`;
       }
     });
   });

@@ -933,6 +933,23 @@ def todo_add():
     return redirect(url_for("todo_list"))
 
 
+@app.route("/todos/<int:todo_id>/edit", methods=["POST"])
+def todo_edit(todo_id: int):
+    topic    = request.form.get("topic", "").strip()
+    area     = request.form.get("area", "").strip()
+    kind     = request.form.get("kind", "").strip()
+    priority = request.form.get("priority", "Medium")
+    due_date = request.form.get("due_date", "").strip()
+    for_whom = request.form.get("for_whom", "").strip()
+    if topic:
+        conn = _get_conn()
+        try:
+            database.update_todo(conn, todo_id, area, kind, topic, priority, due_date, for_whom)
+        finally:
+            conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/todos/<int:todo_id>/status", methods=["POST"])
 def todo_status(todo_id: int):
     status = request.form.get("status", "open")
