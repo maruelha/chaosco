@@ -20,6 +20,7 @@ known_statuses:
   - "Ready for Validation Prio"
   - "Failed"
   - "Not Ready"
+  - "Blocked by taxes"
   - "Yet to Upload"
   - "Dropped"
   - "Sales In Progress"
@@ -27,6 +28,7 @@ known_statuses:
 known_unmapped:
   - "Failed"
   - "Not Ready"
+  - "Blocked by taxes"
   - "Yet to Upload"
   - "Dropped"
   - "Sales In Progress"
