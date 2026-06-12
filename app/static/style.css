@@ -984,3 +984,4 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .todo-note-ts      { color: #aaa; font-size: 0.78rem; margin-right: 0.5rem; }
 .todo-note-add     { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.4rem; }
 .todo-note-textarea { flex: 1; min-width: 0; font-size: 0.85rem; }
+.td-kind { width: 90px; font-size: 0.8rem; color: #555; }

@@ -13,6 +13,7 @@
 <form method="post" action="{{ url_for('todo_add') }}" class="todo-add-form">
   <input  name="topic"    type="text"  placeholder="Topic *"   required class="todo-input todo-topic">
   <input  name="area"     type="text"  placeholder="Area"               class="todo-input todo-short">
+  <input  name="kind"     type="text"  placeholder="Kind"               class="todo-input todo-short">
   <select name="priority"                                                class="todo-input todo-short">
     {% for p in priorities %}
       <option value="{{ p }}" {% if p == 'Medium' %}selected{% endif %}>{{ p }}</option>
@@ -68,6 +69,7 @@
     <tr>
       <th class="td-prio"></th>
       <th class="td-area">Area</th>
+      <th class="td-kind">Kind</th>
       <th class="td-topic">Topic</th>
       <th class="td-whom">For whom</th>
       <th class="td-due">Due</th>
@@ -84,6 +86,7 @@
         <span class="todo-prio todo-prio--{{ item.priority|lower }}">{{ item.priority[0] }}</span>
       </td>
       <td class="td-area">{{ item.area or '—' }}</td>
+      <td class="td-kind">{{ item.kind or '—' }}</td>
       <td class="td-topic">{{ item.topic }}</td>
       <td class="td-whom">{{ item.for_whom or '—' }}</td>
       <td class="td-due {% if overdue %}td-overdue{% elif due_today %}td-today{% endif %}">
@@ -161,7 +164,7 @@
       return;
     }
     el.innerHTML = notes.map(n =>
-      `<div class="todo-note-item"><span class="todo-note-ts">${n.created_at}</span> ${n.note}</div>`
+      `<div class="todo-note-item"><span class="todo-note-ts">${n.created_at}</span> ${n.note || n.heading || ''}</div>`
     ).join('');
   }
 

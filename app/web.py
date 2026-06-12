@@ -896,13 +896,14 @@ def todo_list():
 def todo_add():
     topic    = request.form.get("topic", "").strip()
     area     = request.form.get("area", "").strip()
+    kind     = request.form.get("kind", "").strip()
     priority = request.form.get("priority", "Medium")
     due_date = request.form.get("due_date", "").strip()
     for_whom = request.form.get("for_whom", "").strip()
     if topic:
         conn = _get_conn()
         try:
-            database.add_todo(conn, area, topic, priority, due_date, for_whom)
+            database.add_todo(conn, area, kind, topic, priority, due_date, for_whom)
         finally:
             conn.close()
     return redirect(url_for("todo_list"))
@@ -923,7 +924,7 @@ def todo_status(todo_id: int):
 def todo_notes(todo_id: int):
     conn = _get_conn()
     try:
-        notes = database.get_todo_notes(conn, todo_id)
+        notes = database.list_notes(conn, "todo", str(todo_id))
     finally:
         conn.close()
     return jsonify(notes)
@@ -936,11 +937,11 @@ def todo_note_add(todo_id: int):
         return jsonify({"ok": False, "error": "empty"})
     conn = _get_conn()
     try:
-        nid = database.add_todo_note(conn, todo_id, note)
-        notes = database.get_todo_notes(conn, todo_id)
+        database.add_note(conn, "todo", str(todo_id), None, note)
+        notes = database.list_notes(conn, "todo", str(todo_id))
     finally:
         conn.close()
-    return jsonify({"ok": True, "id": nid, "notes": notes})
+    return jsonify({"ok": True, "notes": notes})
 
 
 # ---------------------------------------------------------------------------

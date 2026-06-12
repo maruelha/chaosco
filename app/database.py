@@ -261,6 +261,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS todos (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             area       TEXT,
+            kind       TEXT,
             topic      TEXT NOT NULL,
             status     TEXT NOT NULL DEFAULT 'open',
             priority   TEXT NOT NULL DEFAULT 'Medium',
@@ -268,13 +269,6 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             for_whom   TEXT,
             created_at TEXT,
             updated_at TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS todo_notes (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            todo_id    INTEGER NOT NULL REFERENCES todos(id),
-            note       TEXT NOT NULL,
-            created_at TEXT
         );
 
         CREATE TABLE IF NOT EXISTS meeting_prep (
@@ -329,6 +323,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     for col in ("action_needed INTEGER DEFAULT 0",):
         try:
             conn.execute(f"ALTER TABLE retail_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col in ("kind TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE todos ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
@@ -1193,7 +1193,7 @@ def get_todos(conn: sqlite3.Connection,
         SELECT t.*,
                COUNT(n.id) AS note_count
         FROM   todos t
-        LEFT JOIN todo_notes n ON n.todo_id = t.id
+        LEFT JOIN notes n ON n.entity_type = 'todo' AND n.entity_id = CAST(t.id AS TEXT)
         {clause}
         GROUP BY t.id
         ORDER BY
@@ -1202,12 +1202,8 @@ def get_todos(conn: sqlite3.Connection,
           CASE t.priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END,
           t.due_date NULLS LAST
     """, params).fetchall()
-    cols = [d[0] for d in rows[0].description] if rows else \
-           [d[0] for d in conn.execute("SELECT *, 0 AS note_count FROM todos LIMIT 0").description]
-    # simpler column list
-    col_names = [d[0] for d in conn.execute(
-        "SELECT t.*, 0 AS note_count FROM todos t LIMIT 0"
-    ).description]
+    cur = conn.execute("SELECT t.*, 0 AS note_count FROM todos t LIMIT 0")
+    col_names = [d[0] for d in cur.description]
     return [dict(zip(col_names, r)) for r in rows]
 
 
@@ -1219,13 +1215,13 @@ def get_todo_filter_options(conn: sqlite3.Connection) -> dict:
     return {"areas": areas, "for_whom": for_whom}
 
 
-def add_todo(conn: sqlite3.Connection, area: str, topic: str, priority: str,
-             due_date: str, for_whom: str) -> int:
+def add_todo(conn: sqlite3.Connection, area: str, kind: str, topic: str,
+             priority: str, due_date: str, for_whom: str) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     cur = conn.execute(
-        "INSERT INTO todos (area, topic, status, priority, due_date, for_whom, created_at, updated_at)"
-        " VALUES (?, ?, 'open', ?, ?, ?, ?, ?)",
-        (area or None, topic, priority, due_date or None, for_whom or None, now, now),
+        "INSERT INTO todos (area, kind, topic, status, priority, due_date, for_whom, created_at, updated_at)"
+        " VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)",
+        (area or None, kind or None, topic, priority, due_date or None, for_whom or None, now, now),
     )
     conn.commit()
     return cur.lastrowid
@@ -1235,20 +1231,3 @@ def set_todo_status(conn: sqlite3.Connection, todo_id: int, status: str) -> None
     now = datetime.now().isoformat(timespec="seconds")
     conn.execute("UPDATE todos SET status=?, updated_at=? WHERE id=?", (status, now, todo_id))
     conn.commit()
-
-
-def get_todo_notes(conn: sqlite3.Connection, todo_id: int) -> list[dict]:
-    rows = conn.execute(
-        "SELECT id, note, created_at FROM todo_notes WHERE todo_id=? ORDER BY id", (todo_id,)
-    ).fetchall()
-    return [{"id": r[0], "note": r[1], "created_at": r[2]} for r in rows]
-
-
-def add_todo_note(conn: sqlite3.Connection, todo_id: int, note: str) -> int:
-    now = datetime.now().isoformat(timespec="seconds")
-    cur = conn.execute(
-        "INSERT INTO todo_notes (todo_id, note, created_at) VALUES (?, ?, ?)",
-        (todo_id, note, now),
-    )
-    conn.commit()
-    return cur.lastrowid
