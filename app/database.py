@@ -268,6 +268,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS enhancements (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            area         TEXT,
+            enhancement  TEXT NOT NULL,
+            priority     TEXT NOT NULL DEFAULT 'Medium',
+            status       TEXT NOT NULL DEFAULT 'not_started',
+            created_at   TEXT,
+            updated_at   TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS known_prod_defects (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             technical_key     TEXT,
@@ -1065,5 +1075,67 @@ def set_meeting_prep_note(conn: sqlite3.Connection, item_id: int, note: str) -> 
     conn.execute(
         "UPDATE meeting_prep SET note = ?, updated_at = ? WHERE id = ?",
         (note, now, item_id),
+    )
+    conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Enhancements
+# ---------------------------------------------------------------------------
+
+ENHANCEMENT_PRIORITIES = ["High", "Medium", "Low"]
+ENHANCEMENT_STATUSES   = ["not_started", "in_progress", "closed"]
+
+
+def get_enhancements(conn: sqlite3.Connection,
+                     area: str | None = None,
+                     priority: str | None = None,
+                     status: str | None = None,
+                     include_closed: bool = False) -> list[dict]:
+    where, params = [], []
+    if not include_closed:
+        where.append("status != 'closed'")
+    elif status:
+        where.append("status = ?")
+        params.append(status)
+    if area:
+        where.append("area = ?")
+        params.append(area)
+    if priority:
+        where.append("priority = ?")
+        params.append(priority)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    order  = "ORDER BY CASE priority WHEN 'High' THEN 1 WHEN 'Medium' THEN 2 ELSE 3 END, id"
+    rows = conn.execute(
+        f"SELECT * FROM enhancements {clause} {order}", params
+    ).fetchall()
+    cols = [d[0] for d in conn.execute("SELECT * FROM enhancements LIMIT 0").description]
+    return [dict(zip(cols, r)) for r in rows]
+
+
+def get_enhancement_areas(conn: sqlite3.Connection) -> list[str]:
+    rows = conn.execute(
+        "SELECT DISTINCT area FROM enhancements WHERE area IS NOT NULL ORDER BY area"
+    ).fetchall()
+    return [r[0] for r in rows]
+
+
+def add_enhancement(conn: sqlite3.Connection, area: str, enhancement: str,
+                    priority: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    cur = conn.execute(
+        "INSERT INTO enhancements (area, enhancement, priority, status, created_at, updated_at)"
+        " VALUES (?, ?, ?, 'not_started', ?, ?)",
+        (area or None, enhancement, priority, now, now),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def set_enhancement_status(conn: sqlite3.Connection, item_id: int, status: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE enhancements SET status = ?, updated_at = ? WHERE id = ?",
+        (status, now, item_id),
     )
     conn.commit()

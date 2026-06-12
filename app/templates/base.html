@@ -13,5 +13,148 @@
 <main class="container">
   {% block content %}{% endblock %}
 </main>
+
+{# ---- Future Enhancements floating panel ---- #}
+<div id="enh-widget">
+  <button id="enh-toggle" class="enh-toggle-btn" title="Future Enhancements">
+    <span id="enh-toggle-label">☆ Enhancements</span>
+  </button>
+  <div id="enh-panel" class="enh-panel" style="display:none">
+    <div class="enh-panel-header">
+      <strong>Future Enhancements</strong>
+      <button class="enh-close-btn" id="enh-close">✕</button>
+    </div>
+
+    {# Add form #}
+    <div class="enh-add-form">
+      <input id="enh-area"        type="text"   placeholder="Area"        class="enh-input enh-area-input">
+      <textarea id="enh-text"     placeholder="Enhancement…"              class="enh-input enh-text-input" rows="2"></textarea>
+      <select id="enh-prio" class="enh-input enh-prio-select">
+        <option value="High">High</option>
+        <option value="Medium" selected>Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <button id="enh-add-btn" class="btn btn-primary btn-sm">Add</button>
+    </div>
+
+    {# Filters #}
+    <div class="enh-filters">
+      <select id="enh-f-area"   class="enh-input enh-filter-sel"><option value="">All areas</option></select>
+      <select id="enh-f-prio"   class="enh-input enh-filter-sel">
+        <option value="">All prio</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <select id="enh-f-status" class="enh-input enh-filter-sel">
+        <option value="">All statuses</option>
+        <option value="not_started">Not started</option>
+        <option value="in_progress">In progress</option>
+      </select>
+      <label class="enh-closed-toggle">
+        <input type="checkbox" id="enh-show-closed"> Show closed
+      </label>
+    </div>
+
+    {# List #}
+    <div id="enh-list" class="enh-list"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STATUS_LABELS = { not_started: 'Not started', in_progress: 'In progress', closed: 'Closed' };
+  const PRIO_CLASS    = { High: 'enh-prio--high', Medium: 'enh-prio--med', Low: 'enh-prio--low' };
+
+  const toggle   = document.getElementById('enh-toggle');
+  const panel    = document.getElementById('enh-panel');
+  const closeBtn = document.getElementById('enh-close');
+
+  let open = false;
+
+  function setOpen(val) {
+    open = val;
+    panel.style.display = val ? 'flex' : 'none';
+    if (val) loadList();
+  }
+
+  toggle.addEventListener('click', () => setOpen(!open));
+  closeBtn.addEventListener('click', () => setOpen(false));
+
+  function filterParams() {
+    const p = new URLSearchParams();
+    const area   = document.getElementById('enh-f-area').value;
+    const prio   = document.getElementById('enh-f-prio').value;
+    const status = document.getElementById('enh-f-status').value;
+    const closed = document.getElementById('enh-show-closed').checked;
+    if (area)   p.set('area', area);
+    if (prio)   p.set('priority', prio);
+    if (status) p.set('status', status);
+    if (closed) p.set('closed', '1');
+    return p;
+  }
+
+  async function loadList() {
+    const resp = await fetch('/enhancements?' + filterParams());
+    const data = await resp.json();
+
+    // Refresh area options
+    const areaEl = document.getElementById('enh-f-area');
+    const cur    = areaEl.value;
+    areaEl.innerHTML = '<option value="">All areas</option>' +
+      data.areas.map(a => `<option value="${a}"${a===cur?' selected':''}>${a}</option>`).join('');
+
+    const list = document.getElementById('enh-list');
+    if (!data.items.length) {
+      list.innerHTML = '<p class="enh-empty">No items.</p>';
+      return;
+    }
+    list.innerHTML = data.items.map(item => `
+      <div class="enh-item enh-status--${item.status}" data-id="${item.id}">
+        <div class="enh-item-top">
+          ${item.area ? `<span class="enh-area-tag">${item.area}</span>` : ''}
+          <span class="enh-prio-tag ${PRIO_CLASS[item.priority]}">${item.priority}</span>
+          <span class="enh-status-tag">${STATUS_LABELS[item.status] || item.status}</span>
+        </div>
+        <div class="enh-item-text">${item.enhancement}</div>
+        <div class="enh-item-actions">
+          <select class="enh-input enh-status-sel" data-id="${item.id}">
+            <option value="not_started"${item.status==='not_started'?' selected':''}>Not started</option>
+            <option value="in_progress"${item.status==='in_progress'?' selected':''}>In progress</option>
+            <option value="closed"     ${item.status==='closed'     ?' selected':''}>Closed</option>
+          </select>
+        </div>
+      </div>`).join('');
+
+    list.querySelectorAll('.enh-status-sel').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        const fd = new FormData();
+        fd.append('status', sel.value);
+        await fetch(`/enhancements/${sel.dataset.id}/status`, { method: 'POST', body: fd });
+        loadList();
+      });
+    });
+  }
+
+  document.getElementById('enh-add-btn').addEventListener('click', async () => {
+    const area  = document.getElementById('enh-area').value.trim();
+    const text  = document.getElementById('enh-text').value.trim();
+    const prio  = document.getElementById('enh-prio').value;
+    if (!text) { document.getElementById('enh-text').focus(); return; }
+    const fd = new FormData();
+    fd.append('area', area);
+    fd.append('enhancement', text);
+    fd.append('priority', prio);
+    await fetch('/enhancements/add', { method: 'POST', body: fd });
+    document.getElementById('enh-area').value = '';
+    document.getElementById('enh-text').value = '';
+    loadList();
+  });
+
+  ['enh-f-area','enh-f-prio','enh-f-status','enh-show-closed'].forEach(id => {
+    document.getElementById(id).addEventListener('change', loadList);
+  });
+}());
+</script>
 </body>
 </html>

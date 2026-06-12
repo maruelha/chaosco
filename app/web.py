@@ -863,6 +863,61 @@ def meeting_prep_note(item_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Enhancements (floating panel, JSON API)
+# ---------------------------------------------------------------------------
+
+@app.route("/enhancements")
+def enhancements_list():
+    area           = request.args.get("area", "")
+    priority       = request.args.get("priority", "")
+    status         = request.args.get("status", "")
+    include_closed = request.args.get("closed", "") == "1"
+    conn = _get_conn()
+    try:
+        items = database.get_enhancements(
+            conn,
+            area=area or None,
+            priority=priority or None,
+            status=status or None,
+            include_closed=include_closed,
+        )
+        areas = database.get_enhancement_areas(conn)
+    finally:
+        conn.close()
+    return jsonify({
+        "items": items,
+        "areas": areas,
+        "priorities": database.ENHANCEMENT_PRIORITIES,
+    })
+
+
+@app.route("/enhancements/add", methods=["POST"])
+def enhancements_add():
+    area        = request.form.get("area", "").strip()
+    enhancement = request.form.get("enhancement", "").strip()
+    priority    = request.form.get("priority", "Medium")
+    if not enhancement:
+        return jsonify({"ok": False, "error": "enhancement required"})
+    conn = _get_conn()
+    try:
+        new_id = database.add_enhancement(conn, area, enhancement, priority)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "id": new_id})
+
+
+@app.route("/enhancements/<int:item_id>/status", methods=["POST"])
+def enhancements_status(item_id: int):
+    status = request.form.get("status", "not_started")
+    conn = _get_conn()
+    try:
+        database.set_enhancement_status(conn, item_id, status)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "status": status})
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
