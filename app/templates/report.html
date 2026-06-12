@@ -76,6 +76,11 @@
     .col-type { width: 110px; }
     .col-name { width: 280px; font-weight: 600; }
     .col-cmt  { color: #3a3a3c; white-space: pre-wrap; word-break: break-word; }
+    .subgroup-header td {
+      background: #f5f5f7; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em; color: #6e6e73;
+      padding: 0.4rem 0.9rem; border-bottom: 1px solid #e5e5ea;
+    }
 
     .pd-section { margin-top: 3rem; }
     .pd-heading {
@@ -153,7 +158,17 @@
       </tr>
     </thead>
     <tbody>
+    {% set ns = namespace(last_group=None) %}
     {% for row in rows %}
+      {% set grp = row.signoff_group or '' %}
+      {% if grp and grp != ns.last_group %}
+      <tr class="subgroup-header">
+        <td colspan="3">{{ grp }}</td>
+      </tr>
+      {% set ns.last_group = grp %}
+      {% elif not grp %}
+      {% set ns.last_group = None %}
+      {% endif %}
       <tr>
         <td class="col-type">{{ row.type or '—' }}</td>
         <td class="col-name" title="{{ row.name | e }}">{{ row.name or '—' }}</td>

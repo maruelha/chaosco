@@ -196,16 +196,17 @@ def spillover_list():
 
 @app.route("/spillover/<int:spillover_id>/annotation", methods=["POST"])
 def spillover_annotation_save(spillover_id: int):
-    importance        = request.form.get("importance_for_signoff", "").strip() or None
-    next_step         = request.form.get("next_step", "").strip() or None
+    importance          = request.form.get("importance_for_signoff", "").strip() or None
+    next_step           = request.form.get("next_step", "").strip() or None
     comment_for_signoff = request.form.get("comment_for_signoff", "").strip() or None
+    signoff_group       = request.form.get("signoff_group", "").strip() or None
     conn = _get_conn()
     try:
         existing        = database.get_spillover_annotation(conn, spillover_id)
         comment_history = existing["comment_history"] if existing else None
         critical        = existing["critical_for_signoff"] if existing else None
         database.upsert_spillover_annotation(
-            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff, signoff_group)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -214,6 +215,7 @@ def spillover_annotation_save(spillover_id: int):
         "importance_for_signoff": ann["importance_for_signoff"] or "",
         "next_step":              ann["next_step"] or "",
         "comment_for_signoff":    ann["comment_for_signoff"] or "",
+        "signoff_group":          ann["signoff_group"] or "",
     })
 
 
@@ -227,8 +229,9 @@ def spillover_comment_save(spillover_id: int):
         next_step           = existing["next_step"] if existing else None
         critical            = existing["critical_for_signoff"] if existing else None
         comment_for_signoff = existing["comment_for_signoff"] if existing else None
+        signoff_group       = existing["signoff_group"] if existing else None
         database.upsert_spillover_annotation(
-            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff, signoff_group)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -248,8 +251,9 @@ def spillover_critical_save(spillover_id: int):
         next_step           = existing["next_step"] if existing else None
         comment_history     = existing["comment_history"] if existing else None
         comment_for_signoff = existing["comment_for_signoff"] if existing else None
+        signoff_group       = existing["signoff_group"] if existing else None
         database.upsert_spillover_annotation(
-            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff)
+            conn, spillover_id, importance, next_step, comment_history, critical, comment_for_signoff, signoff_group)
         ann = database.get_spillover_annotation(conn, spillover_id)
     finally:
         conn.close()
@@ -441,7 +445,7 @@ def retail_report_download():
 # ---------------------------------------------------------------------------
 
 def _prepare_report(rows: list) -> list[tuple[str, list]]:
-    """Group rows by critical_for_signoff, sort each group by name, drop empty groups."""
+    """Group rows by critical_for_signoff, sort each group by (signoff_group, name)."""
     order = [
         ("yes",      "Critical for sign-off: Yes"),
         ("slightly", "Critical for sign-off: Slightly"),
@@ -453,7 +457,10 @@ def _prepare_report(rows: list) -> list[tuple[str, list]]:
         key = (r.get("critical_for_signoff") or "").lower()
         groups[key if key in groups else ""].append(r)
     for grp in groups.values():
-        grp.sort(key=lambda r: (r.get("name") or "").lower())
+        grp.sort(key=lambda r: (
+            (r.get("signoff_group") or "").lower() or "\xff",
+            (r.get("name") or "").lower(),
+        ))
     return [(label, groups[key]) for key, label in order if groups[key]]
 
 
