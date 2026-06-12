@@ -177,7 +177,8 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             entity_id   TEXT NOT NULL,
             created_at  TEXT NOT NULL,
             heading     TEXT,
-            note        TEXT
+            note        TEXT,
+            source      TEXT
         );
         CREATE INDEX IF NOT EXISTS ix_notes_entity ON notes(entity_type, entity_id);
 
@@ -291,6 +292,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at   TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS followups (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            with_whom  TEXT NOT NULL,
+            topic      TEXT NOT NULL,
+            when_next  TEXT,
+            status     TEXT NOT NULL DEFAULT 'open',
+            created_at TEXT,
+            updated_at TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS known_prod_defects (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             technical_key     TEXT,
@@ -329,6 +340,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     for col in ("kind TEXT",):
         try:
             conn.execute(f"ALTER TABLE todos ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col in ("source TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE notes ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
@@ -498,12 +515,13 @@ def add_note(
     entity_id: str,
     heading: str | None,
     note_text: str | None,
+    source: str | None = None,
 ) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
-            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note) VALUES (?, ?, ?, ?, ?)",
-            (entity_type, str(entity_id), now, heading, note_text),
+            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note, source) VALUES (?, ?, ?, ?, ?, ?)",
+            (entity_type, str(entity_id), now, heading, note_text, source),
         )
 
 
@@ -1230,4 +1248,66 @@ def add_todo(conn: sqlite3.Connection, area: str, kind: str, topic: str,
 def set_todo_status(conn: sqlite3.Connection, todo_id: int, status: str) -> None:
     now = datetime.now().isoformat(timespec="seconds")
     conn.execute("UPDATE todos SET status=?, updated_at=? WHERE id=?", (status, now, todo_id))
+    conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Follow-ups
+# ---------------------------------------------------------------------------
+
+FOLLOWUP_STATUSES = ["open", "in_progress", "done"]
+
+
+def get_followups(conn: sqlite3.Connection,
+                  with_whom: str | None = None,
+                  when_next: str | None = None,
+                  status: str | None = None,
+                  include_done: bool = False) -> list[dict]:
+    where, params = [], []
+    if not include_done:
+        where.append("f.status != 'done'")
+    if with_whom:
+        where.append("f.with_whom = ?"); params.append(with_whom)
+    if when_next:
+        where.append("f.when_next = ?"); params.append(when_next)
+    if status:
+        where.append("f.status = ?"); params.append(status)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    rows = conn.execute(f"""
+        SELECT f.*,
+               COUNT(n.id) AS note_count
+        FROM   followups f
+        LEFT JOIN notes n ON n.entity_type = 'followup' AND n.entity_id = CAST(f.id AS TEXT)
+        {clause}
+        GROUP BY f.id
+        ORDER BY
+          CASE f.status WHEN 'in_progress' THEN 0 WHEN 'open' THEN 1 ELSE 2 END,
+          f.when_next NULLS LAST
+    """, params).fetchall()
+    cur = conn.execute("SELECT f.*, 0 AS note_count FROM followups f LIMIT 0")
+    col_names = [d[0] for d in cur.description]
+    return [dict(zip(col_names, r)) for r in rows]
+
+
+def get_followup_filter_options(conn: sqlite3.Connection) -> dict:
+    with_whom = [r[0] for r in conn.execute(
+        "SELECT DISTINCT with_whom FROM followups WHERE with_whom IS NOT NULL ORDER BY with_whom"
+    ).fetchall()]
+    return {"with_whom": with_whom}
+
+
+def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str, when_next: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    cur = conn.execute(
+        "INSERT INTO followups (with_whom, topic, when_next, status, created_at, updated_at)"
+        " VALUES (?, ?, ?, 'open', ?, ?)",
+        (with_whom, topic, when_next or None, now, now),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def set_followup_status(conn: sqlite3.Connection, followup_id: int, status: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute("UPDATE followups SET status=?, updated_at=? WHERE id=?", (status, now, followup_id))
     conn.commit()

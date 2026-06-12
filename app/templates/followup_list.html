@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Follow-ups — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Follow-ups</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+</div>
+
+{# ---- Add form ---- #}
+<form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
+  <input  name="with_whom" type="text" placeholder="With whom *" required class="fu-input fu-short">
+  <input  name="topic"     type="text" placeholder="Topic *"     required class="fu-input fu-topic">
+  <input  name="when_next" type="date" value="{{ today }}"                class="fu-input fu-short">
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{# ---- Filters ---- #}
+<form method="get" action="{{ url_for('followup_list') }}" class="fu-filters">
+  <select name="with_whom" class="fu-input fu-filter" onchange="this.form.submit()">
+    <option value="">All people</option>
+    {% for w in opts.with_whom %}
+      <option value="{{ w }}" {% if f_whom == w %}selected{% endif %}>{{ w }}</option>
+    {% endfor %}
+  </select>
+  <input name="when_next" type="date" value="{{ f_when }}" class="fu-input fu-filter"
+         onchange="this.form.submit()">
+  <label class="fu-done-toggle">
+    <input type="checkbox" name="done" value="1" {% if f_done %}checked{% endif %}
+           onchange="this.form.submit()"> Show done
+  </label>
+  {% if f_whom or f_when %}
+    <a href="{{ url_for('followup_list', done='1' if f_done else '') }}" class="btn btn-sm">Clear</a>
+  {% endif %}
+  <span class="list-meta">{{ items|length }} item(s)</span>
+</form>
+
+{# ---- List ---- #}
+{% if items %}
+<table class="fu-table">
+  <thead>
+    <tr>
+      <th class="fu-col-whom">With whom</th>
+      <th class="fu-col-topic">Topic</th>
+      <th class="fu-col-when">When next</th>
+      <th class="fu-col-status">Status</th>
+      <th class="fu-col-notes"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in items %}
+    {% set overdue   = item.when_next and item.when_next < today and item.status != 'done' %}
+    {% set due_today = item.when_next == today and item.status != 'done' %}
+    <tr class="fu-row fu-status--{{ item.status }}" data-id="{{ item.id }}">
+      <td class="fu-col-whom">{{ item.with_whom }}</td>
+      <td class="fu-col-topic">{{ item.topic }}</td>
+      <td class="fu-col-when {% if overdue %}td-overdue{% elif due_today %}td-today{% endif %}">
+        {{ item.when_next or '—' }}
+      </td>
+      <td class="fu-col-status">
+        <select class="fu-input fu-status-sel js-fu-status-sel">
+          {% for s in statuses %}
+            <option value="{{ s }}" {% if item.status == s %}selected{% endif %}>
+              {{ s.replace('_',' ').title() }}
+            </option>
+          {% endfor %}
+        </select>
+      </td>
+      <td class="fu-col-notes">
+        <button class="btn btn-sm js-fu-notes-toggle">
+          Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
+        </button>
+      </td>
+    </tr>
+    <tr class="fu-notes-row" style="display:none" data-id="{{ item.id }}">
+      <td colspan="5" class="fu-notes-cell">
+        <div class="fu-notes-list js-fu-notes-list">Loading…</div>
+        <div class="fu-note-add">
+          <textarea class="fu-input fu-note-textarea js-fu-note-input" rows="2"
+                    placeholder="Add a note…"></textarea>
+          <button class="btn btn-sm btn-primary js-fu-note-save">Save note</button>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="list-empty">No follow-ups. Add one above.</p>
+{% endif %}
+
+<script>
+(function () {
+  document.querySelectorAll('.js-fu-status-sel').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const row = sel.closest('tr');
+      const id  = row.dataset.id;
+      const fd  = new FormData();
+      fd.append('status', sel.value);
+      await fetch(`/followups/${id}/status`, { method: 'POST', body: fd });
+      location.reload();
+    });
+  });
+
+  document.querySelectorAll('.js-fu-notes-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mainRow  = btn.closest('tr');
+      const notesRow = mainRow.nextElementSibling;
+      const id       = mainRow.dataset.id;
+      const open     = notesRow.style.display !== 'none';
+      if (open) { notesRow.style.display = 'none'; return; }
+      notesRow.style.display = '';
+      const list = notesRow.querySelector('.js-fu-notes-list');
+      list.innerHTML = 'Loading…';
+      const resp  = await fetch(`/followups/${id}/notes`);
+      const notes = await resp.json();
+      renderNotes(list, notes);
+    });
+  });
+
+  function renderNotes(el, notes) {
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(n =>
+      `<div class="fu-note-item"><span class="fu-note-ts">${n.created_at}</span> ${n.note || n.heading || ''}</div>`
+    ).join('');
+  }
+
+  document.querySelectorAll('.js-fu-note-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const cell     = btn.closest('.fu-notes-cell');
+      const notesRow = btn.closest('tr');
+      const id       = notesRow.dataset.id;
+      const input    = cell.querySelector('.js-fu-note-input');
+      const text     = input.value.trim();
+      if (!text) return;
+      const fd = new FormData();
+      fd.append('note', text);
+      const resp = await fetch(`/followups/${id}/notes/add`, { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.ok) {
+        input.value = '';
+        renderNotes(cell.querySelector('.js-fu-notes-list'), data.notes);
+        const mainRow   = notesRow.previousElementSibling;
+        const toggleBtn = mainRow.querySelector('.js-fu-notes-toggle');
+        toggleBtn.textContent = `Notes (${data.notes.length})`;
+      }
+    });
+  });
+}());
+</script>
+{% endblock %}

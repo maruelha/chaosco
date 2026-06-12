@@ -945,6 +945,80 @@ def todo_note_add(todo_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Follow-ups
+# ---------------------------------------------------------------------------
+
+@app.route("/followups")
+def followup_list():
+    f_whom      = request.args.get("with_whom", "")
+    f_when      = request.args.get("when_next", "")
+    f_done      = request.args.get("done", "") == "1"
+    conn = _get_conn()
+    try:
+        items = database.get_followups(conn,
+                    with_whom=f_whom or None,
+                    when_next=f_when or None,
+                    include_done=f_done)
+        opts  = database.get_followup_filter_options(conn)
+    finally:
+        conn.close()
+    today = date.today().isoformat()
+    return render_template("followup_list.html",
+        items=items, opts=opts, today=today,
+        statuses=database.FOLLOWUP_STATUSES,
+        f_whom=f_whom, f_when=f_when, f_done=f_done)
+
+
+@app.route("/followups/add", methods=["POST"])
+def followup_add():
+    with_whom = request.form.get("with_whom", "").strip()
+    topic     = request.form.get("topic", "").strip()
+    when_next = request.form.get("when_next", "").strip() or date.today().isoformat()
+    if with_whom and topic:
+        conn = _get_conn()
+        try:
+            database.add_followup(conn, with_whom, topic, when_next)
+        finally:
+            conn.close()
+    return redirect(url_for("followup_list"))
+
+
+@app.route("/followups/<int:followup_id>/status", methods=["POST"])
+def followup_status(followup_id: int):
+    status = request.form.get("status", "open")
+    conn = _get_conn()
+    try:
+        database.set_followup_status(conn, followup_id, status)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "status": status})
+
+
+@app.route("/followups/<int:followup_id>/notes")
+def followup_notes(followup_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.list_notes(conn, "followup", str(followup_id))
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/followups/<int:followup_id>/notes/add", methods=["POST"])
+def followup_note_add(followup_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.add_note(conn, "followup", str(followup_id), None, note)
+        notes = database.list_notes(conn, "followup", str(followup_id))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "notes": notes})
+
+
+# ---------------------------------------------------------------------------
 # Enhancements (floating panel, JSON API)
 # ---------------------------------------------------------------------------
 
