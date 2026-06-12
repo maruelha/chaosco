@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Meeting Prep — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Meeting Prep</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+</div>
+
+{# ---- Add form ---- #}
+<form method="post" action="{{ url_for('meeting_prep_add') }}" class="mp-add-form">
+  <input type="hidden" name="meeting_filter" value="{{ meeting_filter }}">
+  <select name="meeting" required class="mp-select">
+    <option value="" disabled selected>— Meeting —</option>
+    {% for m in meetings %}
+      <option value="{{ m }}">{{ m }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="topic" placeholder="Topic…" required class="mp-topic-input">
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{# ---- Filters ---- #}
+<div class="mp-filters">
+  <form method="get" action="{{ url_for('meeting_prep_list') }}" class="filter-row">
+    <select name="meeting" class="filter-select" onchange="this.form.submit()">
+      <option value="">All meetings</option>
+      {% for m in meetings %}
+        <option value="{{ m }}" {% if meeting_filter == m %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      <option value="planned"   {% if status_filter == 'planned'   %}selected{% endif %}>Planned</option>
+      <option value="discussed" {% if status_filter == 'discussed' %}selected{% endif %}>Discussed</option>
+    </select>
+    {% if meeting_filter or status_filter %}
+      <a href="{{ url_for('meeting_prep_list') }}" class="btn btn-sm">Clear filters</a>
+    {% endif %}
+  </form>
+  <p class="list-meta">{{ items | length }} item(s)</p>
+</div>
+
+{# ---- List ---- #}
+{% if items %}
+<table class="mp-table">
+  <thead>
+    <tr>
+      <th class="mp-meeting">Meeting</th>
+      <th class="mp-topic">Topic</th>
+      <th class="mp-status">Status</th>
+      <th class="mp-note-col">Note</th>
+      <th class="mp-actions"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in items %}
+    <tr class="mp-row {% if item.status == 'discussed' %}mp-discussed{% endif %}"
+        data-id="{{ item.id }}">
+      <td class="mp-meeting">
+        <span class="mp-meeting-pill">{{ item.meeting }}</span>
+      </td>
+      <td class="mp-topic">{{ item.topic }}</td>
+      <td class="mp-status">
+        {% if item.status == 'discussed' %}
+          <span class="pill pill--green">✓ Discussed</span>
+          <button class="btn btn-sm mp-btn-status js-set-status"
+                  data-status="planned" title="Mark as planned">↩ Reopen</button>
+        {% else %}
+          <span class="pill pill--grey">Planned</span>
+          <button class="btn btn-sm mp-btn-status js-set-status"
+                  data-status="discussed" title="Mark as discussed">✓ Discussed</button>
+        {% endif %}
+      </td>
+      <td class="mp-note-col">
+        <div class="mp-note-display js-note-display">
+          {% if item.note %}
+            <span class="mp-note-text">{{ item.note }}</span>
+          {% else %}
+            <span class="mp-note-empty">—</span>
+          {% endif %}
+          <button class="btn btn-sm js-note-edit">Edit</button>
+        </div>
+        <div class="mp-note-edit js-note-editor" style="display:none">
+          <textarea class="mp-note-textarea js-note-textarea" rows="2">{{ item.note or '' }}</textarea>
+          <div class="mp-note-btns">
+            <button class="btn btn-sm btn-primary js-note-save">Save</button>
+            <button class="btn btn-sm js-note-cancel">Cancel</button>
+          </div>
+        </div>
+      </td>
+      <td class="mp-actions">
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="list-empty">No items yet. Add one above.</p>
+{% endif %}
+
+<script>
+(function () {
+  // Status toggle
+  document.querySelectorAll('.js-set-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row  = btn.closest('tr');
+      const id   = row.dataset.id;
+      const status = btn.dataset.status;
+      const fd = new FormData();
+      fd.append('status', status);
+      const resp = await fetch(`/meeting-prep/${id}/status`, { method: 'POST', body: fd });
+      if ((await resp.json()).ok) location.reload();
+    });
+  });
+
+  // Note edit
+  document.querySelectorAll('.mp-row').forEach(row => {
+    const display  = row.querySelector('.js-note-display');
+    const editor   = row.querySelector('.js-note-editor');
+    const textarea = row.querySelector('.js-note-textarea');
+    const id       = row.dataset.id;
+
+    row.querySelector('.js-note-edit').addEventListener('click', () => {
+      display.style.display = 'none';
+      editor.style.display  = 'block';
+      textarea.focus();
+    });
+
+    row.querySelector('.js-note-cancel').addEventListener('click', () => {
+      display.style.display = '';
+      editor.style.display  = 'none';
+    });
+
+    row.querySelector('.js-note-save').addEventListener('click', async () => {
+      const note = textarea.value;
+      const fd = new FormData();
+      fd.append('note', note);
+      const resp = await fetch(`/meeting-prep/${id}/note`, { method: 'POST', body: fd });
+      if ((await resp.json()).ok) {
+        const textEl  = display.querySelector('.mp-note-text') || display.querySelector('.mp-note-empty');
+        if (note) {
+          textEl.className = 'mp-note-text';
+          textEl.textContent = note;
+        } else {
+          textEl.className = 'mp-note-empty';
+          textEl.textContent = '—';
+        }
+        display.style.display = '';
+        editor.style.display  = 'none';
+      }
+    });
+  });
+}());
+</script>
+{% endblock %}

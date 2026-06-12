@@ -801,6 +801,68 @@ def retail_note_delete(retail_id: int, note_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Meeting prep
+# ---------------------------------------------------------------------------
+
+@app.route("/meeting-prep")
+def meeting_prep_list():
+    meeting_filter = request.args.get("meeting", "")
+    status_filter  = request.args.get("status", "")
+    conn = _get_conn()
+    try:
+        items = database.get_meeting_prep(
+            conn,
+            meeting=meeting_filter or None,
+            status=status_filter or None,
+        )
+    finally:
+        conn.close()
+    return render_template(
+        "meeting_prep.html",
+        items=items,
+        meetings=database.MEETING_OPTIONS,
+        meeting_filter=meeting_filter,
+        status_filter=status_filter,
+    )
+
+
+@app.route("/meeting-prep/add", methods=["POST"])
+def meeting_prep_add():
+    meeting = request.form.get("meeting", "").strip()
+    topic   = request.form.get("topic", "").strip()
+    if meeting and topic:
+        conn = _get_conn()
+        try:
+            database.add_meeting_prep(conn, meeting, topic)
+        finally:
+            conn.close()
+    return redirect(url_for("meeting_prep_list",
+                            meeting=request.form.get("meeting_filter", "")))
+
+
+@app.route("/meeting-prep/<int:item_id>/status", methods=["POST"])
+def meeting_prep_status(item_id: int):
+    status = request.form.get("status", "planned")
+    conn = _get_conn()
+    try:
+        database.set_meeting_prep_status(conn, item_id, status)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "status": status})
+
+
+@app.route("/meeting-prep/<int:item_id>/note", methods=["POST"])
+def meeting_prep_note(item_id: int):
+    note = request.form.get("note", "").strip()
+    conn = _get_conn()
+    try:
+        database.set_meeting_prep_note(conn, item_id, note)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "note": note})
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 

@@ -893,3 +893,26 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
   border-color: #c7c7cc;
   color: #3a3a3c;
 }
+
+/* --------------------------------------------------------------- meeting prep */
+.mp-add-form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.mp-select { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+.mp-topic-input { flex: 1; min-width: 200px; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+.mp-filters { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.mp-table { width: 100%; border-collapse: collapse; }
+.mp-table th { background: #f0f0f0; padding: 6px 10px; text-align: left; border-bottom: 2px solid #ccc; font-size: 0.85rem; }
+.mp-table td { padding: 7px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+.mp-row.mp-discussed td { color: #999; }
+.mp-meeting { width: 130px; }
+.mp-meeting-pill { display: inline-block; background: #e8f0fe; color: #1a56db; border-radius: 4px; padding: 2px 7px; font-size: 0.8rem; font-weight: 500; }
+.mp-status { width: 160px; }
+.mp-status .pill { margin-right: 0.4rem; }
+.mp-note-col { min-width: 200px; }
+.mp-note-text { font-size: 0.875rem; }
+.mp-note-empty { color: #bbb; font-size: 0.875rem; }
+.mp-note-display { display: flex; align-items: flex-start; gap: 0.4rem; flex-wrap: wrap; }
+.mp-note-textarea { width: 100%; box-sizing: border-box; font-size: 0.875rem; padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px; }
+.mp-note-btns { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
+.mp-actions { width: 40px; }
+.pill--grey { background: #f0f0f0; color: #555; border: 1px solid #ddd; border-radius: 10px; padding: 2px 8px; font-size: 0.78rem; }
+.list-empty { color: #888; font-style: italic; margin-top: 2rem; }

@@ -258,6 +258,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         );
 
         -- Manually tracked production defects for sign-off discussions.
+        CREATE TABLE IF NOT EXISTS meeting_prep (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            meeting    TEXT NOT NULL,
+            topic      TEXT NOT NULL,
+            status     TEXT NOT NULL DEFAULT 'planned',
+            note       TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS known_prod_defects (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             technical_key     TEXT,
@@ -996,3 +1006,64 @@ def upsert_spillover_annotation(
             (spillover_id, importance_for_signoff, next_step, comment_history,
              critical_for_signoff, comment_for_signoff, now),
         )
+
+
+# ---------------------------------------------------------------------------
+# Meeting prep
+# ---------------------------------------------------------------------------
+
+MEETING_OPTIONS = [
+    "Balazs",
+    "GPO",
+    "Sync&Solve",
+    "DTC O2C Daily",
+    "Sales ECOM daily",
+    "Other",
+]
+
+
+def get_meeting_prep(conn: sqlite3.Connection,
+                     meeting: str | None = None,
+                     status: str | None = None) -> list[dict]:
+    where, params = [], []
+    if meeting:
+        where.append("meeting = ?")
+        params.append(meeting)
+    if status:
+        where.append("status = ?")
+        params.append(status)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    rows = conn.execute(
+        f"SELECT * FROM meeting_prep {clause} ORDER BY id DESC", params
+    ).fetchall()
+    cols = [d[0] for d in conn.execute("SELECT * FROM meeting_prep LIMIT 0").description]
+    return [dict(zip(cols, r)) for r in rows]
+
+
+def add_meeting_prep(conn: sqlite3.Connection, meeting: str, topic: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    cur = conn.execute(
+        "INSERT INTO meeting_prep (meeting, topic, status, created_at, updated_at)"
+        " VALUES (?, ?, 'planned', ?, ?)",
+        (meeting, topic, now, now),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def set_meeting_prep_status(conn: sqlite3.Connection, item_id: int, status: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE meeting_prep SET status = ?, updated_at = ? WHERE id = ?",
+        (status, now, item_id),
+    )
+    conn.commit()
+
+
+def set_meeting_prep_note(conn: sqlite3.Connection, item_id: int, note: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE meeting_prep SET note = ?, updated_at = ? WHERE id = ?",
+        (note, now, item_id),
+    )
+    conn.commit()
