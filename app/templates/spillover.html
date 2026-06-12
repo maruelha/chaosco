@@ -360,7 +360,6 @@
         ? `<span class="cell-edit js-open-ann">${escHtml(val)}</span>`
         : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
     }
-    tr.querySelector('.cell-importance').innerHTML     = cellHtml(d.importance_for_signoff);
     tr.querySelector('.cell-nextstep').innerHTML       = cellHtml(d.next_step);
     tr.querySelector('.cell-commentsignoff').innerHTML = cellHtml(d.comment_for_signoff);
     tr.querySelector('.cell-signoffgroup').innerHTML   = cellHtml(d.signoff_group);
