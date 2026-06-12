@@ -215,10 +215,10 @@ def spillover_annotation_save(spillover_id: int):
         conn.close()
     return jsonify({
         "ok": True,
-        "importance_for_signoff": ann["importance_for_signoff"] or "",
-        "next_step":              ann["next_step"] or "",
-        "comment_for_signoff":    ann["comment_for_signoff"] or "",
-        "signoff_group":          ann["signoff_group"] or "",
+        "importance_for_signoff": ann.get("importance_for_signoff") or "",
+        "next_step":              ann.get("next_step") or "",
+        "comment_for_signoff":    ann.get("comment_for_signoff") or "",
+        "signoff_group":          ann.get("signoff_group") or "",
     })
 
 
