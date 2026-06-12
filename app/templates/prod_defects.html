@@ -36,7 +36,7 @@
         <td class="kpd-truncate" title="{{ row.biz_impact | e }}">{{ row.biz_impact or '' }}</td>
         <td>{{ row.refs or '' }}</td>
         <td class="kpd-truncate" title="{{ row.next_steps | e }}">{{ row.next_steps or '' }}</td>
-        <td>{% if row.confluence %}<a href="{{ row.confluence }}" target="_blank" rel="noopener" class="row-link" title="{{ row.confluence | e }}">Open ↗</a>{% endif %}</td>
+        <td>{{ row.confluence or '' }}</td>
         <td class="kpd-actions">
           <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit</a>
           <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
