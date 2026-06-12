@@ -1074,16 +1074,23 @@ def get_meeting_prep(conn: sqlite3.Connection,
                      status: str | None = None) -> list[dict]:
     where, params = [], []
     if meeting:
-        where.append("meeting = ?")
+        where.append("m.meeting = ?")
         params.append(meeting)
     if status:
-        where.append("status = ?")
+        where.append("m.status = ?")
         params.append(status)
     clause = ("WHERE " + " AND ".join(where)) if where else ""
-    rows = conn.execute(
-        f"SELECT * FROM meeting_prep {clause} ORDER BY id DESC", params
-    ).fetchall()
-    cols = [d[0] for d in conn.execute("SELECT * FROM meeting_prep LIMIT 0").description]
+    rows = conn.execute(f"""
+        SELECT m.*,
+               COUNT(n.id) AS note_count
+        FROM   meeting_prep m
+        LEFT JOIN notes n ON n.entity_type = 'meeting_prep' AND n.entity_id = CAST(m.id AS TEXT)
+        {clause}
+        GROUP BY m.id
+        ORDER BY m.id DESC
+    """, params).fetchall()
+    cur = conn.execute("SELECT m.*, 0 AS note_count FROM meeting_prep m LIMIT 0")
+    cols = [d[0] for d in cur.description]
     return [dict(zip(cols, r)) for r in rows]
 
 

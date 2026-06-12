@@ -862,6 +862,30 @@ def meeting_prep_note(item_id: int):
     return jsonify({"ok": True, "note": note})
 
 
+@app.route("/meeting-prep/<int:item_id>/notes")
+def meeting_prep_notes(item_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.list_notes(conn, "meeting_prep", str(item_id))
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/meeting-prep/<int:item_id>/notes/add", methods=["POST"])
+def meeting_prep_note_add(item_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.add_note(conn, "meeting_prep", str(item_id), None, note)
+        notes = database.list_notes(conn, "meeting_prep", str(item_id))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "notes": notes})
+
+
 # ---------------------------------------------------------------------------
 # To-do list
 # ---------------------------------------------------------------------------

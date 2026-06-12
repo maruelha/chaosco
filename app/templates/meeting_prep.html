@@ -51,7 +51,8 @@
       <th class="mp-meeting">Meeting</th>
       <th class="mp-topic">Topic</th>
       <th class="mp-status">Status</th>
-      <th class="mp-note-col">Note</th>
+      <th class="mp-note-col">Quick note</th>
+      <th class="mp-notes-col">Notes</th>
       <th class="mp-actions"></th>
     </tr>
   </thead>
@@ -91,7 +92,22 @@
           </div>
         </div>
       </td>
+      <td class="mp-notes-col">
+        <button class="btn btn-sm js-mp-notes-toggle">
+          Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
+        </button>
+      </td>
       <td class="mp-actions">
+      </td>
+    </tr>
+    <tr class="mp-notes-row" style="display:none" data-id="{{ item.id }}">
+      <td colspan="6" class="mp-notes-cell">
+        <div class="mp-notes-list js-mp-notes-list">Loading…</div>
+        <div class="mp-note-add-row">
+          <textarea class="mp-note-textarea js-mp-note-input" rows="2"
+                    placeholder="Add a note…"></textarea>
+          <button class="btn btn-sm btn-primary js-mp-note-save">Save note</button>
+        </div>
       </td>
     </tr>
   {% endfor %}
@@ -116,7 +132,56 @@
     });
   });
 
-  // Note edit
+  // Central notes toggle
+  document.querySelectorAll('.js-mp-notes-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mainRow  = btn.closest('tr');
+      const notesRow = mainRow.nextElementSibling;
+      const id       = mainRow.dataset.id;
+      const open     = notesRow.style.display !== 'none';
+      if (open) { notesRow.style.display = 'none'; return; }
+      notesRow.style.display = '';
+      const list = notesRow.querySelector('.js-mp-notes-list');
+      list.innerHTML = 'Loading…';
+      const resp  = await fetch(`/meeting-prep/${id}/notes`);
+      const notes = await resp.json();
+      renderMpNotes(list, notes);
+    });
+  });
+
+  function renderMpNotes(el, notes) {
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(n =>
+      `<div class="mp-note-entry"><span class="mp-note-entry-ts">${n.created_at}</span> ${n.note || n.heading || ''}</div>`
+    ).join('');
+  }
+
+  document.querySelectorAll('.js-mp-note-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const cell     = btn.closest('.mp-notes-cell');
+      const notesRow = btn.closest('tr');
+      const id       = notesRow.dataset.id;
+      const input    = cell.querySelector('.js-mp-note-input');
+      const text     = input.value.trim();
+      if (!text) return;
+      const fd = new FormData();
+      fd.append('note', text);
+      const resp = await fetch(`/meeting-prep/${id}/notes/add`, { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.ok) {
+        input.value = '';
+        renderMpNotes(cell.querySelector('.js-mp-notes-list'), data.notes);
+        const mainRow   = notesRow.previousElementSibling;
+        const toggleBtn = mainRow.querySelector('.js-mp-notes-toggle');
+        toggleBtn.textContent = `Notes (${data.notes.length})`;
+      }
+    });
+  });
+
+  // Quick note (inline mini-note) edit
   document.querySelectorAll('.mp-row').forEach(row => {
     const display  = row.querySelector('.js-note-display');
     const editor   = row.querySelector('.js-note-editor');

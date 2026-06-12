@@ -914,6 +914,12 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .mp-note-textarea { width: 100%; box-sizing: border-box; font-size: 0.875rem; padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px; }
 .mp-note-btns { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
 .mp-actions { width: 40px; }
+.mp-notes-col { width: 110px; }
+.mp-notes-row td { background: #fafcff; padding: 0.7rem 1rem 0.7rem 2.5rem; }
+.mp-notes-list { margin-bottom: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.mp-note-entry { font-size: 0.85rem; padding: 0.3rem 0.5rem; background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; }
+.mp-note-entry-ts { color: #aaa; font-size: 0.78rem; margin-right: 0.5rem; }
+.mp-note-add-row { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.4rem; }
 .pill--grey { background: #f0f0f0; color: #555; border: 1px solid #ddd; border-radius: 10px; padding: 2px 8px; font-size: 0.78rem; }
 .list-empty { color: #888; font-style: italic; margin-top: 2rem; }
 
