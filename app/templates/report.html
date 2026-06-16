@@ -88,6 +88,7 @@
       padding: 0.85rem 1.1rem; background: #1d1d1f; color: #fff;
       border-radius: 10px 10px 0 0;
     }
+    .col-pd-scenario { width: 160px; white-space: pre-wrap; word-break: break-word; color: #3a3a3c; }
     .col-pd-short  { width: 180px; font-weight: 600; }
     .col-pd-desc   { white-space: pre-wrap; word-break: break-word; color: #3a3a3c; }
     .col-pd-impact { width: 220px; white-space: pre-wrap; word-break: break-word; color: #3a3a3c; }
@@ -188,6 +189,7 @@
   <table>
     <thead>
       <tr>
+        <th class="col-pd-scenario">Scenario</th>
         <th class="col-pd-short">Short Description</th>
         <th class="col-pd-impact">Business Impact</th>
       </tr>
@@ -195,6 +197,7 @@
     <tbody>
     {% for d in prod_defects %}
       <tr>
+        <td class="col-pd-scenario">{{ d.scenario or '' }}</td>
         <td class="col-pd-short">{{ d.short_description or '—' }}</td>
         <td class="col-pd-impact">{{ d.biz_impact or '' }}</td>
       </tr>

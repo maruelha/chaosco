@@ -10,7 +10,8 @@
 #laptop downloadfolder
 #downloads_folder: #'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download'
 #desktop downloadfolder
-downloads_folder: 'E:\Downloads'
+#downloads_folder: 'E:\Downloads'
+downloads_folder: 'C:\Users\Marina\Downloads'
 
 # Base name of the file WITHOUT extension.
 # Matches both  DTC_UAT_testtracking_ROE.xlsx

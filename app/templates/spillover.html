@@ -161,7 +161,6 @@
     <thead>
       <tr>
         <th class="sc-row num">#</th>
-        <th class="sc-type">Type</th>
         <th class="sc-area">Area</th>
         <th class="sc-status">Status</th>
         <th class="sc-name">Name</th>
@@ -188,7 +187,6 @@
           data-commentsignoff="{{ (row.comment_for_signoff or '') | e }}"
           data-signoffgroup="{{ (row.signoff_group or '') | e }}">
         <td class="sc-row num">{{ row.excel_row }}</td>
-        <td class="sc-type">{{ row.type or '—' }}</td>
         <td class="sc-area">{{ row.area or '—' }}</td>
         <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-name" title="{{ row.name | e }}">
@@ -240,7 +238,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="14" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
