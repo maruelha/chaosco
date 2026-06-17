@@ -73,8 +73,9 @@
     tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td { background: #f5f7ff; }
 
-.col-name { width: 280px; font-weight: 600; }
+    .col-name { width: 280px; font-weight: 600; }
     .col-cmt  { color: #3a3a3c; white-space: pre-wrap; word-break: break-word; }
+    .col-status { width: 220px; color: #3a3a3c; white-space: pre-wrap; word-break: break-word; }
     .subgroup-header td {
       background: #f5f5f7; font-size: 0.72rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.07em; color: #6e6e73;
@@ -143,6 +144,7 @@
 {% endif %}
 
 {% for heading, rows in sections %}
+{% set show_status = heading != "Critical for sign-off: Not set" %}
 <div class="section">
   <div class="section-banner section-banner--{{ modifiers.get(heading, 'unset') }}">
     <span class="section-banner__icon">{{ icons.get(heading, '—') }}</span>
@@ -154,6 +156,7 @@
       <tr>
         <th class="col-name">Name</th>
         <th class="col-cmt">Comment for sign-off</th>
+        {% if show_status %}<th class="col-status">Status</th>{% endif %}
       </tr>
     </thead>
     <tbody>
@@ -162,7 +165,7 @@
       {% set grp = row.signoff_group or '' %}
       {% if grp and grp != ns.last_group %}
       <tr class="subgroup-header">
-        <td colspan="2">{{ grp }}</td>
+        <td colspan="{{ 3 if show_status else 2 }}">{{ grp }}</td>
       </tr>
       {% set ns.last_group = grp %}
       {% elif not grp %}
@@ -171,6 +174,7 @@
       <tr>
         <td class="col-name" title="{{ row.name | e }}">{{ row.name or '—' }}</td>
         <td class="col-cmt">{{ row.comment_for_signoff or '' }}</td>
+        {% if show_status %}<td class="col-status">{{ row.next_step or '' }}</td>{% endif %}
       </tr>
     {% endfor %}
     </tbody>
