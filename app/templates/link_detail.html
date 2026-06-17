@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New Link{% else %}Edit Link{% endif %} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('links_list') }}">Links</a>
+  <span>›</span>
+  <span>{% if is_new %}New Link{% else %}{{ record.description or ('Link ' ~ record.id) }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{% if is_new %}New Link{% else %}Edit Link{% endif %}</h1>
+    {% if not is_new %}
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if saved %}
+<div class="saved-banner">Changes saved.</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('link_new') if is_new else url_for('link_detail', link_id=record.id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-description">Description</label>
+        <input type="text" id="f-description" name="description"
+               value="{{ record.description or '' }}" required
+               placeholder="Short label for this link">
+      </div>
+
+      <div class="form-field">
+        <label for="f-url">Link (URL)</label>
+        <input type="url" id="f-url" name="url"
+               value="{{ record.url or '' }}" required
+               placeholder="https://…">
+        {% if not is_new and record.url %}
+        <div style="margin-top:0.4rem">
+          <a href="{{ record.url }}" target="_blank" rel="noopener noreferrer"
+             style="font-size:0.82rem;color:#0071e3">Open link ↗</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-field">
+        <label for="f-area">Area</label>
+        <input type="text" id="f-area" name="area"
+               value="{{ record.area or '' }}"
+               placeholder="e.g. Finance, Retail, ECOM…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-tool">Tool</label>
+        <input type="text" id="f-tool" name="tool"
+               value="{{ record.tool or '' }}"
+               placeholder="e.g. Confluence, Jira, SharePoint…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-tags">Tags</label>
+        <input type="text" id="f-tags" name="tags"
+               value="{{ record.tags or '' }}"
+               placeholder="Comma-separated, e.g. report, UAT, sign-off">
+        <p style="font-size:0.78rem;color:#8e8e93;margin-top:0.3rem">Separate multiple tags with commas.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('links_list') }}" class="btn">Cancel</a>
+    {% if not is_new %}
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+    {% endif %}
+  </div>
+</form>
+
+{% if not is_new %}
+<script>
+document.getElementById('btn-delete').addEventListener('click', async () => {
+  if (!confirm('Delete this link? This cannot be undone.')) return;
+  const res  = await fetch('/links/{{ record.id }}/delete', { method: 'POST' });
+  const json = await res.json();
+  if (json.ok) window.location.href = '{{ url_for("links_list") }}';
+});
+</script>
+{% endif %}
+{% endblock %}

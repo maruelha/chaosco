@@ -582,6 +582,82 @@ def prod_defect_delete(record_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Links routes
+# ---------------------------------------------------------------------------
+
+@app.route("/links")
+def links_list():
+    areas       = request.args.getlist("area")
+    tools       = request.args.getlist("tool")
+    tags        = request.args.getlist("tag")
+    search      = request.args.get("search", "").strip()
+    conn = _get_conn()
+    try:
+        rows    = database.list_links(conn, areas=areas or None, tools=tools or None,
+                                      tags=tags or None, search=search or None)
+        options = database.get_link_options(conn)
+    finally:
+        conn.close()
+    return render_template("links.html", rows=rows, options=options,
+                           areas=areas, tools=tools, tags=tags, search=search)
+
+
+@app.route("/links/new", methods=["GET", "POST"])
+def link_new():
+    if request.method == "POST":
+        def _f(name): return request.form.get(name, "").strip() or None
+        conn = _get_conn()
+        try:
+            row = database.create_link(
+                conn,
+                description=_f("description"),
+                url=_f("url"),
+                area=_f("area"),
+                tool=_f("tool"),
+                tags=_f("tags"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("link_detail", link_id=row["id"], saved="1"))
+    return render_template("link_detail.html", record={}, is_new=True, saved=False)
+
+
+@app.route("/links/<int:link_id>", methods=["GET", "POST"])
+def link_detail(link_id: int):
+    saved = request.args.get("saved") == "1"
+    conn = _get_conn()
+    try:
+        record = database.get_link(conn, link_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            def _f(name): return request.form.get(name, "").strip() or None
+            database.update_link(
+                conn, link_id,
+                description=_f("description"),
+                url=_f("url"),
+                area=_f("area"),
+                tool=_f("tool"),
+                tags=_f("tags"),
+            )
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("link_detail", link_id=link_id, saved="1"))
+    return render_template("link_detail.html", record=record, is_new=False, saved=saved)
+
+
+@app.route("/links/<int:link_id>/delete", methods=["POST"])
+def link_delete(link_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_link(conn, link_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Note routes
 # ---------------------------------------------------------------------------
 

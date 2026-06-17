@@ -316,6 +316,17 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             created_at        TEXT,
             updated_at        TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS links (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT NOT NULL,
+            url         TEXT NOT NULL,
+            area        TEXT,
+            tool        TEXT,
+            tags        TEXT,
+            created_at  TEXT,
+            updated_at  TEXT
+        );
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -1333,3 +1344,92 @@ def set_followup_status(conn: sqlite3.Connection, followup_id: int, status: str)
     now = datetime.now().isoformat(timespec="seconds")
     conn.execute("UPDATE followups SET status=?, updated_at=? WHERE id=?", (status, now, followup_id))
     conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Links
+# ---------------------------------------------------------------------------
+
+def _parse_tags(raw: str | None) -> set[str]:
+    return {t.strip() for t in (raw or "").split(",") if t.strip()}
+
+
+def get_link_options(conn: sqlite3.Connection) -> dict:
+    rows = _rows_to_dicts(conn.execute("SELECT area, tool, tags FROM links"))
+    areas = sorted({r["area"] for r in rows if r.get("area")})
+    tools = sorted({r["tool"] for r in rows if r.get("tool")})
+    all_tags: set[str] = set()
+    for r in rows:
+        all_tags |= _parse_tags(r.get("tags"))
+    return {"areas": areas, "tools": tools, "tags": sorted(all_tags)}
+
+
+def list_links(
+    conn: sqlite3.Connection,
+    areas: list[str] | None = None,
+    tools: list[str] | None = None,
+    tags: list[str] | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM links ORDER BY description COLLATE NOCASE"
+    ))
+    if areas:
+        rows = [r for r in rows if r.get("area") in areas]
+    if tools:
+        rows = [r for r in rows if r.get("tool") in tools]
+    if tags:
+        tag_set = set(tags)
+        rows = [r for r in rows if _parse_tags(r.get("tags")) & tag_set]
+    if search:
+        s = search.lower()
+        rows = [r for r in rows if s in (r.get("description") or "").lower()]
+    return rows
+
+
+def get_link(conn: sqlite3.Connection, link_id: int) -> dict | None:
+    cur = conn.execute("SELECT * FROM links WHERE id = ?", (link_id,))
+    rows = _rows_to_dicts(cur)
+    return rows[0] if rows else None
+
+
+def create_link(
+    conn: sqlite3.Connection,
+    description: str,
+    url: str,
+    area: str | None,
+    tool: str | None,
+    tags: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO links (description, url, area, tool, tags, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (description, url, area or None, tool or None, tags or None, now, now),
+        )
+    return get_link(conn, cur.lastrowid)
+
+
+def update_link(
+    conn: sqlite3.Connection,
+    link_id: int,
+    description: str,
+    url: str,
+    area: str | None,
+    tool: str | None,
+    tags: str | None,
+) -> dict | None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE links SET description=?, url=?, area=?, tool=?, tags=?, updated_at=?"
+            " WHERE id=?",
+            (description, url, area or None, tool or None, tags or None, now, link_id),
+        )
+    return get_link(conn, link_id)
+
+
+def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
