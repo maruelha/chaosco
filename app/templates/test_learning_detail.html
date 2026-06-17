@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New Test Learning{% else %}Edit Test Learning{% endif %} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('test_learning_list') }}">Test Learnings</a>
+  <span>›</span>
+  <span>{% if is_new %}New{% else %}{{ (record.topic or record.learning or '')[:60] or ('Item ' ~ record.id) }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{% if is_new %}New Test Learning{% else %}Edit Test Learning{% endif %}</h1>
+    {% if not is_new %}
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if saved %}<div class="saved-banner">Changes saved.</div>{% endif %}
+
+<form method="post" action="{{ url_for('test_learning_new') if is_new else url_for('test_learning_detail', learning_id=record.id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-channel">Channel</label>
+        <input type="text" id="f-channel" name="channel"
+               value="{{ record.channel or 'Retail' }}"
+               placeholder="e.g. Retail, ECOM…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-topic">Topic</label>
+        <input type="text" id="f-topic" name="topic"
+               value="{{ record.topic or '' }}"
+               placeholder="Short category or theme">
+      </div>
+
+      <div class="form-field">
+        <label for="f-learning">Learning <span style="color:#ff3b30">*</span></label>
+        <textarea id="f-learning" name="learning" rows="4" required
+                  placeholder="What did we learn?">{{ record.learning or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-scenario">Scenario</label>
+        <textarea id="f-scenario" name="scenario" rows="3"
+                  placeholder="Which scenario(s) does this apply to?">{{ record.scenario or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-tags">Tags</label>
+        <input type="text" id="f-tags" name="tags"
+               value="{{ record.tags or '' }}"
+               placeholder="Comma-separated, e.g. payments, UAT, sign-off">
+        <p style="font-size:0.78rem;color:#8e8e93;margin-top:0.3rem">Separate multiple tags with commas.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('test_learning_list') }}" class="btn">Cancel</a>
+    {% if not is_new %}
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+    {% endif %}
+  </div>
+</form>
+
+{% if not is_new %}
+<div style="margin-top:2rem">
+  <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.75rem">Notes</h2>
+  <div id="tl-notes-list" style="margin-bottom:0.75rem">Loading…</div>
+  <div style="display:flex;gap:0.5rem;align-items:flex-start">
+    <textarea id="tl-note-input" rows="2" placeholder="Add a note…"
+              style="flex:1;font-family:inherit;font-size:0.85rem;border:1px solid #d2d2d7;border-radius:7px;padding:0.4rem 0.6rem;resize:vertical"></textarea>
+    <button id="tl-note-save" class="btn btn-primary">Save note</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const itemId = {{ record.id }};
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderNotes(notes) {
+    const el = document.getElementById('tl-notes-list');
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(n =>
+      `<div style="font-size:.83rem;padding:.35rem 0;border-bottom:1px solid #f0f0f5">
+         <span style="font-size:.72rem;color:#aeaeb2;margin-right:.4rem">${n.created_at}</span>${escHtml(n.note || '')}
+       </div>`
+    ).join('');
+  }
+
+  fetch(`/test_learnings/${itemId}/notes`).then(r => r.json()).then(renderNotes);
+
+  document.getElementById('tl-note-save').addEventListener('click', async () => {
+    const input = document.getElementById('tl-note-input');
+    const text  = input.value.trim();
+    if (!text) return;
+    const fd = new FormData();
+    fd.append('note', text);
+    const data = await (await fetch(`/test_learnings/${itemId}/notes/add`, { method: 'POST', body: fd })).json();
+    if (data.ok) { input.value = ''; renderNotes(data.notes); }
+  });
+
+  document.getElementById('btn-delete').addEventListener('click', async () => {
+    if (!confirm('Delete this learning and all its notes? This cannot be undone.')) return;
+    const json = await (await fetch(`/test_learnings/${itemId}/delete`, { method: 'POST' })).json();
+    if (json.ok) window.location.href = '{{ url_for("test_learning_list") }}';
+  });
+}());
+</script>
+{% endif %}
+{% endblock %}

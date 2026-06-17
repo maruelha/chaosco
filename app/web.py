@@ -658,6 +658,101 @@ def link_delete(link_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Test Learnings routes
+# ---------------------------------------------------------------------------
+
+@app.route("/test_learnings")
+def test_learning_list():
+    channels = request.args.getlist("channel")
+    tags     = request.args.getlist("tag")
+    conn = _get_conn()
+    try:
+        rows    = database.list_test_learnings(conn, channels=channels or None, tags=tags or None)
+        options = database.get_test_learning_options(conn)
+    finally:
+        conn.close()
+    return render_template("test_learning_list.html", rows=rows, options=options,
+                           channels=channels, tags=tags)
+
+
+@app.route("/test_learnings/new", methods=["GET", "POST"])
+def test_learning_new():
+    if request.method == "POST":
+        def _f(n): return request.form.get(n, "").strip() or None
+        channel  = request.form.get("channel", "").strip() or "Retail"
+        learning = request.form.get("learning", "").strip()
+        conn = _get_conn()
+        try:
+            row = database.create_test_learning(
+                conn, channel=channel, topic=_f("topic"), learning=learning,
+                scenario=_f("scenario"), tags=_f("tags"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("test_learning_detail", learning_id=row["id"], saved="1"))
+    prefill_channel = request.args.get("channel", "Retail")
+    return render_template("test_learning_detail.html", record={"channel": prefill_channel},
+                           is_new=True, saved=False)
+
+
+@app.route("/test_learnings/<int:learning_id>", methods=["GET", "POST"])
+def test_learning_detail(learning_id: int):
+    saved = request.args.get("saved") == "1"
+    conn = _get_conn()
+    try:
+        record = database.get_test_learning(conn, learning_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            def _f(n): return request.form.get(n, "").strip() or None
+            channel  = request.form.get("channel", "").strip() or "Retail"
+            learning = request.form.get("learning", "").strip()
+            database.update_test_learning(
+                conn, learning_id, channel=channel, topic=_f("topic"), learning=learning,
+                scenario=_f("scenario"), tags=_f("tags"),
+            )
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("test_learning_detail", learning_id=learning_id, saved="1"))
+    return render_template("test_learning_detail.html", record=record, is_new=False, saved=saved)
+
+
+@app.route("/test_learnings/<int:learning_id>/delete", methods=["POST"])
+def test_learning_delete(learning_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_test_learning(conn, learning_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/test_learnings/<int:learning_id>/notes")
+def test_learning_notes(learning_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.list_notes(conn, "test_learning", str(learning_id))
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/test_learnings/<int:learning_id>/notes/add", methods=["POST"])
+def test_learning_note_add(learning_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.add_note(conn, "test_learning", str(learning_id), None, note)
+        notes = database.list_notes(conn, "test_learning", str(learning_id))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "notes": notes})
+
+
+# ---------------------------------------------------------------------------
 # Test Limitations routes
 # ---------------------------------------------------------------------------
 
