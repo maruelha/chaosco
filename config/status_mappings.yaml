@@ -8,6 +8,7 @@
 
 known_statuses:
   - "Blocked - returned to sales"
+  - "Ready for retest"
   - "Ready for Validation"
   - "In Progress"
   - "Blocked DTC"
@@ -38,6 +39,7 @@ buckets:
     label: "Back with Sales"
     statuses:
       - "Blocked - returned to sales"
+      - "Ready for retest"
 
   with_dtc:
     label: "With DTC"
