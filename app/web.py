@@ -658,6 +658,100 @@ def link_delete(link_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Test Limitations routes
+# ---------------------------------------------------------------------------
+
+@app.route("/test_limitations")
+def test_limitation_list():
+    channels = request.args.getlist("channel")
+    conn = _get_conn()
+    try:
+        rows    = database.list_test_limitations(conn, channels=channels or None)
+        options = database.get_test_limitation_options(conn)
+    finally:
+        conn.close()
+    return render_template("test_limitation_list.html", rows=rows, options=options,
+                           channels=channels)
+
+
+@app.route("/test_limitations/new", methods=["GET", "POST"])
+def test_limitation_new():
+    if request.method == "POST":
+        def _f(n): return request.form.get(n, "").strip() or None
+        channel = request.form.get("channel", "").strip() or "Retail"
+        limitation = request.form.get("limitation", "").strip()
+        conn = _get_conn()
+        try:
+            row = database.create_test_limitation(
+                conn, channel=channel, limitation=limitation,
+                scenario=_f("scenario"), comment=_f("comment"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("test_limitation_detail", limitation_id=row["id"], saved="1"))
+    prefill_channel = request.args.get("channel", "Retail")
+    return render_template("test_limitation_detail.html", record={"channel": prefill_channel},
+                           is_new=True, saved=False)
+
+
+@app.route("/test_limitations/<int:limitation_id>", methods=["GET", "POST"])
+def test_limitation_detail(limitation_id: int):
+    saved = request.args.get("saved") == "1"
+    conn = _get_conn()
+    try:
+        record = database.get_test_limitation(conn, limitation_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            def _f(n): return request.form.get(n, "").strip() or None
+            channel    = request.form.get("channel", "").strip() or "Retail"
+            limitation = request.form.get("limitation", "").strip()
+            database.update_test_limitation(
+                conn, limitation_id, channel=channel, limitation=limitation,
+                scenario=_f("scenario"), comment=_f("comment"),
+            )
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("test_limitation_detail", limitation_id=limitation_id, saved="1"))
+    return render_template("test_limitation_detail.html", record=record, is_new=False, saved=saved)
+
+
+@app.route("/test_limitations/<int:limitation_id>/delete", methods=["POST"])
+def test_limitation_delete(limitation_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_test_limitation(conn, limitation_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/test_limitations/<int:limitation_id>/notes")
+def test_limitation_notes(limitation_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.list_notes(conn, "test_limitation", str(limitation_id))
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/test_limitations/<int:limitation_id>/notes/add", methods=["POST"])
+def test_limitation_note_add(limitation_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.add_note(conn, "test_limitation", str(limitation_id), None, note)
+        notes = database.list_notes(conn, "test_limitation", str(limitation_id))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "notes": notes})
+
+
+# ---------------------------------------------------------------------------
 # Core South Follow-Up Tracker routes
 # ---------------------------------------------------------------------------
 

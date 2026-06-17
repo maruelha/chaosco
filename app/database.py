@@ -328,6 +328,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at  TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS test_limitations (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            channel     TEXT NOT NULL DEFAULT 'Retail',
+            limitation  TEXT NOT NULL,
+            scenario    TEXT,
+            comment     TEXT,
+            created_at  TEXT,
+            updated_at  TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS cs_followups (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             area        TEXT,
@@ -1446,6 +1456,85 @@ def update_link(
 def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+
+
+# ---------------------------------------------------------------------------
+# Test Limitations
+# ---------------------------------------------------------------------------
+
+def list_test_limitations(
+    conn: sqlite3.Connection,
+    channels: list[str] | None = None,
+) -> list[dict]:
+    where: list[str] = []
+    params: list = []
+    if channels:
+        placeholders = ",".join("?" * len(channels))
+        where.append(f"t.channel IN ({placeholders})")
+        params.extend(channels)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    cur = conn.execute(f"""
+        SELECT t.*,
+               COUNT(n.id) AS note_count
+        FROM   test_limitations t
+        LEFT JOIN notes n ON n.entity_type = 'test_limitation' AND n.entity_id = CAST(t.id AS TEXT)
+        {clause}
+        GROUP BY t.id
+        ORDER BY t.channel COLLATE NOCASE, t.limitation COLLATE NOCASE
+    """, params)
+    return _rows_to_dicts(cur)
+
+
+def get_test_limitation(conn: sqlite3.Connection, limitation_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute("SELECT * FROM test_limitations WHERE id = ?", (limitation_id,)))
+    return rows[0] if rows else None
+
+
+def get_test_limitation_options(conn: sqlite3.Connection) -> dict:
+    channels = [r[0] for r in conn.execute(
+        "SELECT DISTINCT channel FROM test_limitations WHERE channel IS NOT NULL ORDER BY channel"
+    ).fetchall()]
+    return {"channels": channels}
+
+
+def create_test_limitation(
+    conn: sqlite3.Connection,
+    channel: str,
+    limitation: str,
+    scenario: str | None,
+    comment: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO test_limitations (channel, limitation, scenario, comment, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (channel, limitation, scenario or None, comment or None, now, now),
+        )
+    return get_test_limitation(conn, cur.lastrowid)
+
+
+def update_test_limitation(
+    conn: sqlite3.Connection,
+    limitation_id: int,
+    channel: str,
+    limitation: str,
+    scenario: str | None,
+    comment: str | None,
+) -> dict | None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE test_limitations SET channel=?, limitation=?, scenario=?, comment=?, updated_at=?"
+            " WHERE id=?",
+            (channel, limitation, scenario or None, comment or None, now, limitation_id),
+        )
+    return get_test_limitation(conn, limitation_id)
+
+
+def delete_test_limitation(conn: sqlite3.Connection, limitation_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM test_limitations WHERE id = ?", (limitation_id,))
 
 
 # ---------------------------------------------------------------------------

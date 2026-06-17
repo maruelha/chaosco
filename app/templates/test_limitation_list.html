@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Test Limitations — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Test Limitations</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+      <a href="{{ url_for('test_limitation_new', channel=channels[0] if channels|length == 1 else 'Retail') }}"
+         class="btn btn-primary">+ Add</a>
+    </div>
+  </div>
+</div>
+
+{# ---- Channel filter ---- #}
+{% if options.channels|length > 1 %}
+<form method="get" action="{{ url_for('test_limitation_list') }}" class="filters-bar" id="filters-form">
+  <div class="filter-group">
+    <label>Channel</label>
+    <button type="button" class="filter-btn js-filter-btn {% if channels %}filter-btn--active{% endif %}" data-filter="channel">
+      <span>{% if channels %}{{ channels|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if channels %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('test_limitation_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<dialog id="dlg-filter-channel" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Channel</div></div>
+  <div class="dlg-body">
+    {% for v in options.channels %}
+    <label class="cb-row">
+      <input type="checkbox" name="channel" value="{{ v }}" form="filters-form"
+             {% if v in channels %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="channel">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="channel">Apply</button>
+  </div>
+</dialog>
+{% endif %}
+
+<p class="list-meta">{{ rows|length }} limitation{{ 's' if rows|length != 1 else '' }}</p>
+
+{# ---- Table ---- #}
+<div class="table-wrap" style="overflow-x:auto">
+  <table style="min-width:800px">
+    <thead>
+      <tr>
+        <th style="width:100px">Channel</th>
+        <th style="width:220px">Limitation</th>
+        <th style="width:180px">Scenario</th>
+        <th>Comment</th>
+        <th style="width:120px"></th>
+      </tr>
+    </thead>
+    <tbody id="tl-tbody">
+    {% for row in rows %}
+      <tr class="tl-row" data-id="{{ row.id }}">
+        <td><span class="channel-pill">{{ row.channel }}</span></td>
+        <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.limitation }}</td>
+        <td style="white-space:normal;word-break:break-word;color:#3a3a3c">{{ row.scenario or '—' }}</td>
+        <td style="white-space:normal;word-break:break-word;color:#3a3a3c">
+          {% if row.comment %}
+            {{ row.comment[:120] }}{% if row.comment|length > 120 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="kpd-actions">
+          <a href="{{ url_for('test_limitation_detail', limitation_id=row.id) }}" class="btn btn-sm">Edit</a>
+          <button type="button" class="btn btn-sm js-tl-notes-toggle">
+            Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}
+          </button>
+        </td>
+      </tr>
+      <tr class="tl-notes-row" style="display:none" data-id="{{ row.id }}">
+        <td colspan="5" class="fu-notes-cell">
+          <div class="fu-notes-list js-tl-notes-list">Loading…</div>
+          <div class="fu-note-add">
+            <textarea class="fu-input fu-note-textarea js-tl-note-input" rows="2"
+                      placeholder="Add a note…"></textarea>
+            <button class="btn btn-sm btn-primary js-tl-note-save">Save note</button>
+          </div>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="table-empty">No limitations yet. Click "+ Add" to get started.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+.channel-pill {
+  display: inline-block; padding: 0.1rem 0.55rem; border-radius: 20px;
+  background: #f0f0f5; font-size: 0.75rem; font-weight: 600; color: #3a3a3c;
+}
+.tl-notes-row td { background: #f9f9fb; padding: 0.75rem 1rem; }
+.fu-notes-list  { margin-bottom: 0.6rem; }
+.fu-note-item   { font-size: 0.82rem; padding: 0.3rem 0; border-bottom: 1px solid #f0f0f5; }
+.fu-note-ts     { font-size: 0.72rem; color: #aeaeb2; margin-right: 0.5rem; }
+.fu-note-add    { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.5rem; }
+.fu-note-textarea { flex: 1; font-family: inherit; font-size: 0.85rem;
+  border: 1px solid #d2d2d7; border-radius: 7px; padding: 0.4rem 0.6rem; resize: vertical; }
+</style>
+
+<script>
+(function () {
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderNotes(el, notes) {
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(n =>
+      `<div class="fu-note-item"><span class="fu-note-ts">${n.created_at}</span>${escHtml(n.note || '')}</div>`
+    ).join('');
+  }
+
+  document.querySelectorAll('.js-tl-notes-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const mainRow  = btn.closest('tr');
+      const notesRow = mainRow.nextElementSibling;
+      const id       = mainRow.dataset.id;
+      if (notesRow.style.display !== 'none') { notesRow.style.display = 'none'; return; }
+      notesRow.style.display = '';
+      const list = notesRow.querySelector('.js-tl-notes-list');
+      list.innerHTML = 'Loading…';
+      renderNotes(list, await (await fetch(`/test_limitations/${id}/notes`)).json());
+    });
+  });
+
+  document.querySelectorAll('.js-tl-note-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const cell     = btn.closest('.fu-notes-cell');
+      const notesRow = btn.closest('tr');
+      const id       = notesRow.dataset.id;
+      const input    = cell.querySelector('.js-tl-note-input');
+      const text     = input.value.trim();
+      if (!text) return;
+      const fd = new FormData();
+      fd.append('note', text);
+      const data = await (await fetch(`/test_limitations/${id}/notes/add`, { method: 'POST', body: fd })).json();
+      if (data.ok) {
+        input.value = '';
+        renderNotes(cell.querySelector('.js-tl-notes-list'), data.notes);
+        const toggleBtn = notesRow.previousElementSibling.querySelector('.js-tl-notes-toggle');
+        toggleBtn.textContent = `Notes (${data.notes.length})`;
+      }
+    });
+  });
+
+  {% if options.channels|length > 1 %}
+  function updateFilterBtn(filter) {
+    const checked = document.querySelectorAll(
+      `input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`
+    );
+    const btn  = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+    const span = btn.querySelector('span');
+    if (checked.length) { span.textContent = checked.length + ' selected'; btn.classList.add('filter-btn--active'); }
+    else { span.textContent = 'All'; btn.classList.remove('filter-btn--active'); }
+  }
+  document.querySelectorAll('.js-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => document.getElementById('dlg-filter-' + btn.dataset.filter).showModal());
+  });
+  document.querySelectorAll('.js-filter-apply').forEach(btn => {
+    btn.addEventListener('click', () => { updateFilterBtn(btn.dataset.filter); document.getElementById('dlg-filter-' + btn.dataset.filter).close(); });
+  });
+  document.querySelectorAll('.js-filter-clear').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(`input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`).forEach(cb => { cb.checked = false; });
+      updateFilterBtn(btn.dataset.filter);
+    });
+  });
+  const dlg = document.getElementById('dlg-filter-channel');
+  if (dlg) dlg.addEventListener('click', e => { if (e.target === dlg) { updateFilterBtn('channel'); dlg.close(); } });
+  {% endif %}
+}());
+</script>
+{% endblock %}
