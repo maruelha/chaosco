@@ -327,6 +327,19 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             created_at  TEXT,
             updated_at  TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS cs_followups (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            area        TEXT,
+            jira_id     TEXT,
+            topic       TEXT NOT NULL,
+            description TEXT,
+            next_step   TEXT,
+            with_whom   TEXT,
+            status      TEXT NOT NULL DEFAULT 'open',
+            created_at  TEXT,
+            updated_at  TEXT
+        );
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -1433,3 +1446,120 @@ def update_link(
 def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+
+
+# ---------------------------------------------------------------------------
+# Core South Follow-Up Tracker
+# ---------------------------------------------------------------------------
+
+CS_FOLLOWUP_STATUSES = ["open", "in_progress", "done"]
+
+
+def list_cs_followups(
+    conn: sqlite3.Connection,
+    areas: list[str] | None = None,
+    with_whom: list[str] | None = None,
+    statuses: list[str] | None = None,
+    include_done: bool = False,
+) -> list[dict]:
+    where: list[str] = []
+    params: list = []
+    if not include_done and not statuses:
+        where.append("f.status != 'done'")
+    if areas:
+        placeholders = ",".join("?" * len(areas))
+        where.append(f"f.area IN ({placeholders})")
+        params.extend(areas)
+    if with_whom:
+        placeholders = ",".join("?" * len(with_whom))
+        where.append(f"f.with_whom IN ({placeholders})")
+        params.extend(with_whom)
+    if statuses:
+        placeholders = ",".join("?" * len(statuses))
+        where.append(f"f.status IN ({placeholders})")
+        params.extend(statuses)
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    cur = conn.execute(f"""
+        SELECT f.*,
+               COUNT(n.id) AS note_count
+        FROM   cs_followups f
+        LEFT JOIN notes n ON n.entity_type = 'cs_followup' AND n.entity_id = CAST(f.id AS TEXT)
+        {clause}
+        GROUP BY f.id
+        ORDER BY
+          CASE f.status WHEN 'in_progress' THEN 0 WHEN 'open' THEN 1 ELSE 2 END,
+          f.topic COLLATE NOCASE
+    """, params)
+    return _rows_to_dicts(cur)
+
+
+def get_cs_followup(conn: sqlite3.Connection, followup_id: int) -> dict | None:
+    cur = conn.execute("SELECT * FROM cs_followups WHERE id = ?", (followup_id,))
+    rows = _rows_to_dicts(cur)
+    return rows[0] if rows else None
+
+
+def get_cs_followup_options(conn: sqlite3.Connection) -> dict:
+    areas = [r[0] for r in conn.execute(
+        "SELECT DISTINCT area FROM cs_followups WHERE area IS NOT NULL ORDER BY area"
+    ).fetchall()]
+    with_whom = [r[0] for r in conn.execute(
+        "SELECT DISTINCT with_whom FROM cs_followups WHERE with_whom IS NOT NULL ORDER BY with_whom"
+    ).fetchall()]
+    return {"areas": areas, "with_whom": with_whom}
+
+
+def create_cs_followup(
+    conn: sqlite3.Connection,
+    area: str | None,
+    jira_id: str | None,
+    topic: str,
+    description: str | None,
+    next_step: str | None,
+    with_whom: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO cs_followups (area, jira_id, topic, description, next_step, with_whom,"
+            " status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?)",
+            (area or None, jira_id or None, topic, description or None,
+             next_step or None, with_whom or None, now, now),
+        )
+    return get_cs_followup(conn, cur.lastrowid)
+
+
+def update_cs_followup(
+    conn: sqlite3.Connection,
+    followup_id: int,
+    area: str | None,
+    jira_id: str | None,
+    topic: str,
+    description: str | None,
+    next_step: str | None,
+    with_whom: str | None,
+    status: str | None = None,
+) -> dict | None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE cs_followups SET area=?, jira_id=?, topic=?, description=?, next_step=?,"
+            " with_whom=?, status=COALESCE(?, status), updated_at=? WHERE id=?",
+            (area or None, jira_id or None, topic, description or None,
+             next_step or None, with_whom or None, status, now, followup_id),
+        )
+    return get_cs_followup(conn, followup_id)
+
+
+def set_cs_followup_status(conn: sqlite3.Connection, followup_id: int, status: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE cs_followups SET status=?, updated_at=? WHERE id=?",
+            (status, now, followup_id),
+        )
+
+
+def delete_cs_followup(conn: sqlite3.Connection, followup_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM cs_followups WHERE id = ?", (followup_id,))

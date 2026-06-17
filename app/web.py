@@ -658,6 +658,120 @@ def link_delete(link_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Core South Follow-Up Tracker routes
+# ---------------------------------------------------------------------------
+
+@app.route("/cs_followups")
+def cs_followup_list():
+    areas     = request.args.getlist("area")
+    with_whom = request.args.getlist("with_whom")
+    statuses  = request.args.getlist("status")
+    show_done = request.args.get("done") == "1"
+    conn = _get_conn()
+    try:
+        rows    = database.list_cs_followups(conn, areas=areas or None,
+                                             with_whom=with_whom or None,
+                                             statuses=statuses or None,
+                                             include_done=show_done)
+        options = database.get_cs_followup_options(conn)
+    finally:
+        conn.close()
+    return render_template("cs_followup_list.html", rows=rows, options=options,
+                           areas=areas, with_whom=with_whom, statuses=statuses,
+                           show_done=show_done,
+                           all_statuses=database.CS_FOLLOWUP_STATUSES,
+                           today=date.today().isoformat())
+
+
+@app.route("/cs_followups/new", methods=["GET", "POST"])
+def cs_followup_new():
+    if request.method == "POST":
+        def _f(n): return request.form.get(n, "").strip() or None
+        conn = _get_conn()
+        try:
+            row = database.create_cs_followup(
+                conn,
+                area=_f("area"), jira_id=_f("jira_id"), topic=request.form.get("topic", "").strip(),
+                description=_f("description"), next_step=_f("next_step"), with_whom=_f("with_whom"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("cs_followup_detail", followup_id=row["id"], saved="1"))
+    return render_template("cs_followup_detail.html", record={}, is_new=True, saved=False)
+
+
+@app.route("/cs_followups/<int:followup_id>", methods=["GET", "POST"])
+def cs_followup_detail(followup_id: int):
+    saved = request.args.get("saved") == "1"
+    conn = _get_conn()
+    try:
+        record = database.get_cs_followup(conn, followup_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            def _f(n): return request.form.get(n, "").strip() or None
+            database.update_cs_followup(
+                conn, followup_id,
+                area=_f("area"), jira_id=_f("jira_id"),
+                topic=request.form.get("topic", "").strip(),
+                description=_f("description"), next_step=_f("next_step"),
+                with_whom=_f("with_whom"),
+            )
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("cs_followup_detail", followup_id=followup_id, saved="1"))
+    return render_template("cs_followup_detail.html", record=record, is_new=False, saved=saved)
+
+
+@app.route("/cs_followups/<int:followup_id>/status", methods=["POST"])
+def cs_followup_status(followup_id: int):
+    status = request.form.get("status", "")
+    if status not in database.CS_FOLLOWUP_STATUSES:
+        return jsonify({"ok": False})
+    conn = _get_conn()
+    try:
+        database.set_cs_followup_status(conn, followup_id, status)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "status": status})
+
+
+@app.route("/cs_followups/<int:followup_id>/delete", methods=["POST"])
+def cs_followup_delete(followup_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_cs_followup(conn, followup_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/cs_followups/<int:followup_id>/notes")
+def cs_followup_notes(followup_id: int):
+    conn = _get_conn()
+    try:
+        notes = database.list_notes(conn, "cs_followup", str(followup_id))
+    finally:
+        conn.close()
+    return jsonify(notes)
+
+
+@app.route("/cs_followups/<int:followup_id>/notes/add", methods=["POST"])
+def cs_followup_note_add(followup_id: int):
+    note = request.form.get("note", "").strip()
+    if not note:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.add_note(conn, "cs_followup", str(followup_id), None, note)
+        notes = database.list_notes(conn, "cs_followup", str(followup_id))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "notes": notes})
+
+
+# ---------------------------------------------------------------------------
 # Note routes
 # ---------------------------------------------------------------------------
 
