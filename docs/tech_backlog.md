@@ -65,7 +65,7 @@ Same pattern as Retail and ECOM.
 
 1. Dashboard missing links to: Test Learnings, Test Limitations, Prod Defects, Sign-Off Reports
 2. Two follow-up trackers (`followups` + `cs_followups`) — purpose overlap, needs clarification
-3. No Spillover detail page — `content` field and notes inaccessible from list
+3. ~~No Spillover detail page~~ — **resolved**: `/spillover/<id>` detail page added with read-only fields + full notes module (screenshots, Ctrl+V paste)
 4. `defect_id_ref` on Retail rows is not a clickable link to the Defect detail
 5. Sign-off reports only reachable by direct URL
 

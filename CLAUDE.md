@@ -69,7 +69,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail_annotations` — retail_id (PK/FK), next_step, comment_history, action_needed, updated_at
 
 ### Shared
-- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`
+- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`
 - `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
@@ -103,7 +103,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, action_needed). Includes **Blocked TCs** column — count of Retail rows referencing each defect, computed via subquery on `retail.defect_id_ref`; links to Retail list pre-filtered by defect ID. |
 | Defect Detail | `/defects/<id>` | Full defect + annotation form + notes log |
-| Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX |
+| Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX. Each row has a **Notes** button (shows count badge) linking to the Spillover Detail page. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
 | Meeting Prep | `/meeting-prep` | Per-meeting agenda topics. Columns: Overall Topic (inline select), Topic (inline editable), Status, note, notes. Topic column shows coloured badge (purple=defect, green=retail) when added from a detail page. Default filter: planned. Export agenda button opens `/meeting-prep/agenda` (styled HTML report); Copy to clipboard exports plain text — both sorted by overall_topic order. |
@@ -122,13 +122,17 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Production Defects List | `/prod_defects` | URL only |
 | Production Defect Detail | `/prod_defects/<id>` | From prod defects list |
 | Test Learnings | `/test_learnings` | URL only |
+| Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | Test Limitations | `/test_limitations` | URL only |
+| Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 
 ### Shared sub-screens (note forms)
 - Note add/edit/delete for Defects: `/defects/<id>/notes/...`
 - Note add/edit/delete for Retail: `/retail/<id>/notes/...`
+- Note add/edit/delete for Test Learnings: `/test_learnings/<id>/notes/...`
+- Note add/edit/delete for Spillover: `/spillover/<id>/notes/...`
 
-### Screenshot attachments (Defects + Retail detail pages)
+### Screenshot attachments (Defects, Retail, Test Learnings, Spillover detail pages)
 - `GET /uploads/<filename>` — serve a stored image file
 - `POST /notes/<note_id>/attachments/add` — upload image (multipart, field: `file`). Saves to `data/uploads/<note_id>_<timestamp>_<name>`. Returns JSON `{ok, attachment}`.
 - `POST /notes/<note_id>/attachments/<attachment_id>/delete` — delete DB record + disk file. Returns JSON `{ok}`.
@@ -144,9 +148,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 1. **Dashboard is incomplete** — Test Learnings, Test Limitations, Prod Defects, and the Sign-Off Reports are not reachable from home. Users must know the URL.
 2. **Two follow-up trackers** — `followups` (general, lightweight) and `cs_followups` (CS-specific, richer) overlap. The split should be made clearer or consolidated.
-3. **No Spillover detail page** — the full `content` field and per-row notes log are not accessible from the list view.
-4. **No cross-links between related entities** — a Retail row's `defect_id_ref` is not a clickable link to the Defect detail.
-5. **Sign-off reports are hard to find** — they should be reachable from the dashboard or a dedicated Reports section.
+3. **No cross-links between related entities** — a Retail row's `defect_id_ref` is not a clickable link to the Defect detail.
+4. **Sign-off reports are hard to find** — they should be reachable from the dashboard or a dedicated Reports section.
 
 ---
 

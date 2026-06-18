@@ -170,6 +170,7 @@
 
     <li class="group-label">Core South Spillover</li>
     <li><a href="#spillover-list">Spillover — List</a></li>
+    <li><a href="#spillover-detail">Spillover — Detail / Notes</a></li>
 
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
@@ -361,10 +362,12 @@
       <span class="screen-url">GET /spillover</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Frozen-pane scrollable table of all Core South Spillover items. All annotations are edited inline without leaving this page — saves happen via AJAX.</p>
+      <p class="screen-desc">Frozen-pane scrollable table of all Core South Spillover items. All annotations are edited inline without leaving this page — saves happen via AJAX. Each row has a Notes button that links to the Spillover Detail page.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Excel Row · Type · Name · Country · Area · Status · Assigned To · External ID · Importance for Sign-Off · Critical for Sign-Off · Sign-Off Group · Next Step · Comment for Sign-Off</span>
+        <span class="feat-value">Excel Row · Type · Name · Country · Area · Status · Assigned To · External ID · Importance for Sign-Off · Critical for Sign-Off · Sign-Off Group · Next Step · Comment for Sign-Off · Notes button</span>
+        <span class="feat-label">Notes button</span>
+        <span class="feat-value">Links to <code>/spillover/&lt;id&gt;</code> (Spillover Detail). Shows note count badge when notes exist (subquery on <code>notes</code> table, computed per row).</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
           <span class="pill pill-filter">Area (multi)</span>
@@ -388,7 +391,34 @@
         <span class="feat-label">Comment popup</span>
         <span class="feat-value">Per-row "Comment History" button opens a panel showing timestamped authored comments and a text area to add a new one. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code></span>
+        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + note_count subquery on <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spillover Detail -->
+  <div class="screen-card" id="spillover-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Spillover — Detail / Notes</span>
+      <span class="screen-url">GET /spillover/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Read-only view of a single spillover item. Primary purpose is the full notes log — heading, screenshots, Ctrl+V paste. All field editing still happens inline on the list view.</p>
+      <div class="features">
+        <span class="feat-label">Fields shown</span>
+        <span class="feat-value">Area · Type · Country · Status · Assigned To · External ID · Order Numbers · Critical for Sign-Off · Report Group · Next Step · Content (full, pre-wrapped) · Comment (imported) · Comment for Sign-Off · Comment History</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Note routes</span>
+        <span class="feat-value">
+          <code>GET/POST /spillover/&lt;id&gt;/notes/add</code><br>
+          <code>GET/POST /spillover/&lt;id&gt;/notes/&lt;note_id&gt;/edit</code><br>
+          <code>GET/POST /spillover/&lt;id&gt;/notes/&lt;note_id&gt;/delete</code>
+        </span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Spillover</span> · breadcrumb</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + <code>notes</code> + <code>attachments</code></span>
       </div>
     </div>
   </div>
@@ -883,14 +913,24 @@
       <span class="screen-url">GET/POST /test_learnings/new &nbsp;·&nbsp; /test_learnings/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Create or edit a test learning entry.</p>
+      <p class="screen-desc">Create or edit a test learning entry. Below the form: a full notes log with heading, screenshots, and Ctrl+V paste — identical to the Defect and Retail detail pages.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
         <span class="feat-value">Channel (required, default Retail) · Topic · Learning (required) · Scenario · Tags (comma-separated)</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX)</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, with confirmation)</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image into the last-hovered note.</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Changes saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-label">Note routes</span>
+        <span class="feat-value">
+          <code>GET/POST /test_learnings/&lt;id&gt;/notes/add</code><br>
+          <code>GET/POST /test_learnings/&lt;id&gt;/notes/&lt;note_id&gt;/edit</code><br>
+          <code>GET/POST /test_learnings/&lt;id&gt;/notes/&lt;note_id&gt;/delete</code>
+        </span>
         <span class="feat-label">Table written</span>
-        <span class="feat-value"><code>test_learnings</code></span>
+        <span class="feat-value"><code>test_learnings</code> · <code>notes</code> · <code>attachments</code></span>
       </div>
     </div>
   </div>

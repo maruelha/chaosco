@@ -343,7 +343,8 @@
       <div class="screen-notes">
         <p class="screen-desc">
           Horizontally scrollable table with a frozen left pane. All annotation editing
-          happens inline — no detail page exists. AJAX saves on every field change.
+          happens inline — AJAX saves on every field change. Each row now has a Notes button
+          linking to the Spillover Detail page.
         </p>
         <div class="feat-block">
           <h4>Filters</h4>
@@ -363,9 +364,16 @@
             <li><span class="pill pill-x">Comment history popup</span> (timestamped log)</li>
           </ul>
         </div>
+        <div class="feat-block">
+          <h4>Notes button (last column)</h4>
+          <ul>
+            <li>Links to <code>/spillover/&lt;id&gt;</code> (detail page)</li>
+            <li>Shows note count badge when notes exist — e.g. <em>Notes (3)</em></li>
+          </ul>
+        </div>
         <div class="vision-box">
-          <strong>Vision gap to discuss</strong>
-          No Spillover detail page — everything is in the list. This works well for quick updates but makes it impossible to view the full "content" field or have a notes log per row. Also no link from the dashboard to the sign-off reports that use this data.
+          <strong>Previously a known gap — now resolved</strong>
+          Spillover detail page added at <code>/spillover/&lt;id&gt;</code>. Full content field, notes log, and screenshot attachments are all accessible. The dashboard link gap remains.
         </div>
       </div>
     </div>
@@ -807,7 +815,8 @@
       <div class="screen-notes">
         <p class="screen-desc">
           Log of observations and lessons learned during UAT test execution.
-          Grouped by channel → topic → learning. Per-row notes popup.
+          Grouped by channel → topic → learning. Click any row to open the detail page
+          where the full notes module (heading, screenshots, Ctrl+V paste) is available.
         </p>
         <div class="feat-block">
           <h4>Filters</h4>
@@ -819,8 +828,16 @@
           <h4>Actions</h4>
           <ul>
             <li><span class="pill pill-a">+ New</span> (pre-fills channel from filter)</li>
-            <li><span class="pill pill-n">Click row</span> → Detail / Edit</li>
-            <li><span class="pill pill-x">Notes popup</span> per row</li>
+            <li><span class="pill pill-n">Click row</span> → Detail / Edit page</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Notes (on detail page)</h4>
+          <ul>
+            <li>Full notes log with heading + body + timestamp</li>
+            <li>Per-note Edit and Delete</li>
+            <li><span class="pill pill-a">📷 Add screenshot</span> button per note</li>
+            <li>Ctrl+V pastes a Snipping Tool image into the last-hovered note</li>
           </ul>
         </div>
         <div class="vision-box">
