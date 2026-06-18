@@ -476,7 +476,8 @@ def list_defects(
         SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
                d.assigned_to, d.excel_row, d.solman_name, d.exists_in_production,
                COALESCE(a.action_needed, 0) AS action_needed,
-               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'defect' AND n.entity_id = d.defect_id) AS note_count
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'defect' AND n.entity_id = d.defect_id) AS note_count,
+               (SELECT COUNT(*) FROM retail r WHERE r.defect_id_ref IS NOT NULL AND r.defect_id_ref LIKE '%' || d.defect_id || '%') AS blocked_tc_count
         FROM defects d
         LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
         WHERE 1=1

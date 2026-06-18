@@ -274,7 +274,9 @@
       <p class="screen-desc">Paginated list of all imported defects with inline filters. The default view hides statuses "Withdrawn" and "Confirmed" (configurable in settings.yaml).</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Excel Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Note count</span>
+        <span class="feat-value">Excel Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Prod · <strong>Blocked TCs</strong> · Notes · Action</span>
+        <span class="feat-label">Blocked TCs column</span>
+        <span class="feat-value">Count of Retail test cases whose <code>defect_id_ref</code> references this defect. Computed as a subquery (LIKE match — not stored). Shows <code>—</code> when zero. When non-zero, displayed as a red badge link that opens the Retail list pre-filtered by that defect ID (<code>?search_defect=&lt;id&gt;</code>).</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
           <span class="pill pill-filter">Search (defect ID)</span>
@@ -284,11 +286,11 @@
           <span class="pill pill-filter">Show all toggle</span>
         </span>
         <span class="feat-label">Row actions</span>
-        <span class="feat-value">Click row → Defect Detail · <span class="pill pill-action">Add note</span> shortcut per row</span>
+        <span class="feat-value">Click row → Defect Detail · <span class="pill pill-action">Add note</span> shortcut per row · <span class="pill pill-action">Blocked TCs badge</span> → Retail list filtered by defect ID</span>
         <span class="feat-label">Flash banners</span>
         <span class="feat-value">Green "Note added." banner when returning from a successful note add</span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>defects</code> LEFT JOIN <code>defect_annotations</code></span>
+        <span class="feat-value"><code>defects</code> LEFT JOIN <code>defect_annotations</code> + subquery on <code>retail.defect_id_ref</code></span>
       </div>
     </div>
   </div>

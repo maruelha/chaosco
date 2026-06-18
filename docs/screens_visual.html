@@ -287,7 +287,16 @@
         <div class="feat-block">
           <h4>Columns</h4>
           <ul>
-            <li>Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Notes</li>
+            <li>Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Prod · <strong>Blocked TCs</strong> · Notes · Action</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Blocked TCs column</h4>
+          <ul>
+            <li>Count of Retail test cases whose <code>defect_id_ref</code> references this defect</li>
+            <li>Computed on the fly (LIKE subquery on <code>retail</code>) — not stored</li>
+            <li>Shows <code>—</code> when zero</li>
+            <li>Non-zero: red badge link → Retail list pre-filtered by this defect ID</li>
           </ul>
         </div>
         <div class="feat-block">

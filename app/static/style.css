@@ -1020,6 +1020,21 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .fu-note-add       { display: flex; gap: 0.5rem; align-items: flex-start; margin-top: 0.4rem; }
 .fu-note-textarea  { flex: 1; min-width: 0; font-size: 0.85rem; }
 
+/* ------------------------------------------------- blocked TC count link */
+.blocked-tc-link {
+  display: inline-block;
+  background: #fff0f0;
+  color: #c0392b;
+  border: 1px solid #f5c6c6;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.1em 0.55em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.blocked-tc-link:hover { background: #ffe0e0; text-decoration: none; }
+
 /* -------------------------------------------------------- note attachments */
 .note-attachments {
   display: flex;

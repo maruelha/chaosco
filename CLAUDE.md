@@ -100,7 +100,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 |---|---|---|
 | Dashboard | `/` | Home — card grid + Run Import button |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
-| Defects List | `/defects` | Filterable defects table (search, channel, status, action_needed) |
+| Defects List | `/defects` | Filterable defects table (search, channel, status, action_needed). Includes **Blocked TCs** column — count of Retail rows referencing each defect, computed via subquery on `retail.defect_id_ref`; links to Retail list pre-filtered by defect ID. |
 | Defect Detail | `/defects/<id>` | Full defect + annotation form + notes log |
 | Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |

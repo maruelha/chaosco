@@ -100,6 +100,7 @@
         <th>Priority</th>
         <th>Assigned To</th>
         <th class="col-prod" title="Exists in production">Prod</th>
+        <th title="Retail test cases referencing this defect">Blocked TCs</th>
         <th>Notes</th>
         <th>Action</th>
       </tr>
@@ -125,6 +126,13 @@
             <span class="prod-pill prod-pill--unset" title="{{ d.exists_in_production or 'not set' }}">—</span>
           {% endif %}
         </td>
+        <td class="num">
+          {% if d.blocked_tc_count > 0 %}
+          <a href="{{ url_for('retail_list') }}?search_defect={{ d.defect_id | urlencode }}" class="blocked-tc-link">{{ d.blocked_tc_count }}</a>
+          {% else %}
+          —
+          {% endif %}
+        </td>
         <td class="notes-cell">
           {% if d.note_count > 0 %}
           <a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
@@ -139,7 +147,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="11" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="12" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
