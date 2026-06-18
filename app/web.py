@@ -707,7 +707,10 @@ def test_learning_new():
 
 @app.route("/test_learnings/<int:learning_id>", methods=["GET", "POST"])
 def test_learning_detail(learning_id: int):
-    saved = request.args.get("saved") == "1"
+    saved        = request.args.get("saved")        == "1"
+    note_added   = request.args.get("note_added")   == "1"
+    note_saved   = request.args.get("note_saved")   == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
     conn = _get_conn()
     try:
         record = database.get_test_learning(conn, learning_id)
@@ -721,11 +724,17 @@ def test_learning_detail(learning_id: int):
                 conn, learning_id, channel=channel, topic=_f("topic"), learning=learning,
                 scenario=_f("scenario"), tags=_f("tags"),
             )
+        notes = database.list_notes(conn, "test_learning", str(learning_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("test_learning_detail", learning_id=learning_id, saved="1"))
-    return render_template("test_learning_detail.html", record=record, is_new=False, saved=saved)
+    return render_template(
+        "test_learning_detail.html", record=record, is_new=False, saved=saved,
+        notes=notes, attachments_by_note=attachments_by_note,
+        note_added=note_added, note_saved=note_saved, note_deleted=note_deleted,
+    )
 
 
 @app.route("/test_learnings/<int:learning_id>/delete", methods=["POST"])
@@ -748,18 +757,88 @@ def test_learning_notes(learning_id: int):
     return jsonify(notes)
 
 
-@app.route("/test_learnings/<int:learning_id>/notes/add", methods=["POST"])
+@app.route("/test_learnings/<int:learning_id>/notes/add", methods=["GET", "POST"])
 def test_learning_note_add(learning_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
     conn = _get_conn()
     try:
-        database.add_note(conn, "test_learning", str(learning_id), None, note)
-        notes = database.list_notes(conn, "test_learning", str(learning_id))
+        record = database.get_test_learning(conn, learning_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if not note_text:
+                return render_template(
+                    "note_form.html", mode="add",
+                    entity_label=f"Learning #{learning_id}",
+                    list_url=url_for("test_learning_list"), list_label="Test Learnings",
+                    detail_url=url_for("test_learning_detail", learning_id=learning_id),
+                    action_url=url_for("test_learning_note_add", learning_id=learning_id),
+                    cancel_url=url_for("test_learning_detail", learning_id=learning_id),
+                    heading=heading or "", note_text="", error="Note text is required.",
+                )
+            database.add_note(conn, "test_learning", str(learning_id), heading, note_text)
     finally:
         conn.close()
-    return jsonify({"ok": True, "notes": notes})
+    if request.method == "POST":
+        return redirect(url_for("test_learning_detail", learning_id=learning_id, note_added="1"))
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=f"Learning #{learning_id}",
+        list_url=url_for("test_learning_list"), list_label="Test Learnings",
+        detail_url=url_for("test_learning_detail", learning_id=learning_id),
+        action_url=url_for("test_learning_note_add", learning_id=learning_id),
+        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
+        heading="", note_text="", error=None,
+    )
+
+
+@app.route("/test_learnings/<int:learning_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def test_learning_note_edit(learning_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "test_learning" or note["entity_id"] != str(learning_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("test_learning_detail", learning_id=learning_id, note_saved="1"))
+    finally:
+        conn.close()
+    kwargs = dict(
+        mode="edit", entity_label=f"Learning #{learning_id}",
+        list_url=url_for("test_learning_list"), list_label="Test Learnings",
+        detail_url=url_for("test_learning_detail", learning_id=learning_id),
+        action_url=url_for("test_learning_note_edit", learning_id=learning_id, note_id=note_id),
+        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/test_learnings/<int:learning_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def test_learning_note_delete(learning_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "test_learning" or note["entity_id"] != str(learning_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("test_learning_detail", learning_id=learning_id, note_deleted="1"))
+    finally:
+        conn.close()
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=f"Learning #{learning_id}",
+        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
+        delete_url=url_for("test_learning_note_delete", learning_id=learning_id, note_id=note_id),
+    )
 
 
 # ---------------------------------------------------------------------------
