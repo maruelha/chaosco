@@ -8,7 +8,8 @@ from datetime import date
 from pathlib import Path
 
 import openpyxl
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_from_directory, url_for
+from werkzeug.utils import secure_filename
 
 from app import database
 from app.config_loader import load_config
@@ -25,6 +26,8 @@ app = Flask(
 
 _cfg = load_config()
 _db_path = Path(_cfg["database_path"])
+_UPLOAD_FOLDER = _HERE.parent / "data" / "uploads"
+_ALLOWED_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 
 # Create schema once at startup; routes use get_connection() after this.
 database.init_db(_db_path).close()
@@ -134,6 +137,9 @@ def defect_detail(defect_id: str):
             return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
 
         notes = database.list_notes(conn, "defect", defect_id)
+        attachments_by_note = database.get_attachments_for_notes(
+            conn, [n["id"] for n in notes]
+        )
     finally:
         conn.close()
 
@@ -146,6 +152,7 @@ def defect_detail(defect_id: str):
         defect=defect,
         saved=saved,
         notes=notes,
+        attachments_by_note=attachments_by_note,
         note_added=note_added,
         note_saved=note_saved,
         note_deleted=note_deleted,
@@ -1071,6 +1078,9 @@ def retail_detail(retail_id: int):
             conn.close()
             return redirect(url_for("retail_detail", retail_id=retail_id, saved="1"))
         notes = database.list_notes(conn, "retail", retail_id)
+        attachments_by_note = database.get_attachments_for_notes(
+            conn, [n["id"] for n in notes]
+        )
     finally:
         conn.close()
     saved        = request.args.get("saved") == "1"
@@ -1080,6 +1090,7 @@ def retail_detail(retail_id: int):
     return render_template(
         "retail_detail.html",
         row=row, notes=notes,
+        attachments_by_note=attachments_by_note,
         saved=saved, note_added=note_added,
         note_saved=note_saved, note_deleted=note_deleted,
     )
@@ -1501,6 +1512,50 @@ def enhancements_status(item_id: int):
     finally:
         conn.close()
     return jsonify({"ok": True, "status": status})
+
+
+# ---------------------------------------------------------------------------
+# Attachments (screenshots linked to notes)
+# ---------------------------------------------------------------------------
+
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename: str):
+    return send_from_directory(str(_UPLOAD_FOLDER), filename)
+
+
+@app.route("/notes/<int:note_id>/attachments/add", methods=["POST"])
+def attachment_add(note_id: int):
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"ok": False, "error": "no file"})
+    ext = Path(f.filename).suffix.lower()
+    if ext not in _ALLOWED_EXTS:
+        return jsonify({"ok": False, "error": f"File type {ext!r} not allowed. Use PNG, JPG, GIF or WEBP."})
+    _UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    from datetime import datetime as _dt
+    timestamp = _dt.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{note_id}_{timestamp}_{secure_filename(f.filename)}"
+    f.save(str(_UPLOAD_FOLDER / filename))
+    conn = _get_conn()
+    try:
+        att = database.add_attachment(conn, note_id, filename, f.filename)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "attachment": att})
+
+
+@app.route("/notes/<int:note_id>/attachments/<int:attachment_id>/delete", methods=["POST"])
+def attachment_delete(note_id: int, attachment_id: int):
+    conn = _get_conn()
+    try:
+        filename = database.delete_attachment(conn, attachment_id)
+    finally:
+        conn.close()
+    if filename:
+        fp = _UPLOAD_FOLDER / filename
+        if fp.exists():
+            fp.unlink()
+    return jsonify({"ok": True})
 
 
 # ---------------------------------------------------------------------------

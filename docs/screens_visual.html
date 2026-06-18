@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chaosco — Visual Screen Reference</title>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --border: #dee2e6;
+      --text: #212529;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+
+      --c-core:      #343a40;
+      --c-imported:  #6610f2;
+      --c-spillover: #0077b6;
+      --c-retail:    #198754;
+      --c-reports:   #495057;
+      --c-prod:      #dc3545;
+      --c-cs:        #0f6674;
+      --c-planning:  #c05600;
+      --c-reference: #5a3e8a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    /* ---- Page header ---- */
+    .page-header {
+      background: #1a1d21;
+      color: #fff;
+      padding: 1.5rem 2rem 1.2rem;
+      border-bottom: 3px solid #0d6efd;
+    }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+    .page-header p  { font-size: 0.85rem; opacity: 0.65; margin-top: 0.25rem; }
+
+    /* ---- TOC ---- */
+    .toc-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 2rem;
+      display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem;
+      font-size: 0.8rem;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .toc-bar a { text-decoration: none; color: var(--accent); white-space: nowrap; }
+    .toc-bar a:hover { text-decoration: underline; }
+    .toc-bar .sep { color: var(--border); }
+
+    /* ---- Layout ---- */
+    .content { padding: 2rem; max-width: 1300px; margin: 0 auto; }
+
+    /* ---- Group heading ---- */
+    .group-heading {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.3rem;
+      margin: 2.5rem 0 1.25rem;
+    }
+    .group-heading:first-child { margin-top: 0; }
+
+    /* ---- Screen block ---- */
+    .screen {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    }
+
+    .screen-header {
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem 1rem;
+      padding: 0.7rem 1.1rem;
+      color: #fff;
+    }
+    .screen-name { font-size: 1rem; font-weight: 700; }
+    .screen-url  { font-family: "Consolas", monospace; font-size: 0.8rem; opacity: 0.78; }
+
+    /* colour stripes */
+    .stripe-core      .screen-header { background: var(--c-core); }
+    .stripe-imported  .screen-header { background: var(--c-imported); }
+    .stripe-spillover .screen-header { background: var(--c-spillover); }
+    .stripe-retail    .screen-header { background: var(--c-retail); }
+    .stripe-reports   .screen-header { background: var(--c-reports); }
+    .stripe-prod      .screen-header { background: var(--c-prod); }
+    .stripe-cs        .screen-header { background: var(--c-cs); }
+    .stripe-planning  .screen-header { background: var(--c-planning); }
+    .stripe-reference .screen-header { background: var(--c-reference); }
+
+    /* ---- Two-column layout: screenshot left, notes right ---- */
+    .screen-body {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 0;
+    }
+
+    .screen-shot {
+      border-right: 1px solid var(--border);
+      background: #f8f9fa;
+      padding: 0.75rem;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .screen-shot img {
+      width: 100%;
+      max-width: 900px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .screen-notes {
+      padding: 1rem 1.1rem;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .screen-desc { font-size: 0.875rem; color: var(--text); }
+
+    /* feature list */
+    .feat-block { }
+    .feat-block h4 {
+      font-size: 0.68rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.35rem;
+    }
+    .feat-block ul { list-style: none; padding: 0; }
+    .feat-block li { font-size: 0.8rem; margin-bottom: 0.2rem; padding-left: 0.9rem; position: relative; }
+    .feat-block li::before { content: "›"; position: absolute; left: 0; color: var(--muted); }
+
+    /* pills */
+    .pill {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      padding: 0.1em 0.45em; border-radius: 3px; margin: 1px 2px 1px 0;
+      white-space: nowrap; vertical-align: middle;
+    }
+    .pill-f { background: #cfe2ff; color: #0a3871; }   /* filter */
+    .pill-a { background: #d1fadf; color: #166534; }   /* action */
+    .pill-x { background: #fff3cd; color: #664d03; }   /* ajax */
+    .pill-n { background: #e9d5ff; color: #44116e; }   /* nav */
+
+    code {
+      font-family: "Consolas", monospace; font-size: 0.8rem;
+      background: #f1f3f5; padding: 0.05em 0.3em; border-radius: 3px;
+    }
+
+    /* vision box */
+    .vision-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      font-size: 0.82rem;
+      color: #78350f;
+    }
+    .vision-box strong { display: block; margin-bottom: 0.3rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ---- Footer ---- */
+    .page-footer {
+      text-align: center; font-size: 0.75rem; color: var(--muted);
+      padding: 2rem; border-top: 1px solid var(--border); margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>chaosco — Visual Screen Reference</h1>
+  <p>Local web UI · http://127.0.0.1:5000 · Screenshots captured 2026-06-18</p>
+</div>
+
+<!-- sticky TOC -->
+<div class="toc-bar">
+  <a href="#dashboard">Dashboard</a><span class="sep">|</span>
+  <a href="#defects">Defects</a><span class="sep">|</span>
+  <a href="#spillover">Spillover</a><span class="sep">|</span>
+  <a href="#retail">Retail</a><span class="sep">|</span>
+  <a href="#retail-report">Retail Report</a><span class="sep">|</span>
+  <a href="#signoff-report">Sign-Off Reports</a><span class="sep">|</span>
+  <a href="#prod-defects">Prod Defects</a><span class="sep">|</span>
+  <a href="#cs-followups">CS Follow-Ups</a><span class="sep">|</span>
+  <a href="#meeting-prep">Meeting Prep</a><span class="sep">|</span>
+  <a href="#todos">To-Do</a><span class="sep">|</span>
+  <a href="#followups">Follow-ups</a><span class="sep">|</span>
+  <a href="#links">Links</a><span class="sep">|</span>
+  <a href="#test-learnings">Test Learnings</a><span class="sep">|</span>
+  <a href="#test-limitations">Test Limitations</a>
+</div>
+
+<div class="content">
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Core</div>
+
+  <!-- Dashboard -->
+  <div class="screen stripe-core" id="dashboard">
+    <div class="screen-header">
+      <span class="screen-name">Dashboard</span>
+      <span class="screen-url">GET /</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="screenshot_dashboard.png" alt="Dashboard screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          The home screen. A card grid gives one-click access to every module.
+          The <strong>Run Import</strong> button is the only action here — it reads the latest
+          Excel file, archives it, and upserts all three tabs into the database.
+        </p>
+        <div class="feat-block">
+          <h4>Cards visible</h4>
+          <ul>
+            <li>Import DTC ROE Tracking</li>
+            <li>Defects</li>
+            <li>Core South Spillover</li>
+            <li>Retail</li>
+            <li>Meeting Prep</li>
+            <li>To-Do</li>
+            <li>Follow-ups</li>
+            <li>Links</li>
+            <li>CS Follow-Up Tracker</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Notes</h4>
+          <ul>
+            <li>The "☆ Enhancements" floating button (bottom-right) is visible on every page</li>
+            <li>No persistent sidebar — navigation is card-based from here</li>
+            <li>The "Test Coordination" header title is a link back to this page from anywhere</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          Several modules that exist in the DB (Retail Learnings, Limitations, Sign-Off Reports, Prod Defects) are not reachable from the dashboard — they are only accessible by typing the URL directly or following links from within other screens.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Defects — imported from Excel "Defects" tab</div>
+
+  <div class="screen stripe-imported" id="defects">
+    <div class="screen-header">
+      <span class="screen-name">Defects — List</span>
+      <span class="screen-url">GET /defects</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_defects.png" alt="Defects list screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Filterable table of all imported defects. Statuses "Withdrawn" and "Confirmed"
+          are hidden by default and revealed with the <em>Show all</em> toggle.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Search</span> by defect ID</li>
+            <li><span class="pill pill-f">Channel</span> dropdown</li>
+            <li><span class="pill pill-f">Status</span> multi-select</li>
+            <li><span class="pill pill-f">Action needed</span> yes / no</li>
+            <li><span class="pill pill-f">Show all</span> toggle (reveals hidden statuses)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Row actions</h4>
+          <ul>
+            <li><span class="pill pill-n">Click row</span> → Defect Detail</li>
+            <li><span class="pill pill-a">Add note</span> shortcut per row</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Columns</h4>
+          <ul>
+            <li>Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Notes</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Defect Detail — notes &amp; screenshots</h4>
+          <ul>
+            <li>Full notes log per defect: heading + text + timestamp</li>
+            <li>Per-note <span class="pill pill-a">Edit</span> and <span class="pill pill-a">Delete</span></li>
+            <li><span class="pill pill-a">📷 Add screenshot</span> button per note — file picker for PNG/JPG/GIF/WEBP</li>
+            <li><strong>Ctrl+V</strong> pastes a Snipping Tool screenshot into the last-hovered note</li>
+            <li>Thumbnails shown inline; hover to reveal ✕ delete button</li>
+            <li>Files stored in <code>data/uploads/</code></li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          There is no Detail screen accessible from the nav — clicking a row is the only route in. No link to the Defect Detail from within other screens (e.g. from a Retail row that references a defect ID).
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Core South Spillover — imported from Excel "Core South Spillover" tab</div>
+
+  <div class="screen stripe-spillover" id="spillover">
+    <div class="screen-header">
+      <span class="screen-name">Spillover — List</span>
+      <span class="screen-url">GET /spillover</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_spillover.png" alt="Spillover list screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Horizontally scrollable table with a frozen left pane. All annotation editing
+          happens inline — no detail page exists. AJAX saves on every field change.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Area</span> <span class="pill pill-f">Type</span> <span class="pill pill-f">Status</span> <span class="pill pill-f">Assigned To</span> <span class="pill pill-f">Critical</span> (all multi)</li>
+            <li><span class="pill pill-f">Show passed &amp; dropped</span> toggle</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline edits (AJAX — no page reload)</h4>
+          <ul>
+            <li><span class="pill pill-x">Importance for sign-off</span></li>
+            <li><span class="pill pill-x">Next step</span></li>
+            <li><span class="pill pill-x">Comment for sign-off</span></li>
+            <li><span class="pill pill-x">Sign-off group</span></li>
+            <li><span class="pill pill-x">Critical for sign-off</span></li>
+            <li><span class="pill pill-x">Comment history popup</span> (timestamped log)</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          No Spillover detail page — everything is in the list. This works well for quick updates but makes it impossible to view the full "content" field or have a notes log per row. Also no link from the dashboard to the sign-off reports that use this data.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Retail — imported from Excel "Retail" tab</div>
+
+  <div class="screen stripe-retail" id="retail">
+    <div class="screen-header">
+      <span class="screen-name">Retail — List</span>
+      <span class="screen-url">GET /retail</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_retail.png" alt="Retail list screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Filterable table of all retail test-case rows. Three free-text search boxes
+          let you find rows by defect ID, order number, or billing document. Next step
+          edits inline; comment history in a per-row popup.
+        </p>
+        <div class="feat-block">
+          <h4>Dropdown filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Status</span> <span class="pill pill-f">Assigned To</span> <span class="pill pill-f">Country</span> <span class="pill pill-f">Scenario</span> (all multi)</li>
+            <li><span class="pill pill-f">Action needed</span></li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Free-text searches</h4>
+          <ul>
+            <li><span class="pill pill-f">Defect ID ref</span></li>
+            <li><span class="pill pill-f">Order number</span></li>
+            <li><span class="pill pill-f">S4 Billing document</span></li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline / row actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Next step</span> inline edit (AJAX)</li>
+            <li><span class="pill pill-x">Comment history popup</span> (AJAX)</li>
+            <li><span class="pill pill-n">Click row</span> → Retail Detail</li>
+            <li><span class="pill pill-n">→ Report</span> and <span class="pill pill-n">→ Sign-Off Report</span> header links</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Retail Detail — notes &amp; screenshots</h4>
+          <ul>
+            <li>Full notes log per test case: heading + text + timestamp</li>
+            <li>Per-note <span class="pill pill-a">Edit</span> and <span class="pill pill-a">Delete</span></li>
+            <li><span class="pill pill-a">📷 Add screenshot</span> button per note — file picker for PNG/JPG/GIF/WEBP</li>
+            <li><strong>Ctrl+V</strong> pastes a Snipping Tool screenshot into the last-hovered note</li>
+            <li>Thumbnails shown inline; hover to reveal ✕ delete button</li>
+            <li>Files stored in <code>data/uploads/</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Status Report -->
+  <div class="screen stripe-retail" id="retail-report">
+    <div class="screen-header">
+      <span class="screen-name">Retail — Status Report</span>
+      <span class="screen-url">GET /retail/report</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_retail_report.png" alt="Retail status report screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Live bucket counts computed by mapping raw <code>status</code> values to named
+          buckets defined in <code>config/status_mappings.yaml</code>. Two export options:
+          append a row to an Excel log, or download a standalone HTML snapshot.
+        </p>
+        <div class="feat-block">
+          <h4>Buckets</h4>
+          <ul>
+            <li>Back with Sales</li>
+            <li>With DTC</li>
+            <li>In Progress with DTC</li>
+            <li>Passed with DTC</li>
+            <li>Incoming (Gatekeeper)</li>
+            <li>Ready for Validation</li>
+            <li>In Progress</li>
+            <li>In Clarification</li>
+            <li>Blocked</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">Save to Excel</span> — appends row to <code>output/retail_report_log.xlsx</code></li>
+            <li><span class="pill pill-a">Download HTML</span> — saves a dated standalone snapshot</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Sign-Off Reports — printable summaries for stakeholders</div>
+
+  <div class="screen stripe-reports" id="signoff-report">
+    <div class="screen-header">
+      <span class="screen-name">Retail Spillover Sign-Off Report</span>
+      <span class="screen-url">GET /report/retail</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_report_retail.png" alt="Retail spillover report screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Printable view of Retail spillover items grouped by <em>Critical for sign-off</em>
+          value (Yes / Slightly / No / Not set). Excludes ECOM and Omni areas.
+          A matching ECOM/Omni version lives at <code>/report/ecom</code> and adds a Known
+          Production Defects section.
+        </p>
+        <div class="feat-block">
+          <h4>Sections</h4>
+          <ul>
+            <li>Critical: Yes</li>
+            <li>Critical: Slightly</li>
+            <li>Critical: No</li>
+            <li>Not set</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Each item shows</h4>
+          <ul>
+            <li>Name · Type · Country · Area · Status · External ID</li>
+            <li>Importance · Next Step · Comment for sign-off · Sign-off group</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          These report URLs are not linked from the dashboard. You can reach them from the Retail list header, or via the Spillover list, but there is no single "Reports" section on the home screen.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Production Defects — manually curated register</div>
+
+  <div class="screen stripe-prod" id="prod-defects">
+    <div class="screen-header">
+      <span class="screen-name">Production Defects — List</span>
+      <span class="screen-url">GET /prod_defects</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_prod_defects.png" alt="Production defects list screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Hand-maintained register of known defects in production. Used to populate the
+          "Known Production Defects" section of the ECOM sign-off report. Each entry has
+          a full detail / edit page.
+        </p>
+        <div class="feat-block">
+          <h4>Fields per entry</h4>
+          <ul>
+            <li>Technical Key · Short Description · Scenario</li>
+            <li>Description · Business Impact · Numbers</li>
+            <li>References · Next Steps · Comments · Confluence link</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">+ New</span></li>
+            <li><span class="pill pill-n">Click row</span> → Detail / Edit</li>
+            <li><span class="pill pill-a">Delete</span> (on detail page, AJAX)</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          Not on the dashboard. Only reachable by URL or from the ECOM sign-off report.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">CS Follow-Up Tracker — Core South sign-off items</div>
+
+  <div class="screen stripe-cs" id="cs-followups">
+    <div class="screen-header">
+      <span class="screen-name">CS Follow-Ups — List</span>
+      <span class="screen-url">GET /cs_followups</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_cs_followups.png" alt="CS follow-ups screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Richer follow-up tracker specifically for Core South sign-off work.
+          Supports area, Jira ID, description, and next step. Status can be
+          cycled inline. Done items hidden by default.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Area</span> <span class="pill pill-f">With Whom</span> <span class="pill pill-f">Status</span> (multi)</li>
+            <li><span class="pill pill-f">Show done</span> toggle</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Status cycle</span> open → in_progress → done</li>
+            <li><span class="pill pill-x">Notes popup</span> per row</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Planning — meetings, tasks, follow-ups</div>
+
+  <div class="screen stripe-planning" id="meeting-prep">
+    <div class="screen-header">
+      <span class="screen-name">Meeting Prep</span>
+      <span class="screen-url">GET /meeting-prep</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_meeting_prep.png" alt="Meeting prep screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Agenda topic tracker per named meeting. Topics are added with a quick inline
+          form; status changes in-row. No detail page — everything lives here.
+        </p>
+        <div class="feat-block">
+          <h4>Meetings</h4>
+          <ul>
+            <li>Balazs · GPO · Sync&amp;Solve · DTC O2C Daily · Sales ECOM daily · Other</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Status values</h4>
+          <ul>
+            <li>planned · discussed · parked · dropped</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Status change</span></li>
+            <li><span class="pill pill-x">Inline note</span> per item</li>
+            <li><span class="pill pill-x">Notes popup</span> per item</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-planning" id="todos">
+    <div class="screen-header">
+      <span class="screen-name">To-Do List</span>
+      <span class="screen-url">GET /todos</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_todos.png" alt="To-do list screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          General task list with priority, kind, due date, and owner. Sorted by:
+          blocked → in_progress → open → closed, then by priority and due date.
+          Overdue dates shown in red.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Area</span> <span class="pill pill-f">Status</span> <span class="pill pill-f">Priority</span> <span class="pill pill-f">For Whom</span> <span class="pill pill-f">Due Date</span></li>
+            <li><span class="pill pill-f">Show closed</span> toggle</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Status values</h4>
+          <ul>
+            <li>open · in_progress · blocked · closed</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Status change</span></li>
+            <li><span class="pill pill-x">Edit row</span> (inline modal)</li>
+            <li><span class="pill pill-x">Notes popup</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-planning" id="followups">
+    <div class="screen-header">
+      <span class="screen-name">Follow-ups</span>
+      <span class="screen-url">GET /followups</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_followups.png" alt="Follow-ups screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Lightweight "chase" list — who to follow up with, on what, and by when.
+          Done items hidden by default. Sorted by in_progress first, then open, then date.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">With Whom</span> <span class="pill pill-f">When Next</span></li>
+            <li><span class="pill pill-f">Show done</span> toggle</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Status values</h4>
+          <ul>
+            <li>open · in_progress · done</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Status change</span></li>
+            <li><span class="pill pill-x">Notes popup</span></li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          Two separate follow-up trackers exist: <em>Follow-ups</em> (general, lightweight) and <em>CS Follow-Up Tracker</em> (CS-specific, richer). Their overlap and intended split may need clarification.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Reference — links, learnings, limitations</div>
+
+  <div class="screen stripe-reference" id="links">
+    <div class="screen-header">
+      <span class="screen-name">Links</span>
+      <span class="screen-url">GET /links</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_links.png" alt="Links screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Personal URL bookmark store. Filter by area, tool, or tag. One-click copy to clipboard.
+          Each link opens in a new tab.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Area</span> <span class="pill pill-f">Tool</span> <span class="pill pill-f">Tag</span> (multi)</li>
+            <li><span class="pill pill-f">Search</span> by description text</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Per-link actions</h4>
+          <ul>
+            <li><span class="pill pill-a">Copy URL</span> (clipboard)</li>
+            <li><span class="pill pill-a">Edit</span> → Link Detail</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-reference" id="test-learnings">
+    <div class="screen-header">
+      <span class="screen-name">Test Learnings</span>
+      <span class="screen-url">GET /test_learnings</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_test_learnings.png" alt="Test learnings screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Log of observations and lessons learned during UAT test execution.
+          Grouped by channel → topic → learning. Per-row notes popup.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Channel</span> <span class="pill pill-f">Tag</span> (multi)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">+ New</span> (pre-fills channel from filter)</li>
+            <li><span class="pill pill-n">Click row</span> → Detail / Edit</li>
+            <li><span class="pill pill-x">Notes popup</span> per row</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          Not linked from the dashboard. Reachable only from the Retail list (header link) or by URL. The channel field defaults to "Retail" but can store multi-channel learnings — the split with Test Limitations may need a clearer home.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-reference" id="test-limitations">
+    <div class="screen-header">
+      <span class="screen-name">Test Limitations</span>
+      <span class="screen-url">GET /test_limitations</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot">
+        <img src="ss_test_limitations.png" alt="Test limitations screenshot">
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Register of known gaps in test coverage or constraints that affect
+          sign-off confidence. Sorted by channel → limitation text.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Channel</span> (multi)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">+ New</span></li>
+            <li><span class="pill pill-n">Click row</span> → Detail / Edit</li>
+            <li><span class="pill pill-x">Notes popup</span> per row</li>
+          </ul>
+        </div>
+        <div class="vision-box">
+          <strong>Vision gap to discuss</strong>
+          Not linked from the dashboard. Same navigation gap as Test Learnings.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  chaosco · Visual Screen Reference · Screenshots captured 2026-06-18 from http://127.0.0.1:5000
+</div>
+
+</body>
+</html>

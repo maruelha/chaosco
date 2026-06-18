@@ -10,10 +10,7 @@ if errorlevel 1 (
 )
 echo.
 echo Checking for existing process on port 5000...
-for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":5000 " ^| findstr "LISTENING"') do (
-    echo Stopping old process (PID %%p)...
-    taskkill /PID %%p /F >nul 2>&1
-)
+PowerShell -Command "Get-Process -Id (Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
 echo.
 echo Starting Test Coordination web server...
 echo The browser will open automatically at http://127.0.0.1:5000

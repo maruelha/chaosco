@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chaosco — Database Schema</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #dee2e6;
+      --header-bg: #343a40;
+      --header-fg: #ffffff;
+      --pk: #0d6efd;
+      --fk: #6610f2;
+      --imported: #0f5132;
+      --imported-bg: #d1e7dd;
+      --authored: #664d03;
+      --authored-bg: #fff3cd;
+      --shared: #055160;
+      --shared-bg: #cff4fc;
+      --legacy: #6c757d;
+      --legacy-bg: #e9ecef;
+      --planning: #6f42c1;
+      --planning-bg: #e8d5ff;
+      --accent: #0d6efd;
+      --muted: #6c757d;
+      --text: #212529;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+
+    /* Group headings */
+    .group {
+      margin-bottom: 3rem;
+    }
+
+    .group-heading {
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Table card */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+
+    .table-card-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--header-bg);
+      color: var(--header-fg);
+    }
+
+    .table-card-header .tname {
+      font-family: "Consolas", "Cascadia Code", monospace;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .table-card-header .tdesc {
+      font-size: 0.82rem;
+      opacity: 0.78;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15em 0.55em;
+      border-radius: 3px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-imported  { background: var(--imported-bg);  color: var(--imported); }
+    .badge-authored  { background: var(--authored-bg);  color: var(--authored); }
+    .badge-shared    { background: var(--shared-bg);    color: var(--shared); }
+    .badge-legacy    { background: var(--legacy-bg);    color: var(--legacy); }
+    .badge-planning  { background: var(--planning-bg);  color: var(--planning); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      background: #f1f3f5;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.45rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid #f1f3f5;
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #f8f9ff;
+    }
+
+    .col-name {
+      font-family: "Consolas", "Cascadia Code", monospace;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
+    .col-type {
+      font-family: "Consolas", "Cascadia Code", monospace;
+      font-size: 0.78rem;
+      color: #495057;
+      white-space: nowrap;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.1em 0.4em;
+      border-radius: 3px;
+      margin-right: 2px;
+      white-space: nowrap;
+    }
+
+    .tag-pk   { background: #cfe2ff; color: var(--pk);  }
+    .tag-fk   { background: #e9d5ff; color: var(--fk); }
+    .tag-nn   { background: #fde8d8; color: #7a3505; }
+    .tag-uq   { background: #d1fadf; color: #166534; }
+    .tag-ai   { background: #e9ecef; color: #495057; }
+    .tag-mig  { background: #fff3cd; color: #664d03; }
+
+    .note-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* Relations summary below table */
+    .relations {
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid var(--border);
+      background: #fcfcfc;
+    }
+
+    .relations strong {
+      color: var(--text);
+    }
+
+    /* TOC */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2.5rem;
+      display: inline-block;
+      min-width: 280px;
+    }
+
+    .toc h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .toc li {
+      margin-bottom: 0.15rem;
+    }
+
+    .toc a {
+      text-decoration: none;
+      color: var(--accent);
+      font-family: "Consolas", monospace;
+      font-size: 0.83rem;
+    }
+
+    .toc a:hover { text-decoration: underline; }
+
+    .toc .group-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-top: 0.5rem;
+      margin-bottom: 0.2rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>chaosco — Database Schema</h1>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Generated 2026-06-18</p>
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h2>Tables</h2>
+  <ul>
+    <li class="group-label">Imported from Excel</li>
+    <li><a href="#defects">defects</a></li>
+    <li><a href="#spillover">spillover</a></li>
+    <li><a href="#retail">retail</a></li>
+
+    <li class="group-label">User-Authored Annotations</li>
+    <li><a href="#defect_annotations">defect_annotations</a></li>
+    <li><a href="#spillover_annotations">spillover_annotations</a></li>
+    <li><a href="#retail_annotations">retail_annotations</a></li>
+
+    <li class="group-label">Shared / System</li>
+    <li><a href="#notes">notes</a></li>
+    <li><a href="#attachments">attachments</a></li>
+    <li><a href="#defect_notes">defect_notes</a> (legacy)</li>
+
+    <li class="group-label">Planning &amp; Coordination</li>
+    <li><a href="#todos">todos</a></li>
+    <li><a href="#meeting_prep">meeting_prep</a></li>
+    <li><a href="#enhancements">enhancements</a></li>
+    <li><a href="#followups">followups</a></li>
+    <li><a href="#cs_followups">cs_followups</a></li>
+    <li><a href="#known_prod_defects">known_prod_defects</a></li>
+    <li><a href="#links">links</a></li>
+    <li><a href="#test_learnings">test_learnings</a></li>
+    <li><a href="#test_limitations">test_limitations</a></li>
+  </ul>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: IMPORTED -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Imported from Excel — written by importers only</div>
+
+  <!-- defects -->
+  <div class="table-card" id="defects">
+    <div class="table-card-header">
+      <span class="tname">defects</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "Defects" Excel tab. Upserted on each import run, never deleted.</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">SolMan defect identifier, e.g. <em>DFT-00123</em></td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td></td><td class="note-text">Sales channel (Retail / ECOM / …)</td></tr>
+        <tr><td class="col-name">solman_name</td><td class="col-type">TEXT</td><td></td><td class="note-text">SolMan defect title / name</td></tr>
+        <tr><td class="col-name">raised_by</td><td class="col-type">TEXT</td><td></td><td class="note-text">Person who reported the defect</td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related sales order number</td></tr>
+        <tr><td class="col-name">date_reported</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD; normalised on import</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Test scenario the defect was found in</td></tr>
+        <tr><td class="col-name">exists_in_production</td><td class="col-type">TEXT</td><td></td><td class="note-text">Y / N / blank</td></tr>
+        <tr><td class="col-name">affected_testcases_raw</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text list of affected test cases</td></tr>
+        <tr><td class="col-name">retest_dependency</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">blocks_execution</td><td class="col-type">TEXT</td><td></td><td class="note-text">Whether this defect is a blocker</td></tr>
+        <tr><td class="col-name">defect_reason</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">solman_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Current SolMan status; drives list-view filters</td></tr>
+        <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td></td><td class="note-text">High / Medium / Low</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">tech_team</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">date_closed</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD; normalised on import</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">True Excel row number (header = row 1). Human cross-reference only.</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of first import; never overwritten</td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of most recent import</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- spillover -->
+  <div class="table-card" id="spillover">
+    <div class="table-card-header">
+      <span class="tname">spillover</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "Core South Spillover" Excel tab. Match key = excel_row (stable after 2026-05 migration).</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">spillover_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td class="note-text">E.g. "Defect", "Test Gap"</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td></td><td class="note-text">Short name / title of the spillover item</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area (O2C, Finance, …)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Current status; drives list-view filters</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">external_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Jira / SolMan reference ID</td></tr>
+        <tr><td class="col-name">order_numbers</td><td class="col-type">TEXT</td><td></td><td class="note-text">Raw text; may contain multiple order numbers</td></tr>
+        <tr><td class="col-name">content</td><td class="col-type">TEXT</td><td></td><td class="note-text">Detailed description from Excel</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Raw imported comment (not the authored history)</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">True Excel row number; used as match key since 2026-05</td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td class="note-text">= CAST(excel_row AS TEXT). Old rows had type||name||country; migrated on first startup.</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of first import; never overwritten</td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of most recent import</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- retail -->
+  <div class="table-card" id="retail">
+    <div class="table-card-header">
+      <span class="tname">retail</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "Retail" Excel tab. Match key = lower(test_case_id) || "||" || lower(country).</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">retail_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Test case identifier from Excel. Part of match key.</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Country code. Part of match key.</td></tr>
+        <tr><td class="col-name">testcase_name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Used as a filter in the UI</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Execution status; drives report bucket counts</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">key_user_responsible</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">evidence_in_sharepoint</td><td class="col-type">TEXT</td><td></td><td class="note-text">SharePoint link or reference</td></tr>
+        <tr><td class="col-name">sales_file</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_started</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_completed</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td class="note-text">Current order number; searchable in UI</td></tr>
+        <tr><td class="col-name">old_order_numbers</td><td class="col-type">TEXT</td><td></td><td class="note-text">Raw text; historical order/transaction numbers</td></tr>
+        <tr><td class="col-name">defect_id_ref</td><td class="col-type">TEXT</td><td></td><td class="note-text">Raw text reference to a defect. Searchable in UI.</td></tr>
+        <tr><td class="col-name">s4_sales_order</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_billing_documents</td><td class="col-type">TEXT</td><td></td><td class="note-text">Searchable in UI</td></tr>
+        <tr><td class="col-name">s4_journal_invoice_entry</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">delivery_note</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Raw imported comment; not the authored comment history</td></tr>
+        <tr><td class="col-name">reason_for_pass_with_reservation</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">True Excel row number. Human cross-reference only.</td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(test_case_id) || "||" || lower(country)</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of first import; never overwritten</td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO date of most recent import</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: ANNOTATIONS -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">User-Authored Annotations — never written by importers</div>
+
+  <!-- defect_annotations -->
+  <div class="table-card" id="defect_annotations">
+    <div class="table-card-header">
+      <span class="tname">defect_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">One optional row per defect — structured notes added via the Defect detail page.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → defects</span></td><td></td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">User's own description of the defect</td></tr>
+        <tr><td class="col-name">business_impact</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">reach</td><td class="col-type">TEXT</td><td></td><td class="note-text">How many people / countries are affected</td></tr>
+        <tr><td class="col-name">retest_needs</td><td class="col-type">TEXT</td><td></td><td class="note-text">What needs to be retested</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable action item</td></tr>
+        <tr><td class="col-name">action_needed</td><td class="col-type">INTEGER</td><td></td><td class="note-text">0 = no, 1 = yes. Drives "Action needed" filter in list view.</td></tr>
+        <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text authored comments</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Relation:</strong> defect_annotations.defect_id → defects.defect_id (1 : 0..1)</div>
+  </div>
+
+  <!-- spillover_annotations -->
+  <div class="table-card" id="spillover_annotations">
+    <div class="table-card-header">
+      <span class="tname">spillover_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">One optional row per spillover item — sign-off assessment and working notes.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">spillover_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → spillover</span></td><td></td></tr>
+        <tr><td class="col-name">importance_for_signoff</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable field</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable action item</td></tr>
+        <tr><td class="col-name">comment_history</td><td class="col-type">TEXT</td><td></td><td class="note-text">JSON array of timestamped authored comments</td></tr>
+        <tr><td class="col-name">critical_for_signoff</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Added via ALTER TABLE after initial schema</td></tr>
+        <tr><td class="col-name">comment_for_signoff</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td></td></tr>
+        <tr><td class="col-name">signoff_group</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Which sign-off group this belongs to</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Relation:</strong> spillover_annotations.spillover_id → spillover.spillover_id (1 : 0..1)</div>
+  </div>
+
+  <!-- retail_annotations -->
+  <div class="table-card" id="retail_annotations">
+    <div class="table-card-header">
+      <span class="tname">retail_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">One optional row per retail test case — working notes and action flag.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">retail_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → retail</span></td><td></td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable action item</td></tr>
+        <tr><td class="col-name">comment_history</td><td class="col-type">TEXT</td><td></td><td class="note-text">JSON array of timestamped authored comments</td></tr>
+        <tr><td class="col-name">action_needed</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">0 = no, 1 = yes. Added via ALTER TABLE. Drives "Action needed" filter.</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Relation:</strong> retail_annotations.retail_id → retail.retail_id (1 : 0..1)</div>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: SHARED / SYSTEM -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Shared / System Tables</div>
+
+  <!-- notes -->
+  <div class="table-card" id="notes">
+    <div class="table-card-header">
+      <span class="tname">notes</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Unified notes log for all entity types (defect, retail, todo, followup, meeting_prep, …).</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">E.g. <code>defect</code>, <code>retail</code>, <code>todo</code>, <code>followup</code>, <code>meeting_prep</code>, <code>test_learning</code>, <code>test_limitation</code>, <code>cs_followup</code></td></tr>
+        <tr><td class="col-name">entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">TEXT representation of the parent row's PK</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime</td></tr>
+        <tr><td class="col-name">heading</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Note body</td></tr>
+        <tr><td class="col-name">source</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional source tag (e.g. who added it). Added via ALTER TABLE.</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Index:</strong> ix_notes_entity ON (entity_type, entity_id)</div>
+  </div>
+
+  <!-- attachments -->
+  <div class="table-card" id="attachments">
+    <div class="table-card-header">
+      <span class="tname">attachments</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Image files attached to notes — one row per file. The actual file lives in <code>data/uploads/</code>; this table stores the reference.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">note_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → notes</span></td><td class="note-text">The note this file belongs to</td></tr>
+        <tr><td class="col-name">filename</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Stored filename on disk: <code>&lt;note_id&gt;_&lt;timestamp&gt;_&lt;original&gt;</code>. Served via <code>GET /uploads/&lt;filename&gt;</code>.</td></tr>
+        <tr><td class="col-name">original_name</td><td class="col-type">TEXT</td><td></td><td class="note-text">Original filename as uploaded (shown in thumbnail label)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime of upload</td></tr>
+      </tbody>
+    </table>
+    <div class="relations">
+      <strong>Relation:</strong> attachments.note_id → notes.id (many : 1, cascade on delete intent) &nbsp;·&nbsp;
+      <strong>Index:</strong> ix_attachments_note ON (note_id) &nbsp;·&nbsp;
+      <strong>Allowed types:</strong> .png .jpg .jpeg .gif .webp &nbsp;·&nbsp;
+      <strong>Upload:</strong> <code>POST /notes/&lt;note_id&gt;/attachments/add</code> &nbsp;·&nbsp;
+      <strong>Delete:</strong> <code>POST /notes/&lt;note_id&gt;/attachments/&lt;id&gt;/delete</code> (removes DB row + disk file)
+    </div>
+  </div>
+
+  <!-- defect_notes (legacy) -->
+  <div class="table-card" id="defect_notes">
+    <div class="table-card-header">
+      <span class="tname">defect_notes</span>
+      <span class="badge badge-legacy">Legacy</span>
+      <span class="tdesc">Original defect-only notes table. No longer written to — superseded by the shared "notes" table. Kept for migration continuity.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td><span class="tag tag-fk">FK → defects</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">heading</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: PLANNING -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Planning &amp; Coordination — manually managed via the UI</div>
+
+  <!-- todos -->
+  <div class="table-card" id="todos">
+    <div class="table-card-header">
+      <span class="tname">todos</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">General to-do list. Supports areas, kind classification, priority, due dates, and per-item notes.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area tag</td></tr>
+        <tr><td class="col-name">kind</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Classification of the todo item. Added via ALTER TABLE.</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Title / description of the task</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open · in_progress · blocked · closed</td></tr>
+        <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">High · Medium · Low (default: Medium)</td></tr>
+        <tr><td class="col-name">due_date</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD; nullable</td></tr>
+        <tr><td class="col-name">for_whom</td><td class="col-type">TEXT</td><td></td><td class="note-text">Person this task is intended for</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='todo' AND entity_id=CAST(id AS TEXT)</div>
+  </div>
+
+  <!-- meeting_prep -->
+  <div class="table-card" id="meeting_prep">
+    <div class="table-card-header">
+      <span class="tname">meeting_prep</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Meeting agenda items. Supports per-meeting filter and status tracking.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">meeting</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Meeting name from options list (Balazs, GPO, Sync&Solve, DTC O2C Daily, Sales ECOM daily, Other)</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Agenda item / topic to discuss</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">planned · discussed · parked · dropped</td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline note / outcome</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='meeting_prep'</div>
+  </div>
+
+  <!-- enhancements -->
+  <div class="table-card" id="enhancements">
+    <div class="table-card-header">
+      <span class="tname">enhancements</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Tool enhancement backlog. Priority-sorted; closed items hidden by default.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Optional area tag</td></tr>
+        <tr><td class="col-name">enhancement</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Description of the enhancement</td></tr>
+        <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">High · Medium · Low (default: Medium)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">not_started · in_progress · closed (default: not_started)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- followups -->
+  <div class="table-card" id="followups">
+    <div class="table-card-header">
+      <span class="tname">followups</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">General follow-up tracker — "I need to chase X about Y by Z date".</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Person to follow up with</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">when_next</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD target date; nullable</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open · in_progress · done (default: open)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='followup'</div>
+  </div>
+
+  <!-- cs_followups -->
+  <div class="table-card" id="cs_followups">
+    <div class="table-card-header">
+      <span class="tname">cs_followups</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Core South sign-off follow-up tracker — richer than followups; includes Jira ID, description, and area.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area tag</td></tr>
+        <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Optional Jira ticket reference</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Short title of the follow-up</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Detailed description</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable next action</td></tr>
+        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td></td><td class="note-text">Person to follow up with</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open · in_progress · done (default: open)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='cs_followup'</div>
+  </div>
+
+  <!-- known_prod_defects -->
+  <div class="table-card" id="known_prod_defects">
+    <div class="table-card-header">
+      <span class="tname">known_prod_defects</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Manually curated register of defects known to exist in production — used for sign-off discussions.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">technical_key</td><td class="col-type">TEXT</td><td></td><td class="note-text">E.g. SolMan / Jira ID</td></tr>
+        <tr><td class="col-name">short_description</td><td class="col-type">TEXT</td><td></td><td class="note-text">One-line summary</td></tr>
+        <tr><td class="col-name">numbers</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related order / document numbers</td></tr>
+        <tr><td class="col-name">biz_impact</td><td class="col-type">TEXT</td><td></td><td class="note-text">Business impact description</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Detailed defect description</td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Affected test scenario(s)</td></tr>
+        <tr><td class="col-name">refs</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related references / links</td></tr>
+        <tr><td class="col-name">next_steps</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Added via ALTER TABLE</td></tr>
+        <tr><td class="col-name">confluence</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Confluence page link. Added via ALTER TABLE.</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- links -->
+  <div class="table-card" id="links">
+    <div class="table-card-header">
+      <span class="tname">links</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Personal URL bookmarks with area / tool / tag classification. Filterable and copyable from the UI.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Display name for the link</td></tr>
+        <tr><td class="col-name">url</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area tag (filter)</td></tr>
+        <tr><td class="col-name">tool</td><td class="col-type">TEXT</td><td></td><td class="note-text">Tool name tag (filter), e.g. "Jira", "SharePoint"</td></tr>
+        <tr><td class="col-name">tags</td><td class="col-type">TEXT</td><td></td><td class="note-text">Comma-separated free-text tags (filter)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- test_learnings -->
+  <div class="table-card" id="test_learnings">
+    <div class="table-card-header">
+      <span class="tname">test_learnings</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Test execution learnings — captured observations and lessons learned during UAT.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Sales channel (default: Retail)</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td></td><td class="note-text">Short topic / category of the learning</td></tr>
+        <tr><td class="col-name">learning</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">The learning text itself</td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related test scenario</td></tr>
+        <tr><td class="col-name">tags</td><td class="col-type">TEXT</td><td></td><td class="note-text">Comma-separated free-text tags (filter)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='test_learning'</div>
+  </div>
+
+  <!-- test_limitations -->
+  <div class="table-card" id="test_limitations">
+    <div class="table-card-header">
+      <span class="tname">test_limitations</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Known test limitations — constraints or gaps in test coverage that affect sign-off confidence.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Sales channel (default: Retail)</td></tr>
+        <tr><td class="col-name">limitation</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Description of the limitation</td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related test scenario</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Additional context</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='test_limitation'</div>
+  </div>
+
+</div><!-- /group planning -->
+
+<!-- Legend -->
+<div style="font-size:0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+  <strong>Tag legend:</strong>
+  &nbsp;<span class="tag tag-pk">PK</span> Primary Key
+  &nbsp;<span class="tag tag-fk">FK</span> Foreign Key
+  &nbsp;<span class="tag tag-nn">NOT NULL</span>
+  &nbsp;<span class="tag tag-uq">UNIQUE</span>
+  &nbsp;<span class="tag tag-ai">AI</span> Auto-increment
+  &nbsp;<span class="tag tag-mig">migration</span> Added via ALTER TABLE after initial schema creation
+</div>
+
+</body>
+</html>

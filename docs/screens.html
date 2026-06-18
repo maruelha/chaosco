@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chaosco — Screen Reference</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #dee2e6;
+      --text: #212529;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+
+      /* section colours */
+      --c-core:     #343a40;
+      --c-defects:  #6610f2;
+      --c-spillover:#0077b6;
+      --c-retail:   #198754;
+      --c-reports:  #495057;
+      --c-prod:     #dc3545;
+      --c-cs:       #0f6674;
+      --c-planning: #c05600;
+      --c-reference:#5a3e8a;
+      --c-global:   #2d6a4f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.55;
+    }
+
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.2rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2.5rem; font-size: 0.9rem; }
+
+    /* ---- TOC ---- */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2.5rem;
+      display: inline-block;
+      min-width: 320px;
+      vertical-align: top;
+    }
+    .toc h2 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.6rem; }
+    .toc ul { list-style: none; }
+    .toc li { margin-bottom: 0.1rem; }
+    .toc a { text-decoration: none; color: var(--accent); font-size: 0.83rem; }
+    .toc a:hover { text-decoration: underline; }
+    .toc .group-label {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted);
+      margin-top: 0.55rem; margin-bottom: 0.15rem;
+    }
+
+    /* ---- Section ---- */
+    .section { margin-bottom: 3rem; }
+    .section-heading {
+      font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+      border-bottom: 3px solid currentColor;
+      padding-bottom: 0.3rem; margin-bottom: 1.25rem;
+    }
+
+    /* ---- Screen card ---- */
+    .screen-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+    .screen-card-header {
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.6rem;
+      padding: 0.65rem 1rem;
+      color: #fff;
+    }
+    .screen-card-header .screen-title { font-size: 0.95rem; font-weight: 700; }
+    .screen-card-header .screen-url {
+      font-family: "Consolas", monospace; font-size: 0.8rem; opacity: 0.82;
+    }
+    .screen-card-body { padding: 0.85rem 1rem; }
+
+    .screen-desc { margin-bottom: 0.7rem; font-size: 0.88rem; }
+
+    /* ---- Feature rows ---- */
+    .features { display: grid; grid-template-columns: 140px 1fr; gap: 0.3rem 0.75rem; font-size: 0.83rem; }
+    .feat-label { color: var(--muted); font-weight: 600; padding-top: 0.1rem; white-space: nowrap; }
+    .feat-value { }
+
+    /* pills */
+    .pill {
+      display: inline-block; font-size: 0.68rem; font-weight: 600;
+      padding: 0.1em 0.5em; border-radius: 3px; margin: 1px 2px 1px 0;
+      white-space: nowrap;
+    }
+    .pill-filter  { background: #cfe2ff; color: #0a3871; }
+    .pill-action  { background: #d1fadf; color: #166534; }
+    .pill-ajax    { background: #fff3cd; color: #664d03; }
+    .pill-nav     { background: #e9d5ff; color: #44116e; }
+    .pill-read    { background: #f1f3f5; color: #495057; }
+    .pill-method  { background: #e9ecef; color: #343a40; font-family: monospace; font-size: 0.7rem; }
+
+    code {
+      font-family: "Consolas", monospace; font-size: 0.82rem;
+      background: #f1f3f5; padding: 0.05em 0.3em; border-radius: 3px;
+    }
+
+    /* colour per section */
+    .s-core     .screen-card-header { background: var(--c-core); }
+    .s-defects  .screen-card-header { background: var(--c-defects); }
+    .s-spillover .screen-card-header { background: var(--c-spillover); }
+    .s-retail   .screen-card-header { background: var(--c-retail); }
+    .s-reports  .screen-card-header { background: var(--c-reports); }
+    .s-prod     .screen-card-header { background: var(--c-prod); }
+    .s-cs       .screen-card-header { background: var(--c-cs); }
+    .s-planning .screen-card-header { background: var(--c-planning); }
+    .s-reference .screen-card-header { background: var(--c-reference); }
+    .s-global   .screen-card-header { background: var(--c-global); }
+
+    .s-core      .section-heading { color: var(--c-core); }
+    .s-defects   .section-heading { color: var(--c-defects); }
+    .s-spillover .section-heading { color: var(--c-spillover); }
+    .s-retail    .section-heading { color: var(--c-retail); }
+    .s-reports   .section-heading { color: var(--c-reports); }
+    .s-prod      .section-heading { color: var(--c-prod); }
+    .s-cs        .section-heading { color: var(--c-cs); }
+    .s-planning  .section-heading { color: var(--c-planning); }
+    .s-reference .section-heading { color: var(--c-reference); }
+    .s-global    .section-heading { color: var(--c-global); }
+
+    /* API endpoint table */
+    .api-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 1rem; }
+    .api-table th { background: #f1f3f5; color: var(--muted); font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.35rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .api-table td { padding: 0.3rem 0.6rem; border-bottom: 1px solid #f1f3f5; font-family: monospace; }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table .desc { font-family: inherit; }
+
+    .hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    .note { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<h1>chaosco — Screen Reference</h1>
+<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-18</p>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Screens</h2>
+  <ul>
+    <li class="group-label">Core</li>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#import-result">Import Result</a></li>
+
+    <li class="group-label">Defects</li>
+    <li><a href="#defects-list">Defects — List</a></li>
+    <li><a href="#defect-detail">Defects — Detail</a></li>
+    <li><a href="#defect-note">Defects — Note Add / Edit / Delete</a></li>
+
+    <li class="group-label">Core South Spillover</li>
+    <li><a href="#spillover-list">Spillover — List</a></li>
+
+    <li class="group-label">Retail</li>
+    <li><a href="#retail-list">Retail — List</a></li>
+    <li><a href="#retail-detail">Retail — Detail</a></li>
+    <li><a href="#retail-note">Retail — Note Add / Edit / Delete</a></li>
+    <li><a href="#retail-report">Retail — Status Report</a></li>
+
+    <li class="group-label">Sign-Off Reports</li>
+    <li><a href="#report-retail">Retail Spillover Report</a></li>
+    <li><a href="#report-ecom">ECOM / Omni Spillover Report</a></li>
+
+    <li class="group-label">Production Defects</li>
+    <li><a href="#prod-defects-list">Prod Defects — List</a></li>
+    <li><a href="#prod-defect-detail">Prod Defects — Detail / New</a></li>
+
+    <li class="group-label">CS Follow-Up Tracker</li>
+    <li><a href="#cs-followup-list">CS Follow-Ups — List</a></li>
+    <li><a href="#cs-followup-detail">CS Follow-Ups — Detail / New</a></li>
+
+    <li class="group-label">Planning</li>
+    <li><a href="#meeting-prep">Meeting Prep</a></li>
+    <li><a href="#todos">To-Do List</a></li>
+    <li><a href="#followups">Follow-ups</a></li>
+
+    <li class="group-label">Reference</li>
+    <li><a href="#links-list">Links — List</a></li>
+    <li><a href="#link-detail">Links — Detail / New</a></li>
+    <li><a href="#test-learnings-list">Test Learnings — List</a></li>
+    <li><a href="#test-learning-detail">Test Learnings — Detail / New</a></li>
+    <li><a href="#test-limitations-list">Test Limitations — List</a></li>
+    <li><a href="#test-limitation-detail">Test Limitations — Detail / New</a></li>
+
+    <li class="group-label">Global Widget</li>
+    <li><a href="#enhancements">Enhancements Panel</a></li>
+  </ul>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- CORE -->
+<!-- ================================================================ -->
+<div class="section s-core">
+  <div class="section-heading">Core</div>
+
+  <!-- Dashboard -->
+  <div class="screen-card" id="dashboard">
+    <div class="screen-card-header">
+      <span class="screen-title">Dashboard</span>
+      <span class="screen-url">GET /</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
+      <div class="features">
+        <span class="feat-label">Cards</span>
+        <span class="feat-value">Import, Defects, Core South Spillover, Retail, Meeting Prep, To-Do, Follow-ups, Links, CS Follow-Up Tracker</span>
+        <span class="feat-label">Primary action</span>
+        <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value">Each card contains a link button to the corresponding list screen. The site title in the header also links back here from every page.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Result -->
+  <div class="screen-card" id="import-result">
+    <div class="screen-card-header">
+      <span class="screen-title">Import Result</span>
+      <span class="screen-url">POST /import</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Shown after running an import. Displays a per-tab summary of what happened — how many rows were inserted, updated, or skipped, plus archive status and any skip-log file path.</p>
+      <div class="features">
+        <span class="feat-label">Per-tab summary</span>
+        <span class="feat-value">Defects · Core South Spillover · Retail (only tabs with <code>enabled: true</code> in settings.yaml appear)</span>
+        <span class="feat-label">Counts shown</span>
+        <span class="feat-value">Inserted · Updated · Skipped (blank key) · Skipped (duplicate) · Ignored (blank rows)</span>
+        <span class="feat-label">Archive info</span>
+        <span class="feat-value">Archive status (archived / skipped_duplicate / disabled) and path of archived file</span>
+        <span class="feat-label">Skip log</span>
+        <span class="feat-value">Path to the per-run CSV if any rows were skipped</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value"><span class="pill pill-nav">Back to Dashboard</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- DEFECTS -->
+<!-- ================================================================ -->
+<div class="section s-defects">
+  <div class="section-heading">Defects</div>
+
+  <!-- Defects List -->
+  <div class="screen-card" id="defects-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Defects — List</span>
+      <span class="screen-url">GET /defects</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Paginated list of all imported defects with inline filters. The default view hides statuses "Withdrawn" and "Confirmed" (configurable in settings.yaml).</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Excel Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Note count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Search (defect ID)</span>
+          <span class="pill pill-filter">Channel</span>
+          <span class="pill pill-filter">Status (multi-select)</span>
+          <span class="pill pill-filter">Action needed</span>
+          <span class="pill pill-filter">Show all toggle</span>
+        </span>
+        <span class="feat-label">Row actions</span>
+        <span class="feat-value">Click row → Defect Detail · <span class="pill pill-action">Add note</span> shortcut per row</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Green "Note added." banner when returning from a successful note add</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>defects</code> LEFT JOIN <code>defect_annotations</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defect Detail -->
+  <div class="screen-card" id="defect-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Defects — Detail</span>
+      <span class="screen-url">GET /defects/&lt;defect_id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Full view of a single defect — imported fields on the left, editable annotation form on the right, and a notes log at the bottom.</p>
+      <div class="features">
+        <span class="feat-label">Read-only fields</span>
+        <span class="feat-value">All columns from the <code>defects</code> table (channel, status, priority, dates, scenario, etc.)</span>
+        <span class="feat-label">Editable annotation</span>
+        <span class="feat-value">Description · Business Impact · Reach · Retest Needs · Next Step · Action Needed (checkbox) · Comments<br>
+        <span class="pill pill-action">Save</span> → POST to same URL → redirect with <code>?saved=1</code> flash</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">List of all notes for this defect (heading, body, timestamp). Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span> links. Each note also shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Defects</span> · <span class="pill pill-action">Add note</span></span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>defects</code> LEFT JOIN <code>defect_annotations</code> + <code>notes</code> + <code>attachments</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Defect Notes -->
+  <div class="screen-card" id="defect-note">
+    <div class="screen-card-header">
+      <span class="screen-title">Defects — Note Add / Edit / Delete</span>
+      <span class="screen-url">GET /defects/&lt;id&gt;/notes/add &nbsp;·&nbsp; /notes/&lt;id&gt;/edit &nbsp;·&nbsp; /notes/&lt;id&gt;/delete</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Three separate screens for managing notes on a defect. Add and Edit share the same <code>note_form.html</code> template (distinguished by a <code>mode</code> variable). Delete is a confirmation page. Screenshot attachments are managed via AJAX on the detail page itself (no separate screen).</p>
+      <div class="features">
+        <span class="feat-label">Add / Edit fields</span>
+        <span class="feat-value">Heading (optional) · Note text (required — shows inline error if empty)</span>
+        <span class="feat-label">Delete</span>
+        <span class="feat-value">Confirmation page showing the note heading/body. Requires a second POST to confirm deletion.</span>
+        <span class="feat-label">Return flow</span>
+        <span class="feat-value">Add can return to either the defect detail or the defects list (controlled by <code>return_to</code> query param). Edit and Delete always return to the defect detail.</span>
+        <span class="feat-label">Screenshot attachments</span>
+        <span class="feat-value">Upload via file picker or Ctrl+V paste from Snipping Tool (AJAX, no page reload). Delete via ✕ button on thumbnail hover. Files stored in <code>data/uploads/</code>. Routes: <code>POST /notes/&lt;note_id&gt;/attachments/add</code> · <code>POST /notes/&lt;note_id&gt;/attachments/&lt;id&gt;/delete</code> · <code>GET /uploads/&lt;filename&gt;</code>.</span>
+        <span class="feat-label">Tables written</span>
+        <span class="feat-value"><code>notes</code> (entity_type = 'defect') · <code>attachments</code> (on upload/delete)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SPILLOVER -->
+<!-- ================================================================ -->
+<div class="section s-spillover">
+  <div class="section-heading">Core South Spillover</div>
+
+  <!-- Spillover List -->
+  <div class="screen-card" id="spillover-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Spillover — List</span>
+      <span class="screen-url">GET /spillover</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Frozen-pane scrollable table of all Core South Spillover items. All annotations are edited inline without leaving this page — saves happen via AJAX.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Excel Row · Type · Name · Country · Area · Status · Assigned To · External ID · Importance for Sign-Off · Critical for Sign-Off · Sign-Off Group · Next Step · Comment for Sign-Off</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area (multi)</span>
+          <span class="pill pill-filter">Type (multi)</span>
+          <span class="pill pill-filter">Status (multi)</span>
+          <span class="pill pill-filter">Assigned To (multi)</span>
+          <span class="pill pill-filter">Critical for sign-off (multi)</span>
+          <span class="pill pill-filter">Show passed &amp; dropped toggle</span>
+        </span>
+        <span class="feat-label">Hidden by default</span>
+        <span class="feat-value">Statuses: Passed · Passed pending Solman · Dropped (configurable in settings.yaml)</span>
+        <span class="feat-label">Inline edits (AJAX)</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Importance for sign-off</span>
+          <span class="pill pill-ajax">Next step</span>
+          <span class="pill pill-ajax">Comment for sign-off</span>
+          <span class="pill pill-ajax">Sign-off group</span>
+          <span class="pill pill-ajax">Critical for sign-off</span>
+          (each field saves on blur/change to <code>POST /spillover/&lt;id&gt;/annotation</code> or <code>/critical</code>)
+        </span>
+        <span class="feat-label">Comment popup</span>
+        <span class="feat-value">Per-row "Comment History" button opens a panel showing timestamped authored comments and a text area to add a new one. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- RETAIL -->
+<!-- ================================================================ -->
+<div class="section s-retail">
+  <div class="section-heading">Retail</div>
+
+  <!-- Retail List -->
+  <div class="screen-card" id="retail-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail — List</span>
+      <span class="screen-url">GET /retail</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Filterable table of all Retail test-case rows. Next steps are editable inline; comment history opens in a popup. No status-hiding — all rows visible by default.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Excel Row · Test Case ID · Country · Scenario · Testcase Name · Status · Assigned To · Key User · Next Step · Action Needed · Note count</span>
+        <span class="feat-label">Dropdown filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Status (multi)</span>
+          <span class="pill pill-filter">Assigned To (multi)</span>
+          <span class="pill pill-filter">Country (multi)</span>
+          <span class="pill pill-filter">Scenario (multi)</span>
+          <span class="pill pill-filter">Action needed</span>
+        </span>
+        <span class="feat-label">Text searches</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Defect ID ref</span>
+          <span class="pill pill-filter">Order number</span>
+          <span class="pill pill-filter">S4 Billing document</span>
+        </span>
+        <span class="feat-label">Inline edit (AJAX)</span>
+        <span class="feat-value"><span class="pill pill-ajax">Next step</span> — editable on row; saves on blur to <code>POST /retail/&lt;id&gt;/annotation</code></span>
+        <span class="feat-label">Comment popup</span>
+        <span class="feat-value">Per-row "Comment History" button; saves via <code>POST /retail/&lt;id&gt;/comment</code></span>
+        <span class="feat-label">Row link</span>
+        <span class="feat-value">Click row (or test case ID) → Retail Detail screen</span>
+        <span class="feat-label">Header links</span>
+        <span class="feat-value"><span class="pill pill-nav">→ Report</span> link to the Retail Status Report · <span class="pill pill-nav">→ Sign-Off Report</span> link to the Retail Spillover Report</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>retail</code> LEFT JOIN <code>retail_annotations</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Detail -->
+  <div class="screen-card" id="retail-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail — Detail</span>
+      <span class="screen-url">GET /retail/&lt;retail_id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Full view of a single retail test case. Shows all imported fields plus an annotation section and a notes log at the bottom.</p>
+      <div class="features">
+        <span class="feat-label">Read-only fields</span>
+        <span class="feat-value">All columns from the <code>retail</code> table: status, scenario, all S4 doc numbers, order refs, defect ref, evidence links, dates, etc.</span>
+        <span class="feat-label">Editable annotation</span>
+        <span class="feat-value">Next Step · Comment History · Action Needed (checkbox)<br>
+        <span class="pill pill-action">Save</span> → POST → redirect with <code>?saved=1</code> flash</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">List of notes (heading, body, timestamp). Per-note Edit and Delete links. Each note shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Retail</span> · <span class="pill pill-action">Add note</span></span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>retail</code> LEFT JOIN <code>retail_annotations</code> + <code>notes</code> + <code>attachments</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Notes -->
+  <div class="screen-card" id="retail-note">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail — Note Add / Edit / Delete</span>
+      <span class="screen-url">/retail/&lt;id&gt;/notes/add &nbsp;·&nbsp; /notes/&lt;note_id&gt;/edit &nbsp;·&nbsp; /notes/&lt;note_id&gt;/delete</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Same structure as the Defect note screens — Add and Edit share <code>note_form.html</code>; Delete is a confirmation page. Always returns to Retail Detail. Screenshot attachments are managed via AJAX on the detail page (no separate screen).</p>
+      <div class="features">
+        <span class="feat-label">Add / Edit fields</span>
+        <span class="feat-value">Heading (optional) · Note text (required)</span>
+        <span class="feat-label">Screenshot attachments</span>
+        <span class="feat-value">Upload via file picker or Ctrl+V paste (AJAX). Delete via ✕ on thumbnail hover. Same routes as Defects: <code>/notes/&lt;note_id&gt;/attachments/…</code></span>
+        <span class="feat-label">Tables written</span>
+        <span class="feat-value"><code>notes</code> (entity_type = 'retail') · <code>attachments</code> (on upload/delete)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Status Report -->
+  <div class="screen-card" id="retail-report">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail — Status Report</span>
+      <span class="screen-url">GET /retail/report</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Live report that maps raw <code>retail.status</code> values to named buckets defined in <code>config/status_mappings.yaml</code>. Shows total counts per bucket and overall. Provides two export options.</p>
+      <div class="features">
+        <span class="feat-label">Buckets</span>
+        <span class="feat-value">Back with Sales · With DTC · In Progress with DTC · Passed with DTC · Incoming (Gatekeeper) · Ready for Validation · In Progress · In Clarification · Blocked</span>
+        <span class="feat-label">Totals</span>
+        <span class="feat-value">Count per bucket + overall total row count</span>
+        <span class="feat-label">Export actions</span>
+        <span class="feat-value">
+          <span class="pill pill-action">Save to Excel</span> — appends one row to <code>output/retail_report_log.xlsx</code> (AJAX, date auto-filled with today)<br>
+          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot
+        </span>
+        <span class="feat-label">Config</span>
+        <span class="feat-value">Bucket definitions in <code>config/status_mappings.yaml</code>; Excel log path in <code>config/settings.yaml → retail_report_xlsx</code></span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>retail</code> (GROUP BY status)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SIGN-OFF REPORTS -->
+<!-- ================================================================ -->
+<div class="section s-reports">
+  <div class="section-heading">Sign-Off Reports</div>
+
+  <!-- Retail Spillover Report -->
+  <div class="screen-card" id="report-retail">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail Spillover Report</span>
+      <span class="screen-url">GET /report/retail</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Printable sign-off summary for Retail spillover items (excludes ECOM and Omni areas). Groups items by their <em>Critical for sign-off</em> value.</p>
+      <div class="features">
+        <span class="feat-label">Sections</span>
+        <span class="feat-value">Critical: Yes · Critical: Slightly · Critical: No · Not set — each section sorted by sign-off group then name</span>
+        <span class="feat-label">Item fields shown</span>
+        <span class="feat-value">Name · Type · Country · Area · Status · External ID · Importance for Sign-Off · Next Step · Comment for Sign-Off · Sign-Off Group</span>
+        <span class="feat-label">Hidden statuses</span>
+        <span class="feat-value">Same as spillover list (Passed / Dropped, configurable in settings.yaml)</span>
+        <span class="feat-label">Filter</span>
+        <span class="feat-value">Excludes rows where <code>area</code> is "ecom" or "omni"</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECOM Report -->
+  <div class="screen-card" id="report-ecom">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM / Omni Spillover Report</span>
+      <span class="screen-url">GET /report/ecom</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Same layout as the Retail Spillover Report but filtered to ECOM and Omni areas only. Includes an additional section for known production defects.</p>
+      <div class="features">
+        <span class="feat-label">Sections</span>
+        <span class="feat-value">Same critical-for-signoff grouping as Retail report</span>
+        <span class="feat-label">Filter</span>
+        <span class="feat-value">Only rows where <code>area</code> is "ecom" or "omni"</span>
+        <span class="feat-label">Extra section</span>
+        <span class="feat-value">Known Production Defects — all rows from <code>known_prod_defects</code>, shown at the bottom</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + <code>known_prod_defects</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- PRODUCTION DEFECTS -->
+<!-- ================================================================ -->
+<div class="section s-prod">
+  <div class="section-heading">Production Defects</div>
+
+  <!-- List -->
+  <div class="screen-card" id="prod-defects-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Prod Defects — List</span>
+      <span class="screen-url">GET /prod_defects</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Manually curated register of defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Technical Key · Short Description · Scenario · Business Impact · Numbers · Next Steps</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · Click row → Detail screen</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>known_prod_defects</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail -->
+  <div class="screen-card" id="prod-defect-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Prod Defects — Detail / New</span>
+      <span class="screen-url">GET/POST /prod_defects/new &nbsp;·&nbsp; /prod_defects/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Create or edit a production defect entry. The same template handles both new and existing records.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Technical Key · Short Description · Scenario · Description · Business Impact · Numbers · References · Next Steps · Comments · Confluence link</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation)</span>
+        <span class="feat-label">Flash</span>
+        <span class="feat-value">Green "Saved." banner on return from POST</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>known_prod_defects</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- CS FOLLOW-UP TRACKER -->
+<!-- ================================================================ -->
+<div class="section s-cs">
+  <div class="section-heading">CS Follow-Up Tracker</div>
+
+  <!-- List -->
+  <div class="screen-card" id="cs-followup-list">
+    <div class="screen-card-header">
+      <span class="screen-title">CS Follow-Ups — List</span>
+      <span class="screen-url">GET /cs_followups</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Filterable list of Core South sign-off follow-up items. Richer than the general Follow-ups screen — supports area, Jira ID, description, and next step fields. Done items hidden by default.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Area · Jira ID · Topic · Description · Next Step · With Whom · Status · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area (multi)</span>
+          <span class="pill pill-filter">With Whom (multi)</span>
+          <span class="pill pill-filter">Status (multi)</span>
+          <span class="pill pill-filter">Show done toggle</span>
+        </span>
+        <span class="feat-label">Status cycle</span>
+        <span class="feat-value">Inline <span class="pill pill-ajax">open → in_progress → done</span> button; saves via <code>POST /cs_followups/&lt;id&gt;/status</code></span>
+        <span class="feat-label">Notes popup</span>
+        <span class="feat-value">Per-row notes panel (AJAX load + add)</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · Click row → Detail</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>cs_followups</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail -->
+  <div class="screen-card" id="cs-followup-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">CS Follow-Ups — Detail / New</span>
+      <span class="screen-url">GET/POST /cs_followups/new &nbsp;·&nbsp; /cs_followups/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Create or edit a CS follow-up item.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Area · Jira ID · Topic (required) · Description · Next Step · With Whom</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX)</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>cs_followups</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- PLANNING -->
+<!-- ================================================================ -->
+<div class="section s-planning">
+  <div class="section-heading">Planning</div>
+
+  <!-- Meeting Prep -->
+  <div class="screen-card" id="meeting-prep">
+    <div class="screen-card-header">
+      <span class="screen-title">Meeting Prep</span>
+      <span class="screen-url">GET /meeting-prep</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Tracks agenda topics per named meeting. Topics are added inline via a quick-add form at the top; status changes happen in-row via AJAX. No detail page — everything is managed on this one screen.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Meeting · Topic · Status · Inline note · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Meeting (dropdown)</span>
+          <span class="pill pill-filter">Status (dropdown)</span>
+        </span>
+        <span class="feat-label">Meeting options</span>
+        <span class="feat-value">Balazs · GPO · Sync&amp;Solve · DTC O2C Daily · Sales ECOM daily · Other</span>
+        <span class="feat-label">Status values</span>
+        <span class="feat-value">planned · discussed · parked · dropped</span>
+        <span class="feat-label">Quick-add form</span>
+        <span class="feat-value">Meeting selector + topic text → <code>POST /meeting-prep/add</code></span>
+        <span class="feat-label">Inline actions (AJAX)</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Status change</span> → <code>POST /meeting-prep/&lt;id&gt;/status</code><br>
+          <span class="pill pill-ajax">Inline note</span> → <code>POST /meeting-prep/&lt;id&gt;/note</code><br>
+          <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/meeting-prep/&lt;id&gt;/notes</code>
+        </span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>meeting_prep</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- To-Do List -->
+  <div class="screen-card" id="todos">
+    <div class="screen-card-header">
+      <span class="screen-title">To-Do List</span>
+      <span class="screen-url">GET /todos</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">General-purpose task list with priority, due date, kind classification, and owner. Default view hides closed items. Sorted by: blocked first, then in_progress, then open, then by priority and due date.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Status · Priority · Area · Kind · Topic · Due Date · For Whom · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area</span>
+          <span class="pill pill-filter">Status</span>
+          <span class="pill pill-filter">Priority</span>
+          <span class="pill pill-filter">For Whom</span>
+          <span class="pill pill-filter">Due Date</span>
+          <span class="pill pill-filter">Show closed toggle</span>
+        </span>
+        <span class="feat-label">Status values</span>
+        <span class="feat-value">open · in_progress · blocked · closed</span>
+        <span class="feat-label">Priority values</span>
+        <span class="feat-value">High · Medium · Low</span>
+        <span class="feat-label">Quick-add form</span>
+        <span class="feat-value">Area + Kind + Topic + Priority + Due Date + For Whom → <code>POST /todos/add</code></span>
+        <span class="feat-label">Inline actions (AJAX)</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Status change</span> → <code>POST /todos/&lt;id&gt;/status</code><br>
+          <span class="pill pill-ajax">Edit row</span> → modal/form → <code>POST /todos/&lt;id&gt;/edit</code><br>
+          <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/todos/&lt;id&gt;/notes</code>
+        </span>
+        <span class="feat-label">Due date highlight</span>
+        <span class="feat-value">Overdue dates shown in red (compared against today's date passed from server)</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>todos</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-ups -->
+  <div class="screen-card" id="followups">
+    <div class="screen-card-header">
+      <span class="screen-title">Follow-ups</span>
+      <span class="screen-url">GET /followups</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Lightweight "chase" list — who needs to be followed up with, on what topic, and by when. Done items hidden by default. Sorted by: in_progress first, then open, then by next date.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Status · With Whom · Topic · When Next · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">With Whom</span>
+          <span class="pill pill-filter">When Next (date)</span>
+          <span class="pill pill-filter">Show done toggle</span>
+        </span>
+        <span class="feat-label">Status values</span>
+        <span class="feat-value">open · in_progress · done</span>
+        <span class="feat-label">Quick-add form</span>
+        <span class="feat-value">With Whom + Topic + When Next → <code>POST /followups/add</code></span>
+        <span class="feat-label">Inline actions (AJAX)</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Status change</span> → <code>POST /followups/&lt;id&gt;/status</code><br>
+          <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/followups/&lt;id&gt;/notes</code>
+        </span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>followups</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- REFERENCE -->
+<!-- ================================================================ -->
+<div class="section s-reference">
+  <div class="section-heading">Reference</div>
+
+  <!-- Links List -->
+  <div class="screen-card" id="links-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Links — List</span>
+      <span class="screen-url">GET /links</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Personal URL bookmark store. All links are clickable; each has a one-click copy button. Filterable by area, tool, and tag.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Description · URL (clickable) · Area · Tool · Tags</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area (multi)</span>
+          <span class="pill pill-filter">Tool (multi)</span>
+          <span class="pill pill-filter">Tag (multi)</span>
+          <span class="pill pill-filter">Search by description</span>
+        </span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Copy URL</span> (clipboard, no page reload) · <span class="pill pill-action">Edit</span> → Link Detail · <span class="pill pill-action">+ New Link</span></span>
+        <span class="feat-label">Delete</span>
+        <span class="feat-value">Available on the Link Detail page (AJAX)</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>links</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Link Detail -->
+  <div class="screen-card" id="link-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Links — Detail / New</span>
+      <span class="screen-url">GET/POST /links/new &nbsp;·&nbsp; /links/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Create or edit a link entry.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Description (required) · URL (required) · Area · Tool · Tags (comma-separated)</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, then redirect to list)</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>links</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Learnings List -->
+  <div class="screen-card" id="test-learnings-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Test Learnings — List</span>
+      <span class="screen-url">GET /test_learnings</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Log of observations and lessons learned during UAT test execution. Grouped and sorted by channel → topic → learning text.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Channel · Topic · Learning · Scenario · Tags · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Channel (multi)</span>
+          <span class="pill pill-filter">Tag (multi)</span>
+        </span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> (pre-fills channel from filter) · Click row → Detail · Notes popup per row</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>test_learnings</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Learning Detail -->
+  <div class="screen-card" id="test-learning-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Test Learnings — Detail / New</span>
+      <span class="screen-url">GET/POST /test_learnings/new &nbsp;·&nbsp; /test_learnings/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Create or edit a test learning entry.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Channel (required, default Retail) · Topic · Learning (required) · Scenario · Tags (comma-separated)</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX)</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>test_learnings</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Limitations List -->
+  <div class="screen-card" id="test-limitations-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Test Limitations — List</span>
+      <span class="screen-url">GET /test_limitations</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Register of known gaps in test coverage or constraints that affect sign-off confidence. Sorted by channel → limitation text.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Channel · Limitation · Scenario · Comment · Notes count</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value"><span class="pill pill-filter">Channel (multi)</span></span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · Click row → Detail · Notes popup per row</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>test_limitations</code> LEFT JOIN <code>notes</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Limitation Detail -->
+  <div class="screen-card" id="test-limitation-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Test Limitations — Detail / New</span>
+      <span class="screen-url">GET/POST /test_limitations/new &nbsp;·&nbsp; /test_limitations/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Create or edit a test limitation entry.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Channel (required, default Retail) · Limitation (required) · Scenario · Comment</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX)</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>test_limitations</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- GLOBAL WIDGET -->
+<!-- ================================================================ -->
+<div class="section s-global">
+  <div class="section-heading">Global Widget</div>
+
+  <!-- Enhancements Panel -->
+  <div class="screen-card" id="enhancements">
+    <div class="screen-card-header">
+      <span class="screen-title">Enhancements Panel</span>
+      <span class="screen-url">Available on every page (in base.html)</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">A floating "☆ Enhancements" button in the bottom-right corner of every page opens a slide-out panel for managing the tool enhancement backlog. No page navigation required.</p>
+      <div class="features">
+        <span class="feat-label">Access</span>
+        <span class="feat-value">Click "☆ Enhancements" button → panel opens; click ✕ or the button again to close</span>
+        <span class="feat-label">Add form</span>
+        <span class="feat-value">Area · Enhancement text · Priority → <code>POST /enhancements/add</code> (AJAX, no page reload)</span>
+        <span class="feat-label">Filters (in panel)</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area</span>
+          <span class="pill pill-filter">Priority</span>
+          <span class="pill pill-filter">Status</span>
+          <span class="pill pill-filter">Show closed toggle</span>
+        </span>
+        <span class="feat-label">Per-item action</span>
+        <span class="feat-value">Status dropdown per item → <code>POST /enhancements/&lt;id&gt;/status</code> (AJAX)</span>
+        <span class="feat-label">Status values</span>
+        <span class="feat-value">not_started · in_progress · closed</span>
+        <span class="feat-label">Data source</span>
+        <span class="feat-value"><code>GET /enhancements</code> → JSON (loaded each time the panel opens or filters change)</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>enhancements</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div style="font-size:0.78rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
+  <strong>Pill legend:</strong>
+  &nbsp;<span class="pill pill-filter">Filter / search field</span>
+  &nbsp;<span class="pill pill-action">User action (form submit or link)</span>
+  &nbsp;<span class="pill pill-ajax">AJAX / inline (no full page reload)</span>
+  &nbsp;<span class="pill pill-nav">Navigation link</span>
+  &nbsp;<span class="pill pill-read">Read-only field</span>
+</div>
+
+</body>
+</html>

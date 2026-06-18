@@ -29,6 +29,10 @@ Public API:
     create_known_prod_defect(conn, ...)     -> dict
     update_known_prod_defect(conn, id, ...) -> dict | None
     delete_known_prod_defect(conn, id)      -> None
+    get_attachment(conn, attachment_id)     -> dict | None
+    add_attachment(conn, ...)               -> dict
+    get_attachments_for_notes(conn, ids)    -> dict[int, list[dict]]
+    delete_attachment(conn, attachment_id)  -> str | None
 """
 from __future__ import annotations
 
@@ -361,6 +365,17 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             created_at  TEXT,
             updated_at  TEXT
         );
+
+        -- Screenshot attachments linked to individual notes.
+        -- Files live in data/uploads/; this table holds the reference.
+        CREATE TABLE IF NOT EXISTS attachments (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            note_id       INTEGER NOT NULL REFERENCES notes(id),
+            filename      TEXT NOT NULL,
+            original_name TEXT,
+            created_at    TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS ix_attachments_note ON attachments(note_id);
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -1752,3 +1767,57 @@ def set_cs_followup_status(conn: sqlite3.Connection, followup_id: int, status: s
 def delete_cs_followup(conn: sqlite3.Connection, followup_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM cs_followups WHERE id = ?", (followup_id,))
+
+
+# ---------------------------------------------------------------------------
+# Attachments (screenshots linked to notes)
+# ---------------------------------------------------------------------------
+
+def get_attachment(conn: sqlite3.Connection, attachment_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM attachments WHERE id = ?", (attachment_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def add_attachment(
+    conn: sqlite3.Connection,
+    note_id: int,
+    filename: str,
+    original_name: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO attachments (note_id, filename, original_name, created_at)"
+            " VALUES (?, ?, ?, ?)",
+            (note_id, filename, original_name, now),
+        )
+    return get_attachment(conn, cur.lastrowid)
+
+
+def get_attachments_for_notes(
+    conn: sqlite3.Connection, note_ids: list[int]
+) -> dict[int, list[dict]]:
+    """Return {note_id: [attachments]} for a batch of note IDs."""
+    if not note_ids:
+        return {}
+    ph = ",".join("?" * len(note_ids))
+    rows = _rows_to_dicts(conn.execute(
+        f"SELECT * FROM attachments WHERE note_id IN ({ph}) ORDER BY created_at",
+        note_ids,
+    ))
+    result: dict[int, list[dict]] = {nid: [] for nid in note_ids}
+    for row in rows:
+        result[row["note_id"]].append(row)
+    return result
+
+
+def delete_attachment(conn: sqlite3.Connection, attachment_id: int) -> str | None:
+    """Delete the DB record and return the filename so the caller can remove the file."""
+    att = get_attachment(conn, attachment_id)
+    if not att:
+        return None
+    with conn:
+        conn.execute("DELETE FROM attachments WHERE id = ?", (attachment_id,))
+    return att["filename"]
