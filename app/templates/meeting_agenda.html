@@ -5,85 +5,288 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agenda{% if meeting_filter %} — {{ meeting_filter }}{% endif %}</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
       font-size: 14px;
-      line-height: 1.7;
-      color: #1d1d1f;
-      max-width: 720px;
-      margin: 3rem auto;
-      padding: 0 2rem;
+      line-height: 1.6;
+      color: #1a1a2e;
+      background: #f5f6fa;
+      min-height: 100vh;
     }
-    .agenda-header { margin-bottom: 2rem; border-bottom: 2px solid #1d1d1f; padding-bottom: 1rem; }
-    .agenda-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
-    .agenda-meta { font-size: 0.85rem; color: #555; }
-    .agenda-section { margin-top: 1.75rem; }
-    .agenda-section h2 {
-      font-size: 0.95rem;
+
+    .page {
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 4rem;
+    }
+
+    /* ---- Header ---- */
+    .agenda-hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      border-radius: 14px;
+      padding: 2rem 2.5rem 1.75rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .agenda-hero::after {
+      content: '';
+      position: absolute;
+      right: -40px;
+      top: -40px;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 50%;
+    }
+    .agenda-hero-label {
+      font-size: 0.7rem;
       font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #555;
-      margin: 0 0 0.4rem;
-      padding-bottom: 0.25rem;
-      border-bottom: 1px solid #ddd;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 0.5rem;
     }
-    ol { padding-left: 1.5rem; margin: 0.25rem 0 0; }
-    li { padding: 0.25rem 0; }
-    .no-items { color: #888; font-style: italic; }
+    .agenda-hero h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 0.6rem;
+    }
+    .agenda-hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.6);
+    }
+    .agenda-hero-meta .dot { opacity: 0.35; }
+    .agenda-hero-count {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* ---- Sections ---- */
+    .agenda-section {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+      margin-bottom: 1.1rem;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid #f0f0f5;
+    }
+    .section-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #444;
+    }
+    .section-count {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    /* section accent colors */
+    .section--cs-retail   .section-dot { background: #3b82f6; }
+    .section--cs-retail   .section-header { background: #eff6ff; }
+    .section--cs-ecom     .section-dot { background: #06b6d4; }
+    .section--cs-ecom     .section-header { background: #ecfeff; }
+    .section--cs-general  .section-dot { background: #6366f1; }
+    .section--cs-general  .section-header { background: #f0f0ff; }
+    .section--roe-retail  .section-dot { background: #10b981; }
+    .section--roe-retail  .section-header { background: #f0fdf4; }
+    .section--roe-ecom    .section-dot { background: #84cc16; }
+    .section--roe-ecom    .section-header { background: #f7fee7; }
+    .section--roe-general .section-dot { background: #22c55e; }
+    .section--roe-general .section-header { background: #f0fdf4; }
+    .section--orga        .section-dot { background: #f59e0b; }
+    .section--orga        .section-header { background: #fffbeb; }
+    .section--ai          .section-dot { background: #ec4899; }
+    .section--ai          .section-header { background: #fdf2f8; }
+    .section--other       .section-dot { background: #94a3b8; }
+    .section--other       .section-header { background: #f8fafc; }
+
+    /* ---- Items ---- */
+    .agenda-items { list-style: none; padding: 0.3rem 0; }
+    .agenda-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 0.65rem 1.25rem;
+      border-bottom: 1px solid #f5f5f8;
+      transition: background 0.1s;
+    }
+    .agenda-item:last-child { border-bottom: none; }
+    .agenda-item:hover { background: #fafafe; }
+    .item-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #f0f0f5;
+      color: #888;
+      font-size: 0.68rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .item-text {
+      font-size: 0.9rem;
+      color: #1a1a2e;
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    /* ---- Empty state ---- */
+    .no-items {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #aaa;
+      font-style: italic;
+      background: #fff;
+      border-radius: 10px;
+    }
+
+    /* ---- Toolbar ---- */
+    .toolbar {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 2rem;
+    }
+    .toolbar-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      border: 1px solid #d0d5dd;
+      background: #fff;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #344054;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      transition: background 0.1s, box-shadow 0.1s;
+    }
+    .toolbar-btn:hover { background: #f9fafb; box-shadow: 0 2px 6px rgba(0,0,0,0.09); }
+
     @media print {
-      body { margin: 1.5cm; }
-      .no-print { display: none; }
+      body { background: #fff; }
+      .page { padding: 0; }
+      .agenda-hero { border-radius: 0; background: #1a1a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .agenda-section { box-shadow: none; border: 1px solid #e0e0e0; }
+      .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
 <body>
+<div class="page">
 
-<div class="agenda-header">
-  <h1>{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %} — Agenda</h1>
-  <div class="agenda-meta">{{ today }}{% if status_filter and status_filter != 'planned' %} &nbsp;·&nbsp; {{ status_filter | capitalize }} items{% endif %}</div>
-</div>
+  <div class="agenda-hero">
+    <div class="agenda-hero-label">Meeting Agenda</div>
+    <h1>{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %}</h1>
+    <div class="agenda-hero-meta">
+      <span>{{ today }}</span>
+      {% if status_filter and status_filter != 'planned' %}
+      <span class="dot">·</span>
+      <span>{{ status_filter | capitalize }} items</span>
+      {% endif %}
+      <span class="dot">·</span>
+      <span class="agenda-hero-count">{{ items | length }} topic{{ 's' if items | length != 1 }}</span>
+    </div>
+  </div>
 
-{% if items %}
-  {# Group items by overall_topic in defined order, then ungrouped at end #}
-  {% for ot in overall_topics %}
+  {% if items %}
+
+  {# --- CS group --- #}
+  {% for ot, css_class in [
+      ('CS Retail',   'cs-retail'),
+      ('CS ECOM',     'cs-ecom'),
+      ('CS General',  'cs-general'),
+      ('ROE Retail',  'roe-retail'),
+      ('ROE ECOM',    'roe-ecom'),
+      ('ROE General', 'roe-general'),
+      ('Orga',        'orga'),
+      ('AI',          'ai'),
+      ('Other',       'other'),
+  ] %}
     {% set group_items = items | selectattr('overall_topic', 'equalto', ot) | list %}
     {% if group_items %}
-      <div class="agenda-section">
-        <h2>{{ ot }}</h2>
-        <ol>
-          {% for item in group_items %}
-          <li>{{ item.topic }}</li>
-          {% endfor %}
-        </ol>
+    <div class="agenda-section section--{{ css_class }}">
+      <div class="section-header">
+        <span class="section-dot"></span>
+        <span class="section-title">{{ ot }}</span>
+        <span class="section-count">{{ group_items | length }} item{{ 's' if group_items | length != 1 }}</span>
       </div>
-    {% endif %}
-  {% endfor %}
-  {# Items with no overall_topic (None or empty string) #}
-  {% set untagged = [] %}
-  {% for item in items %}
-    {% if not item.overall_topic %}
-      {% set _ = untagged.append(item) %}
-    {% endif %}
-  {% endfor %}
-  {% if untagged %}
-    <div class="agenda-section">
-      <h2>Other / Untagged</h2>
-      <ol>
-        {% for item in untagged %}
-        <li>{{ item.topic }}</li>
+      <ul class="agenda-items">
+        {% for item in group_items %}
+        <li class="agenda-item">
+          <span class="item-num">{{ loop.index }}</span>
+          <span class="item-text">{{ item.topic }}</span>
+        </li>
         {% endfor %}
-      </ol>
+      </ul>
     </div>
+    {% endif %}
+  {% endfor %}
+
+  {# --- Untagged --- #}
+  {% set untagged = [] %}
+  {% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
+  {% if untagged %}
+  <div class="agenda-section section--other">
+    <div class="section-header">
+      <span class="section-dot"></span>
+      <span class="section-title">Other / Untagged</span>
+      <span class="section-count">{{ untagged | length }} item{{ 's' if untagged | length != 1 }}</span>
+    </div>
+    <ul class="agenda-items">
+      {% for item in untagged %}
+      <li class="agenda-item">
+        <span class="item-num">{{ loop.index }}</span>
+        <span class="item-text">{{ item.topic }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
   {% endif %}
-{% else %}
-<p class="no-items">No items match the current filter.</p>
-{% endif %}
 
-<p style="margin-top:2rem" class="no-print">
-  <button onclick="window.print()" style="padding:0.4rem 1rem;cursor:pointer">🖨 Print</button>
-  <button onclick="window.close()" style="padding:0.4rem 1rem;cursor:pointer;margin-left:0.5rem">Close</button>
-</p>
+  {% else %}
+  <div class="no-items">No items match the current filter.</div>
+  {% endif %}
 
+  <div class="toolbar no-print">
+    <button class="toolbar-btn" onclick="window.print()">🖨 Print</button>
+    <button class="toolbar-btn" onclick="window.close()">✕ Close</button>
+  </div>
+
+</div>
 </body>
 </html>

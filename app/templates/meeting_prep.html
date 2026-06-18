@@ -327,15 +327,46 @@
     });
   });
 
-  // Copy topics to clipboard
+  // Copy topics to clipboard — sorted by overall_topic order
+  var OVERALL_ORDER = {{ overall_topics | tojson }};
   var copyBtn = document.getElementById('js-copy-topics');
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
-      var topics = Array.from(document.querySelectorAll('.js-topic-text')).map(function (el) {
-        return el.textContent.trim();
-      }).filter(Boolean);
-      var text = topics.map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n');
-      navigator.clipboard.writeText(text).then(function () {
+      // Collect rows with topic + overall_topic value
+      var rows = Array.from(document.querySelectorAll('.mp-row')).map(function (row) {
+        var topicEl = row.querySelector('.js-topic-text');
+        var otSel   = row.querySelector('.js-ot-select');
+        return {
+          topic: topicEl ? topicEl.textContent.trim() : '',
+          ot:    otSel   ? otSel.value : '',
+        };
+      }).filter(function (r) { return r.topic; });
+
+      // Sort by overall_topic order
+      rows.sort(function (a, b) {
+        var ia = OVERALL_ORDER.indexOf(a.ot);
+        var ib = OVERALL_ORDER.indexOf(b.ot);
+        if (ia === -1) ia = 999;
+        if (ib === -1) ib = 999;
+        return ia - ib;
+      });
+
+      // Build text grouped by overall_topic
+      var lines = [];
+      var lastOt = null;
+      var idx = 0;
+      rows.forEach(function (r) {
+        if (r.ot !== lastOt) {
+          if (lines.length) lines.push('');
+          if (r.ot) lines.push('[ ' + r.ot + ' ]');
+          lastOt = r.ot;
+          idx = 0;
+        }
+        idx++;
+        lines.push(idx + '. ' + r.topic);
+      });
+
+      navigator.clipboard.writeText(lines.join('\n')).then(function () {
         var confirm = document.getElementById('js-copy-confirm');
         confirm.style.display = 'inline';
         setTimeout(function () { confirm.style.display = 'none'; }, 2000);
