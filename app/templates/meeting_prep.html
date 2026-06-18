@@ -34,6 +34,7 @@
     <select name="status" class="filter-select" onchange="this.form.submit()">
       <option value="">All statuses</option>
       <option value="planned"   {% if status_filter == 'planned'   %}selected{% endif %}>Planned</option>
+      <option value="future"    {% if status_filter == 'future'    %}selected{% endif %}>Future</option>
       <option value="discussed" {% if status_filter == 'discussed' %}selected{% endif %}>Discussed</option>
     </select>
     {% if meeting_filter or status_filter %}
@@ -82,10 +83,16 @@
           <span class="pill pill--green">✓ Discussed</span>
           <button class="btn btn-sm mp-btn-status js-set-status"
                   data-status="planned" title="Mark as planned">↩ Reopen</button>
+        {% elif item.status == 'future' %}
+          <span class="pill pill--blue">&#8987; Future</span>
+          <button class="btn btn-sm mp-btn-status js-set-status"
+                  data-status="planned" title="Move to planned">→ Planned</button>
         {% else %}
           <span class="pill pill--grey">Planned</span>
           <button class="btn btn-sm mp-btn-status js-set-status"
                   data-status="discussed" title="Mark as discussed">✓ Discussed</button>
+          <button class="btn btn-sm mp-btn-status js-set-status"
+                  data-status="future" title="Park for later">⏳ Future</button>
         {% endif %}
       </td>
       <td class="mp-note-col">

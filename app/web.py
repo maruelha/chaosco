@@ -1213,7 +1213,7 @@ def retail_note_delete(retail_id: int, note_id: int):
 @app.route("/meeting-prep")
 def meeting_prep_list():
     meeting_filter = request.args.get("meeting", "")
-    status_filter  = request.args.get("status", "")
+    status_filter  = request.args.get("status", "planned")
     conn = _get_conn()
     try:
         items = database.get_meeting_prep(
