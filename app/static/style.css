@@ -923,6 +923,13 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .mp-row.mp-discussed td { color: #999; }
 .mp-meeting { width: 130px; }
 .mp-meeting-pill { display: inline-block; background: #e8f0fe; color: #1a56db; border-radius: 4px; padding: 2px 7px; font-size: 0.8rem; font-weight: 500; }
+.mp-overall-topic { width: 120px; }
+.mp-ot-select { width: 100%; font-size: 0.8rem; padding: 0.2rem 0.3rem; border: 1px solid #ddd; border-radius: 4px; background: #fafafa; color: #333; }
+.mp-topic-display { display: flex; align-items: flex-start; gap: 0.4rem; }
+.mp-topic-display .js-topic-edit-btn { opacity: 0; font-size: 0.75rem; padding: 1px 5px; flex-shrink: 0; }
+.mp-topic-display:hover .js-topic-edit-btn { opacity: 1; }
+.mp-topic-editor { display: flex; align-items: center; gap: 0.4rem; }
+.mp-topic-input-inline { flex: 1; padding: 0.25rem 0.4rem; border: 1px solid #aaa; border-radius: 4px; font-size: 0.9rem; min-width: 150px; }
 .mp-status { width: 160px; }
 .mp-status .pill { margin-right: 0.4rem; }
 .mp-note-col { min-width: 200px; }

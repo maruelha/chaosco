@@ -19,6 +19,12 @@
     {% endfor %}
   </select>
   <input type="text" name="topic" placeholder="Topic…" required class="mp-topic-input">
+  <select name="overall_topic" class="mp-select">
+    <option value="">— Overall Topic —</option>
+    {% for ot in overall_topics %}
+      <option value="{{ ot }}">{{ ot }}</option>
+    {% endfor %}
+  </select>
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
 
@@ -58,6 +64,7 @@
   <thead>
     <tr>
       <th class="mp-meeting">Meeting</th>
+      <th class="mp-overall-topic">Overall Topic</th>
       <th class="mp-topic">Topic</th>
       <th class="mp-status">Status</th>
       <th class="mp-note-col">Quick note</th>
@@ -72,8 +79,24 @@
       <td class="mp-meeting">
         <span class="mp-meeting-pill">{{ item.meeting }}</span>
       </td>
+      <td class="mp-overall-topic">
+        <select class="mp-ot-select js-ot-select" data-id="{{ item.id }}">
+          <option value="">—</option>
+          {% for ot in overall_topics %}
+            <option value="{{ ot }}" {% if item.overall_topic == ot %}selected{% endif %}>{{ ot }}</option>
+          {% endfor %}
+        </select>
+      </td>
       <td class="mp-topic">
-        {{ item.topic }}
+        <div class="mp-topic-display js-topic-display">
+          <span class="mp-topic-text js-topic-text">{{ item.topic }}</span>
+          <button class="btn btn-sm js-topic-edit-btn" title="Edit topic">✎</button>
+        </div>
+        <div class="mp-topic-editor js-topic-editor" style="display:none">
+          <input type="text" class="mp-topic-input-inline js-topic-input" value="{{ item.topic }}">
+          <button class="btn btn-sm btn-primary js-topic-save">Save</button>
+          <button class="btn btn-sm js-topic-cancel">✕</button>
+        </div>
         {% if item.source_entity_type == 'defect' %}
         <a href="{{ url_for('defect_detail', defect_id=item.source_entity_id) }}"
            class="mp-entity-badge mp-entity-badge--defect" title="Go to defect">
@@ -129,7 +152,7 @@
       </td>
     </tr>
     <tr class="mp-notes-row" style="display:none" data-id="{{ item.id }}">
-      <td colspan="6" class="mp-notes-cell">
+      <td colspan="7" class="mp-notes-cell">
         <div class="mp-notes-list js-mp-notes-list">Loading…</div>
         <div class="mp-note-add-row">
           <textarea class="mp-note-textarea js-mp-note-input" rows="2"
@@ -157,6 +180,61 @@
       fd.append('status', status);
       const resp = await fetch(`/meeting-prep/${id}/status`, { method: 'POST', body: fd });
       if ((await resp.json()).ok) location.reload();
+    });
+  });
+
+  // Overall Topic inline select
+  document.querySelectorAll('.js-ot-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const id = sel.dataset.id;
+      const fd = new FormData();
+      fd.append('overall_topic', sel.value);
+      await fetch(`/meeting-prep/${id}/overall_topic`, { method: 'POST', body: fd });
+    });
+  });
+
+  // Topic inline editing
+  document.querySelectorAll('.mp-row').forEach(row => {
+    const id          = row.dataset.id;
+    const display     = row.querySelector('.js-topic-display');
+    const editor      = row.querySelector('.js-topic-editor');
+    const textEl      = row.querySelector('.js-topic-text');
+    const input       = row.querySelector('.js-topic-input');
+    const editBtn     = row.querySelector('.js-topic-edit-btn');
+    const saveBtn     = row.querySelector('.js-topic-save');
+    const cancelBtn   = row.querySelector('.js-topic-cancel');
+
+    if (!editBtn) return;
+
+    editBtn.addEventListener('click', () => {
+      display.style.display = 'none';
+      editor.style.display  = '';
+      input.focus();
+      input.select();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      editor.style.display  = 'none';
+      display.style.display = '';
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const topic = input.value.trim();
+      if (!topic) return;
+      const fd = new FormData();
+      fd.append('topic', topic);
+      const resp = await fetch(`/meeting-prep/${id}/topic`, { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.ok) {
+        textEl.textContent    = data.topic;
+        editor.style.display  = 'none';
+        display.style.display = '';
+      }
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); }
+      if (e.key === 'Escape') cancelBtn.click();
     });
   });
 
@@ -216,6 +294,8 @@
     const textarea = row.querySelector('.js-note-textarea');
     const id       = row.dataset.id;
 
+    if (!display) return;
+
     row.querySelector('.js-note-edit').addEventListener('click', () => {
       display.style.display = 'none';
       editor.style.display  = 'block';
@@ -246,12 +326,13 @@
       }
     });
   });
+
   // Copy topics to clipboard
   var copyBtn = document.getElementById('js-copy-topics');
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
-      var topics = Array.from(document.querySelectorAll('.mp-topic')).map(function (td) {
-        return td.firstChild.nodeValue ? td.firstChild.nodeValue.trim() : td.childNodes[0].textContent.trim();
+      var topics = Array.from(document.querySelectorAll('.js-topic-text')).map(function (el) {
+        return el.textContent.trim();
       }).filter(Boolean);
       var text = topics.map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n');
       navigator.clipboard.writeText(text).then(function () {

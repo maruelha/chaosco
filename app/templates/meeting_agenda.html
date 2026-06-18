@@ -17,8 +17,19 @@
     .agenda-header { margin-bottom: 2rem; border-bottom: 2px solid #1d1d1f; padding-bottom: 1rem; }
     .agenda-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.25rem; }
     .agenda-meta { font-size: 0.85rem; color: #555; }
-    ol { padding-left: 1.5rem; margin: 0; }
-    li { padding: 0.35rem 0; }
+    .agenda-section { margin-top: 1.75rem; }
+    .agenda-section h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #555;
+      margin: 0 0 0.4rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #ddd;
+    }
+    ol { padding-left: 1.5rem; margin: 0.25rem 0 0; }
+    li { padding: 0.25rem 0; }
     .no-items { color: #888; font-style: italic; }
     @media print {
       body { margin: 1.5cm; }
@@ -34,11 +45,37 @@
 </div>
 
 {% if items %}
-<ol>
-  {% for item in items %}
-  <li>{{ item.topic }}</li>
+  {# Group items by overall_topic in defined order, then ungrouped at end #}
+  {% for ot in overall_topics %}
+    {% set group_items = items | selectattr('overall_topic', 'equalto', ot) | list %}
+    {% if group_items %}
+      <div class="agenda-section">
+        <h2>{{ ot }}</h2>
+        <ol>
+          {% for item in group_items %}
+          <li>{{ item.topic }}</li>
+          {% endfor %}
+        </ol>
+      </div>
+    {% endif %}
   {% endfor %}
-</ol>
+  {# Items with no overall_topic (None or empty string) #}
+  {% set untagged = [] %}
+  {% for item in items %}
+    {% if not item.overall_topic %}
+      {% set _ = untagged.append(item) %}
+    {% endif %}
+  {% endfor %}
+  {% if untagged %}
+    <div class="agenda-section">
+      <h2>Other / Untagged</h2>
+      <ol>
+        {% for item in untagged %}
+        <li>{{ item.topic }}</li>
+        {% endfor %}
+      </ol>
+    </div>
+  {% endif %}
 {% else %}
 <p class="no-items">No items match the current filter.</p>
 {% endif %}

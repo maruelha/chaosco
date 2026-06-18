@@ -409,7 +409,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("source_entity_type TEXT", "source_entity_id TEXT"):
+    for col in ("source_entity_type TEXT", "source_entity_id TEXT", "overall_topic TEXT"):
         try:
             conn.execute(f"ALTER TABLE meeting_prep ADD COLUMN {col}")
             conn.commit()
@@ -1140,6 +1140,18 @@ MEETING_OPTIONS = [
     "Other",
 ]
 
+MEETING_OVERALL_TOPICS = [
+    "CS Retail",
+    "CS ECOM",
+    "CS General",
+    "ROE Retail",
+    "ROE ECOM",
+    "ROE General",
+    "Orga",
+    "AI",
+    "Other",
+]
+
 
 def get_meeting_prep(conn: sqlite3.Connection,
                      meeting: str | None = None,
@@ -1176,13 +1188,14 @@ def add_meeting_prep(
     topic: str,
     source_entity_type: str | None = None,
     source_entity_id: str | None = None,
+    overall_topic: str | None = None,
 ) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     cur = conn.execute(
         "INSERT INTO meeting_prep"
-        " (meeting, topic, status, source_entity_type, source_entity_id, created_at, updated_at)"
-        " VALUES (?, ?, 'planned', ?, ?, ?, ?)",
-        (meeting, topic, source_entity_type, source_entity_id, now, now),
+        " (meeting, topic, status, source_entity_type, source_entity_id, overall_topic, created_at, updated_at)"
+        " VALUES (?, ?, 'planned', ?, ?, ?, ?, ?)",
+        (meeting, topic, source_entity_type, source_entity_id, overall_topic or None, now, now),
     )
     conn.commit()
     return cur.lastrowid
@@ -1202,6 +1215,24 @@ def set_meeting_prep_note(conn: sqlite3.Connection, item_id: int, note: str) -> 
     conn.execute(
         "UPDATE meeting_prep SET note = ?, updated_at = ? WHERE id = ?",
         (note, now, item_id),
+    )
+    conn.commit()
+
+
+def set_meeting_prep_topic(conn: sqlite3.Connection, item_id: int, topic: str) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE meeting_prep SET topic = ?, updated_at = ? WHERE id = ?",
+        (topic, now, item_id),
+    )
+    conn.commit()
+
+
+def set_meeting_prep_overall_topic(conn: sqlite3.Connection, item_id: int, overall_topic: str | None) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE meeting_prep SET overall_topic = ?, updated_at = ? WHERE id = ?",
+        (overall_topic or None, now, item_id),
     )
     conn.commit()
 

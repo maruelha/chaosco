@@ -1227,6 +1227,7 @@ def meeting_prep_list():
         "meeting_prep.html",
         items=items,
         meetings=database.MEETING_OPTIONS,
+        overall_topics=database.MEETING_OVERALL_TOPICS,
         meeting_filter=meeting_filter,
         status_filter=status_filter,
     )
@@ -1245,12 +1246,15 @@ def meeting_prep_agenda():
         )
     finally:
         conn.close()
+    order = {t: i for i, t in enumerate(database.MEETING_OVERALL_TOPICS)}
+    items.sort(key=lambda r: (order.get(r.get("overall_topic") or "", 999), r.get("id", 0)))
     return render_template(
         "meeting_agenda.html",
         items=items,
         meeting_filter=meeting_filter,
         status_filter=status_filter,
         today=date.today().strftime("%d %B %Y"),
+        overall_topics=database.MEETING_OVERALL_TOPICS,
     )
 
 
@@ -1260,11 +1264,13 @@ def meeting_prep_add():
     topic               = request.form.get("topic", "").strip()
     source_entity_type  = request.form.get("source_entity_type", "").strip() or None
     source_entity_id    = request.form.get("source_entity_id", "").strip() or None
+    overall_topic       = request.form.get("overall_topic", "").strip() or None
     if meeting and topic:
         conn = _get_conn()
         try:
             database.add_meeting_prep(conn, meeting, topic,
-                                      source_entity_type, source_entity_id)
+                                      source_entity_type, source_entity_id,
+                                      overall_topic)
         finally:
             conn.close()
     back = request.form.get("back_url")
@@ -1318,6 +1324,30 @@ def meeting_prep_note_add(item_id: int):
     finally:
         conn.close()
     return jsonify({"ok": True, "notes": notes})
+
+
+@app.route("/meeting-prep/<int:item_id>/topic", methods=["POST"])
+def meeting_prep_topic(item_id: int):
+    topic = request.form.get("topic", "").strip()
+    if not topic:
+        return jsonify({"ok": False, "error": "empty"})
+    conn = _get_conn()
+    try:
+        database.set_meeting_prep_topic(conn, item_id, topic)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "topic": topic})
+
+
+@app.route("/meeting-prep/<int:item_id>/overall_topic", methods=["POST"])
+def meeting_prep_overall_topic(item_id: int):
+    overall_topic = request.form.get("overall_topic", "").strip() or None
+    conn = _get_conn()
+    try:
+        database.set_meeting_prep_overall_topic(conn, item_id, overall_topic)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 # ---------------------------------------------------------------------------
