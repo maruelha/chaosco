@@ -75,7 +75,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ### Planning & coordination (manually managed via UI)
 - `todos` — area, kind, topic, status (open/in_progress/blocked/closed), priority (High/Medium/Low), due_date, for_whom
-- `meeting_prep` — meeting (from fixed list), topic, status (planned/discussed/parked/dropped), note, `source_entity_type` (defect/retail/NULL), `source_entity_id` (TEXT PK of source). When set, list view LEFT JOINs defects/retail to show a linked badge.
+- `meeting_prep` — meeting (from fixed list), topic, status (planned/discussed/future), note, `overall_topic` (CS Retail/CS ECOM/CS General/ROE Retail/ROE ECOM/ROE General/Orga/AI/Other — nullable), `source_entity_type` (defect/retail/NULL), `source_entity_id` (TEXT PK of source). When set, list view LEFT JOINs defects/retail to show a linked badge. `overall_topic` controls section order in the agenda export.
 - `enhancements` — area, enhancement, priority, status (not_started/in_progress/closed) — shown in a **floating panel** on every page, not a separate screen
 - `followups` — with_whom, topic, when_next, status (open/in_progress/done)
 - `cs_followups` — area, jira_id, topic, description, next_step, with_whom, status (open/in_progress/done)
@@ -90,6 +90,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail_annotations`: action_needed
 - `todos`: kind
 - `notes`: source
+- `meeting_prep`: source_entity_type, source_entity_id, overall_topic
 
 ---
 
@@ -105,7 +106,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
-| Meeting Prep | `/meeting-prep` | Per-meeting agenda topics; inline status + notes. Topic column shows coloured badge (purple=defect, green=retail) linking back to source when item was added from a detail page. |
+| Meeting Prep | `/meeting-prep` | Per-meeting agenda topics. Columns: Overall Topic (inline select), Topic (inline editable), Status, note, notes. Topic column shows coloured badge (purple=defect, green=retail) when added from a detail page. Default filter: planned. Export agenda button opens `/meeting-prep/agenda` (styled HTML report); Copy to clipboard exports plain text — both sorted by overall_topic order. |
 | To-Do List | `/todos` | Tasks with priority, kind, due date, owner, status |
 | Follow-ups | `/followups` | Lightweight "chase" list per person |
 | Links | `/links` | URL bookmark store with area/tool/tag filters |
@@ -117,6 +118,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Retail Status Report | `/retail/report` | Link in Retail list header |
 | Retail Spillover Report | `/report/retail` | Link in Retail list header |
 | ECOM/Omni Spillover Report | `/report/ecom` | URL only |
+| Meeting Agenda | `/meeting-prep/agenda` | "Export agenda" button on Meeting Prep (respects meeting + status filters) |
 | Production Defects List | `/prod_defects` | URL only |
 | Production Defect Detail | `/prod_defects/<id>` | From prod defects list |
 | Test Learnings | `/test_learnings` | URL only |

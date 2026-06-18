@@ -685,26 +685,37 @@
       <span class="screen-url">GET /meeting-prep</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Tracks agenda topics per named meeting. Topics are added inline via a quick-add form at the top; status changes happen in-row via AJAX. No detail page — everything is managed on this one screen.</p>
+      <p class="screen-desc">Tracks agenda topics per named meeting. Topics are added inline via a quick-add form at the top; status, overall topic, and topic text all edit in-row via AJAX. No detail page — everything is managed on this one screen.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Meeting · Topic · Status · Inline note · Notes count</span>
+        <span class="feat-value">Meeting · Overall Topic · Topic · Status · Inline note · Notes count</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
           <span class="pill pill-filter">Meeting (dropdown)</span>
-          <span class="pill pill-filter">Status (dropdown)</span>
+          <span class="pill pill-filter">Status (dropdown, default: planned)</span>
         </span>
         <span class="feat-label">Meeting options</span>
         <span class="feat-value">Balazs · GPO · Sync&amp;Solve · DTC O2C Daily · Sales ECOM daily · Other</span>
         <span class="feat-label">Status values</span>
-        <span class="feat-value">planned · discussed · parked · dropped</span>
+        <span class="feat-value">planned · discussed · future — default filter shows planned only</span>
         <span class="feat-label">Quick-add form</span>
-        <span class="feat-value">Meeting selector + topic text → <code>POST /meeting-prep/add</code></span>
+        <span class="feat-value">Meeting selector + topic text + optional Overall Topic → <code>POST /meeting-prep/add</code></span>
+        <span class="feat-label">Overall Topic</span>
+        <span class="feat-value">Optional grouping label: CS Retail · CS ECOM · CS General · ROE Retail · ROE ECOM · ROE General · Orga · AI · Other. Inline <code>&lt;select&gt;</code> per row; saves on change → <code>POST /meeting-prep/&lt;id&gt;/overall_topic</code>.</span>
+        <span class="feat-label">Topic inline editing</span>
+        <span class="feat-value">Hover the topic cell to reveal a pencil (✎) button. Click to edit in place; save with Enter or Save button → <code>POST /meeting-prep/&lt;id&gt;/topic</code>. Esc cancels.</span>
         <span class="feat-label">Source entity badge</span>
         <span class="feat-value">When an item was added from a Defect or Retail detail page, the Topic column shows a coloured badge below the topic text: purple for defects (defect ID + SolMan name), green for retail test cases (test case ID / country / scenario). Each badge is a link back to the source detail page.</span>
+        <span class="feat-label">Export actions</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Export agenda</span> → <code>GET /meeting-prep/agenda</code> opens in new tab: styled HTML report with coloured section banners per overall topic (same visual style as the spillover/retail reports). Includes Download HTML and Print buttons.<br>
+          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels, ready to paste into email or chat.
+        </span>
         <span class="feat-label">Inline actions (AJAX)</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Status change</span> → <code>POST /meeting-prep/&lt;id&gt;/status</code><br>
+          <span class="pill pill-ajax">Overall topic</span> → <code>POST /meeting-prep/&lt;id&gt;/overall_topic</code><br>
+          <span class="pill pill-ajax">Topic edit</span> → <code>POST /meeting-prep/&lt;id&gt;/topic</code><br>
           <span class="pill pill-ajax">Inline note</span> → <code>POST /meeting-prep/&lt;id&gt;/note</code><br>
           <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/meeting-prep/&lt;id&gt;/notes</code>
         </span>

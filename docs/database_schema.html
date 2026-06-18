@@ -608,11 +608,12 @@
       <tbody>
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
         <tr><td class="col-name">meeting</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Meeting name from options list (Balazs, GPO, Sync&Solve, DTC O2C Daily, Sales ECOM daily, Other)</td></tr>
-        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Agenda item / topic to discuss</td></tr>
-        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">planned · discussed · parked · dropped</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Agenda item / topic to discuss. Editable inline on the list screen.</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">planned · discussed · future</td></tr>
         <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline note / outcome</td></tr>
         <tr><td class="col-name">source_entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text"><code>defect</code> or <code>retail</code> — set when item is added from a detail page. NULL for manually-created items.</td></tr>
         <tr><td class="col-name">source_entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">PK of the source row as TEXT (defect_id or retail_id). Used to JOIN back for display name and link.</td></tr>
+        <tr><td class="col-name">overall_topic</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional grouping label: CS Retail · CS ECOM · CS General · ROE Retail · ROE ECOM · ROE General · Orga · AI · Other. Controls section order in agenda export and clipboard copy.</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
