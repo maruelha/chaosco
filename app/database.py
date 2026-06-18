@@ -409,6 +409,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    for col in ("source_entity_type TEXT", "source_entity_id TEXT"):
+        try:
+            conn.execute(f"ALTER TABLE meeting_prep ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     # Spillover match key changed from type||name||country to excel_row.
     # UPDATE preserves spillover_id values so FK links in spillover_annotations
     # stay intact.  The importer overwrites remaining columns on next run.
@@ -1146,26 +1152,37 @@ def get_meeting_prep(conn: sqlite3.Connection,
         where.append("m.status = ?")
         params.append(status)
     clause = ("WHERE " + " AND ".join(where)) if where else ""
-    rows = conn.execute(f"""
+    return _rows_to_dicts(conn.execute(f"""
         SELECT m.*,
-               COUNT(n.id) AS note_count
+               COUNT(n.id) AS note_count,
+               d.solman_name        AS src_defect_name,
+               r.test_case_id       AS src_tc_id,
+               r.country            AS src_country,
+               r.testcase_scenario  AS src_scenario,
+               r.retail_id          AS src_retail_id
         FROM   meeting_prep m
-        LEFT JOIN notes n ON n.entity_type = 'meeting_prep' AND n.entity_id = CAST(m.id AS TEXT)
+        LEFT JOIN notes   n ON n.entity_type = 'meeting_prep' AND n.entity_id = CAST(m.id AS TEXT)
+        LEFT JOIN defects d ON m.source_entity_type = 'defect'  AND d.defect_id = m.source_entity_id
+        LEFT JOIN retail  r ON m.source_entity_type = 'retail'  AND CAST(r.retail_id AS TEXT) = m.source_entity_id
         {clause}
         GROUP BY m.id
         ORDER BY m.id DESC
-    """, params).fetchall()
-    cur = conn.execute("SELECT m.*, 0 AS note_count FROM meeting_prep m LIMIT 0")
-    cols = [d[0] for d in cur.description]
-    return [dict(zip(cols, r)) for r in rows]
+    """, params))
 
 
-def add_meeting_prep(conn: sqlite3.Connection, meeting: str, topic: str) -> int:
+def add_meeting_prep(
+    conn: sqlite3.Connection,
+    meeting: str,
+    topic: str,
+    source_entity_type: str | None = None,
+    source_entity_id: str | None = None,
+) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     cur = conn.execute(
-        "INSERT INTO meeting_prep (meeting, topic, status, created_at, updated_at)"
-        " VALUES (?, ?, 'planned', ?, ?)",
-        (meeting, topic, now, now),
+        "INSERT INTO meeting_prep"
+        " (meeting, topic, status, source_entity_type, source_entity_id, created_at, updated_at)"
+        " VALUES (?, ?, 'planned', ?, ?, ?, ?)",
+        (meeting, topic, source_entity_type, source_entity_id, now, now),
     )
     conn.commit()
     return cur.lastrowid

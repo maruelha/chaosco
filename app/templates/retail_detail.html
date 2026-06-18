@@ -139,7 +139,37 @@
 
 <div class="btn-row">
   <a href="{{ url_for('retail_list') }}" class="btn">&#8592; Back to Retail</a>
+  <button type="button" class="btn" id="mp-toggle">&#128197; Add to Meeting Prep</button>
 </div>
+
+<div id="mp-form-wrap" style="display:none; margin-top:1rem">
+  {% if added_to_meeting %}
+  <div class="saved-banner">&#10003;&nbsp; Added to Meeting Prep.</div>
+  {% endif %}
+  <form method="post" action="{{ url_for('meeting_prep_add') }}" class="mp-quick-form">
+    <input type="hidden" name="source_entity_type" value="retail">
+    <input type="hidden" name="source_entity_id"   value="{{ row.retail_id }}">
+    <input type="hidden" name="back_url" value="{{ request.path }}">
+    <label class="mp-quick-label">Meeting</label>
+    <select name="meeting" required class="mp-select">
+      <option value="" disabled selected>— pick a meeting —</option>
+      {% for m in meetings %}
+      <option value="{{ m }}">{{ m }}</option>
+      {% endfor %}
+    </select>
+    <label class="mp-quick-label">Topic</label>
+    <input type="text" name="topic" required class="mp-topic-input"
+           value="{{ row.test_case_id }} / {{ row.country }}{% if row.testcase_scenario %} — {{ row.testcase_scenario }}{% endif %}">
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+<script>
+  document.getElementById('mp-toggle').addEventListener('click', function () {
+    var w = document.getElementById('mp-form-wrap');
+    w.style.display = w.style.display === 'none' ? '' : 'none';
+  });
+  {% if added_to_meeting %}document.getElementById('mp-form-wrap').style.display = '';{% endif %}
+</script>
 
 <script>
 (function () {

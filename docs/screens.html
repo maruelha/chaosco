@@ -311,10 +311,12 @@
         <span class="pill pill-action">Save</span> → POST to same URL → redirect with <code>?saved=1</code> flash</span>
         <span class="feat-label">Notes section</span>
         <span class="feat-value">List of all notes for this defect (heading, body, timestamp). Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span> links. Each note also shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Add to Meeting Prep</span>
+        <span class="feat-value"><span class="pill pill-action">📅 Add to Meeting Prep</span> button at the bottom — expands an inline form: pick meeting + edit pre-filled topic (defect ID + SolMan name). POSTs to <code>/meeting-prep/add</code> with <code>source_entity_type=defect</code> and <code>source_entity_id</code>. Redirects back with green confirmation banner.</span>
         <span class="feat-label">Flash banners</span>
-        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted · Added to Meeting Prep</span>
         <span class="feat-label">Navigation</span>
-        <span class="feat-value"><span class="pill pill-nav">← Back to Defects</span> · <span class="pill pill-action">Add note</span></span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Defects</span> · <span class="pill pill-action">Add note</span> · <span class="pill pill-action">📅 Add to Meeting Prep</span></span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>defects</code> LEFT JOIN <code>defect_annotations</code> + <code>notes</code> + <code>attachments</code></span>
       </div>
@@ -454,10 +456,12 @@
         <span class="pill pill-action">Save</span> → POST → redirect with <code>?saved=1</code> flash</span>
         <span class="feat-label">Notes section</span>
         <span class="feat-value">List of notes (heading, body, timestamp). Per-note Edit and Delete links. Each note shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Add to Meeting Prep</span>
+        <span class="feat-value"><span class="pill pill-action">📅 Add to Meeting Prep</span> button at the bottom — expands an inline form: pick meeting + edit pre-filled topic (test case ID / country / scenario). POSTs to <code>/meeting-prep/add</code> with <code>source_entity_type=retail</code> and <code>source_entity_id</code>. Redirects back with green confirmation banner.</span>
         <span class="feat-label">Flash banners</span>
-        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-value">Annotation saved · Note added · Note saved · Note deleted · Added to Meeting Prep</span>
         <span class="feat-label">Navigation</span>
-        <span class="feat-value"><span class="pill pill-nav">← Back to Retail</span> · <span class="pill pill-action">Add note</span></span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Retail</span> · <span class="pill pill-action">Add note</span> · <span class="pill pill-action">📅 Add to Meeting Prep</span></span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>retail</code> LEFT JOIN <code>retail_annotations</code> + <code>notes</code> + <code>attachments</code></span>
       </div>
@@ -696,6 +700,8 @@
         <span class="feat-value">planned · discussed · parked · dropped</span>
         <span class="feat-label">Quick-add form</span>
         <span class="feat-value">Meeting selector + topic text → <code>POST /meeting-prep/add</code></span>
+        <span class="feat-label">Source entity badge</span>
+        <span class="feat-value">When an item was added from a Defect or Retail detail page, the Topic column shows a coloured badge below the topic text: purple for defects (defect ID + SolMan name), green for retail test cases (test case ID / country / scenario). Each badge is a link back to the source detail page.</span>
         <span class="feat-label">Inline actions (AJAX)</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Status change</span> → <code>POST /meeting-prep/&lt;id&gt;/status</code><br>
@@ -703,7 +709,7 @@
           <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/meeting-prep/&lt;id&gt;/notes</code>
         </span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>meeting_prep</code> LEFT JOIN <code>notes</code></span>
+        <span class="feat-value"><code>meeting_prep</code> LEFT JOIN <code>notes</code> + LEFT JOIN <code>defects</code> (when source is defect) + LEFT JOIN <code>retail</code> (when source is retail)</span>
       </div>
     </div>
   </div>

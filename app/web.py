@@ -147,6 +147,7 @@ def defect_detail(defect_id: str):
     note_added = request.args.get("note_added") == "1"
     note_saved = request.args.get("note_saved") == "1"
     note_deleted = request.args.get("note_deleted") == "1"
+    added_to_meeting = request.args.get("added_to_meeting") == "1"
     return render_template(
         "defect_detail.html",
         defect=defect,
@@ -156,6 +157,8 @@ def defect_detail(defect_id: str):
         note_added=note_added,
         note_saved=note_saved,
         note_deleted=note_deleted,
+        added_to_meeting=added_to_meeting,
+        meetings=database.MEETING_OPTIONS,
     )
 
 
@@ -1087,12 +1090,15 @@ def retail_detail(retail_id: int):
     note_added   = request.args.get("note_added") == "1"
     note_saved   = request.args.get("note_saved") == "1"
     note_deleted = request.args.get("note_deleted") == "1"
+    added_to_meeting = request.args.get("added_to_meeting") == "1"
     return render_template(
         "retail_detail.html",
         row=row, notes=notes,
         attachments_by_note=attachments_by_note,
         saved=saved, note_added=note_added,
         note_saved=note_saved, note_deleted=note_deleted,
+        added_to_meeting=added_to_meeting,
+        meetings=database.MEETING_OPTIONS,
     )
 
 
@@ -1228,14 +1234,20 @@ def meeting_prep_list():
 
 @app.route("/meeting-prep/add", methods=["POST"])
 def meeting_prep_add():
-    meeting = request.form.get("meeting", "").strip()
-    topic   = request.form.get("topic", "").strip()
+    meeting             = request.form.get("meeting", "").strip()
+    topic               = request.form.get("topic", "").strip()
+    source_entity_type  = request.form.get("source_entity_type", "").strip() or None
+    source_entity_id    = request.form.get("source_entity_id", "").strip() or None
     if meeting and topic:
         conn = _get_conn()
         try:
-            database.add_meeting_prep(conn, meeting, topic)
+            database.add_meeting_prep(conn, meeting, topic,
+                                      source_entity_type, source_entity_id)
         finally:
             conn.close()
+    back = request.form.get("back_url")
+    if back:
+        return redirect(back + "?added_to_meeting=1")
     return redirect(url_for("meeting_prep_list",
                             meeting=request.form.get("meeting_filter", "")))
 

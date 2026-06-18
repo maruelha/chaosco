@@ -63,7 +63,20 @@
       <td class="mp-meeting">
         <span class="mp-meeting-pill">{{ item.meeting }}</span>
       </td>
-      <td class="mp-topic">{{ item.topic }}</td>
+      <td class="mp-topic">
+        {{ item.topic }}
+        {% if item.source_entity_type == 'defect' %}
+        <a href="{{ url_for('defect_detail', defect_id=item.source_entity_id) }}"
+           class="mp-entity-badge mp-entity-badge--defect" title="Go to defect">
+          &#128268; {{ item.source_entity_id }}{% if item.src_defect_name %} · {{ item.src_defect_name }}{% endif %}
+        </a>
+        {% elif item.source_entity_type == 'retail' %}
+        <a href="{{ url_for('retail_detail', retail_id=item.src_retail_id) }}"
+           class="mp-entity-badge mp-entity-badge--retail" title="Go to test case">
+          &#9654; {{ item.src_tc_id }} / {{ item.src_country }}{% if item.src_scenario %} · {{ item.src_scenario }}{% endif %}
+        </a>
+        {% endif %}
+      </td>
       <td class="mp-status">
         {% if item.status == 'discussed' %}
           <span class="pill pill--green">✓ Discussed</span>
