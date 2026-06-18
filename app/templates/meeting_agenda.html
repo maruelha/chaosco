@@ -2,291 +2,170 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Agenda{% if meeting_filter %} — {{ meeting_filter }}{% endif %}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #1a1a2e;
-      background: #f5f6fa;
-      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px; line-height: 1.6; color: #1d1d1f;
+      padding: 2rem 2.5rem; background: #fff; max-width: 860px;
     }
 
-    .page {
-      max-width: 740px;
-      margin: 0 auto;
-      padding: 2.5rem 2rem 4rem;
-    }
+    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.15rem; }
+    .report-subtitle { font-size: 0.9rem; color: #6e6e73; font-weight: 400; margin-bottom: 0.2rem; }
+    .report-meta { font-size: 0.78rem; color: #aeaeb2; margin-bottom: 1.25rem; }
 
-    /* ---- Header ---- */
-    .agenda-hero {
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-      color: #fff;
-      border-radius: 14px;
-      padding: 2rem 2.5rem 1.75rem;
-      margin-bottom: 2rem;
-      position: relative;
-      overflow: hidden;
+    .report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
+    .btn-r {
+      padding: 0.38rem 0.9rem; border-radius: 7px; border: 1px solid #d2d2d7;
+      background: #fff; font-size: 0.8125rem; font-family: inherit;
+      cursor: pointer; color: #1d1d1f;
     }
-    .agenda-hero::after {
-      content: '';
-      position: absolute;
-      right: -40px;
-      top: -40px;
-      width: 200px;
-      height: 200px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 50%;
-    }
-    .agenda-hero-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.5);
-      margin-bottom: 0.5rem;
-    }
-    .agenda-hero h1 {
-      font-size: 1.65rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #fff;
-      margin-bottom: 0.6rem;
-    }
-    .agenda-hero-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      font-size: 0.82rem;
-      color: rgba(255,255,255,0.6);
-    }
-    .agenda-hero-meta .dot { opacity: 0.35; }
-    .agenda-hero-count {
-      display: inline-block;
-      background: rgba(255,255,255,0.12);
-      border-radius: 20px;
-      padding: 2px 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.85);
-    }
+    .btn-r:hover { background: #f0f0f5; }
+    .btn-r--primary { background: #0071e3; color: #fff; border-color: #0071e3; }
+    .btn-r--primary:hover { background: #005bbf; }
 
-    /* ---- Sections ---- */
-    .agenda-section {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
-      margin-bottom: 1.1rem;
-      overflow: hidden;
+    /* Section */
+    .section { margin-bottom: 2rem; }
+    .section-banner {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem; border-radius: 10px 10px 0 0;
+      color: #fff; font-size: 0.95rem; font-weight: 700;
     }
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1.25rem;
-      border-bottom: 1px solid #f0f0f5;
-    }
-    .section-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .section-title {
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #444;
-    }
+    .section-banner__label { flex: 1; }
     .section-count {
-      margin-left: auto;
-      font-size: 0.72rem;
-      color: #aaa;
-      font-weight: 500;
+      font-size: 0.72rem; font-weight: 700;
+      background: rgba(255,255,255,0.25); color: #fff;
+      padding: 0.15rem 0.6rem; border-radius: 20px; flex-shrink: 0;
     }
 
-    /* section accent colors */
-    .section--cs-retail   .section-dot { background: #3b82f6; }
-    .section--cs-retail   .section-header { background: #eff6ff; }
-    .section--cs-ecom     .section-dot { background: #06b6d4; }
-    .section--cs-ecom     .section-header { background: #ecfeff; }
-    .section--cs-general  .section-dot { background: #6366f1; }
-    .section--cs-general  .section-header { background: #f0f0ff; }
-    .section--roe-retail  .section-dot { background: #10b981; }
-    .section--roe-retail  .section-header { background: #f0fdf4; }
-    .section--roe-ecom    .section-dot { background: #84cc16; }
-    .section--roe-ecom    .section-header { background: #f7fee7; }
-    .section--roe-general .section-dot { background: #22c55e; }
-    .section--roe-general .section-header { background: #f0fdf4; }
-    .section--orga        .section-dot { background: #f59e0b; }
-    .section--orga        .section-header { background: #fffbeb; }
-    .section--ai          .section-dot { background: #ec4899; }
-    .section--ai          .section-header { background: #fdf2f8; }
-    .section--other       .section-dot { background: #94a3b8; }
-    .section--other       .section-header { background: #f8fafc; }
+    /* Section colors — one per overall topic */
+    .banner--cs-retail   { background: #0071e3; }
+    .banner--cs-ecom     { background: #32ade6; }
+    .banner--cs-general  { background: #5856d6; }
+    .banner--roe-retail  { background: #28a745; }
+    .banner--roe-ecom    { background: #20c997; }
+    .banner--roe-general { background: #00c7be; }
+    .banner--orga        { background: #ff9500; }
+    .banner--ai          { background: #bf5af2; }
+    .banner--other       { background: #8e8e93; }
 
-    /* ---- Items ---- */
-    .agenda-items { list-style: none; padding: 0.3rem 0; }
-    .agenda-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.85rem;
-      padding: 0.65rem 1.25rem;
-      border-bottom: 1px solid #f5f5f8;
-      transition: background 0.1s;
+    /* Agenda table */
+    table {
+      width: 100%; border-collapse: collapse;
+      border: 1px solid #e5e5ea; border-top: none;
+      border-radius: 0 0 10px 10px; overflow: hidden;
     }
-    .agenda-item:last-child { border-bottom: none; }
-    .agenda-item:hover { background: #fafafe; }
-    .item-num {
-      flex-shrink: 0;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #f0f0f5;
-      color: #888;
-      font-size: 0.68rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-top: 1px;
+    td {
+      padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f5; vertical-align: middle;
     }
-    .item-text {
-      font-size: 0.9rem;
-      color: #1a1a2e;
-      line-height: 1.5;
-      flex: 1;
-    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f5f7ff; }
 
-    /* ---- Empty state ---- */
-    .no-items {
-      text-align: center;
-      padding: 3rem 1rem;
-      color: #aaa;
-      font-style: italic;
-      background: #fff;
-      border-radius: 10px;
+    .col-num {
+      width: 36px; text-align: center;
+      font-size: 0.72rem; font-weight: 700; color: #aeaeb2;
     }
+    .col-topic { font-size: 0.9rem; color: #1d1d1f; }
 
-    /* ---- Toolbar ---- */
-    .toolbar {
-      display: flex;
-      gap: 0.75rem;
-      margin-top: 2rem;
-    }
-    .toolbar-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.5rem 1.1rem;
-      border: 1px solid #d0d5dd;
-      background: #fff;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: #344054;
-      cursor: pointer;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-      transition: background 0.1s, box-shadow 0.1s;
-    }
-    .toolbar-btn:hover { background: #f9fafb; box-shadow: 0 2px 6px rgba(0,0,0,0.09); }
+    .no-items { color: #aaa; font-style: italic; padding: 2rem 0; }
 
     @media print {
-      body { background: #fff; }
-      .page { padding: 0; }
-      .agenda-hero { border-radius: 0; background: #1a1a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .agenda-section { box-shadow: none; border: 1px solid #e0e0e0; }
-      .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
+      body { padding: 0; max-width: none; }
+      tbody tr:hover td { background: inherit; }
+      .section { page-break-inside: avoid; }
+      .section-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
 <body>
-<div class="page">
 
-  <div class="agenda-hero">
-    <div class="agenda-hero-label">Meeting Agenda</div>
-    <h1>{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %}</h1>
-    <div class="agenda-hero-meta">
-      <span>{{ today }}</span>
-      {% if status_filter and status_filter != 'planned' %}
-      <span class="dot">·</span>
-      <span>{{ status_filter | capitalize }} items</span>
-      {% endif %}
-      <span class="dot">·</span>
-      <span class="agenda-hero-count">{{ items | length }} topic{{ 's' if items | length != 1 }}</span>
-    </div>
-  </div>
+<h1>{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %} — Agenda</h1>
+<p class="report-subtitle">Topics for discussion</p>
+<p class="report-meta">{{ today }} &nbsp;·&nbsp; {{ items | length }} topic{{ 's' if items | length != 1 }}</p>
 
-  {% if items %}
-
-  {# --- CS group --- #}
-  {% for ot, css_class in [
-      ('CS Retail',   'cs-retail'),
-      ('CS ECOM',     'cs-ecom'),
-      ('CS General',  'cs-general'),
-      ('ROE Retail',  'roe-retail'),
-      ('ROE ECOM',    'roe-ecom'),
-      ('ROE General', 'roe-general'),
-      ('Orga',        'orga'),
-      ('AI',          'ai'),
-      ('Other',       'other'),
-  ] %}
-    {% set group_items = items | selectattr('overall_topic', 'equalto', ot) | list %}
-    {% if group_items %}
-    <div class="agenda-section section--{{ css_class }}">
-      <div class="section-header">
-        <span class="section-dot"></span>
-        <span class="section-title">{{ ot }}</span>
-        <span class="section-count">{{ group_items | length }} item{{ 's' if group_items | length != 1 }}</span>
-      </div>
-      <ul class="agenda-items">
-        {% for item in group_items %}
-        <li class="agenda-item">
-          <span class="item-num">{{ loop.index }}</span>
-          <span class="item-text">{{ item.topic }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-  {% endfor %}
-
-  {# --- Untagged --- #}
-  {% set untagged = [] %}
-  {% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
-  {% if untagged %}
-  <div class="agenda-section section--other">
-    <div class="section-header">
-      <span class="section-dot"></span>
-      <span class="section-title">Other / Untagged</span>
-      <span class="section-count">{{ untagged | length }} item{{ 's' if untagged | length != 1 }}</span>
-    </div>
-    <ul class="agenda-items">
-      {% for item in untagged %}
-      <li class="agenda-item">
-        <span class="item-num">{{ loop.index }}</span>
-        <span class="item-text">{{ item.topic }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-
-  {% else %}
-  <div class="no-items">No items match the current filter.</div>
-  {% endif %}
-
-  <div class="toolbar no-print">
-    <button class="toolbar-btn" onclick="window.print()">🖨 Print</button>
-    <button class="toolbar-btn" onclick="window.close()">✕ Close</button>
-  </div>
-
+<div class="report-actions no-print">
+  <button class="btn-r btn-r--primary" onclick="downloadPage()">Download HTML</button>
+  <button class="btn-r" onclick="window.print()">Print</button>
+  <button class="btn-r" onclick="window.close()">Close</button>
 </div>
+
+{% if items %}
+
+{% set topic_map = [
+  ('CS Retail',   'cs-retail'),
+  ('CS ECOM',     'cs-ecom'),
+  ('CS General',  'cs-general'),
+  ('ROE Retail',  'roe-retail'),
+  ('ROE ECOM',    'roe-ecom'),
+  ('ROE General', 'roe-general'),
+  ('Orga',        'orga'),
+  ('AI',          'ai'),
+  ('Other',       'other'),
+] %}
+
+{% for ot, css in topic_map %}
+  {% set group_items = items | selectattr('overall_topic', 'equalto', ot) | list %}
+  {% if group_items %}
+  <div class="section">
+    <div class="section-banner banner--{{ css }}">
+      <span class="section-banner__label">{{ ot }}</span>
+      <span class="section-count">{{ group_items | length }}</span>
+    </div>
+    <table>
+      <tbody>
+        {% for item in group_items %}
+        <tr>
+          <td class="col-num">{{ loop.index }}</td>
+          <td class="col-topic">{{ item.topic }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% endfor %}
+
+{# Untagged items #}
+{% set untagged = [] %}
+{% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
+{% if untagged %}
+<div class="section">
+  <div class="section-banner banner--other">
+    <span class="section-banner__label">Other / Untagged</span>
+    <span class="section-count">{{ untagged | length }}</span>
+  </div>
+  <table>
+    <tbody>
+      {% for item in untagged %}
+      <tr>
+        <td class="col-num">{{ loop.index }}</td>
+        <td class="col-topic">{{ item.topic }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% else %}
+<p class="no-items">No items match the current filter.</p>
+{% endif %}
+
+<script>
+function downloadPage() {
+  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '{{ (meeting_filter or "Agenda") | replace(" ", "_") }}_{{ today | replace(" ", "_") }}.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+</script>
 </body>
 </html>
