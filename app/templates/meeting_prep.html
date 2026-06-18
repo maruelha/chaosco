@@ -42,6 +42,14 @@
     {% endif %}
   </form>
   <p class="list-meta">{{ items | length }} item(s)</p>
+  {% if items %}
+  <div class="mp-export-btns">
+    <a href="{{ url_for('meeting_prep_agenda', meeting=meeting_filter, status=status_filter) }}"
+       target="_blank" class="btn btn-sm">&#128196; Export agenda</a>
+    <button type="button" class="btn btn-sm" id="js-copy-topics">&#128203; Copy to clipboard</button>
+    <span id="js-copy-confirm" style="display:none;font-size:0.8rem;color:#1a7f37">&#10003; Copied!</span>
+  </div>
+  {% endif %}
 </div>
 
 {# ---- List ---- #}
@@ -238,6 +246,21 @@
       }
     });
   });
+  // Copy topics to clipboard
+  var copyBtn = document.getElementById('js-copy-topics');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      var topics = Array.from(document.querySelectorAll('.mp-topic')).map(function (td) {
+        return td.firstChild.nodeValue ? td.firstChild.nodeValue.trim() : td.childNodes[0].textContent.trim();
+      }).filter(Boolean);
+      var text = topics.map(function (t, i) { return (i + 1) + '. ' + t; }).join('\n');
+      navigator.clipboard.writeText(text).then(function () {
+        var confirm = document.getElementById('js-copy-confirm');
+        confirm.style.display = 'inline';
+        setTimeout(function () { confirm.style.display = 'none'; }, 2000);
+      });
+    });
+  }
 }());
 </script>
 {% endblock %}

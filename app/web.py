@@ -1232,6 +1232,28 @@ def meeting_prep_list():
     )
 
 
+@app.route("/meeting-prep/agenda")
+def meeting_prep_agenda():
+    meeting_filter = request.args.get("meeting", "")
+    status_filter  = request.args.get("status", "planned")
+    conn = _get_conn()
+    try:
+        items = database.get_meeting_prep(
+            conn,
+            meeting=meeting_filter or None,
+            status=status_filter or None,
+        )
+    finally:
+        conn.close()
+    return render_template(
+        "meeting_agenda.html",
+        items=items,
+        meeting_filter=meeting_filter,
+        status_filter=status_filter,
+        today=date.today().strftime("%d %B %Y"),
+    )
+
+
 @app.route("/meeting-prep/add", methods=["POST"])
 def meeting_prep_add():
     meeting             = request.form.get("meeting", "").strip()
