@@ -4,159 +4,319 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Agenda{% if meeting_filter %} — {{ meeting_filter }}{% endif %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 13px; line-height: 1.6; color: #1d1d1f;
-      padding: 2rem 2.5rem; background: #fff; max-width: 860px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #e8eaed;
+      min-height: 100vh;
+      padding: 3rem 1.5rem 5rem;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
     }
 
-    h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.15rem; }
-    .report-subtitle { font-size: 0.9rem; color: #6e6e73; font-weight: 400; margin-bottom: 0.2rem; }
-    .report-meta { font-size: 0.78rem; color: #aeaeb2; margin-bottom: 1.25rem; }
-
-    .report-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.75rem; }
-    .btn-r {
-      padding: 0.38rem 0.9rem; border-radius: 7px; border: 1px solid #d2d2d7;
-      background: #fff; font-size: 0.8125rem; font-family: inherit;
-      cursor: pointer; color: #1d1d1f;
-    }
-    .btn-r:hover { background: #f0f0f5; }
-    .btn-r--primary { background: #0071e3; color: #fff; border-color: #0071e3; }
-    .btn-r--primary:hover { background: #005bbf; }
-
-    /* Section */
-    .section { margin-bottom: 2rem; }
-    .section-banner {
-      display: flex; align-items: center; gap: 0.75rem;
-      padding: 0.75rem 1rem; border-radius: 10px 10px 0 0;
-      color: #fff; font-size: 0.95rem; font-weight: 700;
-    }
-    .section-banner__label { flex: 1; }
-    .section-count {
-      font-size: 0.72rem; font-weight: 700;
-      background: rgba(255,255,255,0.25); color: #fff;
-      padding: 0.15rem 0.6rem; border-radius: 20px; flex-shrink: 0;
+    /* ---- Paper document ---- */
+    .doc {
+      max-width: 660px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow:
+        0 1px 2px rgba(0,0,0,.06),
+        0 4px 8px rgba(0,0,0,.06),
+        0 16px 48px rgba(0,0,0,.1);
+      overflow: hidden;
     }
 
-    /* Section colors — one per overall topic */
-    .banner--cs-retail   { background: #0071e3; }
-    .banner--cs-ecom     { background: #32ade6; }
-    .banner--cs-general  { background: #5856d6; }
-    .banner--roe-retail  { background: #28a745; }
-    .banner--roe-ecom    { background: #20c997; }
-    .banner--roe-general { background: #00c7be; }
-    .banner--orga        { background: #ff9500; }
-    .banner--ai          { background: #bf5af2; }
-    .banner--other       { background: #8e8e93; }
-
-    /* Agenda table */
-    table {
-      width: 100%; border-collapse: collapse;
-      border: 1px solid #e5e5ea; border-top: none;
-      border-radius: 0 0 10px 10px; overflow: hidden;
+    /* top accent stripe */
+    .doc-stripe {
+      height: 5px;
+      background: linear-gradient(90deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%);
     }
-    td {
-      padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f5; vertical-align: middle;
-    }
-    tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: #f5f7ff; }
 
-    .col-num {
-      width: 36px; text-align: center;
-      font-size: 0.72rem; font-weight: 700; color: #aeaeb2;
+    /* ---- Header ---- */
+    .doc-header {
+      background: #0f172a;
+      padding: 2.5rem 3rem 2.25rem;
     }
-    .col-topic { font-size: 0.9rem; color: #1d1d1f; }
+    .doc-kicker {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 0.85rem;
+    }
+    .doc-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    .doc-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .doc-meta-date {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+    .doc-meta-sep {
+      color: rgba(255,255,255,0.2);
+      font-size: 0.7rem;
+    }
+    .doc-meta-count {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+    }
+    .doc-meta-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 0.18rem 0.65rem;
+      font-size: 0.67rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.03em;
+    }
 
-    .no-items { color: #aaa; font-style: italic; padding: 2rem 0; }
+    /* ---- Body ---- */
+    .doc-body {
+      padding: 2.25rem 3rem 2.5rem;
+    }
+
+    /* ---- Section ---- */
+    .agenda-section { margin-bottom: 2.25rem; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 0.85rem;
+    }
+    .section-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .section-name {
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .section-tally {
+      margin-left: auto;
+      font-size: 0.64rem;
+      color: #cbd5e1;
+      font-weight: 500;
+    }
+
+    /* dot colors per overall topic */
+    .dot--cs-retail   { background: #2563eb; }
+    .dot--cs-ecom     { background: #0891b2; }
+    .dot--cs-general  { background: #7c3aed; }
+    .dot--roe-retail  { background: #16a34a; }
+    .dot--roe-ecom    { background: #0d9488; }
+    .dot--roe-general { background: #059669; }
+    .dot--orga        { background: #d97706; }
+    .dot--ai          { background: #9333ea; }
+    .dot--other       { background: #94a3b8; }
+
+    /* ---- Items ---- */
+    .item-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .item {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 0.52rem 0;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .item:last-child { border-bottom: none; }
+    .item-n {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      min-width: 1.4rem;
+      text-align: right;
+      flex-shrink: 0;
+      padding-top: 0.05rem;
+    }
+    .item-text {
+      font-size: 0.93rem;
+      color: #1e293b;
+      line-height: 1.55;
+      font-weight: 400;
+    }
+
+    /* ---- Footer ---- */
+    .doc-footer {
+      border-top: 1px solid #f1f5f9;
+      padding: 1.1rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafbfc;
+    }
+    .doc-footer-note {
+      font-size: 0.68rem;
+      color: #cbd5e1;
+      letter-spacing: 0.02em;
+    }
+    .toolbar { display: flex; gap: 0.5rem; }
+    .toolbar-btn {
+      padding: 0.38rem 0.9rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .toolbar-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+    .toolbar-btn--primary {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      color: #fff;
+    }
+    .toolbar-btn--primary:hover { background: #1e40af; border-color: #1e40af; }
+
+    .no-items {
+      padding: 2.5rem 3rem;
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
 
     @media print {
+      body { background: #fff; padding: 0; }
+      .doc { box-shadow: none; border-radius: 0; max-width: none; }
+      .doc-stripe { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .doc-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section-dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
-      body { padding: 0; max-width: none; }
-      tbody tr:hover td { background: inherit; }
-      .section { page-break-inside: avoid; }
-      .section-banner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .item { page-break-inside: avoid; }
+      .agenda-section { page-break-inside: avoid; }
     }
   </style>
 </head>
 <body>
+<div class="doc">
 
-<h1>{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %} — Agenda</h1>
-<p class="report-subtitle">Topics for discussion</p>
-<p class="report-meta">{{ today }} &nbsp;·&nbsp; {{ items | length }} topic{{ 's' if items | length != 1 }}</p>
+  <div class="doc-stripe"></div>
 
-<div class="report-actions no-print">
-  <button class="btn-r btn-r--primary" onclick="downloadPage()">Download HTML</button>
-  <button class="btn-r" onclick="window.print()">Print</button>
-  <button class="btn-r" onclick="window.close()">Close</button>
-</div>
-
-{% if items %}
-
-{% set topic_map = [
-  ('CS Retail',   'cs-retail'),
-  ('CS ECOM',     'cs-ecom'),
-  ('CS General',  'cs-general'),
-  ('ROE Retail',  'roe-retail'),
-  ('ROE ECOM',    'roe-ecom'),
-  ('ROE General', 'roe-general'),
-  ('Orga',        'orga'),
-  ('AI',          'ai'),
-  ('Other',       'other'),
-] %}
-
-{% for ot, css in topic_map %}
-  {% set group_items = items | selectattr('overall_topic', 'equalto', ot) | list %}
-  {% if group_items %}
-  <div class="section">
-    <div class="section-banner banner--{{ css }}">
-      <span class="section-banner__label">{{ ot }}</span>
-      <span class="section-count">{{ group_items | length }}</span>
+  <div class="doc-header">
+    <div class="doc-kicker">Meeting Agenda</div>
+    <div class="doc-title">{% if meeting_filter %}{{ meeting_filter }}{% else %}Meeting{% endif %}</div>
+    <div class="doc-meta">
+      <span class="doc-meta-date">{{ today }}</span>
+      <span class="doc-meta-sep">·</span>
+      <span class="doc-meta-count">{{ items | length }} topic{{ 's' if items | length != 1 }}</span>
+      {% if status_filter and status_filter != 'planned' %}
+      <span class="doc-meta-sep">·</span>
+      <span class="doc-meta-badge">{{ status_filter | capitalize }}</span>
+      {% endif %}
     </div>
-    <table>
-      <tbody>
-        {% for item in group_items %}
-        <tr>
-          <td class="col-num">{{ loop.index }}</td>
-          <td class="col-topic">{{ item.topic }}</td>
-        </tr>
+  </div>
+
+  {% if items %}
+  {% set topic_map = [
+    ('CS Retail',   'cs-retail'),
+    ('CS ECOM',     'cs-ecom'),
+    ('CS General',  'cs-general'),
+    ('ROE Retail',  'roe-retail'),
+    ('ROE ECOM',    'roe-ecom'),
+    ('ROE General', 'roe-general'),
+    ('Orga',        'orga'),
+    ('AI',          'ai'),
+    ('Other',       'other'),
+  ] %}
+
+  <div class="doc-body">
+
+    {% for ot, css in topic_map %}
+      {% set grp = items | selectattr('overall_topic', 'equalto', ot) | list %}
+      {% if grp %}
+      <div class="agenda-section">
+        <div class="section-header">
+          <span class="section-dot dot--{{ css }}"></span>
+          <span class="section-name">{{ ot }}</span>
+          <span class="section-tally">{{ grp | length }}</span>
+        </div>
+        <ul class="item-list">
+          {% for item in grp %}
+          <li class="item">
+            <span class="item-n">{{ loop.index }}</span>
+            <span class="item-text">{{ item.topic }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% set untagged = [] %}
+    {% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
+    {% if untagged %}
+    <div class="agenda-section">
+      <div class="section-header">
+        <span class="section-dot dot--other"></span>
+        <span class="section-name">Other</span>
+        <span class="section-tally">{{ untagged | length }}</span>
+      </div>
+      <ul class="item-list">
+        {% for item in untagged %}
+        <li class="item">
+          <span class="item-n">{{ loop.index }}</span>
+          <span class="item-text">{{ item.topic }}</span>
+        </li>
         {% endfor %}
-      </tbody>
-    </table>
+      </ul>
+    </div>
+    {% endif %}
+
   </div>
+  {% else %}
+  <p class="no-items">No items match the current filter.</p>
   {% endif %}
-{% endfor %}
 
-{# Untagged items #}
-{% set untagged = [] %}
-{% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
-{% if untagged %}
-<div class="section">
-  <div class="section-banner banner--other">
-    <span class="section-banner__label">Other / Untagged</span>
-    <span class="section-count">{{ untagged | length }}</span>
+  <div class="doc-footer">
+    <span class="doc-footer-note no-print">{{ today }}</span>
+    <div class="toolbar no-print">
+      <button class="toolbar-btn toolbar-btn--primary" onclick="downloadPage()">↓ Download</button>
+      <button class="toolbar-btn" onclick="window.print()">Print</button>
+      <button class="toolbar-btn" onclick="window.close()">Close</button>
+    </div>
   </div>
-  <table>
-    <tbody>
-      {% for item in untagged %}
-      <tr>
-        <td class="col-num">{{ loop.index }}</td>
-        <td class="col-topic">{{ item.topic }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
 
-{% else %}
-<p class="no-items">No items match the current filter.</p>
-{% endif %}
+</div>
 
 <script>
 function downloadPage() {
-  const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelectorAll('.no-print').forEach(el => el.remove());
+  const html = '<!DOCTYPE html>\n' + clone.outerHTML;
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
