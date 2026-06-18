@@ -778,7 +778,10 @@ def get_spillover(
         SELECT s.*,
                a.importance_for_signoff, a.next_step, a.comment_history,
                a.critical_for_signoff, a.comment_for_signoff, a.signoff_group,
-               a.updated_at AS annotation_updated_at
+               a.updated_at AS annotation_updated_at,
+               (SELECT COUNT(*) FROM notes n
+                WHERE n.entity_type = 'spillover' AND n.entity_id = CAST(s.spillover_id AS TEXT)
+               ) AS note_count
         FROM spillover s
         LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
         WHERE 1=1

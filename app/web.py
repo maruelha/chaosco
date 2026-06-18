@@ -277,6 +277,119 @@ def spillover_critical_save(spillover_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Spillover detail + note routes
+# ---------------------------------------------------------------------------
+
+@app.route("/spillover/<int:spillover_id>")
+def spillover_detail(spillover_id: int):
+    note_added   = request.args.get("note_added")   == "1"
+    note_saved   = request.args.get("note_saved")   == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
+    conn = _get_conn()
+    try:
+        row = database.get_spillover_by_id(conn, spillover_id)
+        if row is None:
+            return render_template("404.html"), 404
+        notes = database.list_notes(conn, "spillover", str(spillover_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
+    finally:
+        conn.close()
+    return render_template(
+        "spillover_detail.html", row=row,
+        notes=notes, attachments_by_note=attachments_by_note,
+        note_added=note_added, note_saved=note_saved, note_deleted=note_deleted,
+    )
+
+
+@app.route("/spillover/<int:spillover_id>/notes/add", methods=["GET", "POST"])
+def spillover_note_add(spillover_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_spillover_by_id(conn, spillover_id)
+        if row is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if not note_text:
+                return render_template(
+                    "note_form.html", mode="add",
+                    entity_label=row.get("name") or f"Spillover #{spillover_id}",
+                    list_url=url_for("spillover_list"), list_label="Core South Spillover",
+                    detail_url=url_for("spillover_detail", spillover_id=spillover_id),
+                    action_url=url_for("spillover_note_add", spillover_id=spillover_id),
+                    cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
+                    heading=heading or "", note_text="", error="Note text is required.",
+                )
+            database.add_note(conn, "spillover", str(spillover_id), heading, note_text)
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_added="1"))
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=row.get("name") or f"Spillover #{spillover_id}",
+        list_url=url_for("spillover_list"), list_label="Core South Spillover",
+        detail_url=url_for("spillover_detail", spillover_id=spillover_id),
+        action_url=url_for("spillover_note_add", spillover_id=spillover_id),
+        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
+        heading="", note_text="", error=None,
+    )
+
+
+@app.route("/spillover/<int:spillover_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def spillover_note_edit(spillover_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "spillover" or note["entity_id"] != str(spillover_id):
+            return render_template("404.html"), 404
+        row = database.get_spillover_by_id(conn, spillover_id)
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_saved="1"))
+    finally:
+        conn.close()
+    label = (row.get("name") if row else None) or f"Spillover #{spillover_id}"
+    kwargs = dict(
+        mode="edit", entity_label=label,
+        list_url=url_for("spillover_list"), list_label="Core South Spillover",
+        detail_url=url_for("spillover_detail", spillover_id=spillover_id),
+        action_url=url_for("spillover_note_edit", spillover_id=spillover_id, note_id=note_id),
+        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/spillover/<int:spillover_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def spillover_note_delete(spillover_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "spillover" or note["entity_id"] != str(spillover_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_deleted="1"))
+        row = database.get_spillover_by_id(conn, spillover_id)
+    finally:
+        conn.close()
+    label = (row.get("name") if row else None) or f"Spillover #{spillover_id}"
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=label,
+        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
+        delete_url=url_for("spillover_note_delete", spillover_id=spillover_id, note_id=note_id),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Retail routes
 # ---------------------------------------------------------------------------
 

@@ -235,6 +235,9 @@
         </td>
         <td class="sc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
+          <a href="{{ url_for('spillover_detail', spillover_id=row.spillover_id) }}"
+             class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
+             title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
         </td>
       </tr>
     {% else %}

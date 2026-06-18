@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Spillover — {{ row.name or row.spillover_id }} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('spillover_list') }}">Core South Spillover</a>
+  <span>›</span>
+  <span>{{ (row.name or '')[:60] or ('Row ' ~ row.excel_row) }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ row.name or '(no name)' }}</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('spillover_list') }}" class="btn">← Back to Spillover</a>
+    </div>
+  </div>
+</div>
+
+{# ---- Key fields (read-only — editing happens on the list) ---- #}
+<div class="detail-card">
+  <div class="detail-grid">
+    <div class="detail-field">
+      <span class="detail-label">Area</span>
+      <span class="detail-value">{{ row.area or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Type</span>
+      <span class="detail-value">{{ row.type or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Country</span>
+      <span class="detail-value">{{ row.country or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Status</span>
+      <span class="detail-value">{{ row.status or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Assigned to</span>
+      <span class="detail-value">{{ row.assigned_to or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">External ID</span>
+      <span class="detail-value">{{ row.external_id or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Order numbers</span>
+      <span class="detail-value">{{ row.order_numbers or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Critical for sign-off</span>
+      <span class="detail-value">{{ row.critical_for_signoff or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Report group</span>
+      <span class="detail-value">{{ row.signoff_group or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Next step</span>
+      <span class="detail-value">{{ row.next_step or '—' }}</span>
+    </div>
+    {% if row.content %}
+    <div class="detail-field detail-field--full">
+      <span class="detail-label">Content</span>
+      <span class="detail-value" style="white-space:pre-wrap">{{ row.content }}</span>
+    </div>
+    {% endif %}
+    {% if row.comment %}
+    <div class="detail-field detail-field--full">
+      <span class="detail-label">Comment (imported)</span>
+      <span class="detail-value" style="white-space:pre-wrap">{{ row.comment }}</span>
+    </div>
+    {% endif %}
+    {% if row.comment_for_signoff %}
+    <div class="detail-field detail-field--full">
+      <span class="detail-label">Comment for sign-off</span>
+      <span class="detail-value" style="white-space:pre-wrap">{{ row.comment_for_signoff }}</span>
+    </div>
+    {% endif %}
+    {% if row.comment_history %}
+    <div class="detail-field detail-field--full">
+      <span class="detail-label">Comment history</span>
+      <span class="detail-value" style="white-space:pre-wrap">{{ row.comment_history }}</span>
+    </div>
+    {% endif %}
+  </div>
+  <p style="font-size:0.75rem;color:#aeaeb2;margin-top:1rem">
+    Excel row {{ row.excel_row }} &nbsp;·&nbsp; All field editing happens on the <a href="{{ url_for('spillover_list') }}">list view</a>.
+  </p>
+</div>
+
+{# ---- Notes ---- #}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Notes</h2>
+    {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
+    <a href="{{ url_for('spillover_note_add', spillover_id=row.spillover_id) }}" class="btn btn-sm">+ Add note</a>
+  </div>
+
+  {% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if note_saved %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if note_deleted %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+
+  {% if notes %}
+  <div class="notes-list">
+    {% for n in notes %}
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ n.created_at }}</span>
+      </div>
+      <p class="note-text">{{ n.note or '' }}</p>
+      <div class="note-attachments" id="atts-{{ n.id }}">
+        {% for att in attachments_by_note.get(n.id, []) %}
+        <div class="att-thumb" id="att-{{ att.id }}">
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('serve_upload', filename=att.filename) }}" alt="{{ att.original_name }}">
+          </a>
+          <span class="att-name">{{ att.original_name }}</span>
+          <button class="att-del" data-note="{{ n.id }}" data-att="{{ att.id }}" title="Remove screenshot">&#10005;</button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="att-add">
+        <label class="btn btn-sm att-pick-btn" for="att-{{ n.id }}">&#128247; Add screenshot</label>
+        <input id="att-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept="image/*" style="display:none">
+      </div>
+      <div class="note-actions">
+        <a href="{{ url_for('spillover_note_edit', spillover_id=row.spillover_id, note_id=n.id) }}" class="btn btn-sm">Edit</a>
+        <a href="{{ url_for('spillover_note_delete', spillover_id=row.spillover_id, note_id=n.id) }}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="notes-empty">No notes yet. <a href="{{ url_for('spillover_note_add', spillover_id=row.spillover_id) }}">Add the first one.</a></p>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  document.addEventListener('change', function (e) {
+    var input = e.target;
+    if (!input.classList.contains('att-file')) return;
+    var noteId = input.dataset.note;
+    var file = input.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/notes/' + noteId + '/attachments/add', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { alert('Upload failed: ' + data.error); return; }
+        var att = data.attachment;
+        var container = document.getElementById('atts-' + noteId);
+        var div = document.createElement('div');
+        div.className = 'att-thumb';
+        div.id = 'att-' + att.id;
+        div.innerHTML =
+          '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
+          '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+          '<span class="att-name">' + att.original_name + '</span>' +
+          '<button class="att-del" data-note="' + noteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+        container.appendChild(div);
+        input.value = '';
+      })
+      .catch(function () { alert('Upload error — check console.'); });
+  });
+
+  var _activeNoteId = null;
+  document.addEventListener('mouseover', function (e) {
+    var item = e.target.closest('.note-item');
+    if (item) {
+      var attAdd = item.querySelector('.att-file');
+      if (attAdd) _activeNoteId = attAdd.dataset.note;
+    }
+  });
+
+  document.addEventListener('paste', function (e) {
+    if (!_activeNoteId) return;
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === -1) continue;
+      var file = items[i].getAsFile();
+      if (!file) continue;
+      e.preventDefault();
+      var fd = new FormData();
+      fd.append('file', file, 'paste-' + Date.now() + '.png');
+      fetch('/notes/' + _activeNoteId + '/attachments/add', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { alert('Paste upload failed: ' + data.error); return; }
+          var att = data.attachment;
+          var container = document.getElementById('atts-' + _activeNoteId);
+          var div = document.createElement('div');
+          div.className = 'att-thumb';
+          div.id = 'att-' + att.id;
+          div.innerHTML =
+            '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
+            '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+            '<span class="att-name">' + att.original_name + '</span>' +
+            '<button class="att-del" data-note="' + _activeNoteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+          container.appendChild(div);
+        });
+      break;
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.att-del');
+    if (!btn) return;
+    if (!confirm('Remove this screenshot?')) return;
+    var noteId = btn.dataset.note;
+    var attId  = btn.dataset.att;
+    fetch('/notes/' + noteId + '/attachments/' + attId + '/delete', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { alert('Delete failed'); return; }
+        var thumb = document.getElementById('att-' + attId);
+        if (thumb) thumb.remove();
+      });
+  });
+}());
+</script>
+{% endblock %}
