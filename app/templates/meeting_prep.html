@@ -149,6 +149,7 @@
         </button>
       </td>
       <td class="mp-actions">
+        <button class="btn btn-sm btn-danger js-mp-delete" title="Delete this item">✕</button>
       </td>
     </tr>
     <tr class="mp-notes-row" style="display:none" data-id="{{ item.id }}">
@@ -170,6 +171,21 @@
 
 <script>
 (function () {
+  // Delete row
+  document.querySelectorAll('.js-mp-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this agenda item?')) return;
+      const row  = btn.closest('tr');
+      const id   = row.dataset.id;
+      const resp = await fetch(`/meeting-prep/${id}/delete`, { method: 'POST' });
+      if ((await resp.json()).ok) {
+        const notesRow = row.nextElementSibling;
+        if (notesRow && notesRow.classList.contains('mp-notes-row')) notesRow.remove();
+        row.remove();
+      }
+    });
+  });
+
   // Status toggle
   document.querySelectorAll('.js-set-status').forEach(btn => {
     btn.addEventListener('click', async () => {

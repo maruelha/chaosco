@@ -1350,6 +1350,16 @@ def meeting_prep_overall_topic(item_id: int):
     return jsonify({"ok": True})
 
 
+@app.route("/meeting-prep/<int:item_id>/delete", methods=["POST"])
+def meeting_prep_delete(item_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_meeting_prep(conn, item_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 # ---------------------------------------------------------------------------
 # To-do list
 # ---------------------------------------------------------------------------

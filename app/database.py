@@ -1237,6 +1237,11 @@ def set_meeting_prep_overall_topic(conn: sqlite3.Connection, item_id: int, overa
     conn.commit()
 
 
+def delete_meeting_prep(conn: sqlite3.Connection, item_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM meeting_prep WHERE id = ?", (item_id,))
+
+
 # ---------------------------------------------------------------------------
 # Enhancements
 # ---------------------------------------------------------------------------
