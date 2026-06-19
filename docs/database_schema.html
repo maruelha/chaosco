@@ -423,8 +423,10 @@
         <tr><td class="col-name">reach</td><td class="col-type">TEXT</td><td></td><td class="note-text">How many people / countries are affected</td></tr>
         <tr><td class="col-name">retest_needs</td><td class="col-type">TEXT</td><td></td><td class="note-text">What needs to be retested</td></tr>
         <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline-editable action item</td></tr>
-        <tr><td class="col-name">action_needed</td><td class="col-type">INTEGER</td><td></td><td class="note-text">0 = no, 1 = yes. Drives "Action needed" filter in list view.</td></tr>
+        <tr><td class="col-name">action_needed</td><td class="col-type">INTEGER</td><td></td><td class="note-text">0 = no, 1 = yes. Kept on detail form; not shown in list view.</td></tr>
         <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text authored comments</td></tr>
+        <tr><td class="col-name">dtco2c</td><td class="col-type">INTEGER</td><td></td><td class="note-text">0 = no, 1 = yes. "MB needs to follow up on this defect." Shown as inline checkbox in list view; toggled via AJAX (POST /defects/&lt;id&gt;/dtco2c) or saved via detail form.</td></tr>
+        <tr><td class="col-name">dtco2c_resp</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text: who is responsible for DTC O2C follow-up. Editable on detail page only.</td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
       </tbody>
     </table>

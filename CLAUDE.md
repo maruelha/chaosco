@@ -64,7 +64,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail` — retail_id (PK AI), test_case_id, country, testcase_name, testcase_scenario, status, assigned_to, key_user_responsible, evidence_in_sharepoint, sales_file, execution_started, execution_completed, order_number, old_order_numbers, defect_id_ref, s4_sales_order, s4_billing_documents, s4_journal_invoice_entry, delivery_note, comment, reason_for_pass_with_reservation, excel_row, match_key (UNIQUE), first_seen, last_seen
 
 ### User-authored annotations (never written by importers)
-- `defect_annotations` — defect_id (PK/FK), description, business_impact, reach, retest_needs, next_step, action_needed, comments, updated_at
+- `defect_annotations` — defect_id (PK/FK), description, business_impact, reach, retest_needs, next_step, action_needed, comments, dtco2c (INTEGER 0/1), dtco2c_resp (TEXT), updated_at
 - `spillover_annotations` — spillover_id (PK/FK), importance_for_signoff, next_step, comment_history, critical_for_signoff, comment_for_signoff, signoff_group, updated_at
 - `retail_annotations` — retail_id (PK/FK), next_step, comment_history, action_needed, updated_at
 
@@ -91,6 +91,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `todos`: kind
 - `notes`: source
 - `meeting_prep`: source_entity_type, source_entity_id, overall_topic
+- `defect_annotations`: dtco2c, dtco2c_resp
 
 ---
 
@@ -101,8 +102,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 |---|---|---|
 | Dashboard | `/` | Home — card grid + Run Import button |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
-| Defects List | `/defects` | Filterable defects table (search, channel, status, action_needed). Includes **Blocked TCs** column — count of Retail rows referencing each defect, computed via subquery on `retail.defect_id_ref`; links to Retail list pre-filtered by defect ID. |
-| Defect Detail | `/defects/<id>` | Full defect + annotation form + notes log |
+| Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; toggled inline or via detail form. |
+| Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
 | Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX. Each row has a **Notes** button (shows count badge) linking to the Spillover Detail page. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
@@ -115,7 +116,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### NOT on the dashboard (URL only / linked from other screens)
 | Screen | URL | How to reach |
 |---|---|---|
-| Retail Status Report | `/retail/report` | Link in Retail list header |
+| Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown, **active Retail defects table** (all non-confirmed/withdrawn, with MB Blocked / Sales Blocked columns split by `dtco2c`), **Attribution Overview** (Back with Sales = Sales defects + other; Blocked Tech Team = MB defects + other/untracked), diagnostics. |
 | Retail Spillover Report | `/report/retail` | Link in Retail list header |
 | ECOM/Omni Spillover Report | `/report/ecom` | URL only |
 | Meeting Agenda | `/meeting-prep/agenda` | "Export agenda" button on Meeting Prep (respects meeting + status filters) |
