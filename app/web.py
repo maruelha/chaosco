@@ -802,6 +802,84 @@ def link_delete(link_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Contacts routes
+# ---------------------------------------------------------------------------
+
+@app.route("/contacts")
+def contacts_list():
+    areas  = request.args.getlist("area")
+    topics = request.args.getlist("topic")
+    tags   = request.args.getlist("tag")
+    search = request.args.get("search", "").strip()
+    conn = _get_conn()
+    try:
+        rows    = database.list_contacts(conn, areas=areas or None, topics=topics or None,
+                                         tags=tags or None, search=search or None)
+        options = database.get_contact_options(conn)
+    finally:
+        conn.close()
+    return render_template("contacts.html", rows=rows, options=options,
+                           areas=areas, topics=topics, tags=tags, search=search)
+
+
+@app.route("/contacts/new", methods=["GET", "POST"])
+def contact_new():
+    if request.method == "POST":
+        def _f(name): return request.form.get(name, "").strip() or None
+        conn = _get_conn()
+        try:
+            row = database.create_contact(
+                conn,
+                name=_f("name") or "",
+                email=_f("email"),
+                area=_f("area"),
+                topic=_f("topic"),
+                comments=_f("comments"),
+                tags=_f("tags"),
+            )
+        finally:
+            conn.close()
+        return redirect(url_for("contact_detail", contact_id=row["id"], saved="1"))
+    return render_template("contact_detail.html", record={}, is_new=True, saved=False)
+
+
+@app.route("/contacts/<int:contact_id>", methods=["GET", "POST"])
+def contact_detail(contact_id: int):
+    saved = request.args.get("saved") == "1"
+    conn = _get_conn()
+    try:
+        record = database.get_contact(conn, contact_id)
+        if record is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            def _f(name): return request.form.get(name, "").strip() or None
+            database.update_contact(
+                conn, contact_id,
+                name=_f("name") or "",
+                email=_f("email"),
+                area=_f("area"),
+                topic=_f("topic"),
+                comments=_f("comments"),
+                tags=_f("tags"),
+            )
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("contact_detail", contact_id=contact_id, saved="1"))
+    return render_template("contact_detail.html", record=record, is_new=False, saved=saved)
+
+
+@app.route("/contacts/<int:contact_id>/delete", methods=["POST"])
+def contact_delete(contact_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_contact(conn, contact_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Test Learnings routes
 # ---------------------------------------------------------------------------
 

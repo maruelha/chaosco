@@ -56,7 +56,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All database tables (as of 2026-06-18)
+## All database tables (as of 2026-06-19)
 
 ### Imported (written by importers only)
 - `defects` — 21 columns incl. defect_id (PK), channel, solman_status, priority, assigned_to, excel_row, first_seen, last_seen
@@ -81,6 +81,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `cs_followups` — area, jira_id, topic, description, next_step, with_whom, status (open/in_progress/done)
 - `known_prod_defects` — technical_key, short_description, scenario, description, biz_impact, numbers, refs, next_steps, comments, confluence
 - `links` — description, url, area, tool, tags (comma-separated)
+- `contacts` — name, email (free text, multiple ok, no validation), area, topic, comments, tags (comma-separated)
 - `test_learnings` — channel, topic, learning, scenario, tags
 - `test_limitations` — channel, limitation, scenario, comment
 
@@ -95,7 +96,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All screens (as of 2026-06-18)
+## All screens (as of 2026-06-19)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
@@ -111,6 +112,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | To-Do List | `/todos` | Tasks with priority, kind, due date, owner, status |
 | Follow-ups | `/followups` | Lightweight "chase" list per person |
 | Links | `/links` | URL bookmark store with area/tool/tag filters |
+| Contacts | `/contacts` | Contact directory — name, email, area, topic, comments, tags; filterable |
 | CS Follow-Up Tracker | `/cs_followups` | Richer follow-ups for Core South sign-off |
 
 ### NOT on the dashboard (URL only / linked from other screens)

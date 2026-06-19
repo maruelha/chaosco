@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}Contacts — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Contacts</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+      <a href="{{ url_for('contact_new') }}" class="btn btn-primary">+ Add Contact</a>
+    </div>
+  </div>
+</div>
+
+{# ---- Filters ---- #}
+<form method="get" action="{{ url_for('contacts_list') }}" class="filters-bar" id="filters-form">
+  <div class="filter-group">
+    <label>Area</label>
+    <button type="button" class="filter-btn js-filter-btn {% if areas %}filter-btn--active{% endif %}" data-filter="area">
+      <span>{% if areas %}{{ areas|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Topic</label>
+    <button type="button" class="filter-btn js-filter-btn {% if topics %}filter-btn--active{% endif %}" data-filter="topic">
+      <span>{% if topics %}{{ topics|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Tags</label>
+    <button type="button" class="filter-btn js-filter-btn {% if tags %}filter-btn--active{% endif %}" data-filter="tag">
+      <span>{% if tags %}{{ tags|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Search name / email</label>
+    <input type="text" name="search" value="{{ search }}" placeholder="Type to search…" class="filter-search-input">
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if areas or topics or tags or search %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('contacts_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+{# ---- Filter dialogs ---- #}
+<dialog id="dlg-filter-area" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Area</div></div>
+  <div class="dlg-body">
+    {% for v in options.areas %}
+    <label class="cb-row">
+      <input type="checkbox" name="area" value="{{ v }}" form="filters-form"
+             {% if v in areas %}checked{% endif %}> {{ v }}
+    </label>
+    {% else %}
+    <p style="color:#aaa;font-size:0.85rem">No areas yet.</p>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="area">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="area">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-topic" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Topic</div></div>
+  <div class="dlg-body">
+    {% for v in options.topics %}
+    <label class="cb-row">
+      <input type="checkbox" name="topic" value="{{ v }}" form="filters-form"
+             {% if v in topics %}checked{% endif %}> {{ v }}
+    </label>
+    {% else %}
+    <p style="color:#aaa;font-size:0.85rem">No topics yet.</p>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="topic">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="topic">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-tag" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Tag</div></div>
+  <div class="dlg-body">
+    {% for v in options.tags %}
+    <label class="cb-row">
+      <input type="checkbox" name="tag" value="{{ v }}" form="filters-form"
+             {% if v in tags %}checked{% endif %}> {{ v }}
+    </label>
+    {% else %}
+    <p style="color:#aaa;font-size:0.85rem">No tags yet.</p>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="tag">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="tag">Apply</button>
+  </div>
+</dialog>
+
+<p class="list-meta">{{ rows|length }} contact{{ 's' if rows|length != 1 else '' }}</p>
+
+{# ---- Table ---- #}
+<div class="table-wrap" style="overflow-x:auto">
+  <table style="min-width:900px">
+    <thead>
+      <tr>
+        <th style="width:180px">Name</th>
+        <th style="width:220px">Email</th>
+        <th style="width:110px">Area</th>
+        <th style="width:140px">Topic</th>
+        <th>Comments</th>
+        <th>Tags</th>
+        <th style="width:80px"></th>
+      </tr>
+    </thead>
+    <tbody id="contacts-tbody">
+    {% for row in rows %}
+      <tr data-id="{{ row.id }}">
+        <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.name }}</td>
+        <td style="font-size:0.82rem;word-break:break-all">{{ row.email or '—' }}</td>
+        <td>{{ row.area or '—' }}</td>
+        <td>{{ row.topic or '—' }}</td>
+        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;color:#6e6e73"
+            title="{{ row.comments or '' }}">{{ row.comments or '—' }}</td>
+        <td class="tags-cell">
+          {% if row.tags %}
+            {% for tag in row.tags.split(',') %}
+              {% set t = tag.strip() %}
+              {% if t %}<span class="tag-pill">{{ t }}</span>{% endif %}
+            {% endfor %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="kpd-actions">
+          <a href="{{ url_for('contact_detail', contact_id=row.id) }}" class="btn btn-sm">Edit</a>
+          <button class="btn btn-sm btn-danger js-del-btn">Del</button>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="table-empty">No contacts yet. Click "+ Add Contact" to get started.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<style>
+.filter-search-input {
+  padding: 0.35rem 0.7rem; border: 1px solid #d2d2d7; border-radius: 7px;
+  font-size: 0.85rem; font-family: inherit; width: 200px;
+}
+.tags-cell { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+.tag-pill {
+  display: inline-block; padding: 0.1rem 0.5rem; border-radius: 20px;
+  background: #e5e5ea; font-size: 0.72rem; color: #3a3a3c;
+}
+</style>
+
+<script>
+document.querySelectorAll('.js-del-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('Delete this contact? This cannot be undone.')) return;
+    const tr = btn.closest('tr');
+    const id = tr.dataset.id;
+    const res = await fetch(`/contacts/${id}/delete`, { method: 'POST' });
+    const json = await res.json();
+    if (!json.ok) return;
+    tr.remove();
+    const tbody = document.getElementById('contacts-tbody');
+    if (!tbody.querySelector('tr[data-id]')) {
+      tbody.innerHTML = '<tr><td colspan="7" class="table-empty">No contacts. Click "+ Add Contact" to get started.</td></tr>';
+    }
+  });
+});
+
+// ---- Filter dialogs ----
+const FILTER_NAMES = ['area', 'topic', 'tag'];
+
+function updateFilterBtn(filter) {
+  const checked = document.querySelectorAll(
+    `input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`
+  );
+  const btn  = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+  const span = btn.querySelector('span');
+  if (checked.length) {
+    span.textContent = checked.length + ' selected';
+    btn.classList.add('filter-btn--active');
+  } else {
+    span.textContent = 'All';
+    btn.classList.remove('filter-btn--active');
+  }
+}
+
+document.querySelectorAll('.js-filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('dlg-filter-' + btn.dataset.filter).showModal();
+  });
+});
+
+document.querySelectorAll('.js-filter-apply').forEach(btn => {
+  btn.addEventListener('click', () => {
+    updateFilterBtn(btn.dataset.filter);
+    document.getElementById('dlg-filter-' + btn.dataset.filter).close();
+  });
+});
+
+document.querySelectorAll('.js-filter-clear').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll(
+      `input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`
+    ).forEach(cb => { cb.checked = false; });
+    updateFilterBtn(btn.dataset.filter);
+  });
+});
+
+FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f)).forEach(dlg => {
+  if (dlg) dlg.addEventListener('click', e => {
+    if (e.target === dlg) {
+      updateFilterBtn(dlg.id.replace('dlg-filter-', ''));
+      dlg.close();
+    }
+  });
+});
+</script>
+{% endblock %}

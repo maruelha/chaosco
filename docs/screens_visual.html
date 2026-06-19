@@ -194,6 +194,7 @@
   <a href="#todos">To-Do</a><span class="sep">|</span>
   <a href="#followups">Follow-ups</a><span class="sep">|</span>
   <a href="#links">Links</a><span class="sep">|</span>
+  <a href="#contacts">Contacts</a><span class="sep">|</span>
   <a href="#test-learnings">Test Learnings</a><span class="sep">|</span>
   <a href="#test-limitations">Test Limitations</a>
 </div>
@@ -230,6 +231,7 @@
             <li>To-Do</li>
             <li>Follow-ups</li>
             <li>Links</li>
+            <li>Contacts</li>
             <li>CS Follow-Up Tracker</li>
           </ul>
         </div>
@@ -797,6 +799,47 @@
           <ul>
             <li><span class="pill pill-a">Copy URL</span> (clipboard)</li>
             <li><span class="pill pill-a">Edit</span> → Link Detail</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-reference" id="contacts">
+    <div class="screen-header">
+      <span class="screen-name">Contacts</span>
+      <span class="screen-url">GET /contacts</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Personal contact directory for UAT coordination. Stores name, email (free text, multiple addresses ok),
+          area, topic, comments, and tags. Filterable by area, topic, and tag; searchable by name or email.
+        </p>
+        <div class="feat-block">
+          <h4>Filters</h4>
+          <ul>
+            <li><span class="pill pill-f">Area</span> <span class="pill pill-f">Topic</span> <span class="pill pill-f">Tag</span> (multi, dialog picker)</li>
+            <li><span class="pill pill-f">Search</span> name or email (text input)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">+ Add Contact</span> → New Contact form</li>
+            <li><span class="pill pill-a">Edit</span> per row → Contact Detail / Edit page</li>
+            <li><span class="pill pill-x">Del</span> per row — AJAX delete with confirm</li>
+            <li>Delete also available from the detail page header button</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Detail / Edit page (<code>/contacts/&lt;id&gt;</code>)</h4>
+          <ul>
+            <li>Fields: Name (required), Email, Area, Topic, Comments (textarea), Tags (comma-separated)</li>
+            <li>Shows last-saved timestamp</li>
           </ul>
         </div>
       </div>

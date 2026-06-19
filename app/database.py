@@ -332,6 +332,18 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at  TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS contacts (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            email       TEXT,
+            area        TEXT,
+            topic       TEXT,
+            comments    TEXT,
+            tags        TEXT,
+            created_at  TEXT,
+            updated_at  TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS test_learnings (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             channel     TEXT NOT NULL DEFAULT 'Retail',
@@ -1595,6 +1607,96 @@ def update_link(
 def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+
+
+# ---------------------------------------------------------------------------
+# Contacts
+# ---------------------------------------------------------------------------
+
+def get_contact_options(conn: sqlite3.Connection) -> dict:
+    rows = _rows_to_dicts(conn.execute("SELECT area, topic, tags FROM contacts"))
+    areas = sorted({r["area"] for r in rows if r.get("area")})
+    topics = sorted({r["topic"] for r in rows if r.get("topic")})
+    all_tags: set[str] = set()
+    for r in rows:
+        all_tags |= _parse_tags(r.get("tags"))
+    return {"areas": areas, "topics": topics, "tags": sorted(all_tags)}
+
+
+def list_contacts(
+    conn: sqlite3.Connection,
+    areas: list[str] | None = None,
+    topics: list[str] | None = None,
+    tags: list[str] | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM contacts ORDER BY name COLLATE NOCASE"
+    ))
+    if areas:
+        rows = [r for r in rows if r.get("area") in areas]
+    if topics:
+        rows = [r for r in rows if r.get("topic") in topics]
+    if tags:
+        tag_set = set(tags)
+        rows = [r for r in rows if _parse_tags(r.get("tags")) & tag_set]
+    if search:
+        s = search.lower()
+        rows = [r for r in rows if s in (r.get("name") or "").lower()
+                or s in (r.get("email") or "").lower()]
+    return rows
+
+
+def get_contact(conn: sqlite3.Connection, contact_id: int) -> dict | None:
+    cur = conn.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    rows = _rows_to_dicts(cur)
+    return rows[0] if rows else None
+
+
+def create_contact(
+    conn: sqlite3.Connection,
+    name: str,
+    email: str | None,
+    area: str | None,
+    topic: str | None,
+    comments: str | None,
+    tags: str | None,
+) -> dict:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO contacts (name, email, area, topic, comments, tags, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (name, email or None, area or None, topic or None,
+             comments or None, tags or None, now, now),
+        )
+    return get_contact(conn, cur.lastrowid)
+
+
+def update_contact(
+    conn: sqlite3.Connection,
+    contact_id: int,
+    name: str,
+    email: str | None,
+    area: str | None,
+    topic: str | None,
+    comments: str | None,
+    tags: str | None,
+) -> dict | None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE contacts SET name=?, email=?, area=?, topic=?, comments=?, tags=?, updated_at=?"
+            " WHERE id=?",
+            (name, email or None, area or None, topic or None,
+             comments or None, tags or None, now, contact_id),
+        )
+    return get_contact(conn, contact_id)
+
+
+def delete_contact(conn: sqlite3.Connection, contact_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
 
 
 # ---------------------------------------------------------------------------

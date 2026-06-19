@@ -274,6 +274,7 @@
     <li><a href="#cs_followups">cs_followups</a></li>
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
     <li><a href="#links">links</a></li>
+    <li><a href="#contacts">contacts</a></li>
     <li><a href="#test_learnings">test_learnings</a></li>
     <li><a href="#test_limitations">test_limitations</a></li>
   </ul>
@@ -743,6 +744,31 @@
         <tr><td class="col-name">url</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
         <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area tag (filter)</td></tr>
         <tr><td class="col-name">tool</td><td class="col-type">TEXT</td><td></td><td class="note-text">Tool name tag (filter), e.g. "Jira", "SharePoint"</td></tr>
+        <tr><td class="col-name">tags</td><td class="col-type">TEXT</td><td></td><td class="note-text">Comma-separated free-text tags (filter)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- contacts -->
+  <div class="table-card" id="contacts">
+    <div class="table-card-header">
+      <span class="tname">contacts</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Personal contact directory — people to reach during UAT, with area, topic, and tag classification.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Contact display name</td></tr>
+        <tr><td class="col-name">email</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text — multiple addresses ok; no validation applied</td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td></td><td class="note-text">Functional area tag (filter), e.g. Retail, Finance, ECOM</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td></td><td class="note-text">Topic tag (filter), e.g. Primary Data, Pricing, Master Data</td></tr>
+        <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text notes about this contact</td></tr>
         <tr><td class="col-name">tags</td><td class="col-type">TEXT</td><td></td><td class="note-text">Comma-separated free-text tags (filter)</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>

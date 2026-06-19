@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New Contact{% else %}Edit Contact{% endif %} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('contacts_list') }}">Contacts</a>
+  <span>›</span>
+  <span>{% if is_new %}New Contact{% else %}{{ record.name or ('Contact ' ~ record.id) }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{% if is_new %}New Contact{% else %}Edit Contact{% endif %}</h1>
+    {% if not is_new %}
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if saved %}
+<div class="saved-banner">Changes saved.</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('contact_new') if is_new else url_for('contact_detail', contact_id=record.id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" name="name"
+               value="{{ record.name or '' }}" required
+               placeholder="Contact name">
+      </div>
+
+      <div class="form-field">
+        <label for="f-email">Email</label>
+        <input type="text" id="f-email" name="email"
+               value="{{ record.email or '' }}"
+               placeholder="Multiple addresses ok — no validation applied">
+      </div>
+
+      <div class="form-field">
+        <label for="f-area">Area</label>
+        <input type="text" id="f-area" name="area"
+               value="{{ record.area or '' }}"
+               placeholder="e.g. Finance, Retail, ECOM…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-topic">Topic</label>
+        <input type="text" id="f-topic" name="topic"
+               value="{{ record.topic or '' }}"
+               placeholder="e.g. Primary Data, Master Data, Pricing…">
+      </div>
+
+      <div class="form-field">
+        <label for="f-comments">Comments</label>
+        <textarea id="f-comments" name="comments" rows="4"
+                  placeholder="Notes about this contact…">{{ record.comments or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-tags">Tags</label>
+        <input type="text" id="f-tags" name="tags"
+               value="{{ record.tags or '' }}"
+               placeholder="Comma-separated, e.g. key-user, tech, sign-off">
+        <p style="font-size:0.78rem;color:#8e8e93;margin-top:0.3rem">Separate multiple tags with commas.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('contacts_list') }}" class="btn">Cancel</a>
+    {% if not is_new %}
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+    {% endif %}
+  </div>
+</form>
+
+{% if not is_new %}
+<script>
+document.getElementById('btn-delete').addEventListener('click', async () => {
+  if (!confirm('Delete this contact? This cannot be undone.')) return;
+  const res  = await fetch('/contacts/{{ record.id }}/delete', { method: 'POST' });
+  const json = await res.json();
+  if (json.ok) window.location.href = '{{ url_for("contacts_list") }}';
+});
+</script>
+{% endif %}
+{% endblock %}
