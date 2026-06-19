@@ -24,6 +24,7 @@ from app.config_loader import load_config
 # ---------------------------------------------------------------------------
 _HEADER_MAP: dict[str, str] = {
     "ecom/retail":                                               "channel",
+    "channel":                                                   "channel",
     "solman status":                                             "solman_status",
     "defect id":                                                 "defect_id",
     "solman name":                                               "solman_name",
@@ -47,7 +48,7 @@ _HEADER_MAP: dict[str, str] = {
     "more defect description (expected result - actual result)": "__ignored__",
 }
 
-_OUTPUT_FIELDS = [v for v in _HEADER_MAP.values() if not v.startswith("__")]
+_OUTPUT_FIELDS = list(dict.fromkeys(v for v in _HEADER_MAP.values() if not v.startswith("__")))
 
 
 def _normalise_header(raw: str) -> str:

@@ -36,18 +36,18 @@
     </button>
   </div>
   <div class="filter-group">
-    <label for="f-action">Action needed</label>
-    <select id="f-action" name="action_needed">
+    <label for="f-dtco2c">DTC O2C</label>
+    <select id="f-dtco2c" name="dtco2c">
       <option value="">All</option>
-      <option value="yes" {% if action_needed == "yes" %}selected{% endif %}>Flagged</option>
-      <option value="no"  {% if action_needed == "no"  %}selected{% endif %}>Not flagged</option>
+      <option value="yes" {% if dtco2c == "yes" %}selected{% endif %}>Checked</option>
+      <option value="no"  {% if dtco2c == "no"  %}selected{% endif %}>Not checked</option>
     </select>
   </div>
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if search or channel or statuses or action_needed != "no" or show_all %}
+  {% if search or channel or statuses or show_all or dtco2c %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('defects_list') }}" class="btn">Clear</a>
@@ -81,42 +81,44 @@
 </div>
 
 <p class="list-meta">
-  {{ defects | length }} defect{{ 's' if defects | length != 1 else '' }}
+  {{ defects | length }} defect{{ 's' if defects | length != 1 else '' }} shown
   {% if not show_all and not statuses and hidden %}
-    — {{ hidden | join(' &amp; ') | lower }} hidden
+    <span class="meta-muted">({{ hidden | join(' & ') | lower }} excluded — use toggle to show)</span>
   {% endif %}
 </p>
 
 <div class="table-wrap">
-  <table>
+  <table id="defects-table">
     <thead>
       <tr>
-        <th>Row</th>
-        <th>Defect ID</th>
-        <th>Solman Name</th>
-        <th>Channel</th>
-        <th>Country</th>
-        <th>Status</th>
-        <th>Priority</th>
-        <th>Assigned To</th>
-        <th class="col-prod" title="Exists in production">Prod</th>
-        <th title="Retail test cases referencing this defect">Blocked TCs</th>
-        <th>Notes</th>
-        <th>Action</th>
+        <th data-sort="text">Defect ID</th>
+        <th data-sort="text">Solman Name</th>
+        <th data-sort="num" title="Retail test cases referencing this defect" style="width:3.5rem">Blocked TCs</th>
+        <th data-sort="text">Channel</th>
+        <th data-sort="text">Status</th>
+        <th data-sort="text">Priority</th>
+        <th data-sort="text">Assigned To</th>
+        <th data-sort="text">Date Reported</th>
+        <th class="col-prod" data-sort="text" title="Exists in production">Prod</th>
+        <th data-sort="text" title="DTC O2C — defect we need to follow up on">DTC O2C</th>
       </tr>
     </thead>
     <tbody>
     {% for d in defects %}
       <tr>
-        <td class="num">{{ d.excel_row }}</td>
-        <td><a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}" class="row-link">{{ d.defect_id }}</a></td>
-        <td>{{ d.solman_name or '—' }}</td>
-        <td>{{ d.channel or '—' }}</td>
-        <td>{{ d.country or '—' }}</td>
-        <td><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
-        <td>{{ d.priority or '—' }}</td>
-        <td>{{ d.assigned_to or '—' }}</td>
-        <td class="col-prod">
+        <td data-val="{{ d.defect_id }}"><a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}" class="row-link">{{ d.defect_id }}</a></td>
+        <td data-val="{{ d.solman_name or '' }}" style="max-width:220px">{{ d.solman_name or '—' }}</td>
+        <td class="num" data-val="{{ d.blocked_tc_count }}">
+          {% if d.blocked_tc_count > 0 %}
+          <a href="{{ url_for('retail_list') }}?search_defect={{ d.defect_id | urlencode }}" class="blocked-tc-link">{{ d.blocked_tc_count }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td data-val="{{ d.channel or '' }}">{{ d.channel or '—' }}</td>
+        <td data-val="{{ d.solman_status or '' }}"><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
+        <td data-val="{{ d.priority or '' }}">{{ d.priority or '—' }}</td>
+        <td data-val="{{ d.assigned_to or '' }}" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ d.assigned_to or '' }}">{{ d.assigned_to or '—' }}</td>
+        <td data-val="{{ d.date_reported or '' }}">{{ d.date_reported or '—' }}</td>
+        <td class="col-prod" data-val="{{ (d.exists_in_production or '') | lower }}">
           {% set prod = (d.exists_in_production or '') | lower %}
           {% if prod == 'yes' %}
             <span class="prod-pill prod-pill--yes" title="Exists in production">Y</span>
@@ -126,32 +128,31 @@
             <span class="prod-pill prod-pill--unset" title="{{ d.exists_in_production or 'not set' }}">—</span>
           {% endif %}
         </td>
-        <td class="num">
-          {% if d.blocked_tc_count > 0 %}
-          <a href="{{ url_for('retail_list') }}?search_defect={{ d.defect_id | urlencode }}" class="blocked-tc-link">{{ d.blocked_tc_count }}</a>
-          {% else %}
-          —
-          {% endif %}
-        </td>
-        <td class="notes-cell">
-          {% if d.note_count > 0 %}
-          <a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}#notes" class="note-count-link">{{ d.note_count }} note{{ 's' if d.note_count != 1 else '' }}</a>
-          <span class="notes-sep">·</span>
-          {% endif %}
-          <a href="{{ url_for('note_add_form', defect_id=d.defect_id, return_to='list') }}" class="btn btn-sm">+ Note</a>
-        </td>
-        <td>
-          {% if d.action_needed %}
-          <span class="pill pill--red">&#9873; Action</span>
-          {% endif %}
+        <td data-val="{{ 'yes' if d.dtco2c else '' }}" style="text-align:center">
+          <input type="checkbox" class="dtco2c-toggle" data-id="{{ d.defect_id }}"
+                 {% if d.dtco2c %}checked{% endif %}
+                 title="DTC O2C — follow up needed">
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="12" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="10" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+{# ---- Table sort ---- #}
+<style>
+#defects-table th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+#defects-table th[data-sort]:hover { background: var(--hover-bg, #f0f0f0); }
+#defects-table th[data-sort]::after { content: ' ⇅'; opacity: .35; font-size: .75em; }
+#defects-table th[data-sort].sort-asc::after  { content: ' ↑'; opacity: 1; }
+#defects-table th[data-sort].sort-desc::after { content: ' ↓'; opacity: 1; }
+</style>
 
 {# ---- JavaScript for filter dialog ---- #}
 <script>
@@ -199,5 +200,59 @@
     if (e.target === dlg) { updateFilterBtn('status'); dlg.close(); }
   });
 }());
+
+// ---- Column sort ----
+(function () {
+  const table = document.getElementById('defects-table');
+  if (!table) return;
+  let lastTh = null, asc = true;
+
+  table.querySelectorAll('th[data-sort]').forEach((th, colIdx) => {
+    th.addEventListener('click', () => {
+      if (lastTh === th) {
+        asc = !asc;
+      } else {
+        if (lastTh) { lastTh.classList.remove('sort-asc', 'sort-desc'); }
+        asc = true;
+        lastTh = th;
+      }
+      th.classList.toggle('sort-asc',  asc);
+      th.classList.toggle('sort-desc', !asc);
+
+      const isNum = th.dataset.sort === 'num';
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.rows);
+
+      rows.sort((a, b) => {
+        const av = (a.cells[colIdx].dataset.val || '').trim();
+        const bv = (b.cells[colIdx].dataset.val || '').trim();
+        let cmp;
+        if (isNum) {
+          const an = parseFloat(av) || 0, bn = parseFloat(bv) || 0;
+          cmp = an - bn;
+        } else {
+          cmp = av.localeCompare(bv, undefined, { sensitivity: 'base' });
+        }
+        return asc ? cmp : -cmp;
+      });
+
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}());
+
+// ---- DTC O2C inline toggle ----
+document.querySelectorAll('.dtco2c-toggle').forEach(function (cb) {
+  cb.addEventListener('change', function () {
+    var id = cb.dataset.id;
+    fetch('/defects/' + id + '/dtco2c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: cb.checked }),
+    }).catch(function () {
+      cb.checked = !cb.checked; // revert on error
+    });
+  });
+});
 </script>
 {% endblock %}

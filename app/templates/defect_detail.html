@@ -15,42 +15,7 @@
   {% if defect.solman_name %}<p class="page-subtitle">{{ defect.solman_name }}</p>{% endif %}
 </div>
 
-{# ---------------------------------------------------------------- Section 1: imported fields #}
-<div class="detail-card">
-  <div class="card-header-row">
-    <h2>Imported fields</h2>
-    <span class="readonly-badge">&#128274; From import — read only</span>
-  </div>
-  <dl class="field-list">
-    {% set imported = [
-      ("Channel",          defect.channel),
-      ("Country",          defect.country),
-      ("Status",           defect.solman_status),
-      ("Priority",         defect.priority),
-      ("Assigned To",      defect.assigned_to),
-      ("Tech Team",        defect.tech_team),
-      ("Raised By",        defect.raised_by),
-      ("Order Number",     defect.order_number),
-      ("Date Reported",    defect.date_reported),
-      ("Date Closed",      defect.date_closed),
-      ("Scenario",         defect.scenario),
-      ("Affected TCs",     defect.affected_testcases_raw),
-      ("Retest Dep.",      defect.retest_dependency),
-      ("Blocks Execution", defect.blocks_execution),
-      ("In Production",    defect.exists_in_production),
-      ("Defect Reason",    defect.defect_reason),
-      ("Excel Row",        defect.excel_row),
-      ("First Seen",       defect.first_seen),
-      ("Last Seen",        defect.last_seen),
-    ] %}
-    {% for label, value in imported %}
-    <dt>{{ label }}</dt>
-    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
-    {% endfor %}
-  </dl>
-</div>
-
-{# ---------------------------------------------------------------- Section 2: annotation form #}
+{# ---------------------------------------------------------------- Section 1: annotation form #}
 <div class="annotation-card">
   <div class="card-header-row">
     <h2>My annotations</h2>
@@ -66,7 +31,7 @@
 
       <div class="form-field">
         <label for="f-description">Description</label>
-        <textarea id="f-description" name="description" rows="3">{{ defect.description or '' }}</textarea>
+        <textarea id="f-description" name="description" rows="9">{{ defect.description or '' }}</textarea>
       </div>
 
       <div class="form-field">
@@ -95,6 +60,18 @@
         <input id="f-action_needed" type="checkbox" name="action_needed" value="1"
                {% if defect.action_needed %}checked{% endif %}>
         <label for="f-action_needed">Action needed</label>
+      </div>
+
+      <div class="checkbox-row">
+        <input id="f-dtco2c" type="checkbox" name="dtco2c" value="1"
+               {% if defect.dtco2c %}checked{% endif %}>
+        <label for="f-dtco2c">DTC O2C — defect we need to follow up on</label>
+      </div>
+
+      <div class="form-field">
+        <label for="f-dtco2c_resp">DTC O2C Responsible</label>
+        <input id="f-dtco2c_resp" type="text" name="dtco2c_resp" value="{{ defect.dtco2c_resp or '' }}"
+               placeholder="Who is responsible for DTC O2C follow-up?">
       </div>
 
       <div class="form-field">
@@ -159,6 +136,41 @@
   {% else %}
   <p class="notes-empty">No notes yet. <a href="{{ url_for('note_add_form', defect_id=defect.defect_id, return_to='detail') }}">Add the first one.</a></p>
   {% endif %}
+</div>
+
+{# ---------------------------------------------------------------- Section 4: imported fields #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Imported fields</h2>
+    <span class="readonly-badge">&#128274; From import — read only</span>
+  </div>
+  <dl class="field-list">
+    {% set imported = [
+      ("Channel",          defect.channel),
+      ("Country",          defect.country),
+      ("Status",           defect.solman_status),
+      ("Priority",         defect.priority),
+      ("Assigned To",      defect.assigned_to),
+      ("Tech Team",        defect.tech_team),
+      ("Raised By",        defect.raised_by),
+      ("Order Number",     defect.order_number),
+      ("Date Reported",    defect.date_reported),
+      ("Date Closed",      defect.date_closed),
+      ("Scenario",         defect.scenario),
+      ("Affected TCs",     defect.affected_testcases_raw),
+      ("Retest Dep.",      defect.retest_dependency),
+      ("Blocks Execution", defect.blocks_execution),
+      ("In Production",    defect.exists_in_production),
+      ("Defect Reason",    defect.defect_reason),
+      ("Excel Row",        defect.excel_row),
+      ("First Seen",       defect.first_seen),
+      ("Last Seen",        defect.last_seen),
+    ] %}
+    {% for label, value in imported %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
 </div>
 
 <div class="btn-row">

@@ -208,7 +208,8 @@ header {
   background: #fff;
   border: 1px solid #d2d2d7;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 table { width: 100%; border-collapse: collapse; }
 thead tr { background: #f9f9fb; }
@@ -221,7 +222,6 @@ th {
   color: #6e6e73;
   padding: 0.7rem 1rem;
   border-bottom: 1px solid #e5e5ea;
-  white-space: nowrap;
 }
 td {
   padding: 0.65rem 1rem;

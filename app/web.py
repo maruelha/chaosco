@@ -76,6 +76,7 @@ def defects_list():
     channel       = request.args.get("channel", "")
     statuses      = request.args.getlist("status")
     action_needed = request.args.get("action_needed", "no")
+    dtco2c        = request.args.get("dtco2c", "")
     show_all      = request.args.get("show_all") == "1"
     note_added    = request.args.get("note_added") == "1"
 
@@ -91,6 +92,7 @@ def defects_list():
             statuses=statuses or None,
             action_needed=action_needed or None,
             exclude_statuses=exclude or None,
+            dtco2c=dtco2c or None,
         )
         options = database.get_filter_options(conn)
     finally:
@@ -104,6 +106,7 @@ def defects_list():
         channel=channel,
         statuses=statuses,
         action_needed=action_needed,
+        dtco2c=dtco2c,
         show_all=show_all,
         hidden=hidden,
         note_added=note_added,
@@ -133,6 +136,8 @@ def defect_detail(defect_id: str):
                 next_step=_field("next_step"),
                 action_needed=bool(request.form.get("action_needed")),
                 comments=_field("comments"),
+                dtco2c=bool(request.form.get("dtco2c")),
+                dtco2c_resp=_field("dtco2c_resp"),
             )
             return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
 
@@ -485,7 +490,23 @@ def _get_retail_report():
 @app.route("/retail/report")
 def retail_status_report():
     report = _get_retail_report()
-    return render_template("retail_report.html", report=report, today=date.today().isoformat())
+    conn = _get_conn()
+    try:
+        blocked_defects = database.get_retail_defects_blocked(conn)
+    finally:
+        conn.close()
+    blocked_total   = sum(d["blocked_tc_count"] for d in blocked_defects)
+    dtco2c_total    = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
+    sales_total     = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
+    return render_template(
+        "retail_report.html",
+        report=report,
+        today=date.today().isoformat(),
+        blocked_defects=blocked_defects,
+        blocked_defects_total=blocked_total,
+        dtco2c_total=dtco2c_total,
+        sales_total=sales_total,
+    )
 
 
 _RETAIL_REPORT_HEADERS = [
@@ -1165,6 +1186,17 @@ def cs_followup_note_add(followup_id: int):
 # ---------------------------------------------------------------------------
 # Note routes
 # ---------------------------------------------------------------------------
+
+@app.route("/defects/<defect_id>/dtco2c", methods=["POST"])
+def defect_toggle_dtco2c(defect_id: str):
+    value = request.json.get("value", False) if request.is_json else bool(request.form.get("value"))
+    conn = _get_conn()
+    try:
+        database.set_defect_dtco2c(conn, defect_id, value)
+    finally:
+        conn.close()
+    return {"ok": True}
+
 
 @app.route("/defects/<defect_id>/notes/add")
 def note_add_form(defect_id: str):

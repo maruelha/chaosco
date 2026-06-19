@@ -415,6 +415,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    for col in ("dtco2c INTEGER DEFAULT 0", "dtco2c_resp TEXT"):
+        try:
+            conn.execute(f"ALTER TABLE defect_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     # Spillover match key changed from type||name||country to excel_row.
     # UPDATE preserves spillover_id values so FK links in spillover_annotations
     # stay intact.  The importer overwrites remaining columns on next run.
@@ -476,12 +482,15 @@ def list_defects(
     statuses: list[str] | None = None,
     action_needed: str | None = None,
     exclude_statuses: list[str] | None = None,
+    dtco2c: str | None = None,
 ) -> list[dict]:
     """Return defects rows with optional filters, LEFT JOINed with defect_annotations."""
     sql = """
         SELECT d.defect_id, d.channel, d.country, d.solman_status, d.priority,
                d.assigned_to, d.excel_row, d.solman_name, d.exists_in_production,
+               d.date_reported,
                COALESCE(a.action_needed, 0) AS action_needed,
+               COALESCE(a.dtco2c, 0) AS dtco2c,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'defect' AND n.entity_id = d.defect_id) AS note_count,
                (SELECT COUNT(*) FROM retail r WHERE r.defect_id_ref IS NOT NULL AND r.defect_id_ref LIKE '%' || d.defect_id || '%') AS blocked_tc_count
         FROM defects d
@@ -507,6 +516,10 @@ def list_defects(
         sql += " AND COALESCE(a.action_needed, 0) = 1"
     elif action_needed == "no":
         sql += " AND COALESCE(a.action_needed, 0) = 0"
+    if dtco2c == "yes":
+        sql += " AND COALESCE(a.dtco2c, 0) = 1"
+    elif dtco2c == "no":
+        sql += " AND COALESCE(a.dtco2c, 0) = 0"
     sql += " ORDER BY d.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -536,6 +549,8 @@ def upsert_defect_annotation(
     next_step: str | None,
     action_needed: bool,
     comments: str | None,
+    dtco2c: bool = False,
+    dtco2c_resp: str | None = None,
 ) -> None:
     """Insert or update the annotation row for defect_id. Never touches the defects table."""
     now = datetime.now().isoformat(timespec="seconds")
@@ -544,8 +559,8 @@ def upsert_defect_annotation(
             """
             INSERT INTO defect_annotations
                 (defect_id, description, business_impact, reach, retest_needs,
-                 next_step, action_needed, comments, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 next_step, action_needed, comments, dtco2c, dtco2c_resp, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(defect_id) DO UPDATE SET
                 description     = excluded.description,
                 business_impact = excluded.business_impact,
@@ -554,10 +569,29 @@ def upsert_defect_annotation(
                 next_step       = excluded.next_step,
                 action_needed   = excluded.action_needed,
                 comments        = excluded.comments,
+                dtco2c          = excluded.dtco2c,
+                dtco2c_resp     = excluded.dtco2c_resp,
                 updated_at      = excluded.updated_at
             """,
             (defect_id, description, business_impact, reach, retest_needs,
-             next_step, 1 if action_needed else 0, comments, now),
+             next_step, 1 if action_needed else 0, comments,
+             1 if dtco2c else 0, dtco2c_resp, now),
+        )
+
+
+def set_defect_dtco2c(conn: sqlite3.Connection, defect_id: str, value: bool) -> None:
+    """Set the dtco2c flag for a defect annotation. Creates the annotation row if absent."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO defect_annotations (defect_id, dtco2c, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(defect_id) DO UPDATE SET
+                dtco2c     = excluded.dtco2c,
+                updated_at = excluded.updated_at
+            """,
+            (defect_id, 1 if value else 0, now),
         )
 
 
@@ -1025,6 +1059,28 @@ def get_retail_status_counts(conn: sqlite3.Connection) -> dict[str, int]:
         "SELECT COALESCE(status, '') AS status, COUNT(*) AS cnt FROM retail GROUP BY status"
     ).fetchall()
     return {r[0]: r[1] for r in rows}
+
+
+def get_retail_defects_blocked(conn: sqlite3.Connection) -> list[dict]:
+    """Return all active (non-confirmed/withdrawn) Retail-channel defects with blocked TC counts.
+
+    Each row includes dtco2c flag so the report can split totals into
+    DTC O2C (our follow-up) vs Sales. Sorted by blocked TC count descending.
+    """
+    sql = """
+        SELECT d.defect_id, d.solman_name, d.assigned_to, d.date_reported,
+               d.solman_status,
+               COALESCE(a.dtco2c, 0) AS dtco2c,
+               (SELECT COUNT(*) FROM retail r
+                WHERE r.defect_id_ref IS NOT NULL
+                  AND r.defect_id_ref LIKE '%' || d.defect_id || '%') AS blocked_tc_count
+        FROM defects d
+        LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
+        WHERE LOWER(TRIM(d.channel)) = 'retail'
+          AND LOWER(TRIM(COALESCE(d.solman_status, ''))) NOT IN ('confirmed', 'withdrawn')
+        ORDER BY blocked_tc_count DESC, d.defect_id
+    """
+    return _rows_to_dicts(conn.execute(sql))
 
 
 def list_known_prod_defects(conn: sqlite3.Connection) -> list[dict]:
