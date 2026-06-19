@@ -50,6 +50,21 @@ delete, screenshots) by plugging in the shared include — no per-module work.
 
 ---
 
+## Split CLAUDE.md by vertical (trigger: when ECOM or Omni is built)
+
+When ECOM/Omni are added, CLAUDE.md will become genuinely bloated. At that point split into:
+
+- `CLAUDE.md` — architecture rules, stack, key files, non-negotiables (always loaded, lean)
+- `docs/claude/defects.md` — defects importer, tables, screens, DTC O2C / MB logic
+- `docs/claude/retail.md` — retail importer, tables, screens, retail report
+- `docs/claude/ecom.md` — ECOM vertical
+- `docs/claude/omni.md` — Omni vertical
+- `docs/claude/coordination.md` — todos, followups, meeting prep, links, test learnings, etc.
+
+At session start, read only the vertical file(s) relevant to the task.
+
+---
+
 ## Planned verticals
 
 ### ECOM vertical
