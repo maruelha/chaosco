@@ -153,7 +153,7 @@
 <body>
 
 <h1>chaosco — Screen Reference</h1>
-<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-18</p>
+<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-21</p>
 
 <!-- TOC -->
 <div class="toc">
@@ -161,6 +161,7 @@
   <ul>
     <li class="group-label">Core</li>
     <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#inbox">Inbox</a></li>
     <li><a href="#import-result">Import Result</a></li>
 
     <li class="group-label">Defects</li>
@@ -192,19 +193,24 @@
 
     <li class="group-label">Planning</li>
     <li><a href="#meeting-prep">Meeting Prep</a></li>
+    <li><a href="#dtco2c-daily">DTC O2C Daily Agenda</a></li>
     <li><a href="#todos">To-Do List</a></li>
     <li><a href="#followups">Follow-ups</a></li>
+    <li><a href="#followup-detail">Follow-up — Detail</a></li>
+    <li><a href="#encouragements">Encouragements</a></li>
+    <li><a href="#enhancements-page">Enhancements — Full List</a></li>
 
     <li class="group-label">Reference</li>
     <li><a href="#links-list">Links — List</a></li>
     <li><a href="#link-detail">Links — Detail / New</a></li>
+    <li><a href="#contacts-list">Contacts</a></li>
     <li><a href="#test-learnings-list">Test Learnings — List</a></li>
     <li><a href="#test-learning-detail">Test Learnings — Detail / New</a></li>
     <li><a href="#test-limitations-list">Test Limitations — List</a></li>
     <li><a href="#test-limitation-detail">Test Limitations — Detail / New</a></li>
 
     <li class="group-label">Global Widget</li>
-    <li><a href="#enhancements">Enhancements Panel</a></li>
+    <li><a href="#enhancements-panel">Enhancements Panel</a></li>
   </ul>
 </div>
 
@@ -225,11 +231,38 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Import, Defects, Core South Spillover, Retail, Meeting Prep, To-Do, Follow-ups, Links, CS Follow-Up Tracker</span>
+        <span class="feat-value">Inbox (pending count badge) · Import · Defects · Core South Spillover · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Navigation</span>
         <span class="feat-value">Each card contains a link button to the corresponding list screen. The site title in the header also links back here from every page.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inbox -->
+  <div class="screen-card" id="inbox">
+    <div class="screen-card-header">
+      <span class="screen-title">Inbox</span>
+      <span class="screen-url">GET /inbox</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, Test Learning, or Follow-up) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
+      <div class="features">
+        <span class="feat-label">Add item</span>
+        <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
+        <span class="feat-label">Per-item actions</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Edit</span> — inline toggle; updates heading and note text<br>
+          <span class="pill pill-ajax">Delete</span> — removes item and all attached screenshots<br>
+          <span class="pill pill-ajax">File ›</span> — opens filing picker: choose type, search by name, select target, then Move ›
+        </span>
+        <span class="feat-label">Filing behaviour</span>
+        <span class="feat-value">Single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.</span>
+        <span class="feat-label">Screenshot support</span>
+        <span class="feat-value">PNG/JPG/GIF/WEBP. Ctrl+V pastes a Snipping Tool image into the last-hovered item. Thumbnails shown inline; ✕ to delete.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>notes</code> (entity_type='input', entity_id='inbox') + <code>attachments</code></span>
       </div>
     </div>
   </div>
@@ -275,7 +308,7 @@
       <p class="screen-desc">Paginated list of all imported defects with inline filters. The default view hides statuses "Withdrawn" and "Confirmed" (configurable in settings.yaml).</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Excel Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Prod · <strong>Blocked TCs</strong> · Notes · Action</span>
+        <span class="feat-value">Defect ID · SolMan Name · Blocked TCs · Channel · Status · Priority · Assigned To · Date Reported · Prod · <strong>DTC O2C</strong> (inline checkbox) · <strong>Daily</strong> (inline checkbox)</span>
         <span class="feat-label">Blocked TCs column</span>
         <span class="feat-value">Count of Retail test cases whose <code>defect_id_ref</code> references this defect. Computed as a subquery (LIKE match — not stored). Shows <code>—</code> when zero. When non-zero, displayed as a red badge link that opens the Retail list pre-filtered by that defect ID (<code>?search_defect=&lt;id&gt;</code>).</span>
         <span class="feat-label">Filters</span>
@@ -284,6 +317,8 @@
           <span class="pill pill-filter">Channel</span>
           <span class="pill pill-filter">Status (multi-select)</span>
           <span class="pill pill-filter">Action needed</span>
+          <span class="pill pill-filter">DTC O2C</span>
+          <span class="pill pill-filter">Daily</span>
           <span class="pill pill-filter">Show all toggle</span>
         </span>
         <span class="feat-label">Row actions</span>
@@ -308,8 +343,9 @@
         <span class="feat-label">Read-only fields</span>
         <span class="feat-value">All columns from the <code>defects</code> table (channel, status, priority, dates, scenario, etc.)</span>
         <span class="feat-label">Editable annotation</span>
-        <span class="feat-value">Description · Business Impact · Reach · Retest Needs · Next Step · Action Needed (checkbox) · Comments<br>
-        <span class="pill pill-action">Save</span> → POST to same URL → redirect with <code>?saved=1</code> flash</span>
+        <span class="feat-value">Description · Business Impact · Reach · Retest Needs · Next Step · Action Needed (checkbox) · Comments · <strong>DTC O2C</strong> (checkbox) · DTC O2C Responsible (text) · <strong>To discuss on daily</strong> (checkbox)<br>
+        <span class="pill pill-action">Save</span> → POST to same URL → redirect with <code>?saved=1</code> flash<br>
+        DTC O2C and Daily can also be toggled inline from the list view (AJAX, no reload)</span>
         <span class="feat-label">Notes section</span>
         <span class="feat-value">List of all notes for this defect (heading, body, timestamp). Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span> links. Each note also shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
         <span class="feat-label">Add to Meeting Prep</span>
@@ -736,10 +772,13 @@
         <span class="feat-value">Hover the topic cell to reveal a pencil (✎) button. Click to edit in place; save with Enter or Save button → <code>POST /meeting-prep/&lt;id&gt;/topic</code>. Esc cancels.</span>
         <span class="feat-label">Source entity badge</span>
         <span class="feat-value">When an item was added from a Defect or Retail detail page, the Topic column shows a coloured badge below the topic text: purple for defects (defect ID + SolMan name), green for retail test cases (test case ID / country / scenario). Each badge is a link back to the source detail page.</span>
+        <span class="feat-label">Source entity badge</span>
+        <span class="feat-value">Items added from a Defect detail page show a purple badge (defect ID + SolMan name → link to defect). Items added from a Retail detail page show a green badge (test case ID / country / scenario → link to test case). Manual items show no badge.</span>
         <span class="feat-label">Export actions</span>
         <span class="feat-value">
-          <span class="pill pill-ajax">Export agenda</span> → <code>GET /meeting-prep/agenda</code> opens in new tab: styled HTML report with coloured section banners per overall topic (same visual style as the spillover/retail reports). Includes Download HTML and Print buttons.<br>
-          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels, ready to paste into email or chat.
+          <span class="pill pill-ajax">Export agenda</span> → <code>GET /meeting-prep/agenda</code> opens in new tab: styled HTML report with coloured section banners per overall topic. Includes Download HTML and Print buttons.<br>
+          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels.<br>
+          <span class="pill pill-action">DTC O2C Daily Agenda</span> → always-visible button in the page header; opens <code>/meeting-prep/dtco2c-daily</code> in a new tab.
         </span>
         <span class="feat-label">Inline actions (AJAX)</span>
         <span class="feat-value">
@@ -829,6 +868,99 @@
 </div>
 
 
+  <!-- DTC O2C Daily Agenda -->
+  <div class="screen-card" id="dtco2c-daily">
+    <div class="screen-card-header">
+      <span class="screen-title">DTC O2C Daily Agenda</span>
+      <span class="screen-url">GET /meeting-prep/dtco2c-daily</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Standalone daily briefing for the DTC O2C call. Always-visible button in the Meeting Prep page header; opens in a new tab. Three live sections pulled from the database. Amber accent stripe to distinguish from the blue Meeting Agenda.</p>
+      <div class="features">
+        <span class="feat-label">Section 1</span>
+        <span class="feat-value">Planned topics from Meeting Prep where meeting = "DTC O2C Daily", grouped by Overall Topic (CS Retail → … → Other), untagged items at end as "General". Continuous numbering across groups.</span>
+        <span class="feat-label">Section 2</span>
+        <span class="feat-value">All defects with <strong>To discuss on daily</strong> checked (<code>daily = 1</code>). Table columns: Defect ID · SolMan Name · Channel · Next Steps.</span>
+        <span class="feat-label">Section 3</span>
+        <span class="feat-value">Open follow-ups where <code>with_whom = 'DTC O2C'</code>. Shows status badge, topic, when-next date.</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Print</span> · <span class="pill pill-action">Download HTML</span> — dated standalone snapshot</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-up Detail -->
+  <div class="screen-card" id="followup-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Follow-up — Detail</span>
+      <span class="screen-url">GET /followups/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Detail page for a single follow-up. Shows all fields read-only, with an inline status dropdown. Full notes module with headings, screenshots, and Ctrl+V paste. Reachable from the Notes button on the Follow-ups list.</p>
+      <div class="features">
+        <span class="feat-label">Fields shown</span>
+        <span class="feat-value">With Whom · Topic · When Next · Status (inline dropdown, AJAX)</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">Full notes log: heading + text + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> per note. Ctrl+V pastes Snipping Tool image into the last-hovered note.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>followups</code> + <code>notes</code> (entity_type='followup') + <code>attachments</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Encouragements -->
+  <div class="screen-card" id="encouragements">
+    <div class="screen-card-header">
+      <span class="screen-title">Encouragements</span>
+      <span class="screen-url">GET /encouragements</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Personal log of positive observations about people. Two-table design: <code>encouragement_people</code> (one row per person, created automatically) and <code>encouragements</code> (the entries). Dashboard card shows undelivered count badge.</p>
+      <div class="features">
+        <span class="feat-label">Add form</span>
+        <span class="feat-value">Person (text input with <code>&lt;datalist&gt;</code> autocomplete — type a new name to create automatically) · Date (pre-filled today) · Text (textarea)</span>
+        <span class="feat-label">Filter</span>
+        <span class="feat-value"><span class="pill pill-filter">Person dropdown</span> — auto-submits on change; shows item count</span>
+        <span class="feat-label">Per-entry actions</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Delivered checkbox</span> — AJAX toggle; delivered entries are faded with green left border<br>
+          <span class="pill pill-action">📋 Copy</span> — copies text to clipboard; shows "✓ Copied!" for 2 s<br>
+          <span class="pill pill-ajax">Delete</span> — AJAX with confirm; removes card from DOM
+        </span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>encouragement_people</code> (get-or-create on person name) · <code>encouragements</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enhancements full page -->
+  <div class="screen-card" id="enhancements-page">
+    <div class="screen-card-header">
+      <span class="screen-title">Enhancements — Full List</span>
+      <span class="screen-url">GET /enhancements/page</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Full-page sortable list of all enhancement ideas. Reachable from the dashboard Enhancements card. Complements the floating Enhancements panel (quick-add on every page) — the panel is for capture, this page is for review, edit, and triage.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Priority · Status · Area · Enhancement text · Edit / Delete</span>
+        <span class="feat-label">Sorting</span>
+        <span class="feat-value">Click column headers (Priority, Status, Area) to sort asc / desc; current column shows ▲ / ▼</span>
+        <span class="feat-label">Per-row actions (AJAX)</span>
+        <span class="feat-value">
+          <span class="pill pill-ajax">Status cycle</span> not_started → in_progress → closed<br>
+          <span class="pill pill-ajax">Edit</span> — reveals edit row: Priority select + Area input + Enhancement textarea → save<br>
+          <span class="pill pill-ajax">Delete</span> — confirm then removes row from DOM
+        </span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>enhancements</code></span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /section s-planning -->
+
+
 <!-- ================================================================ -->
 <!-- REFERENCE -->
 <!-- ================================================================ -->
@@ -878,6 +1010,34 @@
         <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, then redirect to list)</span>
         <span class="feat-label">Table written</span>
         <span class="feat-value"><code>links</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contacts -->
+  <div class="screen-card" id="contacts-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Contacts</span>
+      <span class="screen-url">GET /contacts</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Personal contact directory for UAT coordination. Stores name, email (free text, multiple addresses ok), area, topic, comments, and tags. Dashboard card links directly here.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Name · Email · Area · Topic · Tags · Comments (truncated)</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area (multi, dialog picker)</span>
+          <span class="pill pill-filter">Topic (multi, dialog picker)</span>
+          <span class="pill pill-filter">Tag (multi, dialog picker)</span>
+          <span class="pill pill-filter">Search by name or email</span>
+        </span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">+ Add Contact</span> · <span class="pill pill-action">Edit</span> per row → Contact Detail / Edit page · <span class="pill pill-ajax">Del</span> per row (AJAX, confirm)</span>
+        <span class="feat-label">Detail / Edit page</span>
+        <span class="feat-value"><code>GET/POST /contacts/&lt;id&gt;</code> · Fields: Name (required), Email, Area, Topic, Comments (textarea), Tags (comma-separated). Delete button on the header.</span>
+        <span class="feat-label">Table written</span>
+        <span class="feat-value"><code>contacts</code></span>
       </div>
     </div>
   </div>
@@ -984,7 +1144,7 @@
   <div class="section-heading">Global Widget</div>
 
   <!-- Enhancements Panel -->
-  <div class="screen-card" id="enhancements">
+  <div class="screen-card" id="enhancements-panel">
     <div class="screen-card-header">
       <span class="screen-title">Enhancements Panel</span>
       <span class="screen-url">Available on every page (in base.html)</span>
