@@ -427,7 +427,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("dtco2c INTEGER DEFAULT 0", "dtco2c_resp TEXT"):
+    for col in ("dtco2c INTEGER DEFAULT 0", "dtco2c_resp TEXT", "daily INTEGER DEFAULT 0"):
         try:
             conn.execute(f"ALTER TABLE defect_annotations ADD COLUMN {col}")
             conn.commit()
@@ -495,6 +495,7 @@ def list_defects(
     action_needed: str | None = None,
     exclude_statuses: list[str] | None = None,
     dtco2c: str | None = None,
+    daily: str | None = None,
 ) -> list[dict]:
     """Return defects rows with optional filters, LEFT JOINed with defect_annotations."""
     sql = """
@@ -503,6 +504,7 @@ def list_defects(
                d.date_reported,
                COALESCE(a.action_needed, 0) AS action_needed,
                COALESCE(a.dtco2c, 0) AS dtco2c,
+               COALESCE(a.daily, 0) AS daily,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'defect' AND n.entity_id = d.defect_id) AS note_count,
                (SELECT COUNT(*) FROM retail r WHERE r.defect_id_ref IS NOT NULL AND r.defect_id_ref LIKE '%' || d.defect_id || '%') AS blocked_tc_count
         FROM defects d
@@ -532,6 +534,10 @@ def list_defects(
         sql += " AND COALESCE(a.dtco2c, 0) = 1"
     elif dtco2c == "no":
         sql += " AND COALESCE(a.dtco2c, 0) = 0"
+    if daily == "yes":
+        sql += " AND COALESCE(a.daily, 0) = 1"
+    elif daily == "no":
+        sql += " AND COALESCE(a.daily, 0) = 0"
     sql += " ORDER BY d.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -542,7 +548,9 @@ def get_defect(conn: sqlite3.Connection, defect_id: str) -> dict | None:
         SELECT d.*,
                a.description, a.business_impact, a.reach, a.retest_needs,
                a.next_step, COALESCE(a.action_needed, 0) AS action_needed,
-               a.comments, a.updated_at
+               a.comments, a.updated_at,
+               COALESCE(a.dtco2c, 0) AS dtco2c, a.dtco2c_resp,
+               COALESCE(a.daily, 0) AS daily
         FROM defects d
         LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
         WHERE d.defect_id = ?
@@ -563,6 +571,7 @@ def upsert_defect_annotation(
     comments: str | None,
     dtco2c: bool = False,
     dtco2c_resp: str | None = None,
+    daily: bool = False,
 ) -> None:
     """Insert or update the annotation row for defect_id. Never touches the defects table."""
     now = datetime.now().isoformat(timespec="seconds")
@@ -571,8 +580,8 @@ def upsert_defect_annotation(
             """
             INSERT INTO defect_annotations
                 (defect_id, description, business_impact, reach, retest_needs,
-                 next_step, action_needed, comments, dtco2c, dtco2c_resp, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 next_step, action_needed, comments, dtco2c, dtco2c_resp, daily, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(defect_id) DO UPDATE SET
                 description     = excluded.description,
                 business_impact = excluded.business_impact,
@@ -583,11 +592,12 @@ def upsert_defect_annotation(
                 comments        = excluded.comments,
                 dtco2c          = excluded.dtco2c,
                 dtco2c_resp     = excluded.dtco2c_resp,
+                daily           = excluded.daily,
                 updated_at      = excluded.updated_at
             """,
             (defect_id, description, business_impact, reach, retest_needs,
              next_step, 1 if action_needed else 0, comments,
-             1 if dtco2c else 0, dtco2c_resp, now),
+             1 if dtco2c else 0, dtco2c_resp, 1 if daily else 0, now),
         )
 
 
@@ -601,6 +611,22 @@ def set_defect_dtco2c(conn: sqlite3.Connection, defect_id: str, value: bool) -> 
             VALUES (?, ?, ?)
             ON CONFLICT(defect_id) DO UPDATE SET
                 dtco2c     = excluded.dtco2c,
+                updated_at = excluded.updated_at
+            """,
+            (defect_id, 1 if value else 0, now),
+        )
+
+
+def set_defect_daily(conn: sqlite3.Connection, defect_id: str, value: bool) -> None:
+    """Set the daily flag for a defect annotation. Creates the annotation row if absent."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO defect_annotations (defect_id, daily, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(defect_id) DO UPDATE SET
+                daily      = excluded.daily,
                 updated_at = excluded.updated_at
             """,
             (defect_id, 1 if value else 0, now),
@@ -654,6 +680,148 @@ def update_note(
 def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+
+
+# ---------------------------------------------------------------------------
+# Inbox — unfiled notes (entity_type='input', entity_id='inbox')
+# ---------------------------------------------------------------------------
+
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup"}
+
+
+def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note)"
+            " VALUES ('input', 'inbox', ?, ?, ?)",
+            (now, heading, note_text),
+        )
+    return cur.lastrowid
+
+
+def list_inbox_items(conn: sqlite3.Connection) -> list[dict]:
+    return _rows_to_dicts(conn.execute(
+        "SELECT n.*, COUNT(a.id) as att_count FROM notes n"
+        " LEFT JOIN attachments a ON a.note_id = n.id"
+        " WHERE n.entity_type = 'input' AND n.entity_id = 'inbox'"
+        " GROUP BY n.id ORDER BY n.created_at DESC"
+    ))
+
+
+def count_inbox_items(conn: sqlite3.Connection) -> int:
+    row = conn.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = 'input' AND entity_id = 'inbox'"
+    ).fetchone()
+    return row[0] if row else 0
+
+
+def file_inbox_item(
+    conn: sqlite3.Connection, note_id: int, target_type: str, target_id: str
+) -> bool:
+    if target_type not in _INBOX_TARGET_TYPES:
+        return False
+    note = get_note(conn, note_id)
+    if note is None or note["entity_type"] != "input" or note["entity_id"] != "inbox":
+        return False
+    target_exists = False
+    if target_type == "defect":
+        target_exists = conn.execute(
+            "SELECT 1 FROM defects WHERE defect_id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "retail":
+        target_exists = conn.execute(
+            "SELECT 1 FROM retail WHERE retail_id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "spillover":
+        target_exists = conn.execute(
+            "SELECT 1 FROM spillover WHERE spillover_id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "test_learning":
+        target_exists = conn.execute(
+            "SELECT 1 FROM test_learnings WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "followup":
+        target_exists = conn.execute(
+            "SELECT 1 FROM followups WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    if not target_exists:
+        return False
+    with conn:
+        conn.execute(
+            "UPDATE notes SET entity_type = ?, entity_id = ?"
+            " WHERE id = ? AND entity_type = 'input'",
+            (target_type, str(target_id), note_id),
+        )
+    return True
+
+
+def delete_inbox_item(conn: sqlite3.Connection, note_id: int) -> list[str]:
+    """Delete note + attachment rows; return filenames for caller to unlink from disk."""
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT filename FROM attachments WHERE note_id = ?", (note_id,)
+    ))
+    filenames = [r["filename"] for r in rows]
+    with conn:
+        conn.execute("DELETE FROM attachments WHERE note_id = ?", (note_id,))
+        conn.execute(
+            "DELETE FROM notes WHERE id = ? AND entity_type = 'input'", (note_id,)
+        )
+    return filenames
+
+
+def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[dict]:
+    """Return [{"value": ..., "label": ...}] candidates for the inbox filing picker."""
+    if target_type not in _INBOX_TARGET_TYPES:
+        return []
+    like = f"%{q.strip()}%"
+    if target_type == "defect":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT defect_id, solman_name FROM defects"
+            " WHERE defect_id LIKE ? OR solman_name LIKE ? ORDER BY defect_id LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": r["defect_id"],
+                 "label": f"{r['defect_id']} — {r['solman_name'] or ''}".rstrip(" —")}
+                for r in rows]
+    elif target_type == "retail":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT retail_id, test_case_id, testcase_name, country FROM retail"
+            " WHERE test_case_id LIKE ? OR testcase_name LIKE ? OR country LIKE ?"
+            " ORDER BY test_case_id LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": str(r["retail_id"]),
+                 "label": f"{r['test_case_id']} ({r['country']}) — {r['testcase_name'] or ''}".rstrip(" —")}
+                for r in rows]
+    elif target_type == "spillover":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT spillover_id, name, area, country FROM spillover"
+            " WHERE name LIKE ? OR area LIKE ? OR country LIKE ? ORDER BY name LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": str(r["spillover_id"]),
+                 "label": f"{r['name'] or '—'} ({r['area'] or ''}, {r['country'] or ''})".strip(", ()")}
+                for r in rows]
+    elif target_type == "test_learning":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, topic, channel FROM test_learnings"
+            " WHERE topic LIKE ? OR channel LIKE ? ORDER BY topic LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['topic'] or '—'} ({r['channel'] or ''})".rstrip(" ()")}
+                for r in rows]
+    elif target_type == "followup":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, with_whom, topic FROM followups"
+            " WHERE with_whom LIKE ? OR topic LIKE ? ORDER BY with_whom LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['with_whom'] or '—'} — {r['topic'] or ''}".rstrip(" —")}
+                for r in rows]
+    return []
 
 
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
@@ -1253,6 +1421,18 @@ def get_meeting_prep(conn: sqlite3.Connection,
     """, params))
 
 
+def list_daily_defects(conn: sqlite3.Connection) -> list[dict]:
+    """Defects flagged 'to discuss on daily', with next_step from annotations."""
+    return _rows_to_dicts(conn.execute("""
+        SELECT d.defect_id, d.solman_name, d.channel,
+               a.next_step
+        FROM defects d
+        LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
+        WHERE COALESCE(a.daily, 0) = 1
+        ORDER BY d.channel, d.defect_id
+    """))
+
+
 def add_meeting_prep(
     conn: sqlite3.Connection,
     meeting: str,
@@ -1373,6 +1553,26 @@ def set_enhancement_status(conn: sqlite3.Connection, item_id: int, status: str) 
         (status, now, item_id),
     )
     conn.commit()
+
+
+def update_enhancement(
+    conn: sqlite3.Connection,
+    item_id: int,
+    area: str | None,
+    enhancement: str,
+    priority: str,
+) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE enhancements SET area = ?, enhancement = ?, priority = ?, updated_at = ? WHERE id = ?",
+            (area or None, enhancement, priority, now, item_id),
+        )
+
+
+def delete_enhancement(conn: sqlite3.Connection, item_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM enhancements WHERE id = ?", (item_id,))
 
 
 # ---------------------------------------------------------------------------
@@ -1512,6 +1712,13 @@ def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str, when_next
     )
     conn.commit()
     return cur.lastrowid
+
+
+def get_followup_by_id(conn: sqlite3.Connection, followup_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM followups WHERE id = ?", (followup_id,)
+    ))
+    return rows[0] if rows else None
 
 
 def set_followup_status(conn: sqlite3.Connection, followup_id: int, status: str) -> None:

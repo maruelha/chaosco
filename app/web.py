@@ -61,7 +61,14 @@ def _render_note_add_form(defect_id, solman_name, return_to, *, heading="", erro
 
 @app.route("/")
 def dashboard():
-    return render_template("dashboard.html")
+    conn = _get_conn()
+    try:
+        inbox_count = database.count_inbox_items(conn)
+        open_enhancements = len(database.get_enhancements(conn))
+    finally:
+        conn.close()
+    return render_template("dashboard.html", inbox_count=inbox_count,
+                           open_enhancements=open_enhancements)
 
 
 @app.route("/import", methods=["POST"])
@@ -77,6 +84,7 @@ def defects_list():
     statuses      = request.args.getlist("status")
     action_needed = request.args.get("action_needed", "no")
     dtco2c        = request.args.get("dtco2c", "")
+    daily         = request.args.get("daily", "")
     show_all      = request.args.get("show_all") == "1"
     note_added    = request.args.get("note_added") == "1"
 
@@ -93,6 +101,7 @@ def defects_list():
             action_needed=action_needed or None,
             exclude_statuses=exclude or None,
             dtco2c=dtco2c or None,
+            daily=daily or None,
         )
         options = database.get_filter_options(conn)
     finally:
@@ -107,6 +116,7 @@ def defects_list():
         statuses=statuses,
         action_needed=action_needed,
         dtco2c=dtco2c,
+        daily=daily,
         show_all=show_all,
         hidden=hidden,
         note_added=note_added,
@@ -138,6 +148,7 @@ def defect_detail(defect_id: str):
                 comments=_field("comments"),
                 dtco2c=bool(request.form.get("dtco2c")),
                 dtco2c_resp=_field("dtco2c_resp"),
+                daily=bool(request.form.get("daily")),
             )
             return redirect(url_for("defect_detail", defect_id=defect_id, saved="1"))
 
@@ -1276,6 +1287,17 @@ def defect_toggle_dtco2c(defect_id: str):
     return {"ok": True}
 
 
+@app.route("/defects/<defect_id>/daily", methods=["POST"])
+def defect_toggle_daily(defect_id: str):
+    value = request.json.get("value", False) if request.is_json else bool(request.form.get("value"))
+    conn = _get_conn()
+    try:
+        database.set_defect_daily(conn, defect_id, value)
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
 @app.route("/defects/<defect_id>/notes/add")
 def note_add_form(defect_id: str):
     conn = _get_conn()
@@ -1560,6 +1582,24 @@ def meeting_prep_agenda():
     )
 
 
+@app.route("/meeting-prep/dtco2c-daily")
+def dtco2c_daily_report():
+    conn = _get_conn()
+    try:
+        topics    = database.get_meeting_prep(conn, meeting="DTC O2C Daily", status="planned")
+        defects   = database.list_daily_defects(conn)
+        followups = database.get_followups(conn, with_whom="DTC O2C", include_done=False)
+    finally:
+        conn.close()
+    return render_template(
+        "dtco2c_daily_report.html",
+        topics=topics,
+        defects=defects,
+        followups=followups,
+        today=date.today().strftime("%d %B %Y"),
+    )
+
+
 @app.route("/meeting-prep/add", methods=["POST"])
 def meeting_prep_add():
     meeting             = request.form.get("meeting", "").strip()
@@ -1811,28 +1851,103 @@ def followup_status(followup_id: int):
     return jsonify({"ok": True, "status": status})
 
 
-@app.route("/followups/<int:followup_id>/notes")
-def followup_notes(followup_id: int):
+@app.route("/followups/<int:followup_id>")
+def followup_detail(followup_id: int):
+    note_added   = request.args.get("note_added") == "1"
+    note_saved   = request.args.get("note_saved") == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
     conn = _get_conn()
     try:
+        row = database.get_followup_by_id(conn, followup_id)
+        if row is None:
+            return render_template("404.html"), 404
         notes = database.list_notes(conn, "followup", str(followup_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
-    return jsonify(notes)
+    return render_template(
+        "followup_detail.html", row=row,
+        notes=notes, attachments_by_note=attachments_by_note,
+        note_added=note_added, note_saved=note_saved, note_deleted=note_deleted,
+        statuses=database.FOLLOWUP_STATUSES,
+    )
 
 
-@app.route("/followups/<int:followup_id>/notes/add", methods=["POST"])
+@app.route("/followups/<int:followup_id>/notes/add", methods=["GET", "POST"])
 def followup_note_add(followup_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
     conn = _get_conn()
     try:
-        database.add_note(conn, "followup", str(followup_id), None, note)
-        notes = database.list_notes(conn, "followup", str(followup_id))
+        row = database.get_followup_by_id(conn, followup_id)
+        if row is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.add_note(conn, "followup", str(followup_id), heading, note_text)
+                return redirect(url_for("followup_detail", followup_id=followup_id, note_added="1"))
     finally:
         conn.close()
-    return jsonify({"ok": True, "notes": notes})
+    label = f"{row['with_whom']} — {row['topic']}" if row else str(followup_id)
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=label, list_label="Follow-ups",
+        list_url=url_for("followup_list"),
+        detail_url=url_for("followup_detail", followup_id=followup_id),
+        action_url=url_for("followup_note_add", followup_id=followup_id),
+        cancel_url=url_for("followup_detail", followup_id=followup_id),
+        heading="", note_text="", error=None,
+    )
+
+
+@app.route("/followups/<int:followup_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def followup_note_edit(followup_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "followup" or note["entity_id"] != str(followup_id):
+            return render_template("404.html"), 404
+        row = database.get_followup_by_id(conn, followup_id)
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("followup_detail", followup_id=followup_id, note_saved="1"))
+    finally:
+        conn.close()
+    label = f"{row['with_whom']} — {row['topic']}" if row else str(followup_id)
+    kwargs = dict(
+        mode="edit", entity_label=label, list_label="Follow-ups",
+        list_url=url_for("followup_list"),
+        detail_url=url_for("followup_detail", followup_id=followup_id),
+        action_url=url_for("followup_note_edit", followup_id=followup_id, note_id=note_id),
+        cancel_url=url_for("followup_detail", followup_id=followup_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/followups/<int:followup_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def followup_note_delete(followup_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "followup" or note["entity_id"] != str(followup_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("followup_detail", followup_id=followup_id, note_deleted="1"))
+    finally:
+        conn.close()
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=f"Follow-up #{followup_id}",
+        cancel_url=url_for("followup_detail", followup_id=followup_id),
+        delete_url=url_for("followup_note_delete", followup_id=followup_id, note_id=note_id),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1888,6 +2003,151 @@ def enhancements_status(item_id: int):
     finally:
         conn.close()
     return jsonify({"ok": True, "status": status})
+
+
+@app.route("/enhancements/page")
+def enhancements_page():
+    include_closed = request.args.get("closed", "") == "1"
+    sort  = request.args.get("sort", "priority")
+    dirn  = request.args.get("dir", "asc")
+    conn = _get_conn()
+    try:
+        items = database.get_enhancements(conn, include_closed=include_closed)
+    finally:
+        conn.close()
+    prio_order = {"High": 0, "Medium": 1, "Low": 2}
+    status_order = {"not_started": 0, "in_progress": 1, "closed": 2}
+    reverse = dirn == "desc"
+    if sort == "priority":
+        items.sort(key=lambda r: prio_order.get(r["priority"], 9), reverse=reverse)
+    elif sort == "status":
+        items.sort(key=lambda r: status_order.get(r["status"], 9), reverse=reverse)
+    elif sort == "area":
+        items.sort(key=lambda r: (r["area"] or "").lower(), reverse=reverse)
+    return render_template(
+        "enhancements_page.html",
+        items=items,
+        include_closed=include_closed,
+        priorities=database.ENHANCEMENT_PRIORITIES,
+        sort=sort,
+        dirn=dirn,
+    )
+
+
+@app.route("/enhancements/<int:item_id>/delete", methods=["POST"])
+def enhancements_delete(item_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_enhancement(conn, item_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/enhancements/<int:item_id>/update", methods=["POST"])
+def enhancements_update(item_id: int):
+    area        = request.form.get("area", "").strip()
+    enhancement = request.form.get("enhancement", "").strip()
+    priority    = request.form.get("priority", "Medium")
+    if not enhancement:
+        return jsonify({"ok": False, "error": "enhancement text required"})
+    conn = _get_conn()
+    try:
+        database.update_enhancement(conn, item_id, area, enhancement, priority)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# Inbox — daily capture notes (entity_type='input', entity_id='inbox')
+# ---------------------------------------------------------------------------
+
+@app.route("/inbox")
+def inbox():
+    conn = _get_conn()
+    try:
+        items = database.list_inbox_items(conn)
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in items])
+    finally:
+        conn.close()
+    note_added   = request.args.get("note_added") == "1"
+    note_saved   = request.args.get("note_saved") == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
+    note_filed   = request.args.get("note_filed")
+    return render_template(
+        "inbox.html", items=items, attachments_by_note=attachments_by_note,
+        note_added=note_added, note_saved=note_saved,
+        note_deleted=note_deleted, note_filed=note_filed,
+    )
+
+
+@app.route("/inbox/add", methods=["POST"])
+def inbox_add():
+    heading   = request.form.get("heading", "").strip() or None
+    note_text = request.form.get("note", "").strip() or None
+    if note_text:
+        conn = _get_conn()
+        try:
+            database.add_inbox_item(conn, heading, note_text)
+        finally:
+            conn.close()
+    return redirect(url_for("inbox", note_added="1"))
+
+
+@app.route("/inbox/<int:note_id>/edit", methods=["POST"])
+def inbox_edit(note_id: int):
+    heading   = request.form.get("heading", "").strip() or None
+    note_text = request.form.get("note", "").strip() or None
+    if note_text:
+        conn = _get_conn()
+        try:
+            note = database.get_note(conn, note_id)
+            if note and note["entity_type"] == "input":
+                database.update_note(conn, note_id, heading, note_text)
+        finally:
+            conn.close()
+    return redirect(url_for("inbox", note_saved="1"))
+
+
+@app.route("/inbox/<int:note_id>/delete", methods=["POST"])
+def inbox_delete(note_id: int):
+    conn = _get_conn()
+    try:
+        filenames = database.delete_inbox_item(conn, note_id)
+    finally:
+        conn.close()
+    for fname in filenames:
+        fp = _UPLOAD_FOLDER / fname
+        if fp.exists():
+            fp.unlink()
+    return redirect(url_for("inbox", note_deleted="1"))
+
+
+@app.route("/inbox/<int:note_id>/file", methods=["POST"])
+def inbox_file(note_id: int):
+    target_type = request.form.get("target_type", "").strip()
+    target_id   = request.form.get("target_id", "").strip()
+    conn = _get_conn()
+    try:
+        ok = database.file_inbox_item(conn, note_id, target_type, target_id)
+    finally:
+        conn.close()
+    if ok:
+        return redirect(url_for("inbox", note_filed=target_type))
+    return redirect(url_for("inbox"))
+
+
+@app.route("/inbox/targets")
+def inbox_targets():
+    target_type = request.args.get("type", "").strip()
+    q           = request.args.get("q", "").strip()
+    conn = _get_conn()
+    try:
+        results = database.search_targets(conn, target_type, q)
+    finally:
+        conn.close()
+    return jsonify(results)
 
 
 # ---------------------------------------------------------------------------

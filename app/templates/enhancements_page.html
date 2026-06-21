@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Enhancements — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Enhancements <span class="notes-count-badge">{{ items | length }}</span></h1>
+    <div class="page-header-actions">
+      {% if include_closed %}
+        <a href="{{ url_for('enhancements_page') }}" class="btn btn-sm">Hide closed</a>
+      {% else %}
+        <a href="{{ url_for('enhancements_page', closed='1') }}" class="btn btn-sm">Show closed</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div id="save-banner" class="saved-banner" style="display:none">&#10003;&nbsp; Saved.</div>
+<div id="err-banner"  class="saved-banner" style="display:none;background:#fbe7e7;color:#b22a2a">Error saving.</div>
+
+{% if items %}
+<div class="notes-card" style="padding:0">
+  <table style="width:100%;border-collapse:collapse;font-size:14px">
+    {% set opp = 'desc' if dirn == 'asc' else 'asc' %}
+    {% macro sort_url(col) %}{{ url_for('enhancements_page', sort=col, dir=('desc' if sort==col and dirn=='asc' else 'asc'), closed='1' if include_closed else '') }}{% endmacro %}
+    {% macro sort_icon(col) %}{% if sort == col %}{{ ' ▼' if dirn == 'desc' else ' ▲' }}{% endif %}{% endmacro %}
+    <thead>
+      <tr style="background:#eef3f7;text-align:left">
+        <th style="padding:10px 12px;width:90px"><a href="{{ sort_url('priority') }}" style="text-decoration:none;color:inherit;white-space:nowrap">Priority{{ sort_icon('priority') }}</a></th>
+        <th style="padding:10px 12px;width:110px"><a href="{{ sort_url('status') }}" style="text-decoration:none;color:inherit;white-space:nowrap">Status{{ sort_icon('status') }}</a></th>
+        <th style="padding:10px 12px;width:130px"><a href="{{ sort_url('area') }}" style="text-decoration:none;color:inherit;white-space:nowrap">Area{{ sort_icon('area') }}</a></th>
+        <th style="padding:10px 12px">Enhancement</th>
+        <th style="padding:10px 12px;width:60px"></th>
+      </tr>
+    </thead>
+    <tbody id="enh-tbody">
+    {% for item in items %}
+    <tr class="enh-row enh-status--{{ item.status }}" id="row-{{ item.id }}"
+        style="border-bottom:1px solid #e1e8ee;vertical-align:top">
+      <td style="padding:10px 12px">
+        <span class="enh-prio-tag {{ {'High':'enh-prio--high','Medium':'enh-prio--med','Low':'enh-prio--low'}[item.priority] }}">
+          {{ item.priority }}
+        </span>
+      </td>
+      <td style="padding:10px 12px">
+        <select class="enh-input enh-status-sel" data-id="{{ item.id }}" style="font-size:13px;padding:3px 6px">
+          <option value="not_started" {{ 'selected' if item.status == 'not_started' }}>Not started</option>
+          <option value="in_progress" {{ 'selected' if item.status == 'in_progress' }}>In progress</option>
+          <option value="closed"      {{ 'selected' if item.status == 'closed' }}>Closed</option>
+        </select>
+      </td>
+      <td style="padding:10px 12px;color:#5b6b7b;font-size:13px">{{ item.area or '—' }}</td>
+      <td style="padding:10px 12px;white-space:pre-wrap">{{ item.enhancement }}</td>
+      <td style="padding:10px 12px;white-space:nowrap">
+        <button class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem({{ item.id }}, this)" style="margin-left:4px">Delete</button>
+      </td>
+    </tr>
+    <tr id="edit-row-{{ item.id }}" style="display:none;background:#f7f9fb;border-bottom:1px solid #e1e8ee">
+      <td colspan="5" style="padding:12px 16px">
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:0.5rem">
+          <div>
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:3px">Priority</label>
+            <select id="edit-prio-{{ item.id }}" class="form-control" style="width:110px">
+              {% for p in priorities %}
+              <option value="{{ p }}" {{ 'selected' if item.priority == p }}>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:3px">Area</label>
+            <input id="edit-area-{{ item.id }}" type="text" class="form-control"
+              value="{{ item.area or '' }}" placeholder="Area" style="width:160px">
+          </div>
+        </div>
+        <div style="margin-bottom:0.5rem">
+          <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:3px">Enhancement</label>
+          <textarea id="edit-text-{{ item.id }}" class="form-control" rows="3"
+            style="width:100%">{{ item.enhancement }}</textarea>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <button class="btn btn-sm btn-primary" onclick="saveEdit({{ item.id }})">Save</button>
+          <button class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Cancel</button>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="detail-card" style="text-align:center;color:#aeaeb2;padding:2rem">
+  No enhancements{% if not include_closed %} (try showing closed){% endif %}.
+</div>
+{% endif %}
+
+<script>
+(function () {
+
+  window.toggleEdit = function (id) {
+    var row = document.getElementById('edit-row-' + id);
+    row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  };
+
+  window.saveEdit = function (id) {
+    var area  = document.getElementById('edit-area-' + id).value.trim();
+    var text  = document.getElementById('edit-text-' + id).value.trim();
+    var prio  = document.getElementById('edit-prio-' + id).value;
+    if (!text) { alert('Enhancement text is required.'); return; }
+    var fd = new FormData();
+    fd.append('area', area);
+    fd.append('enhancement', text);
+    fd.append('priority', prio);
+    fetch('/enhancements/' + id + '/update', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { showBanner('err-banner'); return; }
+        /* update the display row without a full reload */
+        var row = document.getElementById('row-' + id);
+        var prioClass = { High: 'enh-prio--high', Medium: 'enh-prio--med', Low: 'enh-prio--low' };
+        row.cells[0].innerHTML = '<span class="enh-prio-tag ' + (prioClass[prio] || '') + '">' + esc(prio) + '</span>';
+        row.cells[2].textContent = area || '—';
+        row.cells[3].textContent = text;
+        toggleEdit(id);
+        showBanner('save-banner');
+      })
+      .catch(function () { showBanner('err-banner'); });
+  };
+
+  /* status change — reuses existing endpoint */
+  document.addEventListener('change', function (e) {
+    var sel = e.target.closest('.enh-status-sel');
+    if (!sel) return;
+    var fd = new FormData();
+    fd.append('status', sel.value);
+    fetch('/enhancements/' + sel.dataset.id + '/status', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) showBanner('save-banner');
+      });
+  });
+
+  window.deleteItem = function (id, btn) {
+    if (!confirm('Delete this enhancement?')) return;
+    fetch('/enhancements/' + id + '/delete', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { showBanner('err-banner'); return; }
+        var row     = document.getElementById('row-' + id);
+        var editRow = document.getElementById('edit-row-' + id);
+        if (row)     row.remove();
+        if (editRow) editRow.remove();
+        showBanner('save-banner');
+      })
+      .catch(function () { showBanner('err-banner'); });
+  };
+
+  function showBanner(id) {
+    var el = document.getElementById(id);
+    el.style.display = 'block';
+    setTimeout(function () { el.style.display = 'none'; }, 2000);
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+}());
+</script>
+{% endblock %}

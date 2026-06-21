@@ -56,7 +56,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All database tables (as of 2026-06-19)
+## All database tables (as of 2026-06-21)
 
 ### Imported (written by importers only)
 - `defects` — 21 columns incl. defect_id (PK), channel, solman_status, priority, assigned_to, excel_row, first_seen, last_seen
@@ -64,19 +64,19 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail` — retail_id (PK AI), test_case_id, country, testcase_name, testcase_scenario, status, assigned_to, key_user_responsible, evidence_in_sharepoint, sales_file, execution_started, execution_completed, order_number, old_order_numbers, defect_id_ref, s4_sales_order, s4_billing_documents, s4_journal_invoice_entry, delivery_note, comment, reason_for_pass_with_reservation, excel_row, match_key (UNIQUE), first_seen, last_seen
 
 ### User-authored annotations (never written by importers)
-- `defect_annotations` — defect_id (PK/FK), description, business_impact, reach, retest_needs, next_step, action_needed, comments, dtco2c (INTEGER 0/1), dtco2c_resp (TEXT), updated_at
+- `defect_annotations` — defect_id (PK/FK), description, business_impact, reach, retest_needs, next_step, action_needed, comments, dtco2c (INTEGER 0/1), dtco2c_resp (TEXT), daily (INTEGER 0/1), updated_at
 - `spillover_annotations` — spillover_id (PK/FK), importance_for_signoff, next_step, comment_history, critical_for_signoff, comment_for_signoff, signoff_group, updated_at
 - `retail_annotations` — retail_id (PK/FK), next_step, comment_history, action_needed, updated_at
 
 ### Shared
-- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`
+- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
 - `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
 ### Planning & coordination (manually managed via UI)
 - `todos` — area, kind, topic, status (open/in_progress/blocked/closed), priority (High/Medium/Low), due_date, for_whom
 - `meeting_prep` — meeting (from fixed list), topic, status (planned/discussed/future), note, `overall_topic` (CS Retail/CS ECOM/CS General/ROE Retail/ROE ECOM/ROE General/Orga/AI/Other — nullable), `source_entity_type` (defect/retail/NULL), `source_entity_id` (TEXT PK of source). When set, list view LEFT JOINs defects/retail to show a linked badge. `overall_topic` controls section order in the agenda export.
-- `enhancements` — area, enhancement, priority, status (not_started/in_progress/closed) — shown in a **floating panel** on every page, not a separate screen
+- `enhancements` — area, enhancement, priority, status (not_started/in_progress/closed) — quick-add via **floating panel** on every page; full sortable list at `/enhancements/page`
 - `followups` — with_whom, topic, when_next, status (open/in_progress/done)
 - `cs_followups` — area, jira_id, topic, description, next_step, with_whom, status (open/in_progress/done)
 - `known_prod_defects` — technical_key, short_description, scenario, description, biz_impact, numbers, refs, next_steps, comments, confluence
@@ -92,28 +92,30 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `todos`: kind
 - `notes`: source
 - `meeting_prep`: source_entity_type, source_entity_id, overall_topic
-- `defect_annotations`: dtco2c, dtco2c_resp
+- `defect_annotations`: dtco2c, dtco2c_resp, daily
 
 ---
 
-## All screens (as of 2026-06-19)
+## All screens (as of 2026-06-21)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
 |---|---|---|
 | Dashboard | `/` | Home — card grid + Run Import button |
+| **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up) when ready. Dashboard card shows pending count. |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
-| Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; toggled inline or via detail form. |
-| Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
+| Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
+| Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
 | Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX. Each row has a **Notes** button (shows count badge) linking to the Spillover Detail page. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
 | Meeting Prep | `/meeting-prep` | Per-meeting agenda topics. Columns: Overall Topic (inline select), Topic (inline editable), Status, note, notes. Topic column shows coloured badge (purple=defect, green=retail) when added from a detail page. Default filter: planned. Export agenda button opens `/meeting-prep/agenda` (styled HTML report); Copy to clipboard exports plain text — both sorted by overall_topic order. |
 | To-Do List | `/todos` | Tasks with priority, kind, due date, owner, status |
-| Follow-ups | `/followups` | Lightweight "chase" list per person |
+| Follow-ups | `/followups` | Lightweight "chase" list per person; Notes button links to Follow-up Detail page |
 | Links | `/links` | URL bookmark store with area/tool/tag filters |
 | Contacts | `/contacts` | Contact directory — name, email, area, topic, comments, tags; filterable |
 | CS Follow-Up Tracker | `/cs_followups` | Richer follow-ups for Core South sign-off |
+| **Enhancements** | `/enhancements/page` | Full sortable list of all enhancement ideas. Sortable by priority/status/area. Inline edit and delete per row. Dashboard card (bottom-right) shows open count. |
 
 ### NOT on the dashboard (URL only / linked from other screens)
 | Screen | URL | How to reach |
@@ -128,14 +130,17 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | Test Limitations | `/test_limitations` | URL only |
 | Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
+| Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
+| DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
 
 ### Shared sub-screens (note forms)
 - Note add/edit/delete for Defects: `/defects/<id>/notes/...`
 - Note add/edit/delete for Retail: `/retail/<id>/notes/...`
 - Note add/edit/delete for Test Learnings: `/test_learnings/<id>/notes/...`
 - Note add/edit/delete for Spillover: `/spillover/<id>/notes/...`
+- Note add/edit/delete for Follow-ups: `/followups/<id>/notes/...`
 
-### Screenshot attachments (Defects, Retail, Test Learnings, Spillover detail pages)
+### Screenshot attachments (Defects, Retail, Test Learnings, Spillover, Follow-up, Inbox)
 - `GET /uploads/<filename>` — serve a stored image file
 - `POST /notes/<note_id>/attachments/add` — upload image (multipart, field: `file`). Saves to `data/uploads/<note_id>_<timestamp>_<name>`. Returns JSON `{ok, attachment}`.
 - `POST /notes/<note_id>/attachments/<attachment_id>/delete` — delete DB record + disk file. Returns JSON `{ok}`.
@@ -143,7 +148,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - **Ctrl+V paste** supported: hover a note, then Ctrl+V pastes a Snipping Tool image directly into it.
 
 ### Global widget (every page)
-- **Enhancements floating panel** — bottom-right corner, AJAX-driven, no separate page
+- **Enhancements floating panel** — bottom-right corner, AJAX-driven quick-add; full list and edit at `/enhancements/page`
 
 ---
 
@@ -153,6 +158,9 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 2. **Two follow-up trackers** — `followups` (general, lightweight) and `cs_followups` (CS-specific, richer) overlap. The split should be made clearer or consolidated.
 3. **No cross-links between related entities** — a Retail row's `defect_id_ref` is not a clickable link to the Defect detail.
 4. **Sign-off reports are hard to find** — they should be reachable from the dashboard or a dedicated Reports section.
+
+*Resolved gaps (no longer open):*
+- ~~Enhancements had no full-page view~~ — `/enhancements/page` now exists, linked from dashboard card.
 
 ---
 
@@ -207,6 +215,9 @@ notes (
     source      TEXT             -- optional: who/what added it
 )
 ```
+
+**Special case — Inbox (`entity_type='input'`, `entity_id='inbox'`):**
+Unfiled inbox items live in the notes table with these sentinel values. Filing is one `UPDATE notes SET entity_type=?, entity_id=?` — the row ID never changes so attachments follow automatically. Use `database.add_inbox_item`, `database.list_inbox_items`, `database.file_inbox_item`, `database.delete_inbox_item`.
 
 **When implementing notes for any new module:**
 - Use `database.add_note(conn, entity_type, entity_id, heading, note_text)`

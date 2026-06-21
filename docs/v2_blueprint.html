@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v2 Blueprint — Clean Rebuild of chaosco</title>
+<style>
+  :root{
+    --ink:#1f2933; --muted:#5b6b7b; --line:#e1e8ee; --bg:#f7f9fb;
+    --copy:#1a7f4b; --copy-bg:#e6f4ec; --adapt:#9a6b00; --adapt-bg:#fbf1d9;
+    --rebuild:#b22a2a; --rebuild-bg:#fbe7e7; --accent:#2b6cb0; --accent-bg:#e8f1fb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 80px;}
+  h1{font-size:30px;margin:0 0 4px;line-height:1.2}
+  h2{font-size:22px;margin:42px 0 12px;padding-top:18px;border-top:1px solid var(--line)}
+  h3{font-size:17px;margin:24px 0 8px}
+  p,li{color:var(--ink)}
+  .lead{color:var(--muted);font-size:16px;background:#fff;border:1px solid var(--line);
+    border-left:4px solid var(--accent);border-radius:8px;padding:16px 18px;margin:18px 0}
+  code{background:#eef2f6;padding:1px 6px;border-radius:4px;font-size:13.5px;
+    font-family:SFMono-Regular,Consolas,Menlo,monospace}
+  pre{background:#0f1722;color:#d7e2ee;border-radius:10px;padding:18px 20px;overflow:auto;
+    font-family:SFMono-Regular,Consolas,Menlo,monospace;font-size:13px;line-height:1.55}
+  pre .c{color:#7d96ad}
+  table{border-collapse:collapse;width:100%;margin:14px 0;background:#fff;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#eef3f7;font-weight:600}
+  tr:last-child td{border-bottom:0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .t-copy{color:var(--copy);background:var(--copy-bg)}
+  .t-adapt{color:var(--adapt);background:var(--adapt-bg)}
+  .t-rebuild{color:var(--rebuild);background:var(--rebuild-bg)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .axis{display:grid;grid-template-columns:auto 1fr;gap:6px 16px}
+  .warn{border-left:4px solid var(--adapt);background:#fffaf0}
+  .good{border-left:4px solid var(--copy);background:#f1f9f4}
+  ul.checks{list-style:none;padding-left:0}
+  ul.checks li:before{content:"☐  ";color:var(--muted)}
+  .small{color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>v2 Blueprint — Clean Rebuild of <em>chaosco</em></h1>
+<p class="small">Founding document · rebuild clean, test-first, reusing the existing database &amp; schema</p>
+
+<div class="lead">
+  <b>Why this is safe (not a risky rewrite):</b> the valuable asset — the <b>schema + data +
+  importer logic</b> — survives. Only the messy, cheap-to-reproduce part (routes, templates,
+  copy-pasted data-access) is rebuilt. That inverts the usual “never rewrite” risk. The old
+  <code>app/</code> keeps running as your daily tool until v2 is ready.
+</div>
+
+<h2>1 · Goals — the four axes</h2>
+<table>
+  <tr><th>Axis</th><th>Goal</th><th>How v2 delivers it</th></tr>
+  <tr><td><b>Changeability</b></td><td>Easy to modify</td><td>Layered architecture + one generic entity pattern (no per-entity copy-paste)</td></tr>
+  <tr><td><b>Verifiability</b></td><td>Change without fear</td><td>Test-first; characterization tests on ported importers</td></tr>
+  <tr><td><b>Durability</b></td><td>Data &amp; env survive</td><td>Versioned migrations, startup DB backup, dev-on-a-copy, pinned deps</td></tr>
+  <tr><td><b>Robustness</b></td><td>Fails gracefully</td><td>Validation at the Excel boundary + the service layer</td></tr>
+</table>
+<div class="card warn"><b>Restraint clause.</b> Single-user local tool — v2 deliberately
+<b>omits</b> auth, multi-user concurrency, containers, microservices, caching, API versioning.
+Knowing what to leave out is part of the architecture. Clean ≠ over-abstracted; avoid the
+second-system effect.</div>
+
+<h2>2 · Strategy: same repo, isolated <code>v2/</code></h2>
+<pre>chaosco/
+  app/      <span class="c">← OLD app, untouched, keeps running (+ Inbox + small view added here)</span>
+  v2/       <span class="c">← NEW app, built clean</span>
+  docs/</pre>
+<p><b>Two hard rules:</b></p>
+<ol>
+  <li><code>v2/</code> <b>never imports from</b> <code>app/</code> — old code is reference you
+    <em>copy from</em>, never a dependency.</li>
+  <li><code>v2/</code> runs against a <b>copy</b> of <code>test_coordination.db</code> during dev —
+    a v2 bug can’t corrupt real authored data. Adopt the live DB only at cutover.</li>
+</ol>
+<div class="card"><b>Cutover checklist</b> (define “done” up front so you don’t stall at 80%):
+<ul class="checks">
+  <li>v2 import produces byte-identical DB rows to the old app (proven by tests)</li>
+  <li>All daily-used screens exist in v2</li>
+  <li>v2 points at the live DB; old <code>app/</code> archived (moved out, not deleted, for one safety period)</li>
+</ul></div>
+
+<h2>3 · What carries over vs what gets rebuilt — the manifest</h2>
+<div class="legend">
+  <span class="tag t-copy">🟢 copy ~verbatim</span>
+  <span class="tag t-adapt">🟡 adapt (logic stays)</span>
+  <span class="tag t-rebuild">🔴 rebuild clean (reference only)</span>
+</div>
+<table>
+  <tr><th>Old</th><th>New</th><th>Treatment</th><th>Why</th></tr>
+  <tr><td><code>read_defects.py</code></td><td><code>importers/defects.py</code></td><td><span class="tag t-copy">copy</span></td><td>Fiddly edge-case knowledge (dates, blank rows, dedup, skiplog). Copy, then pin with tests.</td></tr>
+  <tr><td><code>spillover_importer.py</code></td><td><code>importers/spillover.py</code></td><td><span class="tag t-copy">copy</span></td><td>Match keys, blank handling.</td></tr>
+  <tr><td><code>retail_importer.py</code></td><td><code>importers/retail.py</code></td><td><span class="tag t-copy">copy</span></td><td>Match keys.</td></tr>
+  <tr><td><code>database.py</code> → CREATE TABLE DDL</td><td><code>db/schema.py</code></td><td><span class="tag t-copy">copy</span></td><td>The schema <b>is</b> the asset. Verbatim.</td></tr>
+  <tr><td><code>database.py</code> → notes + attachments fns</td><td><code>db/notes.py</code></td><td><span class="tag t-copy">copy</span></td><td>Already unified &amp; clean — the part done right.</td></tr>
+  <tr><td><code>archiver.py</code></td><td><code>services/archiver.py</code></td><td><span class="tag t-copy">copy</span></td><td>Excel archiving + dedup.</td></tr>
+  <tr><td><code>config_loader.py</code></td><td><code>config.py</code></td><td><span class="tag t-adapt">adapt</span></td><td>Small; tidy as you move it.</td></tr>
+  <tr><td><code>reporter.py</code></td><td><code>services/retail_report.py</code></td><td><span class="tag t-adapt">adapt</span></td><td>Bucket logic stays; wire to new layer.</td></tr>
+  <tr><td><code>importer.py</code></td><td><code>services/imports.py</code></td><td><span class="tag t-adapt">adapt</span></td><td>Orchestration becomes a service.</td></tr>
+  <tr><td><code>database.py</code> → ALTER TABLE block</td><td><code>db/migrations.py</code></td><td><span class="tag t-adapt">adapt</span></td><td>Already in schema for fresh installs; migrations.py is for <em>future</em> changes.</td></tr>
+  <tr><td><code>config/*.yaml</code></td><td><code>v2/config/*.yaml</code></td><td><span class="tag t-copy">copy</span></td><td>Copy.</td></tr>
+  <tr><td><code>data/test_coordination.db</code></td><td><code>v2/data/…</code> (a <b>copy</b>)</td><td><span class="tag t-copy">copy</span></td><td>Reuse the data; don’t point at the live file.</td></tr>
+  <tr><td><code>CLAUDE.md</code></td><td><code>v2/CLAUDE.md</code></td><td><span class="tag t-adapt">adapt</span></td><td>Best spec you have — adapt to describe v2.</td></tr>
+  <tr><td><code>database.py</code> → per-entity CRUD (links, contacts, todos, followups, cs_followups, test_learnings, test_limitations, known_prod_defects)</td><td><code>db/repository.py</code> (generic)</td><td><span class="tag t-rebuild">rebuild</span></td><td>~60 near-identical functions collapse into ONE generic repository.</td></tr>
+  <tr><td><code>web.py</code> (90 routes)</td><td><code>web/routes/*</code></td><td><span class="tag t-rebuild">rebuild</span></td><td>Thin route modules + generic entity routes.</td></tr>
+  <tr><td>all <code>templates/*.html</code></td><td><code>web/templates/*</code> + macros</td><td><span class="tag t-rebuild">rebuild</span></td><td>Shared macros; 4× attachment JS becomes ONE static file.</td></tr>
+</table>
+<div class="card good"><b>One-line summary:</b> copy the <b>importers, schema, notes/attachments,
+config, and DB</b>; rebuild the <b>routes, templates, and per-entity CRUD</b>.</div>
+
+<h2>4 · Target structure</h2>
+<pre>v2/
+  app/
+    __init__.py            <span class="c"># Flask app factory</span>
+    config.py              <span class="c"># ← port config_loader</span>
+    db/
+      connection.py        <span class="c"># get_connection + transaction helper</span>
+      schema.py            <span class="c"># ← CREATE TABLE DDL, copied verbatim</span>
+      migrations.py        <span class="c"># ordered, versioned, future changes</span>
+      repository.py        <span class="c"># GENERIC CRUD — the duplication-killer</span>
+      notes.py             <span class="c"># ← port unified notes + attachments</span>
+    importers/             <span class="c"># ← PORTED ~verbatim, then tested</span>
+      defects.py  spillover.py  retail.py
+    services/              <span class="c"># the "orchestrator" — business logic</span>
+      imports.py           <span class="c"># ← port importer.py orchestration</span>
+      entities.py          <span class="c"># generic entity service over repository</span>
+      notes_service.py     <span class="c"># filing/move (incl. Inbox)</span>
+      retail_report.py     <span class="c"># ← port reporter.py</span>
+      archiver.py          <span class="c"># ← port archiver.py</span>
+    models.py              <span class="c"># DECLARATIVE entity definitions</span>
+    web/
+      routes/  entities.py  notes.py  imports.py  dashboard.py
+      templates/  base.html  _macros/  pages/
+      static/  js/attachments.js  <span class="c"># ONE copy (was 4)</span>  css/
+  tests/
+    test_importers/  <span class="c"># characterization — prove identical output FIRST</span>
+    test_services/   test_web/   conftest.py
+  data/              <span class="c"># a COPY of the DB during dev</span>
+  config/  requirements.txt  <span class="c"># PINNED</span>  CLAUDE.md</pre>
+
+<h2>5 · The layers (your “orchestrator in the middle”)</h2>
+<pre>  web/routes   →   services   →   db (repository / notes / schema)
+  (thin: HTTP,     (business      (SQL only;
+   parse,render)    logic, the     no business logic)
+                    orchestrator)</pre>
+<ul>
+  <li><b>web/routes</b> — thin. Parse request, call a service, render. No SQL, no logic.</li>
+  <li><b>services</b> — the middle layer you wanted. Validation, “what should happen,” orchestration. The rules live here.</li>
+  <li><b>db</b> — SQL only. <code>repository.py</code> generic; <code>notes.py</code> unified; <code>schema.py</code>/<code>migrations.py</code> own structure.</li>
+</ul>
+
+<h2>6 · The duplication-killer: one generic entity pattern</h2>
+<p>Declare each simple entity <b>once</b>; generic machinery does CRUD, routes and rendering:</p>
+<pre><span class="c"># models.py (illustrative)</span>
+CONTACTS = Entity(
+    table="contacts",
+    fields=["name","email","area","topic","comments","tags"],
+    filters=["area","topic","tags"],
+    search=["name","email"],
+)</pre>
+<p>Adding a new simple entity = one declaration, not 6 functions + 6 routes + a 250-line template.</p>
+<div class="card warn"><b>Where to STOP.</b> Imported verticals (defects, spillover, retail) have
+real bespoke logic — keep their importers and specialized queries hand-written. Use the generic
+pattern for simple CRUD entities and annotations. Let special things be special; don’t force
+everything through one abstraction to be clever.</div>
+
+<h2>7 · Test-first plan</h2>
+<ol>
+  <li><b>Characterization tests on ported importers first.</b> Feed a sample Excel, assert the rows. Prove v2 importers produce <b>identical</b> output to the old app — the safety net for the part you copy.</li>
+  <li><b>Service tests</b> — filing logic, CRUD rules, report buckets.</li>
+  <li><b>Web smoke tests</b> — each route returns 200 with the right data.</li>
+</ol>
+<p class="small">Not 100% coverage — <em>fearless change</em> on the critical paths.</p>
+
+<h2>8 · Durability (folded in, not a phase)</h2>
+<ul>
+  <li><code>db/migrations.py</code> — ordered &amp; versioned; no scattered ALTERs.</li>
+  <li><b>Startup DB backup</b> — timestamped copy on launch (cheap insurance).</li>
+  <li><b>Dev-on-a-copy</b> — protects authored data during the messy build.</li>
+  <li><b>Pin <code>requirements.txt</code></b> — reproducible a year from now.</li>
+</ul>
+
+<h2>9 · Build order</h2>
+<ol>
+  <li><b>Scaffold</b> <code>v2/</code> (app factory, config, DB copy) + one passing test.</li>
+  <li><b>Port importers</b> + characterization tests → prove identical output.</li>
+  <li><b>db layer</b> — schema, connection, generic repository, port notes.</li>
+  <li><b>services</b> — imports, entities, notes_service, retail_report.</li>
+  <li><b>web</b> — base + macros + generic entity pages + dashboard; one shared attachments.js.</li>
+  <li><b>Migrate each vertical</b> onto the pattern, one at a time (tests stay green).</li>
+  <li><b>Cutover</b> per §2.</li>
+</ol>
+
+<h2>10 · First feature in v2: Inbox (clean version)</h2>
+<p>The Inbox you ship <em>today</em> in the old app is throwaway plumbing — but its <b>data design
+carries over for free</b> (just <code>notes</code> rows with <code>entity_type='input'</code>). In
+v2, Inbox becomes the first real exercise of the clean stack:
+<code>notes_service.file_item()</code> + generic note routes + the shared note-log macro. Small,
+self-contained, the perfect pilot. Data design lives in <code>inbox_module_plan.md</code> — already
+right, unchanged.</p>
+
+<p class="small" style="margin-top:40px;border-top:1px solid var(--line);padding-top:14px">
+Companion docs: <code>docs/v2_blueprint.md</code> (source) · <code>docs/inbox_module_plan.md</code> (Inbox data design)</p>
+
+</div>
+</body>
+</html>

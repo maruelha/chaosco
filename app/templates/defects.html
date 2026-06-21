@@ -43,11 +43,19 @@
       <option value="no"  {% if dtco2c == "no"  %}selected{% endif %}>Not checked</option>
     </select>
   </div>
+  <div class="filter-group">
+    <label for="f-daily">Daily</label>
+    <select id="f-daily" name="daily">
+      <option value="">All</option>
+      <option value="yes" {% if daily == "yes" %}selected{% endif %}>To discuss</option>
+      <option value="no"  {% if daily == "no"  %}selected{% endif %}>Not flagged</option>
+    </select>
+  </div>
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if search or channel or statuses or show_all or dtco2c %}
+  {% if search or channel or statuses or show_all or dtco2c or daily %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('defects_list') }}" class="btn">Clear</a>
@@ -101,6 +109,7 @@
         <th data-sort="text">Date Reported</th>
         <th class="col-prod" data-sort="text" title="Exists in production">Prod</th>
         <th data-sort="text" title="DTC O2C — defect we need to follow up on">DTC O2C</th>
+        <th data-sort="text" title="To discuss on daily">Daily</th>
       </tr>
     </thead>
     <tbody>
@@ -133,9 +142,14 @@
                  {% if d.dtco2c %}checked{% endif %}
                  title="DTC O2C — follow up needed">
         </td>
+        <td data-val="{{ 'yes' if d.daily else '' }}" style="text-align:center">
+          <input type="checkbox" class="daily-toggle" data-id="{{ d.defect_id }}"
+                 {% if d.daily %}checked{% endif %}
+                 title="To discuss on daily">
+        </td>
       </tr>
     {% else %}
-      <tr><td colspan="10" class="table-empty">No defects match the current filters.</td></tr>
+      <tr><td colspan="11" class="table-empty">No defects match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -246,6 +260,20 @@ document.querySelectorAll('.dtco2c-toggle').forEach(function (cb) {
   cb.addEventListener('change', function () {
     var id = cb.dataset.id;
     fetch('/defects/' + id + '/dtco2c', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: cb.checked }),
+    }).catch(function () {
+      cb.checked = !cb.checked; // revert on error
+    });
+  });
+});
+
+// ---- Daily inline toggle ----
+document.querySelectorAll('.daily-toggle').forEach(function (cb) {
+  cb.addEventListener('change', function () {
+    var id = cb.dataset.id;
+    fetch('/defects/' + id + '/daily', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: cb.checked }),

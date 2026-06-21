@@ -8,6 +8,12 @@
 
 <div class="action-grid">
 
+  <div class="action-card" style="border-left:3px solid #2b6cb0">
+    <h2>Inbox {% if inbox_count %}<span class="notes-count-badge">{{ inbox_count }}</span>{% endif %}</h2>
+    <p>Capture notes and screenshots during the day, then file each one to a defect, test case, spillover item, or learning.</p>
+    <a href="{{ url_for('inbox') }}" class="btn btn-primary">Open Inbox</a>
+  </div>
+
   <div class="action-card">
     <h2>Import DTC ROE Tracking</h2>
     <p>Find the newest export, archive it, and upsert all enabled tabs into the database.</p>
@@ -68,6 +74,12 @@
     <h2>CS Follow-Up Tracker</h2>
     <p>Track Core South follow-up items by area and Jira ID, with next steps, owner, and notes.</p>
     <a href="{{ url_for('cs_followup_list') }}" class="btn">View Tracker</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Enhancements {% if open_enhancements %}<span class="notes-count-badge">{{ open_enhancements }}</span>{% endif %}</h2>
+    <p>Browse, edit, delete, and close tracked enhancement ideas.</p>
+    <a href="{{ url_for('enhancements_page') }}" class="btn">View Enhancements</a>
   </div>
 
 </div>

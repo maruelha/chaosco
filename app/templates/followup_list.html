@@ -69,19 +69,9 @@
         </select>
       </td>
       <td class="fu-col-notes">
-        <button class="btn btn-sm js-fu-notes-toggle">
+        <a href="{{ url_for('followup_detail', followup_id=item.id) }}" class="btn btn-sm">
           Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
-        </button>
-      </td>
-    </tr>
-    <tr class="fu-notes-row" style="display:none" data-id="{{ item.id }}">
-      <td colspan="5" class="fu-notes-cell">
-        <div class="fu-notes-list js-fu-notes-list">Loading…</div>
-        <div class="fu-note-add">
-          <textarea class="fu-input fu-note-textarea js-fu-note-input" rows="2"
-                    placeholder="Add a note…"></textarea>
-          <button class="btn btn-sm btn-primary js-fu-note-save">Save note</button>
-        </div>
+        </a>
       </td>
     </tr>
   {% endfor %}
@@ -93,62 +83,14 @@
 
 <script>
 (function () {
-  document.querySelectorAll('.js-fu-status-sel').forEach(sel => {
-    sel.addEventListener('change', async () => {
-      const row = sel.closest('tr');
-      const id  = row.dataset.id;
-      const fd  = new FormData();
+  document.querySelectorAll('.js-fu-status-sel').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var row = sel.closest('tr');
+      var id  = row.dataset.id;
+      var fd  = new FormData();
       fd.append('status', sel.value);
-      await fetch(`/followups/${id}/status`, { method: 'POST', body: fd });
-      location.reload();
-    });
-  });
-
-  document.querySelectorAll('.js-fu-notes-toggle').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const mainRow  = btn.closest('tr');
-      const notesRow = mainRow.nextElementSibling;
-      const id       = mainRow.dataset.id;
-      const open     = notesRow.style.display !== 'none';
-      if (open) { notesRow.style.display = 'none'; return; }
-      notesRow.style.display = '';
-      const list = notesRow.querySelector('.js-fu-notes-list');
-      list.innerHTML = 'Loading…';
-      const resp  = await fetch(`/followups/${id}/notes`);
-      const notes = await resp.json();
-      renderNotes(list, notes);
-    });
-  });
-
-  function renderNotes(el, notes) {
-    if (!notes.length) {
-      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
-      return;
-    }
-    el.innerHTML = notes.map(n =>
-      `<div class="fu-note-item"><span class="fu-note-ts">${n.created_at}</span> ${n.note || n.heading || ''}</div>`
-    ).join('');
-  }
-
-  document.querySelectorAll('.js-fu-note-save').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const cell     = btn.closest('.fu-notes-cell');
-      const notesRow = btn.closest('tr');
-      const id       = notesRow.dataset.id;
-      const input    = cell.querySelector('.js-fu-note-input');
-      const text     = input.value.trim();
-      if (!text) return;
-      const fd = new FormData();
-      fd.append('note', text);
-      const resp = await fetch(`/followups/${id}/notes/add`, { method: 'POST', body: fd });
-      const data = await resp.json();
-      if (data.ok) {
-        input.value = '';
-        renderNotes(cell.querySelector('.js-fu-notes-list'), data.notes);
-        const mainRow   = notesRow.previousElementSibling;
-        const toggleBtn = mainRow.querySelector('.js-fu-notes-toggle');
-        toggleBtn.textContent = `Notes (${data.notes.length})`;
-      }
+      fetch('/followups/' + id + '/status', { method: 'POST', body: fd })
+        .then(function () { location.reload(); });
     });
   });
 }());

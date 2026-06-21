@@ -74,6 +74,12 @@
                placeholder="Who is responsible for DTC O2C follow-up?">
       </div>
 
+      <div class="checkbox-row">
+        <input id="f-daily" type="checkbox" name="daily" value="1"
+               {% if defect.daily %}checked{% endif %}>
+        <label for="f-daily">To discuss on daily</label>
+      </div>
+
       <div class="form-field">
         <label for="f-comments">Comments</label>
         <textarea id="f-comments" name="comments" rows="3">{{ defect.comments or '' }}</textarea>

@@ -177,12 +177,13 @@
 
 <div class="page-header">
   <h1>chaosco — Visual Screen Reference</h1>
-  <p>Local web UI · http://127.0.0.1:5000 · Screenshots captured 2026-06-18</p>
+  <p>Local web UI · http://127.0.0.1:5000 · Last updated 2026-06-21</p>
 </div>
 
 <!-- sticky TOC -->
 <div class="toc-bar">
   <a href="#dashboard">Dashboard</a><span class="sep">|</span>
+  <a href="#inbox">Inbox</a><span class="sep">|</span>
   <a href="#defects">Defects</a><span class="sep">|</span>
   <a href="#spillover">Spillover</a><span class="sep">|</span>
   <a href="#retail">Retail</a><span class="sep">|</span>
@@ -191,8 +192,10 @@
   <a href="#prod-defects">Prod Defects</a><span class="sep">|</span>
   <a href="#cs-followups">CS Follow-Ups</a><span class="sep">|</span>
   <a href="#meeting-prep">Meeting Prep</a><span class="sep">|</span>
+  <a href="#dtco2c-daily">DTC O2C Daily</a><span class="sep">|</span>
   <a href="#todos">To-Do</a><span class="sep">|</span>
   <a href="#followups">Follow-ups</a><span class="sep">|</span>
+  <a href="#enhancements-page">Enhancements</a><span class="sep">|</span>
   <a href="#links">Links</a><span class="sep">|</span>
   <a href="#contacts">Contacts</a><span class="sep">|</span>
   <a href="#test-learnings">Test Learnings</a><span class="sep">|</span>
@@ -223,6 +226,7 @@
         <div class="feat-block">
           <h4>Cards visible</h4>
           <ul>
+            <li><strong>Inbox</strong> — daily capture (shows pending count badge) — top-left</li>
             <li>Import DTC ROE Tracking</li>
             <li>Defects</li>
             <li>Core South Spillover</li>
@@ -233,19 +237,76 @@
             <li>Links</li>
             <li>Contacts</li>
             <li>CS Follow-Up Tracker</li>
+            <li><strong>Enhancements</strong> — full list view (shows open count badge) — bottom-right</li>
           </ul>
         </div>
         <div class="feat-block">
           <h4>Notes</h4>
           <ul>
-            <li>The "☆ Enhancements" floating button (bottom-right) is visible on every page</li>
+            <li>The "☆ Enhancements" floating button (bottom-right corner) is visible on every page for quick capture; the Enhancements dashboard card opens the full sortable list</li>
             <li>No persistent sidebar — navigation is card-based from here</li>
             <li>The "Test Coordination" header title is a link back to this page from anywhere</li>
           </ul>
         </div>
         <div class="vision-box">
           <strong>Vision gap to discuss</strong>
-          Several modules that exist in the DB (Retail Learnings, Limitations, Sign-Off Reports, Prod Defects) are not reachable from the dashboard — they are only accessible by typing the URL directly or following links from within other screens.
+          Several modules (Retail Learnings, Limitations, Sign-Off Reports, Prod Defects) are not on the dashboard — reachable only by URL or links from within other screens.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- =========================================================== -->
+  <div class="group-heading">Inbox — daily capture and filing</div>
+
+  <div class="screen stripe-core" id="inbox">
+    <div class="screen-header">
+      <span class="screen-name">Inbox</span>
+      <span class="screen-url">GET /inbox</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Daily capture pad. Paste notes, screenshots, and free text during the day,
+          then file each item to its destination (Defect, Retail test case, Spillover,
+          Test Learning, or Follow-up) when ready. Filed items appear in the target's
+          notes log automatically. Unfiled items live here until moved or deleted.
+        </p>
+        <div class="feat-block">
+          <h4>Add a new item</h4>
+          <ul>
+            <li>Heading (optional) + large full-width textarea</li>
+            <li>Screenshots via <span class="pill pill-a">📷 Add screenshot</span> button or <strong>Ctrl+V</strong> paste</li>
+            <li>Items appear in the Pending list below in reverse-chronological order</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Per-item actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Edit</span> — inline toggle; updates heading and note text</li>
+            <li><span class="pill pill-x">Delete</span> — removes item and all attached screenshots</li>
+            <li><span class="pill pill-x">File ›</span> — opens filing picker; choose type (Defect / Retail / Spillover / Test Learning / Follow-up), search by name, select target, then <strong>Move ›</strong></li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Filing behaviour</h4>
+          <ul>
+            <li>Filing is a single SQL UPDATE — the note row and all its attachments move to the target, nothing is copied</li>
+            <li>The filed note appears immediately in the target's detail page notes log</li>
+            <li>Dashboard card shows a live count badge of unfiled items</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Screenshots</h4>
+          <ul>
+            <li><span class="pill pill-a">📷 Add screenshot</span> per item — PNG/JPG/GIF/WEBP</li>
+            <li><strong>Ctrl+V</strong> pastes a Snipping Tool image into the last-hovered item</li>
+            <li>Thumbnails shown inline; ✕ delete per thumbnail</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -276,6 +337,8 @@
             <li><span class="pill pill-f">Channel</span> dropdown</li>
             <li><span class="pill pill-f">Status</span> multi-select</li>
             <li><span class="pill pill-f">Action needed</span> yes / no</li>
+            <li><span class="pill pill-f">DTC O2C</span> yes / no</li>
+            <li><span class="pill pill-f">Daily</span> yes / no — filter by "to discuss on daily" flag</li>
             <li><span class="pill pill-f">Show all</span> toggle (reveals hidden statuses)</li>
           </ul>
         </div>
@@ -289,7 +352,15 @@
         <div class="feat-block">
           <h4>Columns</h4>
           <ul>
-            <li>Row · Defect ID · Channel · Country · SolMan Name · Status · Priority · Assigned To · Prod · <strong>Blocked TCs</strong> · Notes · Action</li>
+            <li>Defect ID · SolMan Name · Blocked TCs · Channel · Status · Priority · Assigned To · Date Reported · Prod · <strong>DTC O2C</strong> (inline checkbox) · <strong>Daily</strong> (inline checkbox)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Inline checkboxes — DTC O2C &amp; Daily</h4>
+          <ul>
+            <li><strong>DTC O2C</strong> — flag meaning "MB needs to follow up on this defect"; drives the Attribution split on the Retail Status Report</li>
+            <li><strong>Daily</strong> — flags the defect for discussion on the DTC O2C Daily call; feeds the <a href="#dtco2c-daily">DTC O2C Daily Agenda</a></li>
+            <li>Both toggleable inline (AJAX, no reload) or via the Defect Detail annotation form</li>
           </ul>
         </div>
         <div class="feat-block">
@@ -310,6 +381,14 @@
             <li><strong>Ctrl+V</strong> pastes a Snipping Tool screenshot into the last-hovered note</li>
             <li>Thumbnails shown inline; hover to reveal ✕ delete button</li>
             <li>Files stored in <code>data/uploads/</code></li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Defect Detail — annotation flags</h4>
+          <ul>
+            <li><strong>Action needed</strong> checkbox — general flag for follow-up required</li>
+            <li><strong>DTC O2C</strong> checkbox + <em>DTC O2C Responsible</em> text field</li>
+            <li><strong>To discuss on daily</strong> checkbox — marks the defect for the DTC O2C Daily call; feeds the <a href="#dtco2c-daily">DTC O2C Daily Agenda</a></li>
           </ul>
         </div>
         <div class="feat-block">
@@ -669,8 +748,9 @@
         <div class="feat-block">
           <h4>Export actions</h4>
           <ul>
-            <li><span class="pill pill-x">Export agenda</span> — opens <code>/meeting-prep/agenda</code> in a new tab: styled HTML with coloured section banners per overall topic, matching the spillover/retail report design. Includes Download HTML and Print.</li>
+            <li><span class="pill pill-x">Export agenda</span> — opens <code>/meeting-prep/agenda</code> in a new tab: styled HTML with coloured section banners per overall topic. Includes Download HTML and Print.</li>
             <li><span class="pill pill-x">Copy to clipboard</span> — plain text sorted by overall topic with section labels</li>
+            <li><span class="pill pill-a">DTC O2C Daily Agenda</span> — always-visible button in the page header; opens <code>/meeting-prep/dtco2c-daily</code> in a new tab (see <a href="#dtco2c-daily">DTC O2C Daily Agenda</a>)</li>
           </ul>
         </div>
         <div class="feat-block">
@@ -681,6 +761,55 @@
             <li><span class="pill pill-x">Topic edit</span></li>
             <li><span class="pill pill-x">Inline note</span> per item</li>
             <li><span class="pill pill-x">Notes popup</span> per item</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-planning" id="dtco2c-daily">
+    <div class="screen-header">
+      <span class="screen-name">DTC O2C Daily Agenda</span>
+      <span class="screen-url">GET /meeting-prep/dtco2c-daily</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Standalone daily briefing report for the DTC O2C call. Always-visible button
+          in the Meeting Prep page header, opens in a new tab. Three sections pulled
+          live from the database; Download HTML and Print in the footer.
+        </p>
+        <div class="feat-block">
+          <h4>Section 1 — Meeting Topics</h4>
+          <ul>
+            <li>Planned items from Meeting Prep where meeting = "DTC O2C Daily"</li>
+            <li>Grouped by Overall Topic (CS Retail → CS ECOM → … → Other), untagged items at the end as "General"</li>
+            <li>Continuous numbering across groups</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Section 2 — Defects to Discuss</h4>
+          <ul>
+            <li>All defects with <strong>To discuss on daily</strong> checkbox checked (<code>daily = 1</code>)</li>
+            <li>Table columns: Defect ID · SolMan Name · Channel · Next Steps</li>
+            <li>Ordered by channel then defect ID</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Section 3 — Follow-ups with DTC O2C</h4>
+          <ul>
+            <li>Open follow-ups where <code>with_whom = 'DTC O2C'</code></li>
+            <li>Shows status badge, topic, and when-next date</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Actions</h4>
+          <ul>
+            <li><span class="pill pill-a">Print</span></li>
+            <li><span class="pill pill-a">Download HTML</span> — dated standalone snapshot</li>
           </ul>
         </div>
       </div>
@@ -729,7 +858,7 @@
 
   <div class="screen stripe-planning" id="followups">
     <div class="screen-header">
-      <span class="screen-name">Follow-ups</span>
+      <span class="screen-name">Follow-ups — List</span>
       <span class="screen-url">GET /followups</span>
     </div>
     <div class="screen-body">
@@ -757,13 +886,89 @@
         <div class="feat-block">
           <h4>Inline actions</h4>
           <ul>
-            <li><span class="pill pill-x">Status change</span></li>
-            <li><span class="pill pill-x">Notes popup</span></li>
+            <li><span class="pill pill-x">Status change</span> (dropdown, AJAX)</li>
+            <li><span class="pill pill-n">Notes</span> button → Follow-up Detail page (shows note count badge)</li>
           </ul>
         </div>
         <div class="vision-box">
           <strong>Vision gap to discuss</strong>
           Two separate follow-up trackers exist: <em>Follow-ups</em> (general, lightweight) and <em>CS Follow-Up Tracker</em> (CS-specific, richer). Their overlap and intended split may need clarification.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen stripe-planning" id="followup-detail">
+    <div class="screen-header">
+      <span class="screen-name">Follow-up — Detail</span>
+      <span class="screen-url">GET /followups/&lt;id&gt;</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Detail page for a single follow-up. Shows all fields read-only, with an inline
+          status dropdown. Full notes module with headings, screenshots, and Ctrl+V paste.
+          Inbox items can be filed directly to a follow-up from the Inbox filing picker.
+        </p>
+        <div class="feat-block">
+          <h4>Fields displayed</h4>
+          <ul>
+            <li>With Whom (as page heading) · Topic · When Next · Status (inline dropdown)</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Notes module</h4>
+          <ul>
+            <li>Full notes log: heading + text + timestamp</li>
+            <li>Per-note <span class="pill pill-a">Edit</span> and <span class="pill pill-a">Delete</span></li>
+            <li><span class="pill pill-a">📷 Add screenshot</span> per note — PNG/JPG/GIF/WEBP</li>
+            <li><strong>Ctrl+V</strong> pastes a Snipping Tool image into the last-hovered note</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="screen stripe-planning" id="enhancements-page">
+    <div class="screen-header">
+      <span class="screen-name">Enhancements — Full List</span>
+      <span class="screen-url">GET /enhancements/page</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Full-page sortable list of all enhancement ideas. Reachable from the dashboard
+          Enhancements card (bottom-right). Complements the floating "☆ Enhancements"
+          panel (quick-add on every page) — the panel is for capture, this page is for
+          review, edit, and triage.
+        </p>
+        <div class="feat-block">
+          <h4>Sorting</h4>
+          <ul>
+            <li>Click column headers: <strong>Priority</strong>, <strong>Status</strong>, <strong>Area</strong></li>
+            <li>Toggle asc / desc; current column shows ▲ / ▼ indicator</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Per-row actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Status cycle</span> — inline AJAX (not_started → in_progress → closed)</li>
+            <li><span class="pill pill-x">Edit</span> — reveals an edit row below: Priority select, Area input, Enhancement textarea → AJAX save</li>
+            <li><span class="pill pill-x">Delete</span> — AJAX, removes row from DOM with confirm</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Columns</h4>
+          <ul>
+            <li>Priority · Status · Area · Enhancement · Edit / Delete</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -930,7 +1135,7 @@
 </div><!-- /content -->
 
 <div class="page-footer">
-  chaosco · Visual Screen Reference · Screenshots captured 2026-06-18 from http://127.0.0.1:5000
+  chaosco · Visual Screen Reference · Last updated 2026-06-21 · http://127.0.0.1:5000
 </div>
 
 </body>

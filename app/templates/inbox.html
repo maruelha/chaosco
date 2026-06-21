@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{% block title %}Inbox — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Inbox {% if items %}<span class="notes-count-badge">{{ items | length }}</span>{% endif %}</h1>
+  </div>
+</div>
+
+{% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+{% if note_saved %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+{% if note_deleted %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+{% if note_filed %}<div class="saved-banner">&#10003;&nbsp; Filed to {{ note_filed }}.</div>{% endif %}
+
+{# ---- Add new item ---- #}
+<div class="detail-card">
+  <h2 style="margin-top:0">New item</h2>
+  <form method="post" action="{{ url_for('inbox_add') }}">
+    <div style="margin-bottom:0.5rem">
+      <input type="text" name="heading" class="form-control" placeholder="Heading (optional)" style="width:100%">
+    </div>
+    <div style="margin-bottom:0.75rem">
+      <textarea name="note" class="form-control" rows="10" placeholder="Paste your note here…" required style="width:100%;resize:vertical"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Save to Inbox</button>
+  </form>
+</div>
+
+{# ---- Pending items ---- #}
+{% if items %}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Pending</h2>
+    <span class="notes-count-badge">{{ items | length }}</span>
+  </div>
+  <div class="notes-list">
+    {% for item in items %}
+    <div class="note-item" id="item-{{ item.id }}">
+      <div class="note-meta">
+        <span class="note-heading">{{ item.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ item.created_at }}</span>
+      </div>
+      <p class="note-text" style="white-space:pre-wrap">{{ item.note or '' }}</p>
+
+      {# Attachments #}
+      <div class="note-attachments" id="atts-{{ item.id }}">
+        {% for att in attachments_by_note.get(item.id, []) %}
+        <div class="att-thumb" id="att-{{ att.id }}">
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('serve_upload', filename=att.filename) }}" alt="{{ att.original_name }}">
+          </a>
+          <span class="att-name">{{ att.original_name }}</span>
+          <button class="att-del" data-note="{{ item.id }}" data-att="{{ att.id }}" title="Remove screenshot">&#10005;</button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="att-add">
+        <label class="btn btn-sm att-pick-btn" for="att-file-{{ item.id }}">&#128247; Add screenshot</label>
+        <input id="att-file-{{ item.id }}" type="file" class="att-file" data-note="{{ item.id }}" accept="image/*" style="display:none">
+      </div>
+
+      {# Actions #}
+      <div class="note-actions" style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+        <button type="button" class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Edit</button>
+        <form method="post" action="{{ url_for('inbox_delete', note_id=item.id) }}" style="display:inline" onsubmit="return confirm('Delete this inbox item?')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+        <button type="button" class="btn btn-sm btn-primary" onclick="toggleFile({{ item.id }})">File ›</button>
+      </div>
+
+      {# Inline edit (hidden) #}
+      <div id="edit-form-{{ item.id }}" style="display:none;margin-top:1rem">
+        <form method="post" action="{{ url_for('inbox_edit', note_id=item.id) }}">
+          <div style="margin-bottom:0.5rem">
+            <input type="text" name="heading" value="{{ item.heading or '' }}" class="form-control" placeholder="Heading (optional)">
+          </div>
+          <div style="margin-bottom:0.5rem">
+            <textarea name="note" class="form-control" rows="4">{{ item.note or '' }}</textarea>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">Save</button>
+          <button type="button" class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Cancel</button>
+        </form>
+      </div>
+
+      {# Filing picker (hidden) #}
+      <div id="file-form-{{ item.id }}" style="display:none;margin-top:1rem;padding:1rem;background:#f7f9fb;border:1px solid #e1e8ee;border-radius:8px">
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:0.75rem">
+          <div>
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Type</label>
+            <select class="form-control file-type-sel" data-item="{{ item.id }}" onchange="onTypeChange({{ item.id }})">
+              <option value="">— pick type —</option>
+              <option value="defect">Defect</option>
+              <option value="retail">Retail</option>
+              <option value="spillover">Spillover</option>
+              <option value="test_learning">Test Learning</option>
+              <option value="followup">Follow-up</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Search</label>
+            <input type="text" class="form-control file-search-inp" data-item="{{ item.id }}"
+              placeholder="type to search…" oninput="onSearchInput({{ item.id }})" style="min-width:220px">
+          </div>
+        </div>
+        <div id="search-results-{{ item.id }}" style="margin-bottom:0.75rem"></div>
+        <form method="post" action="{{ url_for('inbox_file', note_id=item.id) }}">
+          <input type="hidden" name="target_type" id="target-type-{{ item.id }}">
+          <input type="hidden" name="target_id"   id="target-id-{{ item.id }}">
+          <button type="submit" class="btn btn-sm btn-primary" id="file-btn-{{ item.id }}" disabled>Move ›</button>
+          <button type="button" class="btn btn-sm" onclick="toggleFile({{ item.id }})">Cancel</button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="detail-card" style="text-align:center;color:#aeaeb2;padding:2.5rem 1rem">
+  Inbox is empty — add a note above to get started.
+</div>
+{% endif %}
+
+<script>
+(function () {
+
+  window.toggleEdit = function (id) {
+    var el = document.getElementById('edit-form-' + id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.toggleFile = function (id) {
+    var el = document.getElementById('file-form-' + id);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.onTypeChange = function (id) {
+    document.getElementById('search-results-' + id).innerHTML = '';
+    document.getElementById('target-type-' + id).value = '';
+    document.getElementById('target-id-' + id).value = '';
+    document.getElementById('file-btn-' + id).disabled = true;
+    document.querySelector('.file-search-inp[data-item="' + id + '"]').value = '';
+    onSearchInput(id);
+  };
+
+  var _timers = {};
+  window.onSearchInput = function (id) {
+    clearTimeout(_timers[id]);
+    _timers[id] = setTimeout(function () {
+      var typeSel   = document.querySelector('.file-type-sel[data-item="'   + id + '"]');
+      var searchInp = document.querySelector('.file-search-inp[data-item="' + id + '"]');
+      var type = typeSel   ? typeSel.value.trim()   : '';
+      var q    = searchInp ? searchInp.value.trim() : '';
+      var container = document.getElementById('search-results-' + id);
+      if (!type) { container.innerHTML = '<small style="color:#aeaeb2">Pick a type first.</small>'; return; }
+      fetch('/inbox/targets?type=' + encodeURIComponent(type) + '&q=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.length) { container.innerHTML = '<small style="color:#aeaeb2">No results.</small>'; return; }
+          var html = '<div style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto">';
+          data.forEach(function (it) {
+            html += '<button type="button" class="btn btn-sm target-pick-btn" style="text-align:left"'
+              + ' data-item="' + id + '" data-value="' + esc(it.value) + '" data-label="' + esc(it.label) + '">'
+              + esc(it.label) + '</button>';
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        });
+    }, 280);
+  };
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.target-pick-btn');
+    if (!btn) return;
+    var id = btn.dataset.item;
+    var typeSel = document.querySelector('.file-type-sel[data-item="' + id + '"]');
+    document.getElementById('target-type-' + id).value = typeSel ? typeSel.value : '';
+    document.getElementById('target-id-' + id).value   = btn.dataset.value;
+    document.getElementById('file-btn-' + id).disabled = false;
+    btn.closest('div').querySelectorAll('.target-pick-btn').forEach(function (b) { b.classList.remove('btn-primary'); });
+    btn.classList.add('btn-primary');
+    var inp = document.querySelector('.file-search-inp[data-item="' + id + '"]');
+    if (inp) inp.value = btn.dataset.label;
+  });
+
+  /* ---- Screenshots: file-input change ---- */
+  document.addEventListener('change', function (e) {
+    var input = e.target;
+    if (!input.classList.contains('att-file')) return;
+    var noteId = input.dataset.note;
+    var file   = input.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/notes/' + noteId + '/attachments/add', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { alert('Upload failed: ' + data.error); return; }
+        appendThumb(noteId, data.attachment);
+        input.value = '';
+      })
+      .catch(function () { alert('Upload error — check console.'); });
+  });
+
+  /* ---- Ctrl+V paste ---- */
+  var _activeNoteId = null;
+  document.addEventListener('mouseover', function (e) {
+    var item = e.target.closest('.note-item');
+    if (item) {
+      var f = item.querySelector('.att-file');
+      if (f) _activeNoteId = f.dataset.note;
+    }
+  });
+
+  document.addEventListener('paste', function (e) {
+    if (!_activeNoteId) return;
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === -1) continue;
+      var file = items[i].getAsFile();
+      if (!file) continue;
+      e.preventDefault();
+      var fd = new FormData();
+      fd.append('file', file, 'paste-' + Date.now() + '.png');
+      fetch('/notes/' + _activeNoteId + '/attachments/add', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) { alert('Paste upload failed: ' + data.error); return; }
+          appendThumb(_activeNoteId, data.attachment);
+        });
+      break;
+    }
+  });
+
+  /* ---- Delete attachment ---- */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.att-del');
+    if (!btn) return;
+    if (!confirm('Remove this screenshot?')) return;
+    var noteId = btn.dataset.note;
+    var attId  = btn.dataset.att;
+    fetch('/notes/' + noteId + '/attachments/' + attId + '/delete', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { alert('Delete failed'); return; }
+        var thumb = document.getElementById('att-' + attId);
+        if (thumb) thumb.remove();
+      });
+  });
+
+  function appendThumb(noteId, att) {
+    var container = document.getElementById('atts-' + noteId);
+    var div = document.createElement('div');
+    div.className = 'att-thumb';
+    div.id = 'att-' + att.id;
+    div.innerHTML =
+      '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
+      '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+      '<span class="att-name">' + att.original_name + '</span>' +
+      '<button class="att-del" data-note="' + noteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+    container.appendChild(div);
+  }
+
+}());
+</script>
+{% endblock %}
