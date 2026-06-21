@@ -77,6 +77,12 @@
   </div>
 
   <div class="action-card">
+    <h2>Encouragements {% if to_deliver %}<span class="notes-count-badge">{{ to_deliver }}</span>{% endif %}</h2>
+    <p>Record what you appreciate about people. Track what has been delivered.</p>
+    <a href="{{ url_for('encouragements_list') }}" class="btn">View Encouragements</a>
+  </div>
+
+  <div class="action-card">
     <h2>Enhancements {% if open_enhancements %}<span class="notes-count-badge">{{ open_enhancements }}</span>{% endif %}</h2>
     <p>Browse, edit, delete, and close tracked enhancement ideas.</p>
     <a href="{{ url_for('enhancements_page') }}" class="btn">View Enhancements</a>

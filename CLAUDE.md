@@ -84,6 +84,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `contacts` — name, email (free text, multiple ok, no validation), area, topic, comments, tags (comma-separated)
 - `test_learnings` — channel, topic, learning, scenario, tags
 - `test_limitations` — channel, limitation, scenario, comment
+- `encouragement_people` — id (PK AI), name (UNIQUE), created_at. One row per person; created automatically on first encouragement.
+- `encouragements` — id (PK AI), person_id (FK → encouragement_people), text, date, delivered (INTEGER 0/1 DEFAULT 0), created_at
 
 ### Migrations (ALTER TABLE, safe to re-run)
 - `spillover_annotations`: critical_for_signoff, comment_for_signoff, signoff_group
@@ -115,20 +117,21 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Links | `/links` | URL bookmark store with area/tool/tag filters |
 | Contacts | `/contacts` | Contact directory — name, email, area, topic, comments, tags; filterable |
 | CS Follow-Up Tracker | `/cs_followups` | Richer follow-ups for Core South sign-off |
+| **Encouragements** | `/encouragements` | Record positive observations about people. Person autocomplete (`<datalist>` from `encouragement_people`); entries have date, text, delivered flag (AJAX toggle), copy-to-clipboard, delete. Dashboard card shows undelivered count. |
 | **Enhancements** | `/enhancements/page` | Full sortable list of all enhancement ideas. Sortable by priority/status/area. Inline edit and delete per row. Dashboard card (bottom-right) shows open count. |
 
-### NOT on the dashboard (URL only / linked from other screens)
+### NOT on the dashboard (linked from other screens)
 | Screen | URL | How to reach |
 |---|---|---|
 | Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown, **active Retail defects table** (all non-confirmed/withdrawn, with MB Blocked / Sales Blocked columns split by `dtco2c`), **Attribution Overview** (Back with Sales = Sales defects + other; Blocked Tech Team = MB defects + other/untracked), diagnostics. |
-| Retail Spillover Report | `/report/retail` | Link in Retail list header |
-| ECOM/Omni Spillover Report | `/report/ecom` | URL only |
+| Retail Spillover Report | `/report/retail` | Link in Spillover list header |
+| ECOM/Omni Spillover Report | `/report/ecom` | Link in Spillover list header |
 | Meeting Agenda | `/meeting-prep/agenda` | "Export agenda" button on Meeting Prep (respects meeting + status filters) |
-| Production Defects List | `/prod_defects` | URL only |
+| Production Defects List | `/prod_defects` | Link in Spillover list header |
 | Production Defect Detail | `/prod_defects/<id>` | From prod defects list |
-| Test Learnings | `/test_learnings` | URL only |
+| Test Learnings | `/test_learnings` | Link in Retail list header |
 | Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
-| Test Limitations | `/test_limitations` | URL only |
+| Test Limitations | `/test_limitations` | Link in Retail list header |
 | Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
@@ -154,13 +157,12 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ## Known navigation gaps (vision items for future work)
 
-1. **Dashboard is incomplete** — Test Learnings, Test Limitations, Prod Defects, and the Sign-Off Reports are not reachable from home. Users must know the URL.
-2. **Two follow-up trackers** — `followups` (general, lightweight) and `cs_followups` (CS-specific, richer) overlap. The split should be made clearer or consolidated.
-3. **No cross-links between related entities** — a Retail row's `defect_id_ref` is not a clickable link to the Defect detail.
-4. **Sign-off reports are hard to find** — they should be reachable from the dashboard or a dedicated Reports section.
+1. **Two follow-up trackers** — `followups` (general, lightweight) and `cs_followups` (CS-specific, richer) overlap. The split should be made clearer or consolidated.
+2. **No cross-links between related entities** — a Retail row's `defect_id_ref` is not a clickable link to the Defect detail.
 
 *Resolved gaps (no longer open):*
 - ~~Enhancements had no full-page view~~ — `/enhancements/page` now exists, linked from dashboard card.
+- ~~Test Learnings, Test Limitations, Prod Defects, Sign-Off Reports not reachable~~ — all are linked from the Retail or Spillover list headers; nothing is URL-only.
 
 ---
 

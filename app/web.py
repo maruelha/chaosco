@@ -63,12 +63,14 @@ def _render_note_add_form(defect_id, solman_name, return_to, *, heading="", erro
 def dashboard():
     conn = _get_conn()
     try:
-        inbox_count = database.count_inbox_items(conn)
+        inbox_count       = database.count_inbox_items(conn)
         open_enhancements = len(database.get_enhancements(conn))
+        to_deliver        = database.count_encouragements_to_deliver(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
-                           open_enhancements=open_enhancements)
+                           open_enhancements=open_enhancements,
+                           to_deliver=to_deliver)
 
 
 @app.route("/import", methods=["POST"])
@@ -888,6 +890,69 @@ def contact_delete(contact_id: int):
     finally:
         conn.close()
     return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
+# Encouragements
+# ---------------------------------------------------------------------------
+
+@app.route("/encouragements")
+def encouragements_list():
+    person_id = request.args.get("person_id", type=int)
+    added     = request.args.get("added") == "1"
+    conn = _get_conn()
+    try:
+        people = database.list_encouragement_people(conn)
+        items  = database.list_encouragements(conn, person_id=person_id)
+        person = next((p for p in people if p["id"] == person_id), None) if person_id else None
+    finally:
+        conn.close()
+    return render_template(
+        "encouragements.html",
+        people=people,
+        items=items,
+        person=person,
+        person_id=person_id,
+        today=date.today().isoformat(),
+        added=added,
+    )
+
+
+@app.route("/encouragements/add", methods=["POST"])
+def encouragement_add():
+    name     = request.form.get("person_name", "").strip()
+    text     = request.form.get("text", "").strip()
+    enc_date = request.form.get("date", "").strip() or date.today().isoformat()
+    if not name or not text:
+        return redirect(url_for("encouragements_list"))
+    conn = _get_conn()
+    try:
+        person_id = database.get_or_create_encouragement_person(conn, name)
+        database.add_encouragement(conn, person_id, text, enc_date)
+    finally:
+        conn.close()
+    return redirect(url_for("encouragements_list", person_id=person_id, added="1"))
+
+
+@app.route("/encouragements/<int:enc_id>/delivered", methods=["POST"])
+def encouragement_toggle_delivered(enc_id: int):
+    value = request.json.get("value", False) if request.is_json else bool(request.form.get("value"))
+    conn = _get_conn()
+    try:
+        database.set_encouragement_delivered(conn, enc_id, value)
+    finally:
+        conn.close()
+    return {"ok": True}
+
+
+@app.route("/encouragements/<int:enc_id>/delete", methods=["POST"])
+def encouragement_delete(enc_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_encouragement(conn, enc_id)
+    finally:
+        conn.close()
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

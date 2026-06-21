@@ -198,6 +198,7 @@
   <a href="#enhancements-page">Enhancements</a><span class="sep">|</span>
   <a href="#links">Links</a><span class="sep">|</span>
   <a href="#contacts">Contacts</a><span class="sep">|</span>
+  <a href="#encouragements">Encouragements</a><span class="sep">|</span>
   <a href="#test-learnings">Test Learnings</a><span class="sep">|</span>
   <a href="#test-limitations">Test Limitations</a>
 </div>
@@ -237,6 +238,7 @@
             <li>Links</li>
             <li>Contacts</li>
             <li>CS Follow-Up Tracker</li>
+            <li><strong>Encouragements</strong> — record &amp; track positive observations (shows undelivered count badge)</li>
             <li><strong>Enhancements</strong> — full list view (shows open count badge) — bottom-right</li>
           </ul>
         </div>
@@ -968,6 +970,58 @@
           <h4>Columns</h4>
           <ul>
             <li>Priority · Status · Area · Enhancement · Edit / Delete</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="screen stripe-planning" id="encouragements">
+    <div class="screen-header">
+      <span class="screen-name">Encouragements</span>
+      <span class="screen-url">GET /encouragements</span>
+    </div>
+    <div class="screen-body">
+      <div class="screen-shot" style="display:flex;align-items:center;justify-content:center;background:#f8f9fa;color:#adb5bd;font-size:0.85rem;min-height:120px">
+        (no screenshot)
+      </div>
+      <div class="screen-notes">
+        <p class="screen-desc">
+          Personal encouragement log — record positive observations about people.
+          Two-table design: <code>encouragement_people</code> holds one row per person;
+          <code>encouragements</code> holds the entries. Dashboard card shows how many
+          encouragements have not yet been delivered.
+        </p>
+        <div class="feat-block">
+          <h4>Add form</h4>
+          <ul>
+            <li>Person: text input with <code>&lt;datalist&gt;</code> autocomplete from known people — type a new name to create a person automatically</li>
+            <li>Date: date picker pre-filled to today</li>
+            <li>Text: textarea for what was appreciated</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Filter</h4>
+          <ul>
+            <li><span class="pill pill-f">Person</span> dropdown — narrows the list to one person; auto-submits on change</li>
+            <li>Item count shown next to filter</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Per-entry actions</h4>
+          <ul>
+            <li><span class="pill pill-x">Delivered</span> checkbox — AJAX toggle; delivered entries are faded with green left border</li>
+            <li><span class="pill pill-a">📋 Copy</span> — copies the encouragement text to clipboard; shows "✓ Copied!" for 2 s</li>
+            <li><span class="pill pill-x">Delete</span> — AJAX with confirm; removes card from DOM</li>
+          </ul>
+        </div>
+        <div class="feat-block">
+          <h4>Card styling</h4>
+          <ul>
+            <li>Purple left border + person name in purple — unfocused / undelivered</li>
+            <li>Green left border + faded — delivered</li>
+            <li>Text displayed with <code>white-space: pre-wrap</code> so line breaks are preserved</li>
           </ul>
         </div>
       </div>

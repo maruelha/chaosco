@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Encouragements — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Encouragements</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+</div>
+
+{% if added %}<div class="saved-banner">&#10003;&nbsp; Encouragement saved.</div>{% endif %}
+
+{# ---- Add form ---- #}
+<div class="detail-card">
+  <h2 style="margin-top:0">Add encouragement</h2>
+  <form method="post" action="{{ url_for('encouragement_add') }}">
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;align-items:flex-end">
+      <div style="flex:1;min-width:200px">
+        <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Person *</label>
+        <input type="text" name="person_name" list="people-list" class="form-control"
+               placeholder="Type a name or pick from list…" required autocomplete="off"
+               value="{{ person.name if person else '' }}">
+        <datalist id="people-list">
+          {% for p in people %}
+          <option value="{{ p.name }}">
+          {% endfor %}
+        </datalist>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Date</label>
+        <input type="date" name="date" class="form-control" value="{{ today }}">
+      </div>
+    </div>
+    <div style="margin-bottom:0.75rem">
+      <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">What did you appreciate? *</label>
+      <textarea name="text" class="form-control" rows="4" required
+                placeholder="Describe what you noticed or valued…"
+                style="width:100%;resize:vertical"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+  </form>
+</div>
+
+{# ---- Filter bar ---- #}
+<form method="get" action="{{ url_for('encouragements_list') }}" class="fu-filters" style="margin-bottom:1rem">
+  <select name="person_id" class="fu-input fu-filter" onchange="this.form.submit()">
+    <option value="">All people</option>
+    {% for p in people %}
+    <option value="{{ p.id }}" {% if person_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+  </select>
+  {% if person_id %}
+  <a href="{{ url_for('encouragements_list') }}" class="btn btn-sm">Clear</a>
+  {% endif %}
+  <span class="list-meta">{{ items | length }} item{{ 's' if items | length != 1 }}</span>
+</form>
+
+{# ---- List ---- #}
+{% if items %}
+<div class="enc-list">
+  {% for item in items %}
+  <div class="enc-card {% if item.delivered %}enc-card--delivered{% endif %}" id="enc-{{ item.id }}">
+    <div class="enc-meta">
+      <span class="enc-person">{{ item.person_name }}</span>
+      <span class="enc-date mono">{{ item.date }}</span>
+      <label class="enc-delivered-label" title="Mark as delivered">
+        <input type="checkbox" class="delivered-toggle" data-id="{{ item.id }}"
+               {% if item.delivered %}checked{% endif %}>
+        Delivered
+      </label>
+    </div>
+    <p class="enc-text" id="enc-text-{{ item.id }}">{{ item.text }}</p>
+    <div class="enc-actions">
+      <button type="button" class="btn btn-sm copy-btn" data-id="{{ item.id }}" title="Copy to clipboard">
+        &#128203; Copy
+      </button>
+      <span class="copy-confirm" id="copy-ok-{{ item.id }}" style="display:none;font-size:0.8rem;color:#1a7f37">&#10003; Copied!</span>
+      <button type="button" class="btn btn-sm btn-danger delete-btn" data-id="{{ item.id }}"
+              style="margin-left:auto">Delete</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="detail-card" style="text-align:center;color:#aeaeb2;padding:2.5rem 1rem">
+  {% if person_id %}No encouragements recorded for this person yet.
+  {% else %}No encouragements yet — add one above.{% endif %}
+</div>
+{% endif %}
+
+<style>
+.enc-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.enc-card {
+  background: #fff;
+  border: 1px solid #e1e8ee;
+  border-left: 3px solid #7c3aed;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  transition: opacity 0.15s;
+}
+.enc-card--delivered {
+  border-left-color: #1a7f37;
+  opacity: 0.65;
+}
+
+.enc-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.enc-person {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #7c3aed;
+}
+.enc-date {
+  font-size: 0.78rem;
+  color: #6c757d;
+}
+.enc-delivered-label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: #6c757d;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.enc-text {
+  font-size: 0.9rem;
+  color: #212529;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-bottom: 0.75rem;
+}
+
+.enc-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+</style>
+
+<script>
+(function () {
+
+  /* ---- Delivered toggle ---- */
+  document.querySelectorAll('.delivered-toggle').forEach(function (cb) {
+    cb.addEventListener('change', function () {
+      var id   = cb.dataset.id;
+      var card = document.getElementById('enc-' + id);
+      fetch('/encouragements/' + id + '/delivered', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ value: cb.checked }),
+      }).then(function () {
+        if (card) card.classList.toggle('enc-card--delivered', cb.checked);
+      }).catch(function () { cb.checked = !cb.checked; });
+    });
+  });
+
+  /* ---- Copy to clipboard ---- */
+  document.querySelectorAll('.copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id   = btn.dataset.id;
+      var text = document.getElementById('enc-text-' + id).textContent;
+      navigator.clipboard.writeText(text.trim()).then(function () {
+        var ok = document.getElementById('copy-ok-' + id);
+        if (!ok) return;
+        ok.style.display = 'inline';
+        setTimeout(function () { ok.style.display = 'none'; }, 2000);
+      });
+    });
+  });
+
+  /* ---- Delete ---- */
+  document.querySelectorAll('.delete-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('Delete this encouragement?')) return;
+      var id = btn.dataset.id;
+      fetch('/encouragements/' + id + '/delete', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            var card = document.getElementById('enc-' + id);
+            if (card) card.remove();
+          }
+        });
+    });
+  });
+
+}());
+</script>
+{% endblock %}

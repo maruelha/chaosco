@@ -378,6 +378,21 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at  TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS encouragement_people (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS encouragements (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            person_id  INTEGER NOT NULL REFERENCES encouragement_people(id),
+            text       TEXT NOT NULL,
+            date       TEXT NOT NULL,
+            delivered  INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        );
+
         -- Screenshot attachments linked to individual notes.
         -- Files live in data/uploads/; this table holds the reference.
         CREATE TABLE IF NOT EXISTS attachments (
@@ -1904,6 +1919,72 @@ def update_contact(
 def delete_contact(conn: sqlite3.Connection, contact_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+
+
+# ---------------------------------------------------------------------------
+# Encouragements
+# ---------------------------------------------------------------------------
+
+def get_or_create_encouragement_person(conn: sqlite3.Connection, name: str) -> int:
+    row = conn.execute(
+        "SELECT id FROM encouragement_people WHERE LOWER(name) = LOWER(?)", (name,)
+    ).fetchone()
+    if row:
+        return row[0]
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO encouragement_people (name, created_at) VALUES (?, ?)", (name, now)
+        )
+    return cur.lastrowid
+
+
+def list_encouragement_people(conn: sqlite3.Connection) -> list[dict]:
+    return _rows_to_dicts(conn.execute(
+        "SELECT * FROM encouragement_people ORDER BY name"
+    ))
+
+
+def add_encouragement(conn: sqlite3.Connection, person_id: int, text: str, enc_date: str) -> int:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO encouragements (person_id, text, date, delivered, created_at)"
+            " VALUES (?, ?, ?, 0, ?)",
+            (person_id, text, enc_date, now),
+        )
+    return cur.lastrowid
+
+
+def list_encouragements(conn: sqlite3.Connection, person_id: int | None = None) -> list[dict]:
+    sql = """
+        SELECT e.*, p.name AS person_name
+        FROM encouragements e
+        JOIN encouragement_people p ON p.id = e.person_id
+    """
+    params: list = []
+    if person_id:
+        sql += " WHERE e.person_id = ?"
+        params.append(person_id)
+    sql += " ORDER BY e.date DESC, e.created_at DESC"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def set_encouragement_delivered(conn: sqlite3.Connection, enc_id: int, value: bool) -> None:
+    with conn:
+        conn.execute(
+            "UPDATE encouragements SET delivered = ? WHERE id = ?", (1 if value else 0, enc_id)
+        )
+
+
+def delete_encouragement(conn: sqlite3.Connection, enc_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM encouragements WHERE id = ?", (enc_id,))
+
+
+def count_encouragements_to_deliver(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT COUNT(*) FROM encouragements WHERE delivered = 0").fetchone()
+    return row[0] if row else 0
 
 
 # ---------------------------------------------------------------------------
