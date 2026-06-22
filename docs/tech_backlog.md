@@ -39,7 +39,7 @@ Adding notes to ECOM, Omni, or any future module then becomes: two template line
 | CS Follow-up Tracker | ⚠️ Inline | Expand row in list + detail | No | No | No |
 | Test Learnings | ⚠️ Inline | Expand row in list + detail | No | No | No |
 | Test Limitations | ⚠️ Inline | Expand row in list + detail | No | No | No |
-| Core South Spillover | ❌ Missing | — | — | — | — |
+| Core South Spillover | ⚠️ Inline | Detail page (link from list) | Yes | Yes | Yes |
 | Known Production Defects | ❌ Missing | — | — | — | — |
 
 The "inline" modules have a quick-add textarea but no heading, no edit, no delete,

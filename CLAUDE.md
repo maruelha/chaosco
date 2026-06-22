@@ -71,6 +71,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### Shared
 - `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
 - `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
+- `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_number, comment, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`).
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
 ### Planning & coordination (manually managed via UI)
@@ -108,7 +109,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
 | Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
-| Spillover List | `/spillover` | Frozen-pane table; all edits inline via AJAX. Each row has a **Notes** button (shows count badge) linking to the Spillover Detail page. |
+| Spillover List | `/spillover` | Compact table — only Excel-imported fields + Next Step shown as columns. Per-row buttons: **Details** (annotation popup: Importance, Comment for Sign-Off, Report Group, Next Step), **Order details** (inline-editable order-number table — generic `order_details` table), **Comments** (comment history popup), **Notes** (count badge → detail page). Critical for sign-off editable inline via dropdown. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
 | Meeting Prep | `/meeting-prep` | Per-meeting agenda topics. Columns: Overall Topic (inline select), Topic (inline editable), Status, note, notes. Topic column shows coloured badge (purple=defect, green=retail) when added from a detail page. Default filter: planned. Export agenda button opens `/meeting-prep/agenda` (styled HTML report); Copy to clipboard exports plain text — both sorted by overall_topic order. |

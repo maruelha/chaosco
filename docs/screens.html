@@ -153,7 +153,7 @@
 <body>
 
 <h1>chaosco — Screen Reference</h1>
-<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-21</p>
+<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-22</p>
 
 <!-- TOC -->
 <div class="toc">
@@ -398,12 +398,10 @@
       <span class="screen-url">GET /spillover</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Frozen-pane scrollable table of all Core South Spillover items. All annotations are edited inline without leaving this page — saves happen via AJAX. Each row has a Notes button that links to the Spillover Detail page.</p>
+      <p class="screen-desc">Scrollable table of Core South Spillover items. Rows are kept compact — only Excel-imported fields plus Next Step are shown as columns. Long annotation fields (Report Group, Comment for Sign-Off, Importance) are moved into a per-row Details popup. Four action buttons per row open popup dialogs or navigate to the detail page.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Excel Row · Type · Name · Country · Area · Status · Assigned To · External ID · Importance for Sign-Off · Critical for Sign-Off · Sign-Off Group · Next Step · Comment for Sign-Off · Notes button</span>
-        <span class="feat-label">Notes button</span>
-        <span class="feat-value">Links to <code>/spillover/&lt;id&gt;</code> (Spillover Detail). Shows note count badge when notes exist (subquery on <code>notes</code> table, computed per row).</span>
+        <span class="feat-value">Excel Row · Area · Status · Name (truncated at 70 chars; full text in tooltip) · Country · Assigned To · Ext. ID · Order Numbers · Critical for Sign-Off (inline dropdown) · Next Step (click to edit)</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
           <span class="pill pill-filter">Area (multi)</span>
@@ -417,15 +415,25 @@
         <span class="feat-value">Statuses: Passed · Passed pending Solman · Dropped (configurable in settings.yaml)</span>
         <span class="feat-label">Inline edits (AJAX)</span>
         <span class="feat-value">
-          <span class="pill pill-ajax">Importance for sign-off</span>
-          <span class="pill pill-ajax">Next step</span>
-          <span class="pill pill-ajax">Comment for sign-off</span>
-          <span class="pill pill-ajax">Sign-off group</span>
-          <span class="pill pill-ajax">Critical for sign-off</span>
-          (each field saves on blur/change to <code>POST /spillover/&lt;id&gt;/annotation</code> or <code>/critical</code>)
+          <span class="pill pill-ajax">Critical for sign-off</span> — inline <code>&lt;select&gt;</code> in the table; saves on change → <code>POST /spillover/&lt;id&gt;/critical</code><br>
+          <span class="pill pill-ajax">Next step</span> — click cell to open the Details popup (see below)
         </span>
-        <span class="feat-label">Comment popup</span>
-        <span class="feat-value">Per-row "Comment History" button opens a panel showing timestamped authored comments and a text area to add a new one. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
+        <span class="feat-label">Details button</span>
+        <span class="feat-value">Opens the Details popup for the row. Editable fields: <strong>Report Group</strong> · <strong>Comment for Sign-Off</strong> · <strong>Importance for Sign-Off</strong> · <strong>Next Step</strong>. Saves via <code>POST /spillover/&lt;id&gt;/annotation</code> (AJAX, no page reload). Clicking Next Step cell in the table opens the same popup.</span>
+        <span class="feat-label">Order details button</span>
+        <span class="feat-value">Opens a popup table of order-number lines for this spillover item. Columns: Order Number · Comment. Each field is a plain <code>&lt;input&gt;</code> — editable directly, saves on blur via <code>POST /order-details/&lt;detail_id&gt;/update</code>. <span class="pill pill-ajax">+ Add row</span> creates a new DB record immediately then focuses the first input. <strong>✕</strong> deletes the row via <code>POST /order-details/&lt;detail_id&gt;/delete</code>. Uses the generic <code>order_details</code> table (entity_type=<code>'spillover'</code>, entity_id=spillover_id).</span>
+        <span class="feat-label">Comments button</span>
+        <span class="feat-value">Opens the Comment History popup: shows the imported <code>comment</code> field read-only as a reference, plus an editable textarea for the authored comment history. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
+        <span class="feat-label">Notes button</span>
+        <span class="feat-value">Links to <code>/spillover/&lt;id&gt;</code> (Spillover Detail). Shows note count badge when notes exist (subquery on <code>notes</code> table, computed per row).</span>
+        <span class="feat-label">Order details API</span>
+        <span class="feat-value">
+          <code>GET /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;</code> — list rows as JSON<br>
+          <code>POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/add</code> — create empty row, returns <code>&#123;ok, id&#125;</code><br>
+          <code>POST /order-details/&lt;detail_id&gt;/update</code> — save order_number + comment<br>
+          <code>POST /order-details/&lt;detail_id&gt;/delete</code> — remove row<br>
+          Generic design — works for any entity type, not just spillover.
+        </span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + note_count subquery on <code>notes</code></span>
       </div>
