@@ -161,9 +161,9 @@
     <thead>
       <tr>
         <th class="sc-row num">#</th>
+        <th class="sc-name">Name</th>
         <th class="sc-area">Area</th>
         <th class="sc-status">Status</th>
-        <th class="sc-name">Name</th>
         <th class="sc-country">Country</th>
         <th class="sc-assignee">Assigned to</th>
         <th class="sc-extid">Ext. ID</th>
@@ -185,13 +185,13 @@
           data-commentsignoff="{{ (row.comment_for_signoff or '') | e }}"
           data-signoffgroup="{{ (row.signoff_group or '') | e }}">
         <td class="sc-row num">{{ row.excel_row }}</td>
-        <td class="sc-area">{{ row.area or '—' }}</td>
-        <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-name" title="{{ row.name | e }}">
           {% if row.name %}
             {{ row.name[:70] }}{% if row.name | length > 70 %}…{% endif %}
           {% else %}—{% endif %}
         </td>
+        <td class="sc-area">{{ row.area or '—' }}</td>
+        <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-country">{{ row.country or '—' }}</td>
         <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
         <td class="sc-extid">{{ row.external_id or '—' }}</td>

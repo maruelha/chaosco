@@ -738,32 +738,26 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .spillover-scroll tbody td { background: var(--sc-bg); }
 .spillover-scroll tbody tr:last-child td { border-bottom: none; }
 
-/* Frozen column widths + sticky left offsets */
-.sc-row    { width: 44px;  position: sticky; left: 0px;   z-index: 1; }
-.sc-type   { width: 130px; position: sticky; left: 44px;  z-index: 1; }
-.sc-area   { width: 70px;  position: sticky; left: 174px; z-index: 1; }
-.sc-status { width: 140px; position: sticky; left: 244px; z-index: 1; }
-.sc-name   { width: 220px; position: sticky; left: 384px; z-index: 1;
-             box-shadow: 3px 0 6px -2px rgba(0,0,0,.10); }
+/* Frozen columns: # and Name only */
+.sc-row  { width: 44px;  position: sticky; left: 0;    z-index: 1; }
+.sc-name { width: 220px; position: sticky; left: 44px; z-index: 1;
+           box-shadow: 3px 0 6px -2px rgba(0,0,0,.12); }
 
 /* Header + frozen intersection cells: highest z-index */
 .spillover-scroll thead .sc-row,
-.spillover-scroll thead .sc-type,
-.spillover-scroll thead .sc-area,
-.spillover-scroll thead .sc-status,
 .spillover-scroll thead .sc-name { z-index: 3; }
 
 /* Scrollable column widths */
+.sc-area     { width: 80px; }
+.sc-status   { width: 140px; }
+.sc-type     { width: 120px; }
 .sc-country  { width: 90px; }
 .sc-assignee { width: 140px; }
 .sc-extid    { width: 110px; }
-.sc-orders   { width: 130px; }
-.sc-critical { width: 110px; }
-.sc-group    { width: 130px; }
-.sc-imp        { width: 200px; }
-.sc-next       { width: 220px; }
-.sc-signoffcmt { width: 220px; }
-.sc-cmtbtn   { width: 90px; }
+.sc-orders   { width: 140px; }
+.sc-critical { width: 120px; }
+.sc-next     { width: 220px; }
+.sc-cmtbtn   { width: 110px; }
 
 /* --------------------------------------------------------------- retail columns */
 .rc-tcid     { width: 110px; }
