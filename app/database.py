@@ -471,7 +471,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("order_type TEXT",):
+    for col in ("order_type TEXT", "docs_in_s4 INTEGER DEFAULT 0"):
         try:
             conn.execute(f"ALTER TABLE order_details ADD COLUMN {col}")
             conn.commit()
@@ -2361,7 +2361,7 @@ def delete_attachment(conn: sqlite3.Connection, attachment_id: int) -> str | Non
 
 def list_order_details(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> list[dict]:
     cur = conn.execute(
-        "SELECT id, order_type, order_number, comment FROM order_details"
+        "SELECT id, order_type, order_number, comment, docs_in_s4 FROM order_details"
         " WHERE entity_type = ? AND entity_id = ? ORDER BY id",
         (entity_type, entity_id),
     )
@@ -2379,13 +2379,22 @@ def add_order_detail(conn: sqlite3.Connection, entity_type: str, entity_id: str)
 
 
 def update_order_detail(
-    conn: sqlite3.Connection, detail_id: int, order_type: str, order_number: str, comment: str
+    conn: sqlite3.Connection, detail_id: int, order_type: str, order_number: str,
+    comment: str, docs_in_s4: int = 0
 ) -> None:
     conn.execute(
-        "UPDATE order_details SET order_type = ?, order_number = ?, comment = ? WHERE id = ?",
-        (order_type or "", order_number or "", comment or "", detail_id),
+        "UPDATE order_details SET order_type = ?, order_number = ?, comment = ?, docs_in_s4 = ? WHERE id = ?",
+        (order_type or "", order_number or "", comment or "", int(bool(docs_in_s4)), detail_id),
     )
     conn.commit()
+
+
+def get_docs_s4_spillover_ids(conn: sqlite3.Connection) -> set:
+    cur = conn.execute(
+        "SELECT DISTINCT entity_id FROM order_details"
+        " WHERE entity_type = 'spillover' AND docs_in_s4 = 1"
+    )
+    return {int(row[0]) for row in cur.fetchall()}
 
 
 def delete_order_detail(conn: sqlite3.Connection, detail_id: int) -> None:

@@ -207,7 +207,8 @@ def spillover_list():
             critical=critical or None,
             exclude_statuses=exclude or None,
         )
-        options = database.get_spillover_filter_options(conn)
+        options      = database.get_spillover_filter_options(conn)
+        docs_s4_ids  = database.get_docs_s4_spillover_ids(conn)
     finally:
         conn.close()
 
@@ -222,6 +223,7 @@ def spillover_list():
         critical=critical,
         show_all=show_all,
         hidden_statuses=hidden,
+        docs_s4_ids=docs_s4_ids,
     )
 
 
@@ -520,9 +522,10 @@ def order_detail_update(detail_id: int):
     order_type   = request.form.get("order_type",   "").strip()
     order_number = request.form.get("order_number", "").strip()
     comment      = request.form.get("comment",      "").strip()
+    docs_in_s4   = 1 if request.form.get("docs_in_s4") == "1" else 0
     conn = _get_conn()
     try:
-        database.update_order_detail(conn, detail_id, order_type, order_number, comment)
+        database.update_order_detail(conn, detail_id, order_type, order_number, comment, docs_in_s4)
     finally:
         conn.close()
     return jsonify({"ok": True})

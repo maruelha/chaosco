@@ -71,7 +71,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### Shared
 - `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
 - `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
-- `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_number, comment, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`).
+- `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_type TEXT, order_number TEXT, comment TEXT, docs_in_s4 INTEGER DEFAULT 0, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`). `docs_in_s4` = "docs confirmed in S4" checkbox; green ✓ badge appears on the Order details button in the list when any linked row has it set.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
 ### Planning & coordination (manually managed via UI)
@@ -96,10 +96,11 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `notes`: source
 - `meeting_prep`: source_entity_type, source_entity_id, overall_topic
 - `defect_annotations`: dtco2c, dtco2c_resp, daily
+- `order_details`: order_type, docs_in_s4
 
 ---
 
-## All screens (as of 2026-06-21)
+## All screens (as of 2026-06-22)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
@@ -109,7 +110,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
 | Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
-| Spillover List | `/spillover` | Compact table — only Excel-imported fields + Next Step shown as columns. Per-row buttons: **Details** (annotation popup: Importance, Comment for Sign-Off, Report Group, Next Step), **Order details** (inline-editable order-number table — generic `order_details` table), **Comments** (comment history popup), **Notes** (count badge → detail page). Critical for sign-off editable inline via dropdown. |
+| Spillover List | `/spillover` | Horizontally-scrollable frozen-pane table. Frozen: # + Name. Scrollable: Buttons → Status → Next Step (≤3 lines) → Area → Order Numbers (≤3 lines) → Country → Assigned To → Ext. ID → Critical. Per-row buttons: **Details** (Importance, Comment for Sign-Off, Report Group, Next Step), **Order details** (Type · Order Number · Comment · S4 docs checkbox; green ✓ badge on button when any row has `docs_in_s4=1`), **Comments**, **Notes** (count badge). Header: **Status Report** button → `/spillover/report`. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
 | Meeting Prep | `/meeting-prep` | Per-meeting agenda topics. Columns: Overall Topic (inline select), Topic (inline editable), Status, note, notes. Topic column shows coloured badge (purple=defect, green=retail) when added from a detail page. Default filter: planned. Export agenda button opens `/meeting-prep/agenda` (styled HTML report); Copy to clipboard exports plain text — both sorted by overall_topic order. |
@@ -125,6 +126,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Screen | URL | How to reach |
 |---|---|---|
 | Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown, **active Retail defects table** (all non-confirmed/withdrawn, with MB Blocked / Sales Blocked columns split by `dtco2c`), **Attribution Overview** (Back with Sales = Sales defects + other; Blocked Tech Team = MB defects + other/untracked), diagnostics. |
+| Spillover Status Report (select) | `/spillover/report` | "Status Report" button in Spillover list header. Select rows to include; rows persist in `spillover_report_selection`; batch select-page / clear-all. |
+| Spillover Status Report (view) | `/spillover/report/view` | "View Report" button on the select screen (opens new tab). Standalone printable HTML. Per-item card: dark header, metadata strip (Area/Type/Status/Assigned To/Critical), next step, order details table with S4 docs ✓. Summary stats in header. Download HTML + Print. |
 | Retail Spillover Report | `/report/retail` | Link in Spillover list header |
 | ECOM/Omni Spillover Report | `/report/ecom` | Link in Spillover list header |
 | Meeting Agenda | `/meeting-prep/agenda` | "Export agenda" button on Meeting Prep (respects meeting + status filters) |

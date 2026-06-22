@@ -756,13 +756,16 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .sc-extid    { width: 110px; }
 .sc-orders   { width: 140px; }
 .sc-critical { width: 120px; }
-.sc-next          { width: 220px; }
-.sc-next .cell-edit {
+.sc-next     { width: 220px; }
+
+.clamp-3 {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
   overflow: hidden;
+  white-space: normal;
 }
+.s4-tick { color: #16a34a; font-weight: 700; }
 .sc-cmtbtn   { width: 110px; }
 
 /* --------------------------------------------------------------- retail columns */
