@@ -408,6 +408,52 @@ def spillover_note_delete(spillover_id: int, note_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Generic order_details routes — work for any entity type
+# ---------------------------------------------------------------------------
+
+@app.route("/order-details/<entity_type>/<entity_id>")
+def order_details_list(entity_type: str, entity_id: str):
+    conn = _get_conn()
+    try:
+        rows = database.list_order_details(conn, entity_type, entity_id)
+    finally:
+        conn.close()
+    return jsonify(rows)
+
+
+@app.route("/order-details/<entity_type>/<entity_id>/add", methods=["POST"])
+def order_details_add(entity_type: str, entity_id: str):
+    conn = _get_conn()
+    try:
+        detail_id = database.add_order_detail(conn, entity_type, entity_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "id": detail_id})
+
+
+@app.route("/order-details/<int:detail_id>/update", methods=["POST"])
+def order_detail_update(detail_id: int):
+    order_number = request.form.get("order_number", "").strip()
+    comment      = request.form.get("comment", "").strip()
+    conn = _get_conn()
+    try:
+        database.update_order_detail(conn, detail_id, order_number, comment)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/order-details/<int:detail_id>/delete", methods=["POST"])
+def order_detail_delete(detail_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_order_detail(conn, detail_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Retail routes
 # ---------------------------------------------------------------------------
 

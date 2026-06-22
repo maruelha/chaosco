@@ -169,8 +169,6 @@
         <th class="sc-extid">Ext. ID</th>
         <th class="sc-orders">Order numbers</th>
         <th class="sc-critical">Critical for sign-off</th>
-        <th class="sc-group">Report group</th>
-        <th class="sc-signoffcmt">Comment for sign-off</th>
         <th class="sc-next">Next step</th>
         <th class="sc-cmtbtn"></th>
       </tr>
@@ -206,24 +204,6 @@
             <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
           </select>
         </td>
-        <td class="sc-group cell-signoffgroup">
-          <span class="cell-edit js-open-ann">
-            {% if row.signoff_group %}
-              {{ row.signoff_group }}
-            {% else %}
-              <span class="cell-placeholder">— click to edit</span>
-            {% endif %}
-          </span>
-        </td>
-        <td class="sc-signoffcmt cell-commentsignoff">
-          <span class="cell-edit js-open-ann">
-            {% if row.comment_for_signoff %}
-              {{ row.comment_for_signoff }}
-            {% else %}
-              <span class="cell-placeholder">— click to edit</span>
-            {% endif %}
-          </span>
-        </td>
         <td class="sc-next cell-nextstep">
           <span class="cell-edit js-open-ann">
             {% if row.next_step %}
@@ -234,14 +214,17 @@
           </span>
         </td>
         <td class="sc-cmtbtn">
-          <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
+          <button type="button" class="btn btn-sm js-open-ann">Details</button>
+          <button type="button" class="btn btn-sm js-open-orders" style="margin-top:0.3rem"
+                  data-entity-type="spillover" data-entity-id="{{ row.spillover_id }}">Order details</button>
+          <button type="button" class="btn btn-sm js-open-cmt" style="margin-top:0.3rem">Comments</button>
           <a href="{{ url_for('spillover_detail', spillover_id=row.spillover_id) }}"
              class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
              title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="13" class="table-empty">No items match the current filters.</td></tr>
+      <tr><td colspan="11" class="table-empty">No items match the current filters.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -250,7 +233,7 @@
 {# ---- Annotation popup (Importance + Next step + Comment for sign-off) ---- #}
 <dialog id="dlg-ann">
   <div class="dlg-header">
-    <div class="dlg-title">Edit annotation</div>
+    <div class="dlg-title">Details</div>
     <div class="dlg-subtitle" id="ann-row-name"></div>
   </div>
   <form id="frm-ann" method="post">
@@ -304,6 +287,31 @@
     </div>
   </form>
   <input type="hidden" id="cmt-id">
+</dialog>
+
+{# ---- Order details popup ---- #}
+<dialog id="dlg-orders">
+  <div class="dlg-header">
+    <div class="dlg-title">Order Details</div>
+    <div class="dlg-subtitle" id="orders-row-name"></div>
+  </div>
+  <div class="dlg-body">
+    <table class="orders-table" style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:35%">Order number</th>
+          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc">Comment</th>
+          <th style="width:2rem"></th>
+        </tr>
+      </thead>
+      <tbody id="orders-tbody">
+      </tbody>
+    </table>
+    <button type="button" class="btn btn-sm" id="btn-add-order" style="margin-top:0.8rem">+ Add row</button>
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn" onclick="document.getElementById('dlg-orders').close()">Close</button>
+  </div>
 </dialog>
 
 {# ---- JavaScript ---- #}
@@ -361,10 +369,9 @@
         ? `<span class="cell-edit js-open-ann">${escHtml(val)}</span>`
         : `<span class="cell-edit js-open-ann"><span class="cell-placeholder">— click to edit</span></span>`;
     }
-    tr.querySelector('.cell-nextstep').innerHTML       = cellHtml(d.next_step);
-    tr.querySelector('.cell-commentsignoff').innerHTML = cellHtml(d.comment_for_signoff);
-    tr.querySelector('.cell-signoffgroup').innerHTML   = cellHtml(d.signoff_group);
-    tr.querySelectorAll('.js-open-ann').forEach(el => el.addEventListener('click', () => openAnnDialog(tr)));
+    const nsCell = tr.querySelector('.cell-nextstep');
+    nsCell.innerHTML = cellHtml(d.next_step);
+    nsCell.querySelector('.js-open-ann').addEventListener('click', () => openAnnDialog(tr));
     annDlg.close();
   });
 
@@ -437,8 +444,78 @@
     });
   });
 
+  // ---- Order details dialog ----
+  const ordersDlg  = document.getElementById('dlg-orders');
+  const ordersTbody = document.getElementById('orders-tbody');
+  let odEntityType = null;
+  let odEntityId   = null;
+
+  function buildOrderRow(detail) {
+    const tr = document.createElement('tr');
+    tr.dataset.detailId = detail.id;
+    tr.style.cssText = 'border-bottom:1px solid #eee';
+    tr.innerHTML =
+      `<td style="padding:0.25rem 0.4rem">` +
+        `<input type="text" class="ord-input" data-field="order_number"` +
+        ` value="${escHtml(detail.order_number || '')}" placeholder="Order number"` +
+        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
+      `</td>` +
+      `<td style="padding:0.25rem 0.4rem">` +
+        `<input type="text" class="ord-input" data-field="comment"` +
+        ` value="${escHtml(detail.comment || '')}" placeholder="Comment"` +
+        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
+      `</td>` +
+      `<td style="padding:0.25rem 0.2rem;text-align:center">` +
+        `<button type="button" class="btn btn-sm js-del-order" title="Delete row">✕</button>` +
+      `</td>`;
+
+    tr.querySelectorAll('.ord-input').forEach(inp => {
+      inp.addEventListener('blur', async () => {
+        const id           = tr.dataset.detailId;
+        const order_number = tr.querySelector('[data-field="order_number"]').value;
+        const comment      = tr.querySelector('[data-field="comment"]').value;
+        const fd = new FormData();
+        fd.append('order_number', order_number);
+        fd.append('comment', comment);
+        await fetch(`/order-details/${id}/update`, { method: 'POST', body: fd });
+      });
+    });
+
+    tr.querySelector('.js-del-order').addEventListener('click', async () => {
+      const id   = tr.dataset.detailId;
+      const resp = await fetch(`/order-details/${id}/delete`, { method: 'POST' });
+      const d    = await resp.json();
+      if (d.ok) tr.remove();
+    });
+
+    return tr;
+  }
+
+  document.querySelectorAll('.js-open-orders').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tr = btn.closest('tr');
+      odEntityType = btn.dataset.entityType;
+      odEntityId   = btn.dataset.entityId;
+      document.getElementById('orders-row-name').textContent = tr.dataset.name;
+      ordersTbody.innerHTML = '';
+      const resp = await fetch(`/order-details/${odEntityType}/${odEntityId}`);
+      const rows = await resp.json();
+      rows.forEach(r => ordersTbody.appendChild(buildOrderRow(r)));
+      ordersDlg.showModal();
+    });
+  });
+
+  document.getElementById('btn-add-order').addEventListener('click', async () => {
+    const resp = await fetch(`/order-details/${odEntityType}/${odEntityId}/add`, { method: 'POST' });
+    const d    = await resp.json();
+    if (!d.ok) return;
+    const newRow = buildOrderRow({ id: d.id, order_number: '', comment: '' });
+    ordersTbody.appendChild(newRow);
+    newRow.querySelector('.ord-input').focus();
+  });
+
   // Close on backdrop click
-  [annDlg, cmtDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
+  [annDlg, cmtDlg, ordersDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
     if (dlg) dlg.addEventListener('click', e => {
       if (e.target === dlg) { if (dlg.id.startsWith('dlg-filter-')) updateFilterBtn(dlg.id.replace('dlg-filter-', '')); dlg.close(); }
     });

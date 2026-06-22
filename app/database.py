@@ -33,6 +33,10 @@ Public API:
     add_attachment(conn, ...)               -> dict
     get_attachments_for_notes(conn, ids)    -> dict[int, list[dict]]
     delete_attachment(conn, attachment_id)  -> str | None
+    list_order_details(conn, entity_type, entity_id) -> list[dict]
+    add_order_detail(conn, entity_type, entity_id)   -> int  (new row id)
+    update_order_detail(conn, detail_id, order_number, comment) -> None
+    delete_order_detail(conn, detail_id)             -> None
 """
 from __future__ import annotations
 
@@ -403,6 +407,19 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             created_at    TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS ix_attachments_note ON attachments(note_id);
+
+        -- Generic order-number log — entity_type + entity_id identify the parent row.
+        -- Mirrors the notes table pattern so any entity type can have order lines.
+        CREATE TABLE IF NOT EXISTS order_details (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_type  TEXT NOT NULL,
+            entity_id    TEXT NOT NULL,
+            order_number TEXT,
+            comment      TEXT,
+            created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS ix_order_details_entity
+            ON order_details(entity_type, entity_id);
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -2324,3 +2341,41 @@ def delete_attachment(conn: sqlite3.Connection, attachment_id: int) -> str | Non
     with conn:
         conn.execute("DELETE FROM attachments WHERE id = ?", (attachment_id,))
     return att["filename"]
+
+
+# ---------------------------------------------------------------------------
+# Generic order_details — works for any entity_type / entity_id pair
+# ---------------------------------------------------------------------------
+
+def list_order_details(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> list[dict]:
+    cur = conn.execute(
+        "SELECT id, order_number, comment FROM order_details"
+        " WHERE entity_type = ? AND entity_id = ? ORDER BY id",
+        (entity_type, entity_id),
+    )
+    return _rows_to_dicts(cur)
+
+
+def add_order_detail(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> int:
+    cur = conn.execute(
+        "INSERT INTO order_details (entity_type, entity_id, order_number, comment, created_at)"
+        " VALUES (?, ?, '', '', datetime('now'))",
+        (entity_type, entity_id),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_order_detail(
+    conn: sqlite3.Connection, detail_id: int, order_number: str, comment: str
+) -> None:
+    conn.execute(
+        "UPDATE order_details SET order_number = ?, comment = ? WHERE id = ?",
+        (order_number or "", comment or "", detail_id),
+    )
+    conn.commit()
+
+
+def delete_order_detail(conn: sqlite3.Connection, detail_id: int) -> None:
+    conn.execute("DELETE FROM order_details WHERE id = ?", (detail_id,))
+    conn.commit()
