@@ -17,6 +17,7 @@
       --c-core:     #343a40;
       --c-defects:  #6610f2;
       --c-spillover:#0077b6;
+      --c-ecom-gk:  #0e7490;
       --c-retail:   #198754;
       --c-reports:  #495057;
       --c-prod:     #dc3545;
@@ -119,6 +120,7 @@
     .s-core     .screen-card-header { background: var(--c-core); }
     .s-defects  .screen-card-header { background: var(--c-defects); }
     .s-spillover .screen-card-header { background: var(--c-spillover); }
+    .s-ecom-gk  .screen-card-header { background: var(--c-ecom-gk); }
     .s-retail   .screen-card-header { background: var(--c-retail); }
     .s-reports  .screen-card-header { background: var(--c-reports); }
     .s-prod     .screen-card-header { background: var(--c-prod); }
@@ -130,6 +132,7 @@
     .s-core      .section-heading { color: var(--c-core); }
     .s-defects   .section-heading { color: var(--c-defects); }
     .s-spillover .section-heading { color: var(--c-spillover); }
+    .s-ecom-gk   .section-heading { color: var(--c-ecom-gk); }
     .s-retail    .section-heading { color: var(--c-retail); }
     .s-reports   .section-heading { color: var(--c-reports); }
     .s-prod      .section-heading { color: var(--c-prod); }
@@ -174,6 +177,10 @@
     <li><a href="#spillover-detail">Spillover — Detail / Notes</a></li>
     <li><a href="#spillover-report-select">Spillover — Status Report (select)</a></li>
     <li><a href="#spillover-report-view">Spillover — Status Report (view/print)</a></li>
+
+    <li class="group-label">ECOM Gatekeeper</li>
+    <li><a href="#ecom-gk-list">ECOM Gatekeeper — List</a></li>
+    <li><a href="#ecom-gk-detail">ECOM Gatekeeper — Detail / Notes</a></li>
 
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
@@ -532,6 +539,85 @@
       </div>
     </div>
   </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- ECOM GATEKEEPER -->
+<!-- ================================================================ -->
+<div class="section s-ecom-gk">
+  <div class="section-heading">ECOM Gatekeeper</div>
+
+  <!-- ECOM Gatekeeper List -->
+  <div class="screen-card" id="ecom-gk-list">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM Gatekeeper — List</span>
+      <span class="screen-url">GET /ecom-gatekeeper</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Pre-handoff sense check for ECOM test cases. Fully inline-editable table — all fields are always visible as plain inputs; no click-to-reveal, no popups for field entry. Blur-to-save on every text input; status saves immediately on change. Each row has Notes and Order details buttons. Designed for quick capture during a health check before handing test cases to the team.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Jira ID (90px) · Solman ID (110px) · Test case name (flex) · Status (140px, colour-coded select) · Next step (230px) · Buttons (Notes · Orders · ✕)</span>
+        <span class="feat-label">Status values &amp; colours</span>
+        <span class="feat-value">
+          <span class="pill" style="background:#f1f5f9;color:#475569">Open</span>
+          <span class="pill" style="background:#dbeafe;color:#1e40af">In Progress</span>
+          <span class="pill" style="background:#fef3c7;color:#92400e">SF Requested</span>
+          <span class="pill" style="background:#fee2e2;color:#991b1b">Back to Sales</span>
+          <span class="pill" style="background:#ede9fe;color:#5b21b6">Tech Check</span>
+          <span class="pill" style="background:#dcfce7;color:#15803d">Passed</span>
+        </span>
+        <span class="feat-label">Inline save</span>
+        <span class="feat-value">Any text input blur → <code>POST /ecom-gatekeeper/&lt;id&gt;/update</code> (sends all 5 fields). Status select change → same route immediately. No separate save button.</span>
+        <span class="feat-label">+ Add row</span>
+        <span class="feat-value">Button in page header. <code>POST /ecom-gatekeeper/add</code> → returns <code>&#123;ok, id&#125;</code> → JS appends a blank row and focuses the first input. No page reload.</span>
+        <span class="feat-label">Notes button</span>
+        <span class="feat-value">Links to <code>/ecom-gatekeeper/&lt;id&gt;</code> (detail/notes page). Shows note count badge when notes exist.</span>
+        <span class="feat-label">Orders button</span>
+        <span class="feat-value">Opens the generic Order details popup (same as Spillover). Columns: Type · Order number · Comment · S4 docs (checkbox). Uses <code>order_details</code> table with <code>entity_type='ecom_gatekeeper'</code>. Green ✓ badge appears on the button when any linked order has <code>docs_in_s4=1</code>. Future: orders can be re-pointed to an ECOM test case by updating <code>entity_type</code> + <code>entity_id</code> — no data is copied or lost.</span>
+        <span class="feat-label">Delete (✕)</span>
+        <span class="feat-value">Confirm dialog → <code>POST /ecom-gatekeeper/&lt;id&gt;/delete</code> → removes the row, all linked notes, and all linked order_details in one transaction. Row removed from DOM without page reload.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>ecom_gatekeeper</code> LEFT JOIN <code>notes</code> (for note_count subquery)</span>
+        <span class="feat-label">API routes</span>
+        <span class="feat-value">
+          <code>GET  /ecom-gatekeeper</code> — list page<br>
+          <code>POST /ecom-gatekeeper/add</code> — create blank row → <code>&#123;ok, id&#125;</code><br>
+          <code>POST /ecom-gatekeeper/&lt;id&gt;/update</code> — save all fields<br>
+          <code>POST /ecom-gatekeeper/&lt;id&gt;/delete</code> — delete row + notes + order_details
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECOM Gatekeeper Detail -->
+  <div class="screen-card" id="ecom-gk-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM Gatekeeper — Detail / Notes</span>
+      <span class="screen-url">GET /ecom-gatekeeper/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Detail page for a single gatekeeper check row. Shows the key fields read-only (editing stays on the list), then the full notes log with screenshots and Ctrl+V paste support.</p>
+      <div class="features">
+        <span class="feat-label">Fields shown</span>
+        <span class="feat-value">Jira ID · Solman ID · Status · Next step (all read-only — editing on the list view)</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image directly into the last-hovered note.</span>
+        <span class="feat-label">Note routes</span>
+        <span class="feat-value">
+          <code>GET/POST /ecom-gatekeeper/&lt;id&gt;/notes/add</code><br>
+          <code>GET/POST /ecom-gatekeeper/&lt;id&gt;/notes/&lt;note_id&gt;/edit</code><br>
+          <code>GET/POST /ecom-gatekeeper/&lt;id&gt;/notes/&lt;note_id&gt;/delete</code>
+        </span>
+        <span class="feat-label">Notes table</span>
+        <span class="feat-value"><code>notes</code> with <code>entity_type='ecom_gatekeeper'</code></span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value"><span class="pill pill-nav">← Back to Gatekeeper</span> · breadcrumb</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 

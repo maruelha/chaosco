@@ -69,10 +69,13 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail_annotations` — retail_id (PK/FK), next_step, comment_history, action_needed, updated_at
 
 ### Shared
-- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
+- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `ecom_gatekeeper`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
 - `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
 - `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_type TEXT, order_number TEXT, comment TEXT, docs_in_s4 INTEGER DEFAULT 0, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`). `docs_in_s4` = "docs confirmed in S4" checkbox; green ✓ badge appears on the Order details button in the list when any linked row has it set.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
+
+### ECOM Gatekeeper (manually authored, no importer)
+- `ecom_gatekeeper` — id (PK AI), jira_id, solman_id, testcase_name, status (open/inprogress/sf_requested/back_to_sales/tech_check/passed), next_step, created_at. Notes via `notes` (entity_type=`'ecom_gatekeeper'`). Order details via `order_details` (entity_type=`'ecom_gatekeeper'`). Future handover: UPDATE order_details SET entity_type='ecom', entity_id=<ecom_id> to re-point orders to an ECOM test case — no data copy needed.
 
 ### Planning & coordination (manually managed via UI)
 - `todos` — area, kind, topic, status (open/in_progress/blocked/closed), priority (High/Medium/Low), due_date, for_whom
@@ -100,7 +103,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All screens (as of 2026-06-22)
+## All screens (as of 2026-06-22, ECOM Gatekeeper added)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
@@ -110,6 +113,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
 | Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
+| **ECOM Gatekeeper** | `/ecom-gatekeeper` | Pre-handoff sense check for ECOM test cases. Fully inline-editable table — all 5 fields (Jira ID, Solman ID, Test case name, Status, Next step) always visible as plain inputs; blur-to-save. Status is a color-coded select (6 values: open → inprogress → sf_requested → back_to_sales → tech_check → passed). Per-row: **Notes** (count badge → detail page), **Orders** (generic order_details popup), **✕** (delete row + notes + orders). **+ Add row** creates a blank row instantly via AJAX. |
 | Spillover List | `/spillover` | Horizontally-scrollable frozen-pane table. Frozen: # + Name. Scrollable: Buttons → Status → Next Step (≤3 lines) → Area → Order Numbers (≤3 lines) → Country → Assigned To → Ext. ID → Critical. Per-row buttons: **Details** (Importance, Comment for Sign-Off, Report Group, Next Step), **Order details** (Type · Order Number · Comment · S4 docs checkbox; green ✓ badge on button when any row has `docs_in_s4=1`), **Comments**, **Notes** (count badge). Header: **Status Report** button → `/spillover/report`. |
 | Retail List | `/retail` | Filterable table; 3 search boxes; next_step inline edit |
 | Retail Detail | `/retail/<id>` | Full test case + annotation form + notes log |
@@ -136,6 +140,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Test Learnings | `/test_learnings` | Link in Retail list header |
 | Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | Test Limitations | `/test_limitations` | Link in Retail list header |
+| ECOM Gatekeeper Detail | `/ecom-gatekeeper/<id>` | From Notes button on Gatekeeper list — shows Jira ID, Solman ID, Status, Next step (read-only) + full notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste). Note routes: `/ecom-gatekeeper/<id>/notes/add\|edit\|delete`. |
 | Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
 | DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
