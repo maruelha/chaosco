@@ -162,15 +162,15 @@
       <tr>
         <th class="sc-row num">#</th>
         <th class="sc-name">Name</th>
-        <th class="sc-area">Area</th>
+        <th class="sc-cmtbtn"></th>
         <th class="sc-status">Status</th>
+        <th class="sc-next">Next step</th>
+        <th class="sc-area">Area</th>
+        <th class="sc-orders">Order numbers</th>
         <th class="sc-country">Country</th>
         <th class="sc-assignee">Assigned to</th>
         <th class="sc-extid">Ext. ID</th>
-        <th class="sc-orders">Order numbers</th>
         <th class="sc-critical">Critical for sign-off</th>
-        <th class="sc-next">Next step</th>
-        <th class="sc-cmtbtn"></th>
       </tr>
     </thead>
     <tbody>
@@ -190,20 +190,16 @@
             {{ row.name[:70] }}{% if row.name | length > 70 %}…{% endif %}
           {% else %}—{% endif %}
         </td>
-        <td class="sc-area">{{ row.area or '—' }}</td>
-        <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
-        <td class="sc-country">{{ row.country or '—' }}</td>
-        <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
-        <td class="sc-extid">{{ row.external_id or '—' }}</td>
-        <td class="sc-orders">{{ row.order_numbers or '—' }}</td>
-        <td class="sc-critical">
-          <select class="inline-select js-critical">
-            <option value="" {% if not row.critical_for_signoff %}selected{% endif %}>—</option>
-            <option value="yes"      {% if row.critical_for_signoff == 'yes'      %}selected{% endif %}>Yes</option>
-            <option value="no"       {% if row.critical_for_signoff == 'no'       %}selected{% endif %}>No</option>
-            <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
-          </select>
+        <td class="sc-cmtbtn">
+          <button type="button" class="btn btn-sm js-open-ann">Details</button>
+          <button type="button" class="btn btn-sm js-open-orders" style="margin-top:0.3rem"
+                  data-entity-type="spillover" data-entity-id="{{ row.spillover_id }}">Order details</button>
+          <button type="button" class="btn btn-sm js-open-cmt" style="margin-top:0.3rem">Comments</button>
+          <a href="{{ url_for('spillover_detail', spillover_id=row.spillover_id) }}"
+             class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
+             title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
         </td>
+        <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-next cell-nextstep" title="{{ (row.next_step or '') | e }}">
           <span class="cell-edit js-open-ann">
             {% if row.next_step %}
@@ -213,14 +209,18 @@
             {% endif %}
           </span>
         </td>
-        <td class="sc-cmtbtn">
-          <button type="button" class="btn btn-sm js-open-ann">Details</button>
-          <button type="button" class="btn btn-sm js-open-orders" style="margin-top:0.3rem"
-                  data-entity-type="spillover" data-entity-id="{{ row.spillover_id }}">Order details</button>
-          <button type="button" class="btn btn-sm js-open-cmt" style="margin-top:0.3rem">Comments</button>
-          <a href="{{ url_for('spillover_detail', spillover_id=row.spillover_id) }}"
-             class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
-             title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
+        <td class="sc-area">{{ row.area or '—' }}</td>
+        <td class="sc-orders">{{ row.order_numbers or '—' }}</td>
+        <td class="sc-country">{{ row.country or '—' }}</td>
+        <td class="sc-assignee">{{ row.assigned_to or '—' }}</td>
+        <td class="sc-extid">{{ row.external_id or '—' }}</td>
+        <td class="sc-critical">
+          <select class="inline-select js-critical">
+            <option value="" {% if not row.critical_for_signoff %}selected{% endif %}>—</option>
+            <option value="yes"      {% if row.critical_for_signoff == 'yes'      %}selected{% endif %}>Yes</option>
+            <option value="no"       {% if row.critical_for_signoff == 'no'       %}selected{% endif %}>No</option>
+            <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
+          </select>
         </td>
       </tr>
     {% else %}
