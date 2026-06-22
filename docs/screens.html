@@ -495,16 +495,20 @@
       <span class="screen-url">GET /spillover/report/view</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Standalone print-ready report of selected spillover items. Professional document layout — dark header bar per item, metadata strip (Area · Type · Status · Assigned To · Critical for sign-off), next step with left-border accent, and an order details table when entries exist. Summary stats (total items · critical count · slightly-critical count) shown in the report header. Opens in a new tab.</p>
+      <p class="screen-desc">Standalone print-ready report titled <strong>Spillover Status Report — from DTC Perspective</strong>. Professional document layout — dark header bar per item, metadata strip (Area · Status · Critical for sign-off), next step with left-border accent, and an order details table when entries exist. Items are sorted: Critical → Slightly critical → Not critical → unset. Summary stats in header. Opens in a new tab.</p>
       <div class="features">
         <span class="feat-label">Per-item sections</span>
-        <span class="feat-value">Numbered header (dark navy) · Metadata strip (5 cells: Area, Type, Status, Assigned To, Critical) · Next Step (pre-wrap, left-border accent) · Order Details table (Type · Order Number · Comment · S4 docs ✓)</span>
+        <span class="feat-value">Numbered header (dark navy) · Metadata strip (3 cells: Area · Status · Critical) · Next Step (pre-wrap, left-border accent) · Order Details table (Type · Order Number · Comment · S4 docs ✓)</span>
+        <span class="feat-label">Sort order</span>
+        <span class="feat-value">Items are always sorted critical-first: Yes → Slightly → No → unset. Selection order in the source table is overridden.</span>
         <span class="feat-label">Critical colour coding</span>
         <span class="feat-value">Yes → red · Slightly → amber · No → green · — → muted</span>
         <span class="feat-label">S4 docs in report</span>
         <span class="feat-value">Green ✓ shown in the S4 docs column of the order details table for any line where the flag is set; — (muted) otherwise.</span>
         <span class="feat-label">Actions (screen only)</span>
-        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot · <span class="pill pill-nav">← Edit selection</span></span>
+        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
+        <span class="feat-label">Teams copy format</span>
+        <span class="feat-value">Header line with title + date, then per item: bold name, next step (multi-line preserved), order bullets ([Type] OrderNo — Comment ✓ S4). Toast confirms copy.</span>
         <span class="feat-label">Print optimised</span>
         <span class="feat-value">Toolbar hidden in print; cards have page-break-inside: avoid; background colours forced via print-color-adjust.</span>
         <span class="feat-label">Data source</span>
