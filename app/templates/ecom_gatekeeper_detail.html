@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}GK — {{ row.testcase_name or row.id }} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('ecom_gatekeeper_list') }}">ECOM Gatekeeper</a>
+  <span>›</span>
+  <span>{{ (row.testcase_name or '')[:60] or ('Row #' ~ row.id) }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ row.testcase_name or '(no name)' }}</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('ecom_gatekeeper_list') }}" class="btn">← Back to Gatekeeper</a>
+    </div>
+  </div>
+</div>
+
+{# ---- Key fields (read-only — editing on the list) ---- #}
+<div class="detail-card">
+  <div class="detail-grid">
+    <div class="detail-field">
+      <span class="detail-label">Jira ID</span>
+      <span class="detail-value">{{ row.jira_id or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Solman ID</span>
+      <span class="detail-value">{{ row.solman_id or '—' }}</span>
+    </div>
+    <div class="detail-field">
+      <span class="detail-label">Status</span>
+      <span class="detail-value">{{ row.status or '—' }}</span>
+    </div>
+    <div class="detail-field detail-field--full">
+      <span class="detail-label">Next step</span>
+      <span class="detail-value" style="white-space:pre-wrap">{{ row.next_step or '—' }}</span>
+    </div>
+  </div>
+  <p style="font-size:0.75rem;color:#aeaeb2;margin-top:1rem">
+    All field editing happens on the <a href="{{ url_for('ecom_gatekeeper_list') }}">list view</a>.
+  </p>
+</div>
+
+{# ---- Notes ---- #}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Notes</h2>
+    {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
+    <a href="{{ url_for('ecom_gatekeeper_note_add', row_id=row.id) }}" class="btn btn-sm">+ Add note</a>
+  </div>
+
+  {% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if note_saved %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if note_deleted %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+
+  {% if notes %}
+  <div class="notes-list">
+    {% for n in notes %}
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ n.created_at }}</span>
+      </div>
+      <p class="note-text">{{ n.note or '' }}</p>
+      <div class="note-attachments" id="atts-{{ n.id }}">
+        {% for att in attachments_by_note.get(n.id, []) %}
+        <div class="att-thumb" id="att-{{ att.id }}">
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('serve_upload', filename=att.filename) }}" alt="{{ att.original_name }}">
+          </a>
+          <span class="att-name">{{ att.original_name }}</span>
+          <button class="att-del" data-note="{{ n.id }}" data-att="{{ att.id }}" title="Remove screenshot">&#10005;</button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="att-add">
+        <label class="btn btn-sm att-pick-btn" for="att-{{ n.id }}">&#128247; Add screenshot</label>
+        <input id="att-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept="image/*" style="display:none">
+      </div>
+      <div class="note-actions">
+        <a href="{{ url_for('ecom_gatekeeper_note_edit', row_id=row.id, note_id=n.id) }}" class="btn btn-sm">Edit</a>
+        <a href="{{ url_for('ecom_gatekeeper_note_delete', row_id=row.id, note_id=n.id) }}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="notes-empty">No notes yet. <a href="{{ url_for('ecom_gatekeeper_note_add', row_id=row.id) }}">Add the first one.</a></p>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  document.addEventListener('change', function (e) {
+    var input = e.target;
+    if (!input.classList.contains('att-file')) return;
+    var noteId = input.dataset.note;
+    var file = input.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('file', file);
+    fetch('/notes/' + noteId + '/attachments/add', { method: 'POST', body: fd })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok) { alert('Upload failed: ' + data.error); return; }
+        var att = data.attachment;
+        var container = document.getElementById('atts-' + noteId);
+        var div = document.createElement('div');
+        div.className = 'att-thumb'; div.id = 'att-' + att.id;
+        div.innerHTML = '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
+          '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+          '<span class="att-name">' + att.original_name + '</span>' +
+          '<button class="att-del" data-note="' + noteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+        container.appendChild(div);
+        input.value = '';
+      });
+  });
+
+  var _activeNoteId = null;
+  document.addEventListener('mouseover', function (e) {
+    var item = e.target.closest('.note-item');
+    if (item) { var f = item.querySelector('.att-file'); if (f) _activeNoteId = f.dataset.note; }
+  });
+  document.addEventListener('paste', function (e) {
+    if (!_activeNoteId) return;
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') === -1) continue;
+      var file = items[i].getAsFile();
+      if (!file) continue;
+      e.preventDefault();
+      var fd = new FormData();
+      fd.append('file', file, 'paste-' + Date.now() + '.png');
+      fetch('/notes/' + _activeNoteId + '/attachments/add', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) return;
+          var att = data.attachment;
+          var container = document.getElementById('atts-' + _activeNoteId);
+          var div = document.createElement('div');
+          div.className = 'att-thumb'; div.id = 'att-' + att.id;
+          div.innerHTML = '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
+            '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+            '<span class="att-name">' + att.original_name + '</span>' +
+            '<button class="att-del" data-note="' + _activeNoteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+          container.appendChild(div);
+        });
+      break;
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.att-del');
+    if (!btn) return;
+    if (!confirm('Remove this screenshot?')) return;
+    fetch('/notes/' + btn.dataset.note + '/attachments/' + btn.dataset.att + '/delete', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.ok) { var t = document.getElementById('att-' + btn.dataset.att); if (t) t.remove(); } });
+  });
+}());
+</script>
+{% endblock %}

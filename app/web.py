@@ -542,6 +542,164 @@ def order_detail_delete(detail_id: int):
 
 
 # ---------------------------------------------------------------------------
+# ECOM Gatekeeper Check
+# ---------------------------------------------------------------------------
+
+@app.route("/ecom-gatekeeper")
+def ecom_gatekeeper_list():
+    conn = _get_conn()
+    try:
+        rows = database.list_ecom_gatekeeper_rows(conn)
+    finally:
+        conn.close()
+    return render_template("ecom_gatekeeper.html", rows=rows)
+
+
+@app.route("/ecom-gatekeeper/add", methods=["POST"])
+def ecom_gatekeeper_add():
+    conn = _get_conn()
+    try:
+        row_id = database.add_ecom_gatekeeper_row(conn)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "id": row_id})
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>/update", methods=["POST"])
+def ecom_gatekeeper_update(row_id: int):
+    jira_id       = request.form.get("jira_id",       "").strip()
+    solman_id     = request.form.get("solman_id",     "").strip()
+    testcase_name = request.form.get("testcase_name", "").strip()
+    status        = request.form.get("status",        "open").strip()
+    next_step     = request.form.get("next_step",     "").strip()
+    conn = _get_conn()
+    try:
+        database.update_ecom_gatekeeper_row(conn, row_id, jira_id, solman_id, testcase_name, status, next_step)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>/delete", methods=["POST"])
+def ecom_gatekeeper_delete(row_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_ecom_gatekeeper_row(conn, row_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>")
+def ecom_gatekeeper_detail(row_id: int):
+    note_added   = request.args.get("note_added")   == "1"
+    note_saved   = request.args.get("note_saved")   == "1"
+    note_deleted = request.args.get("note_deleted") == "1"
+    conn = _get_conn()
+    try:
+        row = database.get_ecom_gatekeeper_row(conn, row_id)
+        if row is None:
+            return render_template("404.html"), 404
+        notes = database.list_notes(conn, "ecom_gatekeeper", str(row_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
+    finally:
+        conn.close()
+    return render_template(
+        "ecom_gatekeeper_detail.html", row=row,
+        notes=notes, attachments_by_note=attachments_by_note,
+        note_added=note_added, note_saved=note_saved, note_deleted=note_deleted,
+    )
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>/notes/add", methods=["GET", "POST"])
+def ecom_gatekeeper_note_add(row_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_ecom_gatekeeper_row(conn, row_id)
+        if row is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if not note_text:
+                return render_template(
+                    "note_form.html", mode="add",
+                    entity_label=row.get("testcase_name") or f"GK #{row_id}",
+                    list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
+                    detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+                    action_url=url_for("ecom_gatekeeper_note_add", row_id=row_id),
+                    cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+                    heading=heading or "", note_text="", error="Note text is required.",
+                )
+            database.add_note(conn, "ecom_gatekeeper", str(row_id), heading, note_text)
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_added="1"))
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=row.get("testcase_name") or f"GK #{row_id}",
+        list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
+        detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+        action_url=url_for("ecom_gatekeeper_note_add", row_id=row_id),
+        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+        heading="", note_text="", error=None,
+    )
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def ecom_gatekeeper_note_edit(row_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "ecom_gatekeeper" or note["entity_id"] != str(row_id):
+            return render_template("404.html"), 404
+        row = database.get_ecom_gatekeeper_row(conn, row_id)
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_saved="1"))
+    finally:
+        conn.close()
+    label = (row.get("testcase_name") if row else None) or f"GK #{row_id}"
+    kwargs = dict(
+        mode="edit", entity_label=label,
+        list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
+        detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+        action_url=url_for("ecom_gatekeeper_note_edit", row_id=row_id, note_id=note_id),
+        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/ecom-gatekeeper/<int:row_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def ecom_gatekeeper_note_delete(row_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "ecom_gatekeeper" or note["entity_id"] != str(row_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_deleted="1"))
+        row = database.get_ecom_gatekeeper_row(conn, row_id)
+    finally:
+        conn.close()
+    label = (row.get("testcase_name") if row else None) or f"GK #{row_id}"
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=label,
+        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
+        delete_url=url_for("ecom_gatekeeper_note_delete", row_id=row_id, note_id=note_id),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Retail routes
 # ---------------------------------------------------------------------------
 

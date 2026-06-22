@@ -426,6 +426,18 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         );
         CREATE INDEX IF NOT EXISTS ix_order_details_entity
             ON order_details(entity_type, entity_id);
+
+        -- ECOM Gatekeeper Check — manually authored pre-handoff quality checks.
+        -- Notes + order_details hang off this via entity_type='ecom_gatekeeper'.
+        CREATE TABLE IF NOT EXISTS ecom_gatekeeper (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            jira_id       TEXT,
+            solman_id     TEXT,
+            testcase_name TEXT,
+            status        TEXT NOT NULL DEFAULT 'open',
+            next_step     TEXT,
+            created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+        );
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -2450,3 +2462,60 @@ def get_spillover_report_items(conn: sqlite3.Connection) -> list[dict]:
         ORDER BY s.area NULLS LAST, s.name
     """)
     return _rows_to_dicts(cur)
+
+
+# ---------------------------------------------------------------------------
+# ECOM Gatekeeper Check
+# ---------------------------------------------------------------------------
+
+def list_ecom_gatekeeper_rows(conn: sqlite3.Connection) -> list[dict]:
+    cur = conn.execute(
+        """SELECT g.*,
+                  COUNT(n.id) AS note_count
+           FROM ecom_gatekeeper g
+           LEFT JOIN notes n
+             ON n.entity_type = 'ecom_gatekeeper' AND n.entity_id = CAST(g.id AS TEXT)
+           GROUP BY g.id
+           ORDER BY g.id"""
+    )
+    return _rows_to_dicts(cur)
+
+
+def get_ecom_gatekeeper_row(conn: sqlite3.Connection, row_id: int) -> dict | None:
+    cur = conn.execute("SELECT * FROM ecom_gatekeeper WHERE id = ?", (row_id,))
+    rows = _rows_to_dicts(cur)
+    return rows[0] if rows else None
+
+
+def add_ecom_gatekeeper_row(conn: sqlite3.Connection) -> int:
+    cur = conn.execute(
+        "INSERT INTO ecom_gatekeeper (jira_id, solman_id, testcase_name, status, next_step, created_at)"
+        " VALUES ('', '', '', 'open', '', datetime('now'))"
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_ecom_gatekeeper_row(
+    conn: sqlite3.Connection, row_id: int,
+    jira_id: str, solman_id: str, testcase_name: str, status: str, next_step: str
+) -> None:
+    conn.execute(
+        "UPDATE ecom_gatekeeper"
+        " SET jira_id=?, solman_id=?, testcase_name=?, status=?, next_step=?"
+        " WHERE id=?",
+        (jira_id or "", solman_id or "", testcase_name or "",
+         status or "open", next_step or "", row_id),
+    )
+    conn.commit()
+
+
+def delete_ecom_gatekeeper_row(conn: sqlite3.Connection, row_id: int) -> None:
+    conn.execute(
+        "DELETE FROM notes WHERE entity_type='ecom_gatekeeper' AND entity_id=?", (str(row_id),)
+    )
+    conn.execute(
+        "DELETE FROM order_details WHERE entity_type='ecom_gatekeeper' AND entity_id=?", (str(row_id),)
+    )
+    conn.execute("DELETE FROM ecom_gatekeeper WHERE id=?", (row_id,))
+    conn.commit()
