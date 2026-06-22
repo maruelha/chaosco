@@ -7,6 +7,7 @@
     <h1>Core South Spillover</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+      <a href="{{ url_for('spillover_report_select') }}" class="btn btn-primary">Status Report</a>
       <a href="{{ url_for('prod_defects_list') }}" class="btn">Known Prod Defects</a>
       <a href="{{ url_for('retail_report') }}" target="_blank" class="btn">Retail Report</a>
       <a href="{{ url_for('ecom_report') }}" target="_blank" class="btn">ECOM Report</a>
@@ -299,7 +300,8 @@
     <table class="orders-table" style="width:100%;border-collapse:collapse">
       <thead>
         <tr>
-          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:35%">Order number</th>
+          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:22%">Type</th>
+          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:30%">Order number</th>
           <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc">Comment</th>
           <th style="width:2rem"></th>
         </tr>
@@ -456,6 +458,11 @@
     tr.style.cssText = 'border-bottom:1px solid #eee';
     tr.innerHTML =
       `<td style="padding:0.25rem 0.4rem">` +
+        `<input type="text" class="ord-input" data-field="order_type"` +
+        ` value="${escHtml(detail.order_type || '')}" placeholder="Type"` +
+        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
+      `</td>` +
+      `<td style="padding:0.25rem 0.4rem">` +
         `<input type="text" class="ord-input" data-field="order_number"` +
         ` value="${escHtml(detail.order_number || '')}" placeholder="Order number"` +
         ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
@@ -472,9 +479,11 @@
     tr.querySelectorAll('.ord-input').forEach(inp => {
       inp.addEventListener('blur', async () => {
         const id           = tr.dataset.detailId;
+        const order_type   = tr.querySelector('[data-field="order_type"]').value;
         const order_number = tr.querySelector('[data-field="order_number"]').value;
         const comment      = tr.querySelector('[data-field="comment"]').value;
         const fd = new FormData();
+        fd.append('order_type',   order_type);
         fd.append('order_number', order_number);
         fd.append('comment', comment);
         await fetch(`/order-details/${id}/update`, { method: 'POST', body: fd });
@@ -509,7 +518,7 @@
     const resp = await fetch(`/order-details/${odEntityType}/${odEntityId}/add`, { method: 'POST' });
     const d    = await resp.json();
     if (!d.ok) return;
-    const newRow = buildOrderRow({ id: d.id, order_number: '', comment: '' });
+    const newRow = buildOrderRow({ id: d.id, order_type: '', order_number: '', comment: '' });
     ordersTbody.appendChild(newRow);
     newRow.querySelector('.ord-input').focus();
   });

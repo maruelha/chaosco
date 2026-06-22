@@ -408,6 +408,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         );
         CREATE INDEX IF NOT EXISTS ix_attachments_note ON attachments(note_id);
 
+        -- Tracks which spillover items Marina has chosen to include in the status report.
+        -- A row present = included; no row = not included.
+        CREATE TABLE IF NOT EXISTS spillover_report_selection (
+            spillover_id INTEGER PRIMARY KEY
+        );
+
         -- Generic order-number log — entity_type + entity_id identify the parent row.
         -- Mirrors the notes table pattern so any entity type can have order lines.
         CREATE TABLE IF NOT EXISTS order_details (
@@ -462,6 +468,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     for col in ("dtco2c INTEGER DEFAULT 0", "dtco2c_resp TEXT", "daily INTEGER DEFAULT 0"):
         try:
             conn.execute(f"ALTER TABLE defect_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col in ("order_type TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE order_details ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
@@ -2349,7 +2361,7 @@ def delete_attachment(conn: sqlite3.Connection, attachment_id: int) -> str | Non
 
 def list_order_details(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> list[dict]:
     cur = conn.execute(
-        "SELECT id, order_number, comment FROM order_details"
+        "SELECT id, order_type, order_number, comment FROM order_details"
         " WHERE entity_type = ? AND entity_id = ? ORDER BY id",
         (entity_type, entity_id),
     )
@@ -2358,8 +2370,8 @@ def list_order_details(conn: sqlite3.Connection, entity_type: str, entity_id: st
 
 def add_order_detail(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> int:
     cur = conn.execute(
-        "INSERT INTO order_details (entity_type, entity_id, order_number, comment, created_at)"
-        " VALUES (?, ?, '', '', datetime('now'))",
+        "INSERT INTO order_details (entity_type, entity_id, order_type, order_number, comment, created_at)"
+        " VALUES (?, ?, '', '', '', datetime('now'))",
         (entity_type, entity_id),
     )
     conn.commit()
@@ -2367,11 +2379,11 @@ def add_order_detail(conn: sqlite3.Connection, entity_type: str, entity_id: str)
 
 
 def update_order_detail(
-    conn: sqlite3.Connection, detail_id: int, order_number: str, comment: str
+    conn: sqlite3.Connection, detail_id: int, order_type: str, order_number: str, comment: str
 ) -> None:
     conn.execute(
-        "UPDATE order_details SET order_number = ?, comment = ? WHERE id = ?",
-        (order_number or "", comment or "", detail_id),
+        "UPDATE order_details SET order_type = ?, order_number = ?, comment = ? WHERE id = ?",
+        (order_type or "", order_number or "", comment or "", detail_id),
     )
     conn.commit()
 
@@ -2379,3 +2391,53 @@ def update_order_detail(
 def delete_order_detail(conn: sqlite3.Connection, detail_id: int) -> None:
     conn.execute("DELETE FROM order_details WHERE id = ?", (detail_id,))
     conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Spillover report selection
+# ---------------------------------------------------------------------------
+
+def get_spillover_report_ids(conn: sqlite3.Connection) -> set[int]:
+    rows = conn.execute("SELECT spillover_id FROM spillover_report_selection").fetchall()
+    return {r[0] for r in rows}
+
+
+def toggle_spillover_report_item(conn: sqlite3.Connection, spillover_id: int) -> bool:
+    """Toggle inclusion. Returns True if now included, False if now excluded."""
+    exists = conn.execute(
+        "SELECT 1 FROM spillover_report_selection WHERE spillover_id = ?", (spillover_id,)
+    ).fetchone()
+    if exists:
+        conn.execute("DELETE FROM spillover_report_selection WHERE spillover_id = ?", (spillover_id,))
+        conn.commit()
+        return False
+    conn.execute("INSERT INTO spillover_report_selection (spillover_id) VALUES (?)", (spillover_id,))
+    conn.commit()
+    return True
+
+
+def include_spillover_report_ids(conn: sqlite3.Connection, ids: list[int]) -> None:
+    for sid in ids:
+        conn.execute(
+            "INSERT OR IGNORE INTO spillover_report_selection (spillover_id) VALUES (?)", (sid,)
+        )
+    conn.commit()
+
+
+def clear_spillover_report(conn: sqlite3.Connection) -> None:
+    conn.execute("DELETE FROM spillover_report_selection")
+    conn.commit()
+
+
+def get_spillover_report_items(conn: sqlite3.Connection) -> list[dict]:
+    """Return spillover rows + annotations for all selected items, ordered by area then name."""
+    cur = conn.execute("""
+        SELECT s.spillover_id, s.name, s.area, s.status, s.order_numbers,
+               a.next_step, a.critical_for_signoff, a.comment_for_signoff,
+               a.importance_for_signoff, a.signoff_group
+        FROM spillover s
+        JOIN spillover_report_selection sel ON sel.spillover_id = s.spillover_id
+        LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
+        ORDER BY s.area NULLS LAST, s.name
+    """)
+    return _rows_to_dicts(cur)

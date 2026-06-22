@@ -408,6 +408,90 @@ def spillover_note_delete(spillover_id: int, note_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Spillover report — selection + view
+# ---------------------------------------------------------------------------
+
+@app.route("/spillover/report")
+def spillover_report_select():
+    area        = request.args.getlist("area")
+    type_       = request.args.getlist("type")
+    status      = request.args.getlist("status")
+    assigned_to = request.args.getlist("assigned_to")
+    critical    = request.args.getlist("critical")
+    show_all    = request.args.get("show_all") == "1"
+    hidden      = _cfg.get("spillover_hidden_statuses", [])
+    exclude     = [] if (show_all or status) else hidden
+    conn = _get_conn()
+    try:
+        rows         = database.get_spillover(conn, statuses=status or None, areas=area or None,
+                           types=type_ or None, assignees=assigned_to or None,
+                           critical=critical or None, exclude_statuses=exclude or None)
+        options      = database.get_spillover_filter_options(conn)
+        selected_ids = database.get_spillover_report_ids(conn)
+    finally:
+        conn.close()
+    return render_template(
+        "spillover_report_select.html",
+        rows=rows, options=options, selected_ids=selected_ids,
+        area=area, type_=type_, status=status, assigned_to=assigned_to,
+        critical=critical, show_all=show_all,
+    )
+
+
+@app.route("/spillover/<int:spillover_id>/report-toggle", methods=["POST"])
+def spillover_report_toggle(spillover_id: int):
+    conn = _get_conn()
+    try:
+        included = database.toggle_spillover_report_item(conn, spillover_id)
+        total    = len(database.get_spillover_report_ids(conn))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "included": included, "total": total})
+
+
+@app.route("/spillover/report/include-ids", methods=["POST"])
+def spillover_report_include_ids():
+    ids  = [int(i) for i in request.form.getlist("ids") if i.isdigit()]
+    conn = _get_conn()
+    try:
+        database.include_spillover_report_ids(conn, ids)
+        total = len(database.get_spillover_report_ids(conn))
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "total": total})
+
+
+@app.route("/spillover/report/clear", methods=["POST"])
+def spillover_report_clear():
+    conn = _get_conn()
+    try:
+        database.clear_spillover_report(conn)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "total": 0})
+
+
+@app.route("/spillover/report/view")
+def spillover_report_view():
+    conn = _get_conn()
+    try:
+        items        = database.get_spillover_report_items(conn)
+        order_details = {}
+        for item in items:
+            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
+            if od:
+                order_details[item["spillover_id"]] = od
+    finally:
+        conn.close()
+    from datetime import date
+    return render_template(
+        "spillover_report_view.html",
+        items=items, order_details=order_details,
+        today=date.today().strftime("%Y-%m-%d"),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Generic order_details routes — work for any entity type
 # ---------------------------------------------------------------------------
 
@@ -433,11 +517,12 @@ def order_details_add(entity_type: str, entity_id: str):
 
 @app.route("/order-details/<int:detail_id>/update", methods=["POST"])
 def order_detail_update(detail_id: int):
+    order_type   = request.form.get("order_type",   "").strip()
     order_number = request.form.get("order_number", "").strip()
-    comment      = request.form.get("comment", "").strip()
+    comment      = request.form.get("comment",      "").strip()
     conn = _get_conn()
     try:
-        database.update_order_detail(conn, detail_id, order_number, comment)
+        database.update_order_detail(conn, detail_id, order_type, order_number, comment)
     finally:
         conn.close()
     return jsonify({"ok": True})

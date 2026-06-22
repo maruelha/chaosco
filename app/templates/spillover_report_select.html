@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Spillover Report — Select Items{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Spillover Report — Select Items</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('spillover_list') }}" class="btn">← Back to Spillover</a>
+      <a href="{{ url_for('spillover_report_view') }}" class="btn btn-primary" target="_blank">
+        View Report (<span id="sel-count">{{ selected_ids | length }}</span>)
+      </a>
+    </div>
+  </div>
+</div>
+
+{# ---- Filters (same as main list) ---- #}
+<form method="get" action="{{ url_for('spillover_report_select') }}" class="filters-bar" id="filters-form">
+  <div class="filter-group">
+    <label>Area</label>
+    <button type="button" class="filter-btn js-filter-btn {% if area %}filter-btn--active{% endif %}" data-filter="area">
+      <span>{% if area %}{{ area|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Type</label>
+    <button type="button" class="filter-btn js-filter-btn {% if type_ %}filter-btn--active{% endif %}" data-filter="type">
+      <span>{% if type_ %}{{ type_|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Status</label>
+    <button type="button" class="filter-btn js-filter-btn {% if status %}filter-btn--active{% endif %}" data-filter="status">
+      <span>{% if status %}{{ status|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Critical for sign-off</label>
+    <button type="button" class="filter-btn js-filter-btn {% if critical %}filter-btn--active{% endif %}" data-filter="critical">
+      <span>{% if critical %}{{ critical|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if area or type_ or status or critical or show_all %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('spillover_report_select') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<dialog id="dlg-filter-area" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Area</div></div>
+  <div class="dlg-body">
+    {% for v in options.areas %}
+    <label class="cb-row"><input type="checkbox" name="area" value="{{ v }}" form="filters-form" {% if v in area %}checked{% endif %}> {{ v }}</label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="area">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="area">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-type" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Type</div></div>
+  <div class="dlg-body">
+    {% for v in options.types %}
+    <label class="cb-row"><input type="checkbox" name="type" value="{{ v }}" form="filters-form" {% if v in type_ %}checked{% endif %}> {{ v }}</label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="type">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="type">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-status" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Status</div></div>
+  <div class="dlg-body">
+    {% for v in options.statuses %}
+    <label class="cb-row"><input type="checkbox" name="status" value="{{ v }}" form="filters-form" {% if v in status %}checked{% endif %}> {{ v }}</label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="status">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="status">Apply</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-filter-critical" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by Critical for sign-off</div></div>
+  <div class="dlg-body">
+    {% for v, label in [('yes','Yes'), ('slightly','Slightly'), ('no','No')] %}
+    <label class="cb-row"><input type="checkbox" name="critical" value="{{ v }}" form="filters-form" {% if v in critical %}checked{% endif %}> {{ label }}</label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="critical">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="critical">Apply</button>
+  </div>
+</dialog>
+
+<div class="toggle-row">
+  <input type="checkbox" id="toggle-all" name="show_all" value="1" form="filters-form"
+         {% if show_all %}checked{% endif %} onchange="this.form.submit()">
+  <label for="toggle-all">Show passed &amp; dropped</label>
+</div>
+
+{# ---- Batch actions ---- #}
+<div style="display:flex;gap:0.6rem;align-items:center;margin:0.9rem 0 0.5rem">
+  <button type="button" class="btn btn-sm" id="btn-select-page">
+    ✓ Select all on this page ({{ rows | length }})
+  </button>
+  <button type="button" class="btn btn-sm" id="btn-clear-all">✕ Clear all</button>
+  <span class="list-meta" style="margin:0">
+    {{ rows | length }} item{{ 's' if rows | length != 1 else '' }} shown
+  </span>
+</div>
+
+{# ---- Table ---- #}
+<table style="width:100%;border-collapse:collapse">
+  <thead>
+    <tr>
+      <th style="width:2rem;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb;text-align:center">✓</th>
+      <th style="width:44px;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">#</th>
+      <th style="padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">Name</th>
+      <th style="width:90px;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">Area</th>
+      <th style="width:130px;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">Status</th>
+      <th style="width:110px;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">Critical</th>
+      <th style="width:260px;padding:0.4rem 0.5rem;border-bottom:2px solid #e5e5ea;background:#f9f9fb">Next step</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr class="rpt-row {% if row.spillover_id in selected_ids %}rpt-row--on{% endif %}"
+        data-id="{{ row.spillover_id }}"
+        style="border-bottom:1px solid #f0f0f5;cursor:pointer">
+      <td style="text-align:center;padding:0.35rem 0.5rem">
+        <input type="checkbox" class="js-rpt-cb"
+               {% if row.spillover_id in selected_ids %}checked{% endif %}
+               onclick="event.stopPropagation()">
+      </td>
+      <td style="padding:0.35rem 0.5rem;color:#8e8e93;font-size:0.82rem">{{ row.excel_row }}</td>
+      <td style="padding:0.35rem 0.5rem;font-weight:500" title="{{ row.name | e }}">
+        {{ row.name[:80] }}{% if row.name and row.name | length > 80 %}…{% endif %}
+      </td>
+      <td style="padding:0.35rem 0.5rem;font-size:0.85rem">{{ row.area or '—' }}</td>
+      <td style="padding:0.35rem 0.5rem"><span class="status-pill">{{ row.status or '—' }}</span></td>
+      <td style="padding:0.35rem 0.5rem;font-size:0.85rem">{{ row.critical_for_signoff or '—' }}</td>
+      <td style="padding:0.35rem 0.5rem;font-size:0.83rem;color:#444;max-width:260px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"
+          title="{{ (row.next_step or '') | e }}">
+        {{ row.next_step or '—' }}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="table-empty">No items match the current filters.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<script>
+(function () {
+  let selCount = {{ selected_ids | length }};
+  const countEl = document.getElementById('sel-count');
+
+  function setCount(n) {
+    selCount = n;
+    countEl.textContent = n;
+  }
+
+  async function toggle(tr, cb) {
+    const resp = await fetch(`/spillover/${tr.dataset.id}/report-toggle`, { method: 'POST' });
+    const d = await resp.json();
+    if (!d.ok) { cb.checked = !cb.checked; return; }
+    cb.checked = d.included;
+    tr.classList.toggle('rpt-row--on', d.included);
+    setCount(d.total);
+  }
+
+  document.querySelectorAll('.rpt-row').forEach(tr => {
+    const cb = tr.querySelector('.js-rpt-cb');
+    cb.addEventListener('change', () => toggle(tr, cb));
+    tr.addEventListener('click', e => {
+      if (e.target === cb) return;
+      toggle(tr, cb);
+    });
+  });
+
+  document.getElementById('btn-select-page').addEventListener('click', async () => {
+    const ids = [...document.querySelectorAll('.rpt-row')].map(tr => tr.dataset.id);
+    const fd = new FormData();
+    ids.forEach(id => fd.append('ids', id));
+    const resp = await fetch('/spillover/report/include-ids', { method: 'POST', body: fd });
+    const d = await resp.json();
+    document.querySelectorAll('.js-rpt-cb').forEach(cb => cb.checked = true);
+    document.querySelectorAll('.rpt-row').forEach(tr => tr.classList.add('rpt-row--on'));
+    setCount(d.total);
+  });
+
+  document.getElementById('btn-clear-all').addEventListener('click', async () => {
+    const resp = await fetch('/spillover/report/clear', { method: 'POST' });
+    const d = await resp.json();
+    document.querySelectorAll('.js-rpt-cb').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.rpt-row').forEach(tr => tr.classList.remove('rpt-row--on'));
+    setCount(0);
+  });
+
+  // Filter dialog logic (same pattern as main list)
+  const FILTERS = ['area', 'type', 'status', 'critical'];
+
+  function updateFilterBtn(filter) {
+    const checked = document.querySelectorAll(`input[type="checkbox"][name="${filter}"][form="filters-form"]:checked`);
+    const btn  = document.querySelector(`.js-filter-btn[data-filter="${filter}"]`);
+    const span = btn.querySelector('span');
+    if (checked.length) { span.textContent = checked.length + ' selected'; btn.classList.add('filter-btn--active'); }
+    else { span.textContent = 'All'; btn.classList.remove('filter-btn--active'); }
+  }
+
+  document.querySelectorAll('.js-filter-btn').forEach(btn =>
+    btn.addEventListener('click', () => document.getElementById('dlg-filter-' + btn.dataset.filter).showModal())
+  );
+  document.querySelectorAll('.js-filter-apply').forEach(btn =>
+    btn.addEventListener('click', () => { updateFilterBtn(btn.dataset.filter); document.getElementById('dlg-filter-' + btn.dataset.filter).close(); })
+  );
+  document.querySelectorAll('.js-filter-clear').forEach(btn =>
+    btn.addEventListener('click', () => {
+      document.querySelectorAll(`input[type="checkbox"][name="${btn.dataset.filter}"][form="filters-form"]`).forEach(cb => cb.checked = false);
+      updateFilterBtn(btn.dataset.filter);
+    })
+  );
+  FILTERS.map(f => document.getElementById('dlg-filter-' + f)).forEach(dlg => {
+    if (dlg) dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  });
+}());
+</script>
+
+<style>
+  .rpt-row:hover { background: #f5f7ff; }
+  .rpt-row--on   { background: #f0faf4; }
+  .rpt-row--on:hover { background: #e6f7ed; }
+</style>
+{% endblock %}
