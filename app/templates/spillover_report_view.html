@@ -155,6 +155,12 @@
   <a href="{{ url_for('spillover_report_select') }}" class="btn">← Edit selection</a>
   <button class="btn" onclick="window.print()">Print</button>
   <button class="btn btn-primary" onclick="downloadHtml()">Download HTML</button>
+  <button class="btn" id="btn-copy-teams" onclick="copyForTeams()">📋 Copy for Teams</button>
+</div>
+<div id="teams-toast" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;
+     background:#1e293b;color:#f1f5f9;padding:0.55rem 1rem;border-radius:6px;
+     font-size:0.82rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2)">
+  ✓ Copied — paste into Teams
 </div>
 
 {# ---- Print-only header ---- #}
@@ -291,6 +297,71 @@ function downloadHtml() {
   a.href = URL.createObjectURL(blob);
   a.download = 'spillover_report_{{ today }}.html';
   a.click();
+}
+
+function copyForTeams() {
+  const date  = document.querySelector('.rh-date')?.textContent?.trim() || '{{ today }}';
+  const cards = document.querySelectorAll('.item-card');
+  const lines = [];
+
+  lines.push(`📋 **Core South Spillover** | ${date}`);
+  lines.push('');
+
+  cards.forEach((card, idx) => {
+    const name     = card.querySelector('.item-name')?.textContent?.trim() || '';
+    const nextStep = card.querySelector('.nextstep-text')?.textContent?.trim() || '';
+    const orderRows = card.querySelectorAll('.orders-table tbody tr');
+
+    lines.push(`**${idx + 1}. ${name}**`);
+
+    if (nextStep) {
+      // preserve line breaks from pre-wrap text
+      nextStep.split('\n').forEach((ln, i) => {
+        lines.push(i === 0 ? `Next step: ${ln}` : `           ${ln}`);
+      });
+    }
+
+    if (orderRows.length) {
+      lines.push('Orders:');
+      orderRows.forEach(row => {
+        const cells   = row.querySelectorAll('td');
+        const type    = (cells[0]?.textContent?.trim() || '').replace('—','').trim();
+        const orderNo = (cells[1]?.textContent?.trim() || '').replace('—','').trim();
+        const comment = (cells[2]?.textContent?.trim() || '').replace('—','').trim();
+        const hasS4   = !!cells[3]?.querySelector('.s4-check');
+
+        let parts = [];
+        if (type)    parts.push(`[${type}]`);
+        if (orderNo) parts.push(orderNo);
+        if (comment) parts.push(`— ${comment}`);
+        if (hasS4)   parts.push('✓ S4');
+
+        lines.push(`  • ${parts.join(' ')}`);
+      });
+    }
+
+    lines.push('');
+  });
+
+  const text = lines.join('\n').trimEnd();
+
+  navigator.clipboard.writeText(text).then(() => {
+    const toast = document.getElementById('teams-toast');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  }).catch(() => {
+    // fallback: select a hidden textarea
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    const toast = document.getElementById('teams-toast');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  });
 }
 </script>
 </body>
