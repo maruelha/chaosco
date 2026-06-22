@@ -485,6 +485,8 @@ def spillover_report_view():
                 order_details[item["spillover_id"]] = od
     finally:
         conn.close()
+    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
+    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
     from datetime import date
     return render_template(
         "spillover_report_view.html",

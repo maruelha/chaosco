@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Core South Spillover — Status Report — {{ today }}</title>
+  <title>Spillover Status Report — from DTC Perspective — {{ today }}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -151,7 +151,7 @@
 
 {# ---- Toolbar ---- #}
 <div class="toolbar">
-  <span class="toolbar-title">Core South Spillover — Status Report</span>
+  <span class="toolbar-title">Spillover Status Report — from DTC Perspective</span>
   <a href="{{ url_for('spillover_report_select') }}" class="btn">← Edit selection</a>
   <button class="btn" onclick="window.print()">Print</button>
   <button class="btn btn-primary" onclick="downloadHtml()">Download HTML</button>
@@ -165,7 +165,7 @@
 
 {# ---- Print-only header ---- #}
 <div class="print-header">
-  <h1>Core South Spillover — Status Report</h1>
+  <h1>Spillover Status Report — from DTC Perspective</h1>
   <p>{{ today }} &nbsp;·&nbsp; {{ items | length }} item{{ 's' if items | length != 1 else '' }}</p>
 </div>
 
@@ -176,7 +176,7 @@
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · Core South</div>
-    <div class="rh-title">Spillover Status Report</div>
+    <div class="rh-title">Spillover Status Report — from DTC Perspective</div>
     <div class="rh-date">{{ today }}</div>
   </div>
   <div class="rh-stats">
@@ -296,7 +296,7 @@ function copyForTeams() {
   const cards = document.querySelectorAll('.item-card');
   const lines = [];
 
-  lines.push(`📋 **Core South Spillover** | ${date}`);
+  lines.push(`📋 **Spillover Status Report — from DTC Perspective** | ${date}`);
   lines.push('');
 
   cards.forEach((card, idx) => {
