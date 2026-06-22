@@ -204,7 +204,7 @@
             <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
           </select>
         </td>
-        <td class="sc-next cell-nextstep">
+        <td class="sc-next cell-nextstep" title="{{ (row.next_step or '') | e }}">
           <span class="cell-edit js-open-ann">
             {% if row.next_step %}
               {{ row.next_step }}
