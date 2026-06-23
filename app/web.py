@@ -27,7 +27,8 @@ app = Flask(
 _cfg = load_config()
 _db_path = Path(_cfg["database_path"])
 _UPLOAD_FOLDER = _HERE.parent / "data" / "uploads"
-_ALLOWED_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+_ALLOWED_EXTS = _IMAGE_EXTS | {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".msg", ".eml", ".zip"}
 
 # Create schema once at startup; routes use get_connection() after this.
 database.init_db(_db_path).close()
@@ -35,6 +36,11 @@ database.init_db(_db_path).close()
 
 def _get_conn():
     return database.get_connection(_db_path)
+
+
+@app.template_filter("is_image")
+def _is_image_filter(filename: str) -> bool:
+    return Path(filename).suffix.lower() in _IMAGE_EXTS
 
 
 def _not_found(defect_id: str):
@@ -2607,7 +2613,7 @@ def attachment_add(note_id: int):
         return jsonify({"ok": False, "error": "no file"})
     ext = Path(f.filename).suffix.lower()
     if ext not in _ALLOWED_EXTS:
-        return jsonify({"ok": False, "error": f"File type {ext!r} not allowed. Use PNG, JPG, GIF or WEBP."})
+        return jsonify({"ok": False, "error": f"File type {ext!r} not allowed."})
     _UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
     from datetime import datetime as _dt
     timestamp = _dt.now().strftime("%Y%m%d%H%M%S")

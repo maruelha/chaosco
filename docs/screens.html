@@ -259,17 +259,17 @@
       <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, Test Learning, or Follow-up) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
       <div class="features">
         <span class="feat-label">Add item</span>
-        <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
+        <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
         <span class="feat-label">Per-item actions</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Edit</span> — inline toggle; updates heading and note text<br>
-          <span class="pill pill-ajax">Delete</span> — removes item and all attached screenshots<br>
+          <span class="pill pill-ajax">Delete</span> — removes item and all attachments<br>
           <span class="pill pill-ajax">File ›</span> — opens filing picker: choose type, search by name, select target, then Move ›
         </span>
         <span class="feat-label">Filing behaviour</span>
         <span class="feat-value">Single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.</span>
-        <span class="feat-label">Screenshot support</span>
-        <span class="feat-value">PNG/JPG/GIF/WEBP. Ctrl+V pastes a Snipping Tool image into the last-hovered item. Thumbnails shown inline; ✕ to delete.</span>
+        <span class="feat-label">Attachment support</span>
+        <span class="feat-value">Images (PNG/JPG/GIF/WEBP) shown as thumbnails. Documents (PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/TXT/CSV/MSG/EML/ZIP) shown as download links. Ctrl+V pastes a Snipping Tool image into the last-hovered item. ✕ to delete any attachment.</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>notes</code> (entity_type='input', entity_id='inbox') + <code>attachments</code></span>
       </div>
@@ -356,7 +356,7 @@
         <span class="pill pill-action">Save</span> → POST to same URL → redirect with <code>?saved=1</code> flash<br>
         DTC O2C and Daily can also be toggled inline from the list view (AJAX, no reload)</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">List of all notes for this defect (heading, body, timestamp). Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span> links. Each note also shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-value">List of all notes for this defect (heading, body, timestamp). Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span> links. Each note shows an attachment area with <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> buttons. Images shown as thumbnails; documents as download links. Hover an attachment to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
         <span class="feat-label">Add to Meeting Prep</span>
         <span class="feat-value"><span class="pill pill-action">📅 Add to Meeting Prep</span> button at the bottom — expands an inline form: pick meeting + edit pre-filled topic (defect ID + SolMan name). POSTs to <code>/meeting-prep/add</code> with <code>source_entity_type=defect</code> and <code>source_entity_id</code>. Redirects back with green confirmation banner.</span>
         <span class="feat-label">Flash banners</span>
@@ -384,8 +384,8 @@
         <span class="feat-value">Confirmation page showing the note heading/body. Requires a second POST to confirm deletion.</span>
         <span class="feat-label">Return flow</span>
         <span class="feat-value">Add can return to either the defect detail or the defects list (controlled by <code>return_to</code> query param). Edit and Delete always return to the defect detail.</span>
-        <span class="feat-label">Screenshot attachments</span>
-        <span class="feat-value">Upload via file picker or Ctrl+V paste from Snipping Tool (AJAX, no page reload). Delete via ✕ button on thumbnail hover. Files stored in <code>data/uploads/</code>. Routes: <code>POST /notes/&lt;note_id&gt;/attachments/add</code> · <code>POST /notes/&lt;note_id&gt;/attachments/&lt;id&gt;/delete</code> · <code>GET /uploads/&lt;filename&gt;</code>.</span>
+        <span class="feat-label">File attachments</span>
+        <span class="feat-value">Upload images via <span class="pill pill-action">📷 Add screenshot</span> or Ctrl+V paste; upload documents via <span class="pill pill-action">📎 Attach file</span> (AJAX, no page reload). Images shown as thumbnails; documents as download links. Delete via ✕ on hover. All files stored in <code>data/uploads/</code>. Routes: <code>POST /notes/&lt;note_id&gt;/attachments/add</code> · <code>POST /notes/&lt;note_id&gt;/attachments/&lt;id&gt;/delete</code> · <code>GET /uploads/&lt;filename&gt;</code>.</span>
         <span class="feat-label">Tables written</span>
         <span class="feat-value"><code>notes</code> (entity_type = 'defect') · <code>attachments</code> (on upload/delete)</span>
       </div>
@@ -530,12 +530,12 @@
       <span class="screen-url">GET /spillover/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Read-only view of a single spillover item. Primary purpose is the full notes log — heading, screenshots, Ctrl+V paste. All field editing still happens inline on the list view.</p>
+      <p class="screen-desc">Read-only view of a single spillover item. Primary purpose is the full notes log — heading, file attachments, Ctrl+V paste. All field editing still happens inline on the list view.</p>
       <div class="features">
         <span class="feat-label">Fields shown</span>
         <span class="feat-value">Area · Type · Country · Status · Assigned To · External ID · Order Numbers · Critical for Sign-Off · Report Group · Next Step · Content (full, pre-wrapped) · Comment (imported) · Comment for Sign-Off · Comment History</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> per note; images as thumbnails, documents as download links. Ctrl+V pastes a clipboard image into the last-hovered note.</span>
         <span class="feat-label">Note routes</span>
         <span class="feat-value">
           <code>GET/POST /spillover/&lt;id&gt;/notes/add</code><br>
@@ -608,12 +608,12 @@
       <span class="screen-url">GET /ecom-gatekeeper/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Detail page for a single gatekeeper check row. Shows the key fields read-only (editing stays on the list), then the full notes log with screenshots and Ctrl+V paste support.</p>
+      <p class="screen-desc">Detail page for a single gatekeeper check row. Shows the key fields read-only (editing stays on the list), then the full notes log with file attachments and Ctrl+V paste support.</p>
       <div class="features">
         <span class="feat-label">Fields shown</span>
         <span class="feat-value">Jira ID · Solman ID · Status · Next step (all read-only — editing on the list view)</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image directly into the last-hovered note.</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> per note; images as thumbnails, documents as download links. Ctrl+V pastes a clipboard image directly into the last-hovered note.</span>
         <span class="feat-label">Note routes</span>
         <span class="feat-value">
           <code>GET/POST /ecom-gatekeeper/&lt;id&gt;/notes/add</code><br>
@@ -693,7 +693,7 @@
         <span class="feat-value">Next Step · Comment History · Action Needed (checkbox)<br>
         <span class="pill pill-action">Save</span> → POST → redirect with <code>?saved=1</code> flash</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">List of notes (heading, body, timestamp). Per-note Edit and Delete links. Each note shows image thumbnail gallery with a <span class="pill pill-action">📷 Add screenshot</span> button. Hover a thumbnail to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-value">List of notes (heading, body, timestamp). Per-note Edit and Delete links. Each note shows an attachment area with <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> buttons; images as thumbnails, documents as download links. Hover an attachment to reveal the ✕ remove button. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
         <span class="feat-label">Add to Meeting Prep</span>
         <span class="feat-value"><span class="pill pill-action">📅 Add to Meeting Prep</span> button at the bottom — expands an inline form: pick meeting + edit pre-filled topic (test case ID / country / scenario). POSTs to <code>/meeting-prep/add</code> with <code>source_entity_type=retail</code> and <code>source_entity_id</code>. Redirects back with green confirmation banner.</span>
         <span class="feat-label">Flash banners</span>
@@ -717,8 +717,8 @@
       <div class="features">
         <span class="feat-label">Add / Edit fields</span>
         <span class="feat-value">Heading (optional) · Note text (required)</span>
-        <span class="feat-label">Screenshot attachments</span>
-        <span class="feat-value">Upload via file picker or Ctrl+V paste (AJAX). Delete via ✕ on thumbnail hover. Same routes as Defects: <code>/notes/&lt;note_id&gt;/attachments/…</code></span>
+        <span class="feat-label">File attachments</span>
+        <span class="feat-value">Upload images via <span class="pill pill-action">📷 Add screenshot</span> or Ctrl+V paste; upload documents via <span class="pill pill-action">📎 Attach file</span> (AJAX). Delete via ✕ on hover. Same routes as Defects: <code>/notes/&lt;note_id&gt;/attachments/…</code></span>
         <span class="feat-label">Tables written</span>
         <span class="feat-value"><code>notes</code> (entity_type = 'retail') · <code>attachments</code> (on upload/delete)</span>
       </div>
@@ -1078,7 +1078,7 @@
         <span class="feat-label">Fields shown</span>
         <span class="feat-value">With Whom · Topic · When Next · Status (inline dropdown, AJAX)</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">Full notes log: heading + text + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> per note. Ctrl+V pastes Snipping Tool image into the last-hovered note.</span>
+        <span class="feat-value">Full notes log: heading + text + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> per note; images as thumbnails, documents as download links. Ctrl+V pastes Snipping Tool image into the last-hovered note.</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>followups</code> + <code>notes</code> (entity_type='followup') + <code>attachments</code></span>
       </div>
@@ -1250,14 +1250,14 @@
       <span class="screen-url">GET/POST /test_learnings/new &nbsp;·&nbsp; /test_learnings/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Create or edit a test learning entry. Below the form: a full notes log with heading, screenshots, and Ctrl+V paste — identical to the Defect and Retail detail pages.</p>
+      <p class="screen-desc">Create or edit a test learning entry. Below the form: a full notes log with heading, file attachments, and Ctrl+V paste — identical to the Defect and Retail detail pages.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
         <span class="feat-value">Channel (required, default Retail) · Topic · Learning (required) · Scenario · Tags (comma-separated)</span>
         <span class="feat-label">Actions</span>
         <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, with confirmation)</span>
         <span class="feat-label">Notes section</span>
-        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. Screenshot thumbnails per note with <span class="pill pill-action">📷 Add screenshot</span> button. Ctrl+V pastes a clipboard image into the last-hovered note.</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> per note; images as thumbnails, documents as download links. Ctrl+V pastes a clipboard image into the last-hovered note.</span>
         <span class="feat-label">Flash banners</span>
         <span class="feat-value">Changes saved · Note added · Note saved · Note deleted</span>
         <span class="feat-label">Note routes</span>

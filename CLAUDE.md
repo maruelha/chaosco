@@ -70,7 +70,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ### Shared
 - `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `ecom_gatekeeper`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
-- `attachments` — image files attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
+- `attachments` — files (images and documents) attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
 - `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_type TEXT, order_number TEXT, comment TEXT, docs_in_s4 INTEGER DEFAULT 0, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`). `docs_in_s4` = "docs confirmed in S4" checkbox; green ✓ badge appears on the Order details button in the list when any linked row has it set.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
@@ -139,11 +139,11 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | Production Defects List | `/prod_defects` | Link in Spillover list header |
 | Production Defect Detail | `/prod_defects/<id>` | From prod defects list |
 | Test Learnings | `/test_learnings` | Link in Retail list header |
-| Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
+| Test Learning Detail | `/test_learnings/<id>` | From Test Learnings list — full field display + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
 | Test Limitations | `/test_limitations` | Link in Retail list header |
-| ECOM Gatekeeper Detail | `/ecom-gatekeeper/<id>` | From Notes button on Gatekeeper list — shows Jira ID, Solman ID, Status, Next step (read-only) + full notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste). Note routes: `/ecom-gatekeeper/<id>/notes/add\|edit\|delete`. |
-| Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
-| Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, screenshot attachments, Ctrl+V paste) |
+| ECOM Gatekeeper Detail | `/ecom-gatekeeper/<id>` | From Notes button on Gatekeeper list — shows Jira ID, Solman ID, Status, Next step (read-only) + full notes module (heading, edit, delete, file attachments, Ctrl+V paste). Note routes: `/ecom-gatekeeper/<id>/notes/add\|edit\|delete`. |
+| Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
+| Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
 | DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
 
 ### Shared sub-screens (note forms)
@@ -153,12 +153,15 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - Note add/edit/delete for Spillover: `/spillover/<id>/notes/...`
 - Note add/edit/delete for Follow-ups: `/followups/<id>/notes/...`
 
-### Screenshot attachments (Defects, Retail, Test Learnings, Spillover, Follow-up, Inbox)
-- `GET /uploads/<filename>` — serve a stored image file
-- `POST /notes/<note_id>/attachments/add` — upload image (multipart, field: `file`). Saves to `data/uploads/<note_id>_<timestamp>_<name>`. Returns JSON `{ok, attachment}`.
+### File attachments (Defects, Retail, Test Learnings, Spillover, Follow-up, ECOM Gatekeeper, Inbox)
+- `GET /uploads/<filename>` — serve a stored file
+- `POST /notes/<note_id>/attachments/add` — upload a file (multipart, field: `file`). Saves to `data/uploads/<note_id>_<timestamp>_<name>`. Returns JSON `{ok, attachment}`.
 - `POST /notes/<note_id>/attachments/<attachment_id>/delete` — delete DB record + disk file. Returns JSON `{ok}`.
-- Allowed: `.png .jpg .jpeg .gif .webp`
-- **Ctrl+V paste** supported: hover a note, then Ctrl+V pastes a Snipping Tool image directly into it.
+- Allowed images (shown as thumbnails): `.png .jpg .jpeg .gif .webp`
+- Allowed documents (shown as download links): `.pdf .doc .docx .xls .xlsx .ppt .pptx .txt .csv .msg .eml .zip`
+- Both types share the same `attachments` table and `data/uploads/` folder.
+- **📷 Add screenshot** button — image picker (image/* filter). **📎 Attach file** button — document picker (above extensions). Both use the same AJAX upload route.
+- **Ctrl+V paste** supported: hover a note, then Ctrl+V pastes a Snipping Tool image directly into it (images only).
 
 ### Global widget (every page)
 - **Enhancements floating panel** — bottom-right corner, AJAX-driven quick-add; full list and edit at `/enhancements/page`
@@ -192,7 +195,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `config/settings.yaml` | File paths, sheet names, hidden statuses |
 | `config/status_mappings.yaml` | Retail report bucket definitions |
 | `data/test_coordination.db` | SQLite database |
-| `data/uploads/` | Screenshot/image files attached to notes (served via `/uploads/<filename>`) |
+| `data/uploads/` | Files (images and documents) attached to notes (served via `/uploads/<filename>`) |
 | `output/retail_report_log.xlsx` | Appended by "Save to Excel" on the retail report |
 | `docs/database_schema.html` | Visual DB schema documentation |
 | `docs/screens_visual.html` | Visual screen reference with real screenshots |

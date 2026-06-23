@@ -47,17 +47,23 @@
       <div class="note-attachments" id="atts-{{ item.id }}">
         {% for att in attachments_by_note.get(item.id, []) %}
         <div class="att-thumb" id="att-{{ att.id }}">
+          {% if att.filename | is_image %}
           <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener">
             <img src="{{ url_for('serve_upload', filename=att.filename) }}" alt="{{ att.original_name }}">
           </a>
+          {% else %}
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener" style="display:block;padding:0.3rem 0;font-size:0.82rem;color:#0071e3;word-break:break-all">&#128196; {{ att.original_name }}</a>
+          {% endif %}
           <span class="att-name">{{ att.original_name }}</span>
-          <button class="att-del" data-note="{{ item.id }}" data-att="{{ att.id }}" title="Remove screenshot">&#10005;</button>
+          <button class="att-del" data-note="{{ item.id }}" data-att="{{ att.id }}" title="Remove attachment">&#10005;</button>
         </div>
         {% endfor %}
       </div>
       <div class="att-add">
         <label class="btn btn-sm att-pick-btn" for="att-file-{{ item.id }}">&#128247; Add screenshot</label>
         <input id="att-file-{{ item.id }}" type="file" class="att-file" data-note="{{ item.id }}" accept="image/*" style="display:none">
+        <label class="btn btn-sm att-pick-btn" for="att-doc-{{ item.id }}" style="margin-left:0.3rem">&#128206; Attach file</label>
+        <input id="att-doc-{{ item.id }}" type="file" class="att-file" data-note="{{ item.id }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.msg,.eml,.zip" style="display:none">
       </div>
 
       {# Actions #}
@@ -242,7 +248,7 @@
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('.att-del');
     if (!btn) return;
-    if (!confirm('Remove this screenshot?')) return;
+    if (!confirm('Remove this attachment?')) return;
     var noteId = btn.dataset.note;
     var attId  = btn.dataset.att;
     fetch('/notes/' + noteId + '/attachments/' + attId + '/delete', { method: 'POST' })
@@ -259,11 +265,12 @@
     var div = document.createElement('div');
     div.className = 'att-thumb';
     div.id = 'att-' + att.id;
-    div.innerHTML =
-      '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener">' +
-      '<img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>' +
+    var _isImg = /\.(png|jpe?g|gif|webp)$/i.test(att.filename);
+    div.innerHTML = (_isImg
+      ? '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener"><img src="/uploads/' + att.filename + '" alt="' + att.original_name + '"></a>'
+      : '<a href="/uploads/' + att.filename + '" target="_blank" rel="noopener" style="display:block;padding:0.3rem 0;font-size:0.82rem;color:#0071e3;word-break:break-all">&#128196; ' + att.original_name + '</a>') +
       '<span class="att-name">' + att.original_name + '</span>' +
-      '<button class="att-del" data-note="' + noteId + '" data-att="' + att.id + '" title="Remove screenshot">&#10005;</button>';
+      '<button class="att-del" data-note="' + noteId + '" data-att="' + att.id + '" title="Remove attachment">&#10005;</button>';
     container.appendChild(div);
   }
 
