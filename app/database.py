@@ -1730,7 +1730,7 @@ def get_followups(conn: sqlite3.Connection,
     if not include_done:
         where.append("f.status != 'done'")
     if with_whom:
-        where.append("f.with_whom = ?"); params.append(with_whom)
+        where.append("f.with_whom LIKE ?"); params.append(f"%{with_whom}%")
     if when_next:
         where.append("f.when_next = ?"); params.append(when_next)
     if status:
@@ -1753,10 +1753,17 @@ def get_followups(conn: sqlite3.Connection,
 
 
 def get_followup_filter_options(conn: sqlite3.Connection) -> dict:
-    with_whom = [r[0] for r in conn.execute(
-        "SELECT DISTINCT with_whom FROM followups WHERE with_whom IS NOT NULL ORDER BY with_whom"
-    ).fetchall()]
-    return {"with_whom": with_whom}
+    rows = conn.execute(
+        "SELECT DISTINCT with_whom FROM followups WHERE with_whom IS NOT NULL"
+    ).fetchall()
+    seen, names = set(), []
+    for (val,) in rows:
+        for name in [n.strip() for n in val.split(",")]:
+            if name and name not in seen:
+                seen.add(name)
+                names.append(name)
+    names.sort()
+    return {"with_whom": names}
 
 
 def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str, when_next: str) -> int:

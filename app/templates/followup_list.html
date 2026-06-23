@@ -11,7 +11,18 @@
 
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
-  <input  name="with_whom" type="text" placeholder="With whom *" required class="fu-input fu-short">
+  <div class="fu-whom-wrap">
+    {% if opts.with_whom %}
+    <select multiple name="with_whom_picks" class="fu-input fu-whom-select" title="Hold Ctrl / Cmd to select multiple">
+      {% for w in opts.with_whom %}
+        <option value="{{ w }}">{{ w }}</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+    <input name="with_whom_new" type="text"
+           placeholder="{% if opts.with_whom %}New name{% else %}With whom *{% endif %}"
+           class="fu-input fu-short">
+  </div>
   <input  name="topic"     type="text" placeholder="Topic *"     required class="fu-input fu-topic">
   <input  name="when_next" type="date" value="{{ today }}"                class="fu-input fu-short">
   <button type="submit" class="btn btn-primary">Add</button>

@@ -2187,7 +2187,10 @@ def followup_list():
 
 @app.route("/followups/add", methods=["POST"])
 def followup_add():
-    with_whom = request.form.get("with_whom", "").strip()
+    picks     = request.form.getlist("with_whom_picks")
+    new_name  = request.form.get("with_whom_new", "").strip()
+    names     = picks + ([new_name] if new_name else [])
+    with_whom = ", ".join(names)
     topic     = request.form.get("topic", "").strip()
     when_next = request.form.get("when_next", "").strip() or date.today().isoformat()
     if with_whom and topic:
