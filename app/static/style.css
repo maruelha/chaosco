@@ -1080,9 +1080,12 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .fu-row.fu-status--done td       { color: #aaa; text-decoration: line-through; }
 .fu-row.fu-status--in_progress td { background: #f0f5ff; }
 .fu-col-whom   { width: 130px; }
+.fu-col-group  { width: 110px; }
 .fu-col-when   { width: 110px; white-space: nowrap; }
 .fu-col-status { width: 130px; }
-.fu-col-notes  { width: 110px; }
+.fu-col-notes  { width: 160px; }
+.fu-table th.sortable:hover { background: #e8e8e8; }
+.sort-icon { font-size: 0.75rem; color: #888; }
 .fu-status-sel  { width: 100%; }
 .fu-notes-row td   { background: #fafcff; padding: 0.7rem 1rem 0.7rem 2.5rem; }
 .fu-notes-list     { margin-bottom: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }

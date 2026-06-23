@@ -2167,6 +2167,7 @@ def todo_note_add(todo_id: int):
 @app.route("/followups")
 def followup_list():
     f_whom      = request.args.getlist("with_whom")
+    f_group     = request.args.getlist("group_name")
     f_when      = request.args.get("when_next", "")
     f_done      = request.args.get("done", "") == "1"
     conn = _get_conn()
@@ -2174,6 +2175,7 @@ def followup_list():
         items = database.get_followups(conn,
                     with_whom=f_whom or None,
                     when_next=f_when or None,
+                    group_name=f_group or None,
                     include_done=f_done)
         opts  = database.get_followup_filter_options(conn)
     finally:
@@ -2182,20 +2184,46 @@ def followup_list():
     return render_template("followup_list.html",
         items=items, opts=opts, today=today,
         statuses=database.FOLLOWUP_STATUSES,
-        f_whom=f_whom, f_when=f_when, f_done=f_done)
+        f_whom=f_whom, f_group=f_group, f_when=f_when, f_done=f_done)
 
 
 @app.route("/followups/add", methods=["POST"])
 def followup_add():
-    with_whom = request.form.get("with_whom", "").strip()
-    topic     = request.form.get("topic", "").strip()
-    when_next = request.form.get("when_next", "").strip() or date.today().isoformat()
+    with_whom  = request.form.get("with_whom", "").strip()
+    topic      = request.form.get("topic", "").strip()
+    when_next  = request.form.get("when_next", "").strip() or date.today().isoformat()
+    group_name = request.form.get("group_name", "").strip() or None
     if with_whom and topic:
         conn = _get_conn()
         try:
-            database.add_followup(conn, with_whom, topic, when_next)
+            database.add_followup(conn, with_whom, topic, when_next, group_name)
         finally:
             conn.close()
+    return redirect(url_for("followup_list"))
+
+
+@app.route("/followups/<int:followup_id>/edit", methods=["POST"])
+def followup_edit(followup_id: int):
+    with_whom  = request.form.get("with_whom", "").strip()
+    topic      = request.form.get("topic", "").strip()
+    when_next  = request.form.get("when_next", "").strip() or None
+    group_name = request.form.get("group_name", "").strip() or None
+    if with_whom and topic:
+        conn = _get_conn()
+        try:
+            database.update_followup(conn, followup_id, with_whom, topic, when_next, group_name)
+        finally:
+            conn.close()
+    return redirect(url_for("followup_list"))
+
+
+@app.route("/followups/<int:followup_id>/delete", methods=["POST"])
+def followup_delete(followup_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_followup(conn, followup_id)
+    finally:
+        conn.close()
     return redirect(url_for("followup_list"))
 
 

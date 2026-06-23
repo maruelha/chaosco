@@ -489,6 +489,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    for col in ("group_name TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE followups ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     # Spillover match key changed from type||name||country to excel_row.
     # UPDATE preserves spillover_id values so FK links in spillover_annotations
     # stay intact.  The importer overwrites remaining columns on next run.
@@ -1725,6 +1731,7 @@ def get_followups(conn: sqlite3.Connection,
                   with_whom: list[str] | str | None = None,
                   when_next: str | None = None,
                   status: str | None = None,
+                  group_name: list[str] | None = None,
                   include_done: bool = False) -> list[dict]:
     where, params = [], []
     if not include_done:
@@ -1739,6 +1746,10 @@ def get_followups(conn: sqlite3.Connection,
         where.append("f.when_next = ?"); params.append(when_next)
     if status:
         where.append("f.status = ?"); params.append(status)
+    if group_name:
+        placeholders = ",".join("?" for _ in group_name)
+        where.append(f"f.group_name IN ({placeholders})")
+        params.extend(group_name)
     clause = ("WHERE " + " AND ".join(where)) if where else ""
     rows = conn.execute(f"""
         SELECT f.*,
@@ -1767,18 +1778,38 @@ def get_followup_filter_options(conn: sqlite3.Connection) -> dict:
                 seen.add(name)
                 names.append(name)
     names.sort()
-    return {"with_whom": names}
+    groups = [r[0] for r in conn.execute(
+        "SELECT DISTINCT group_name FROM followups WHERE group_name IS NOT NULL ORDER BY group_name"
+    ).fetchall()]
+    return {"with_whom": names, "groups": groups}
 
 
-def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str, when_next: str) -> int:
+def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str,
+                 when_next: str, group_name: str | None = None) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     cur = conn.execute(
-        "INSERT INTO followups (with_whom, topic, when_next, status, created_at, updated_at)"
-        " VALUES (?, ?, ?, 'open', ?, ?)",
-        (with_whom, topic, when_next or None, now, now),
+        "INSERT INTO followups (with_whom, topic, when_next, group_name, status, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, 'open', ?, ?)",
+        (with_whom, topic, when_next or None, group_name or None, now, now),
     )
     conn.commit()
     return cur.lastrowid
+
+
+def update_followup(conn: sqlite3.Connection, followup_id: int, with_whom: str,
+                    topic: str, when_next: str | None, group_name: str | None) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "UPDATE followups SET with_whom=?, topic=?, when_next=?, group_name=?, updated_at=? WHERE id=?",
+        (with_whom, topic, when_next or None, group_name or None, now, followup_id),
+    )
+    conn.commit()
+
+
+def delete_followup(conn: sqlite3.Connection, followup_id: int) -> None:
+    conn.execute("DELETE FROM notes WHERE entity_type='followup' AND entity_id=?", (str(followup_id),))
+    conn.execute("DELETE FROM followups WHERE id=?", (followup_id,))
+    conn.commit()
 
 
 def get_followup_by_id(conn: sqlite3.Connection, followup_id: int) -> dict | None:

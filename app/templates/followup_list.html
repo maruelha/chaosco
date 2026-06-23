@@ -11,9 +11,13 @@
 
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
-  <input  name="with_whom" type="text" placeholder="With whom *" required class="fu-input fu-short">
-  <input  name="topic"     type="text" placeholder="Topic *"     required class="fu-input fu-topic">
-  <input  name="when_next" type="date" value="{{ today }}"                class="fu-input fu-short">
+  <input name="with_whom"  type="text" placeholder="With whom *" required class="fu-input fu-short">
+  <input name="topic"      type="text" placeholder="Topic *"     required class="fu-input fu-topic">
+  <input name="group_name" type="text" placeholder="Group"                class="fu-input fu-short" list="fu-group-opts">
+  <datalist id="fu-group-opts">
+    {% for g in opts.groups %}<option value="{{ g }}">{% endfor %}
+  </datalist>
+  <input name="when_next"  type="date" value="{{ today }}"               class="fu-input fu-short">
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
 
@@ -21,10 +25,18 @@
 <form method="get" action="{{ url_for('followup_list') }}" class="fu-filters" id="fu-filter-form">
   <div class="filter-group">
     <label>With whom</label>
-    <button type="button" class="filter-btn js-fu-filter-btn {% if f_whom %}filter-btn--active{% endif %}" id="fu-whom-btn">
+    <button type="button" class="filter-btn {% if f_whom %}filter-btn--active{% endif %}" id="fu-whom-btn">
       <span id="fu-whom-label">{% if f_whom %}{{ f_whom|length }} selected{% else %}All people{% endif %}</span> ▾
     </button>
   </div>
+  {% if opts.groups %}
+  <div class="filter-group">
+    <label>Group</label>
+    <button type="button" class="filter-btn {% if f_group %}filter-btn--active{% endif %}" id="fu-group-btn">
+      <span id="fu-group-label">{% if f_group %}{{ f_group|length }} selected{% else %}All groups{% endif %}</span> ▾
+    </button>
+  </div>
+  {% endif %}
   <input name="when_next" type="date" value="{{ f_when }}" class="fu-input fu-filter"
          onchange="this.form.submit()">
   <label class="fu-done-toggle">
@@ -32,13 +44,13 @@
            onchange="this.form.submit()"> Show done
   </label>
   <button type="submit" class="btn">Filter</button>
-  {% if f_whom or f_when %}
+  {% if f_whom or f_group or f_when %}
     <a href="{{ url_for('followup_list', done='1' if f_done else '') }}" class="btn btn-sm">Clear</a>
   {% endif %}
   <span class="list-meta">{{ items|length }} item(s)</span>
 </form>
 
-{# ---- With whom filter dialog ---- #}
+{# ---- Filter dialogs ---- #}
 <dialog id="dlg-fu-whom" class="filter-dlg">
   <div class="dlg-header"><div class="dlg-title">Filter by person</div></div>
   <div class="dlg-body">
@@ -50,19 +62,65 @@
     {% endfor %}
   </div>
   <div class="dlg-footer">
-    <button type="button" class="btn js-fu-whom-clear">Clear</button>
-    <button type="button" class="btn btn-primary js-fu-whom-apply">Apply</button>
+    <button type="button" class="btn" data-clear="with_whom">Clear</button>
+    <button type="button" class="btn btn-primary" data-apply="fu-whom-btn" data-label="fu-whom-label" data-empty="All people">Apply</button>
   </div>
+</dialog>
+
+<dialog id="dlg-fu-group" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by group</div></div>
+  <div class="dlg-body">
+    {% for g in opts.groups %}
+    <label class="cb-row">
+      <input type="checkbox" name="group_name" value="{{ g }}" form="fu-filter-form"
+             {% if g in f_group %}checked{% endif %}> {{ g }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn" data-clear="group_name">Clear</button>
+    <button type="button" class="btn btn-primary" data-apply="fu-group-btn" data-label="fu-group-label" data-empty="All groups">Apply</button>
+  </div>
+</dialog>
+
+{# ---- Edit dialog ---- #}
+<dialog id="dlg-fu-edit" class="filter-dlg" style="max-width:460px">
+  <div class="dlg-header"><div class="dlg-title">Edit follow-up</div></div>
+  <form id="fu-edit-form" method="post">
+    <div class="dlg-body" style="display:flex;flex-direction:column;gap:0.6rem">
+      <div>
+        <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">With whom *</label>
+        <input name="with_whom" type="text" required class="fu-input" style="width:100%;box-sizing:border-box" id="fu-edit-whom">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">Topic *</label>
+        <input name="topic" type="text" required class="fu-input" style="width:100%;box-sizing:border-box" id="fu-edit-topic">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">Group</label>
+        <input name="group_name" type="text" class="fu-input" style="width:100%;box-sizing:border-box" id="fu-edit-group" list="fu-group-opts">
+      </div>
+      <div>
+        <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">When next</label>
+        <input name="when_next" type="date" class="fu-input" id="fu-edit-when">
+      </div>
+    </div>
+    <div class="dlg-footer">
+      <button type="button" class="btn" onclick="document.getElementById('dlg-fu-edit').close()">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
 </dialog>
 
 {# ---- List ---- #}
 {% if items %}
-<table class="fu-table">
+<table class="fu-table" id="fu-table">
   <thead>
     <tr>
-      <th class="fu-col-whom">With whom</th>
-      <th class="fu-col-topic">Topic</th>
-      <th class="fu-col-when">When next</th>
+      <th class="fu-col-whom  sortable" data-col="0">With whom <span class="sort-icon"></span></th>
+      <th class="fu-col-topic sortable" data-col="1">Topic <span class="sort-icon"></span></th>
+      <th class="fu-col-group sortable" data-col="2">Group <span class="sort-icon"></span></th>
+      <th class="fu-col-when  sortable" data-col="3">When next <span class="sort-icon"></span></th>
       <th class="fu-col-status">Status</th>
       <th class="fu-col-notes"></th>
     </tr>
@@ -71,9 +129,14 @@
   {% for item in items %}
     {% set overdue   = item.when_next and item.when_next < today and item.status != 'done' %}
     {% set due_today = item.when_next == today and item.status != 'done' %}
-    <tr class="fu-row fu-status--{{ item.status }}" data-id="{{ item.id }}">
+    <tr class="fu-row fu-status--{{ item.status }}" data-id="{{ item.id }}"
+        data-whom="{{ item.with_whom | e }}"
+        data-topic="{{ item.topic | e }}"
+        data-group="{{ item.group_name or '' | e }}"
+        data-when="{{ item.when_next or '' }}">
       <td class="fu-col-whom">{{ item.with_whom }}</td>
       <td class="fu-col-topic">{{ item.topic }}</td>
+      <td class="fu-col-group">{{ item.group_name or '' }}</td>
       <td class="fu-col-when {% if overdue %}td-overdue{% elif due_today %}td-today{% endif %}">
         {{ item.when_next or '—' }}
       </td>
@@ -90,6 +153,12 @@
         <a href="{{ url_for('followup_detail', followup_id=item.id) }}" class="btn btn-sm">
           Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
         </a>
+        <button type="button" class="btn btn-sm js-fu-edit" style="margin-top:0.2rem">Edit</button>
+        <form method="post" action="{{ url_for('followup_delete', followup_id=item.id) }}"
+              style="display:inline;margin-top:0.2rem"
+              onsubmit="return confirm('Delete this follow-up and its notes?')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
       </td>
     </tr>
   {% endfor %}
@@ -101,6 +170,7 @@
 
 <script>
 (function () {
+  /* ---- status inline AJAX ---- */
   document.querySelectorAll('.js-fu-status-sel').forEach(function (sel) {
     sel.addEventListener('change', function () {
       var row = sel.closest('tr');
@@ -112,27 +182,80 @@
     });
   });
 
-  var btn   = document.getElementById('fu-whom-btn');
-  var dlg   = document.getElementById('dlg-fu-whom');
-  var label = document.getElementById('fu-whom-label');
-
-  btn.addEventListener('click', function () { dlg.showModal(); });
-
-  function updateLabel() {
-    var checked = dlg.querySelectorAll('input[type="checkbox"]:checked');
-    label.textContent = checked.length ? checked.length + ' selected' : 'All people';
-    btn.classList.toggle('filter-btn--active', checked.length > 0);
+  /* ---- filter dialogs ---- */
+  document.getElementById('fu-whom-btn').addEventListener('click', function () {
+    document.getElementById('dlg-fu-whom').showModal();
+  });
+  var groupBtn = document.getElementById('fu-group-btn');
+  if (groupBtn) {
+    groupBtn.addEventListener('click', function () {
+      document.getElementById('dlg-fu-group').showModal();
+    });
   }
 
-  document.querySelector('.js-fu-whom-apply').addEventListener('click', function () {
-    updateLabel();
-    dlg.close();
+  document.querySelectorAll('[data-clear]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var name = btn.dataset.clear;
+      document.querySelectorAll('input[name="' + name + '"][form="fu-filter-form"]')
+        .forEach(function (cb) { cb.checked = false; });
+    });
   });
 
-  document.querySelector('.js-fu-whom-clear').addEventListener('click', function () {
-    dlg.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
-    updateLabel();
+  document.querySelectorAll('[data-apply]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var triggerBtnId = btn.dataset.apply;
+      var labelId      = btn.dataset.label;
+      var emptyText    = btn.dataset.empty;
+      var dlg          = btn.closest('dialog');
+      var checked      = dlg.querySelectorAll('input[type="checkbox"]:checked');
+      var triggerBtn   = document.getElementById(triggerBtnId);
+      var label        = document.getElementById(labelId);
+      label.textContent = checked.length ? checked.length + ' selected' : emptyText;
+      triggerBtn.classList.toggle('filter-btn--active', checked.length > 0);
+      dlg.close();
+    });
   });
+
+  /* ---- edit dialog ---- */
+  var editDlg  = document.getElementById('dlg-fu-edit');
+  var editForm = document.getElementById('fu-edit-form');
+
+  document.querySelectorAll('.js-fu-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tr = btn.closest('tr');
+      editForm.action = '/followups/' + tr.dataset.id + '/edit';
+      document.getElementById('fu-edit-whom').value  = tr.dataset.whom;
+      document.getElementById('fu-edit-topic').value = tr.dataset.topic;
+      document.getElementById('fu-edit-group').value = tr.dataset.group;
+      document.getElementById('fu-edit-when').value  = tr.dataset.when;
+      editDlg.showModal();
+    });
+  });
+
+  /* ---- sortable headers ---- */
+  var sortCol = -1, sortAsc = true;
+
+  document.querySelectorAll('th.sortable').forEach(function (th) {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', function () {
+      var col = parseInt(th.dataset.col);
+      if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+      sortTable(col, sortAsc);
+      document.querySelectorAll('th.sortable .sort-icon').forEach(function (ic) { ic.textContent = ''; });
+      th.querySelector('.sort-icon').textContent = sortAsc ? ' ▲' : ' ▼';
+    });
+  });
+
+  function sortTable(col, asc) {
+    var tbody = document.querySelector('#fu-table tbody');
+    var rows  = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function (a, b) {
+      var av = a.querySelectorAll('td')[col].textContent.trim();
+      var bv = b.querySelectorAll('td')[col].textContent.trim();
+      return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+  }
 }());
 </script>
 {% endblock %}
