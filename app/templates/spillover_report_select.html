@@ -243,4 +243,15 @@
   .rpt-row--on   { background: #f0faf4; }
   .rpt-row--on:hover { background: #e6f7ed; }
 </style>
+
+{% if report_comments %}
+<div style="margin-top:2rem;border-top:2px solid #e2e8f0;padding-top:1rem">
+  <h2 style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:.05em">Additional</h2>
+  <ul style="margin:0;padding-left:1.4rem;display:flex;flex-direction:column;gap:0.3rem">
+    {% for c in report_comments %}{% if c.comment %}
+    <li style="font-size:0.85rem;color:#334155">{{ c.comment }}</li>
+    {% endif %}{% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endblock %}

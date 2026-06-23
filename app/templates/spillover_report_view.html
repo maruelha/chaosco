@@ -128,6 +128,20 @@
     }
     .empty-state a { color: #64748b; }
 
+    /* ---- Additional section ---- */
+    .additional-section {
+      margin-top: 2rem; border-top: 2px solid #e2e8f0; padding-top: 1.1rem;
+    }
+    .additional-title {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.09em; color: #64748b; margin-bottom: 0.6rem;
+    }
+    .additional-list {
+      margin: 0; padding-left: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.35rem;
+    }
+    .additional-list li { font-size: 0.85rem; color: #334155; line-height: 1.5; }
+
     /* ---- Print ---- */
     .print-header { display: none; }
 
@@ -282,6 +296,18 @@
 </div>
 {% endfor %}
 
+{% set visible_comments = report_comments | selectattr('comment') | list %}
+{% if visible_comments %}
+<div class="additional-section">
+  <div class="additional-title">Additional</div>
+  <ul class="additional-list" id="additional-list">
+    {% for c in visible_comments %}
+    <li>{{ c.comment }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
 <script>
 function downloadHtml() {
   const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
@@ -334,6 +360,16 @@ function copyForTeams() {
 
     lines.push('');
   });
+
+  const addlList = document.getElementById('additional-list');
+  if (addlList) {
+    const bullets = [...addlList.querySelectorAll('li')].map(li => li.textContent.trim()).filter(Boolean);
+    if (bullets.length) {
+      lines.push('**Additional**');
+      bullets.forEach(b => lines.push(`• ${b}`));
+      lines.push('');
+    }
+  }
 
   const text = lines.join('\n').trimEnd();
 

@@ -386,4 +386,75 @@
   });
 }());
 </script>
+
+{# ---- Report comments — edit table ---- #}
+<div style="margin-top:2.5rem;border-top:2px solid #e2e8f0;padding-top:1.25rem">
+  <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem">
+    <h2 style="font-size:0.9rem;font-weight:700;color:#1e293b;margin:0">Report Comments</h2>
+    <button type="button" class="btn btn-sm" id="btn-add-rc">+ Add bullet</button>
+  </div>
+  <table style="width:100%;border-collapse:collapse">
+    <tbody id="rc-tbody">
+    {% for c in report_comments %}
+      <tr data-rc-id="{{ c.id }}" style="border-bottom:1px solid #f0f0f5">
+        <td style="padding:0.3rem 0.5rem">
+          <input type="text" class="rc-input" value="{{ c.comment | e }}"
+                 style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:0.3rem 0.5rem;font-size:0.85rem;font-family:inherit">
+        </td>
+        <td style="padding:0.3rem 0.2rem;text-align:right;white-space:nowrap">
+          <button type="button" class="btn btn-sm js-del-rc">✕</button>
+        </td>
+      </tr>
+    {% else %}
+      <tr id="rc-empty"><td colspan="2" style="color:#94a3b8;font-size:0.85rem;padding:0.4rem 0.5rem">No comments yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+(function(){
+  const tbody = document.getElementById('rc-tbody');
+
+  function attachRowEvents(tr) {
+    const inp = tr.querySelector('.rc-input');
+    inp.addEventListener('blur', async () => {
+      const fd = new FormData();
+      fd.append('comment', inp.value.trim());
+      await fetch('/report-comments/' + tr.dataset.rcId + '/update', { method: 'POST', body: fd });
+    });
+    tr.querySelector('.js-del-rc').addEventListener('click', async () => {
+      const resp = await fetch('/report-comments/' + tr.dataset.rcId + '/delete', { method: 'POST' });
+      const d = await resp.json();
+      if (!d.ok) return;
+      tr.remove();
+      if (!tbody.querySelector('tr[data-rc-id]')) {
+        const e = document.createElement('tr');
+        e.id = 'rc-empty';
+        e.innerHTML = '<td colspan="2" style="color:#94a3b8;font-size:0.85rem;padding:0.4rem 0.5rem">No comments yet.</td>';
+        tbody.appendChild(e);
+      }
+    });
+  }
+
+  document.querySelectorAll('#rc-tbody tr[data-rc-id]').forEach(attachRowEvents);
+
+  document.getElementById('btn-add-rc').addEventListener('click', async () => {
+    const resp = await fetch('/report-comments/retail/add', { method: 'POST', body: new FormData() });
+    const d = await resp.json();
+    if (!d.ok) return;
+    const empty = document.getElementById('rc-empty');
+    if (empty) empty.remove();
+    const tr = document.createElement('tr');
+    tr.dataset.rcId = d.row.id;
+    tr.style.borderBottom = '1px solid #f0f0f5';
+    tr.innerHTML =
+      '<td style="padding:0.3rem 0.5rem"><input type="text" class="rc-input" value=""' +
+      ' style="width:100%;border:1px solid #d1d5db;border-radius:4px;padding:0.3rem 0.5rem;font-size:0.85rem;font-family:inherit"></td>' +
+      '<td style="padding:0.3rem 0.2rem;text-align:right;white-space:nowrap"><button type="button" class="btn btn-sm js-del-rc">✕</button></td>';
+    tbody.appendChild(tr);
+    attachRowEvents(tr);
+    tr.querySelector('.rc-input').focus();
+  });
+}());
+</script>
 {% endblock %}

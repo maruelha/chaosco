@@ -37,6 +37,10 @@ Public API:
     add_order_detail(conn, entity_type, entity_id)   -> int  (new row id)
     update_order_detail(conn, detail_id, order_number, comment) -> None
     delete_order_detail(conn, detail_id)             -> None
+    list_report_comments(conn, report)               -> list[dict]
+    add_report_comment(conn, report)                 -> int  (new row id)
+    update_report_comment(conn, comment_id, comment) -> None
+    delete_report_comment(conn, comment_id)          -> None
 """
 from __future__ import annotations
 
@@ -437,6 +441,15 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             status        TEXT NOT NULL DEFAULT 'open',
             next_step     TEXT,
             created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        -- Free-text bullet points shown in the status reports.
+        -- report = 'spillover' | 'retail'
+        CREATE TABLE IF NOT EXISTS report_comments (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            report     TEXT NOT NULL,
+            comment    TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
     """)
     conn.commit()
@@ -2560,4 +2573,36 @@ def delete_ecom_gatekeeper_row(conn: sqlite3.Connection, row_id: int) -> None:
         "DELETE FROM order_details WHERE entity_type='ecom_gatekeeper' AND entity_id=?", (str(row_id),)
     )
     conn.execute("DELETE FROM ecom_gatekeeper WHERE id=?", (row_id,))
+    conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Report comments — free-text bullets shown in the status reports
+# ---------------------------------------------------------------------------
+
+def list_report_comments(conn: sqlite3.Connection, report: str) -> list[dict]:
+    """Return all bullet comments for 'spillover' or 'retail', oldest-first."""
+    return _rows_to_dicts(conn.execute(
+        "SELECT * FROM report_comments WHERE report = ? ORDER BY id", (report,)
+    ))
+
+
+def add_report_comment(conn: sqlite3.Connection, report: str, comment: str = "") -> int:
+    cur = conn.execute(
+        "INSERT INTO report_comments (report, comment) VALUES (?, ?)",
+        (report, comment),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def update_report_comment(conn: sqlite3.Connection, comment_id: int, comment: str) -> None:
+    conn.execute(
+        "UPDATE report_comments SET comment = ? WHERE id = ?", (comment, comment_id)
+    )
+    conn.commit()
+
+
+def delete_report_comment(conn: sqlite3.Connection, comment_id: int) -> None:
+    conn.execute("DELETE FROM report_comments WHERE id = ?", (comment_id,))
     conn.commit()

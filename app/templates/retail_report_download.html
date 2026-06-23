@@ -121,5 +121,15 @@
   </div>
 </div>
 
+{% set visible_comments = report_comments | selectattr('comment') | list %}
+{% if visible_comments %}
+<h2>Additional</h2>
+<ul style="margin:0.4rem 0 1.5rem;padding-left:1.4rem;display:flex;flex-direction:column;gap:0.3rem">
+  {% for c in visible_comments %}
+  <li style="font-size:0.85rem;color:#3a3a3c;line-height:1.55">{{ c.comment }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
 </body>
 </html>

@@ -454,6 +454,8 @@
         </span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + note_count subquery on <code>notes</code>. S4 docs badge pre-computed server-side from <code>order_details</code>.</span>
+        <span class="feat-label">Report Comments section</span>
+        <span class="feat-value">Below the main table: inline-editable list of free-text bullets that will appear in the "Additional" section of the Spillover Status Report. <span class="pill pill-action">+ Add bullet</span> creates an empty row immediately (AJAX, no page reload); each row saves on blur; ✕ deletes. APIs: <code>POST /report-comments/spillover/add</code> · <code>POST /report-comments/&lt;id&gt;/update</code> · <code>POST /report-comments/&lt;id&gt;/delete</code>.</span>
       </div>
     </div>
   </div>
@@ -478,6 +480,8 @@
         </span>
         <span class="feat-label">View Report button</span>
         <span class="feat-value">Shows live count of selected items. Opens <code>/spillover/report/view</code> in a new tab.</span>
+        <span class="feat-label">Additional section</span>
+        <span class="feat-value">Below the selection table: read-only bullet list of report comments (from <code>report_comments</code> where <code>report='spillover'</code>). Edit the bullets on the Spillover list page.</span>
         <span class="feat-label">APIs</span>
         <span class="feat-value">
           <code>POST /spillover/&lt;id&gt;/report-toggle</code> → <code>&#123;ok, included, total&#125;</code><br>
@@ -505,10 +509,12 @@
         <span class="feat-value">Yes → red · Slightly → amber · No → green · — → muted</span>
         <span class="feat-label">S4 docs in report</span>
         <span class="feat-value">Green ✓ shown in the S4 docs column of the order details table for any line where the flag is set; — (muted) otherwise.</span>
+        <span class="feat-label">Additional section</span>
+        <span class="feat-value">Below all item cards: bullet list of report comments (from <code>report_comments</code> where <code>report='spillover'</code>). Only shown when comments exist. Edit the bullets on the Spillover list page. Included in the Downloaded HTML snapshot.</span>
         <span class="feat-label">Actions (screen only)</span>
-        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
+        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot (includes Additional section) · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders, Additional bullets) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
         <span class="feat-label">Teams copy format</span>
-        <span class="feat-value">Header line with title + date, then per item: bold name, next step (multi-line preserved), order bullets ([Type] OrderNo — Comment ✓ S4). Toast confirms copy.</span>
+        <span class="feat-value">Header line with title + date, then per item: bold name, next step (multi-line preserved), order bullets ([Type] OrderNo — Comment ✓ S4). If Additional bullets exist, a bold "Additional" line followed by bullet lines is appended. Toast confirms copy.</span>
         <span class="feat-label">Print optimised</span>
         <span class="feat-value">Toolbar hidden in print; cards have page-break-inside: avoid; background colours forced via print-color-adjust.</span>
         <span class="feat-label">Data source</span>
@@ -666,6 +672,8 @@
         <span class="feat-value"><span class="pill pill-nav">→ Report</span> link to the Retail Status Report · <span class="pill pill-nav">→ Sign-Off Report</span> link to the Retail Spillover Report</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>retail</code> LEFT JOIN <code>retail_annotations</code></span>
+        <span class="feat-label">Report Comments section</span>
+        <span class="feat-value">Below the main table: inline-editable list of free-text bullets that appear in the "Additional" section of the Retail Status Report. <span class="pill pill-action">+ Add bullet</span> creates a row immediately (AJAX); each row saves on blur; ✕ deletes. APIs: <code>POST /report-comments/retail/add</code> · <code>POST /report-comments/&lt;id&gt;/update</code> · <code>POST /report-comments/&lt;id&gt;/delete</code>.</span>
       </div>
     </div>
   </div>
@@ -730,15 +738,17 @@
         <span class="feat-value">Back with Sales · With DTC · In Progress with DTC · Passed with DTC · Incoming (Gatekeeper) · Ready for Validation · In Progress · In Clarification · Blocked</span>
         <span class="feat-label">Totals</span>
         <span class="feat-value">Count per bucket + overall total row count</span>
+        <span class="feat-label">Additional section</span>
+        <span class="feat-value">Below the diagnostics: bullet list of report comments (from <code>report_comments</code> where <code>report='retail'</code>). Only shown when comments exist. Edit the bullets on the Retail list page. Included in the Downloaded HTML snapshot.</span>
         <span class="feat-label">Export actions</span>
         <span class="feat-value">
           <span class="pill pill-action">Save to Excel</span> — appends one row to <code>output/retail_report_log.xlsx</code> (AJAX, date auto-filled with today)<br>
-          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot
+          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes Additional section)
         </span>
         <span class="feat-label">Config</span>
         <span class="feat-value">Bucket definitions in <code>config/status_mappings.yaml</code>; Excel log path in <code>config/settings.yaml → retail_report_xlsx</code></span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>retail</code> (GROUP BY status)</span>
+        <span class="feat-value"><code>retail</code> (GROUP BY status) + <code>defects</code> LEFT JOIN <code>defect_annotations</code> (blocked defects section) + <code>report_comments</code></span>
       </div>
     </div>
   </div>

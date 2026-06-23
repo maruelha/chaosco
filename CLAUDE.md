@@ -90,6 +90,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `test_limitations` — channel, limitation, scenario, comment
 - `encouragement_people` — id (PK AI), name (UNIQUE), created_at. One row per person; created automatically on first encouragement.
 - `encouragements` — id (PK AI), person_id (FK → encouragement_people), text, date, delivered (INTEGER 0/1 DEFAULT 0), created_at
+- `report_comments` — id (PK AI), report (TEXT: `'spillover'`|`'retail'`), comment TEXT, created_at. Free-text bullet points that appear in the **Additional** section at the bottom of the Spillover and Retail status reports. Edited inline at the bottom of `/spillover` and `/retail` list pages. Routes: `POST /report-comments/<report>/add`, `POST /report-comments/<id>/update`, `POST /report-comments/<id>/delete`.
 
 ### Migrations (ALTER TABLE, safe to re-run)
 - `spillover_annotations`: critical_for_signoff, comment_for_signoff, signoff_group
@@ -103,7 +104,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All screens (as of 2026-06-22, ECOM Gatekeeper added)
+## All screens (as of 2026-06-23, report_comments added)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |

@@ -207,8 +207,9 @@ def spillover_list():
             critical=critical or None,
             exclude_statuses=exclude or None,
         )
-        options      = database.get_spillover_filter_options(conn)
-        docs_s4_ids  = database.get_docs_s4_spillover_ids(conn)
+        options          = database.get_spillover_filter_options(conn)
+        docs_s4_ids      = database.get_docs_s4_spillover_ids(conn)
+        report_comments  = database.list_report_comments(conn, "spillover")
     finally:
         conn.close()
 
@@ -224,6 +225,7 @@ def spillover_list():
         show_all=show_all,
         hidden_statuses=hidden,
         docs_s4_ids=docs_s4_ids,
+        report_comments=report_comments,
     )
 
 
@@ -425,11 +427,12 @@ def spillover_report_select():
     exclude     = [] if (show_all or status) else hidden
     conn = _get_conn()
     try:
-        rows         = database.get_spillover(conn, statuses=status or None, areas=area or None,
-                           types=type_ or None, assignees=assigned_to or None,
-                           critical=critical or None, exclude_statuses=exclude or None)
-        options      = database.get_spillover_filter_options(conn)
-        selected_ids = database.get_spillover_report_ids(conn)
+        rows            = database.get_spillover(conn, statuses=status or None, areas=area or None,
+                              types=type_ or None, assignees=assigned_to or None,
+                              critical=critical or None, exclude_statuses=exclude or None)
+        options         = database.get_spillover_filter_options(conn)
+        selected_ids    = database.get_spillover_report_ids(conn)
+        report_comments = database.list_report_comments(conn, "spillover")
     finally:
         conn.close()
     return render_template(
@@ -437,6 +440,7 @@ def spillover_report_select():
         rows=rows, options=options, selected_ids=selected_ids,
         area=area, type_=type_, status=status, assigned_to=assigned_to,
         critical=critical, show_all=show_all,
+        report_comments=report_comments,
     )
 
 
@@ -477,12 +481,13 @@ def spillover_report_clear():
 def spillover_report_view():
     conn = _get_conn()
     try:
-        items        = database.get_spillover_report_items(conn)
-        order_details = {}
+        items           = database.get_spillover_report_items(conn)
+        order_details   = {}
         for item in items:
             od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
             if od:
                 order_details[item["spillover_id"]] = od
+        report_comments = database.list_report_comments(conn, "spillover")
     finally:
         conn.close()
     _crit_order = {"yes": 0, "slightly": 1, "no": 2}
@@ -491,6 +496,7 @@ def spillover_report_view():
     return render_template(
         "spillover_report_view.html",
         items=items, order_details=order_details,
+        report_comments=report_comments,
         today=date.today().strftime("%Y-%m-%d"),
     )
 
@@ -702,6 +708,44 @@ def ecom_gatekeeper_note_delete(row_id: int, note_id: int):
 
 
 # ---------------------------------------------------------------------------
+# Report comments — bullet points shown in the status reports
+# ---------------------------------------------------------------------------
+
+@app.route("/report-comments/<report>/add", methods=["POST"])
+def report_comment_add(report: str):
+    if report not in ("spillover", "retail"):
+        return jsonify({"ok": False}), 400
+    comment = request.form.get("comment", "").strip()
+    conn = _get_conn()
+    try:
+        new_id = database.add_report_comment(conn, report, comment)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "row": {"id": new_id, "comment": comment}})
+
+
+@app.route("/report-comments/<int:comment_id>/update", methods=["POST"])
+def report_comment_update(comment_id: int):
+    comment = request.form.get("comment", "").strip()
+    conn = _get_conn()
+    try:
+        database.update_report_comment(conn, comment_id, comment)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/report-comments/<int:comment_id>/delete", methods=["POST"])
+def report_comment_delete(comment_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_report_comment(conn, comment_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------------------
 # Retail routes
 # ---------------------------------------------------------------------------
 
@@ -800,6 +844,7 @@ def retail_status_report():
     conn = _get_conn()
     try:
         blocked_defects = database.get_retail_defects_blocked(conn)
+        report_comments = database.list_report_comments(conn, "retail")
     finally:
         conn.close()
     blocked_total   = sum(d["blocked_tc_count"] for d in blocked_defects)
@@ -813,6 +858,7 @@ def retail_status_report():
         blocked_defects_total=blocked_total,
         dtco2c_total=dtco2c_total,
         sales_total=sales_total,
+        report_comments=report_comments,
     )
 
 
@@ -887,7 +933,15 @@ def retail_report_save_excel():
 def retail_report_download():
     report = _get_retail_report()
     today  = date.today().isoformat()
-    html   = render_template("retail_report_download.html", report=report, today=today)
+    conn   = _get_conn()
+    try:
+        report_comments = database.list_report_comments(conn, "retail")
+    finally:
+        conn.close()
+    html = render_template(
+        "retail_report_download.html", report=report, today=today,
+        report_comments=report_comments,
+    )
     return html, 200, {
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition": f'attachment; filename="retail_report_{today}.html"',
