@@ -2166,7 +2166,7 @@ def todo_note_add(todo_id: int):
 
 @app.route("/followups")
 def followup_list():
-    f_whom      = request.args.get("with_whom", "")
+    f_whom      = request.args.getlist("with_whom")
     f_when      = request.args.get("when_next", "")
     f_done      = request.args.get("done", "") == "1"
     conn = _get_conn()
@@ -2187,10 +2187,7 @@ def followup_list():
 
 @app.route("/followups/add", methods=["POST"])
 def followup_add():
-    picks     = request.form.getlist("with_whom_picks")
-    new_name  = request.form.get("with_whom_new", "").strip()
-    names     = picks + ([new_name] if new_name else [])
-    with_whom = ", ".join(names)
+    with_whom = request.form.get("with_whom", "").strip()
     topic     = request.form.get("topic", "").strip()
     when_next = request.form.get("when_next", "").strip() or date.today().isoformat()
     if with_whom and topic:

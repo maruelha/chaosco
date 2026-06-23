@@ -1722,7 +1722,7 @@ FOLLOWUP_STATUSES = ["open", "in_progress", "done"]
 
 
 def get_followups(conn: sqlite3.Connection,
-                  with_whom: str | None = None,
+                  with_whom: list[str] | str | None = None,
                   when_next: str | None = None,
                   status: str | None = None,
                   include_done: bool = False) -> list[dict]:
@@ -1730,7 +1730,11 @@ def get_followups(conn: sqlite3.Connection,
     if not include_done:
         where.append("f.status != 'done'")
     if with_whom:
-        where.append("f.with_whom LIKE ?"); params.append(f"%{with_whom}%")
+        if isinstance(with_whom, str):
+            with_whom = [with_whom]
+        or_clauses = " OR ".join("f.with_whom LIKE ?" for _ in with_whom)
+        where.append(f"({or_clauses})")
+        params.extend(f"%{w}%" for w in with_whom)
     if when_next:
         where.append("f.when_next = ?"); params.append(when_next)
     if status:

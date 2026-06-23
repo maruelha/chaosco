@@ -11,42 +11,49 @@
 
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
-  <div class="fu-whom-wrap">
-    {% if opts.with_whom %}
-    <select multiple name="with_whom_picks" class="fu-input fu-whom-select" title="Hold Ctrl / Cmd to select multiple">
-      {% for w in opts.with_whom %}
-        <option value="{{ w }}">{{ w }}</option>
-      {% endfor %}
-    </select>
-    {% endif %}
-    <input name="with_whom_new" type="text"
-           placeholder="{% if opts.with_whom %}New name{% else %}With whom *{% endif %}"
-           class="fu-input fu-short">
-  </div>
+  <input  name="with_whom" type="text" placeholder="With whom *" required class="fu-input fu-short">
   <input  name="topic"     type="text" placeholder="Topic *"     required class="fu-input fu-topic">
   <input  name="when_next" type="date" value="{{ today }}"                class="fu-input fu-short">
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
 
 {# ---- Filters ---- #}
-<form method="get" action="{{ url_for('followup_list') }}" class="fu-filters">
-  <select name="with_whom" class="fu-input fu-filter" onchange="this.form.submit()">
-    <option value="">All people</option>
-    {% for w in opts.with_whom %}
-      <option value="{{ w }}" {% if f_whom == w %}selected{% endif %}>{{ w }}</option>
-    {% endfor %}
-  </select>
+<form method="get" action="{{ url_for('followup_list') }}" class="fu-filters" id="fu-filter-form">
+  <div class="filter-group">
+    <label>With whom</label>
+    <button type="button" class="filter-btn js-fu-filter-btn {% if f_whom %}filter-btn--active{% endif %}" id="fu-whom-btn">
+      <span id="fu-whom-label">{% if f_whom %}{{ f_whom|length }} selected{% else %}All people{% endif %}</span> ▾
+    </button>
+  </div>
   <input name="when_next" type="date" value="{{ f_when }}" class="fu-input fu-filter"
          onchange="this.form.submit()">
   <label class="fu-done-toggle">
     <input type="checkbox" name="done" value="1" {% if f_done %}checked{% endif %}
            onchange="this.form.submit()"> Show done
   </label>
+  <button type="submit" class="btn">Filter</button>
   {% if f_whom or f_when %}
     <a href="{{ url_for('followup_list', done='1' if f_done else '') }}" class="btn btn-sm">Clear</a>
   {% endif %}
   <span class="list-meta">{{ items|length }} item(s)</span>
 </form>
+
+{# ---- With whom filter dialog ---- #}
+<dialog id="dlg-fu-whom" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by person</div></div>
+  <div class="dlg-body">
+    {% for w in opts.with_whom %}
+    <label class="cb-row">
+      <input type="checkbox" name="with_whom" value="{{ w }}" form="fu-filter-form"
+             {% if w in f_whom %}checked{% endif %}> {{ w }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-fu-whom-clear">Clear</button>
+    <button type="button" class="btn btn-primary js-fu-whom-apply">Apply</button>
+  </div>
+</dialog>
 
 {# ---- List ---- #}
 {% if items %}
@@ -103,6 +110,28 @@
       fetch('/followups/' + id + '/status', { method: 'POST', body: fd })
         .then(function () { location.reload(); });
     });
+  });
+
+  var btn   = document.getElementById('fu-whom-btn');
+  var dlg   = document.getElementById('dlg-fu-whom');
+  var label = document.getElementById('fu-whom-label');
+
+  btn.addEventListener('click', function () { dlg.showModal(); });
+
+  function updateLabel() {
+    var checked = dlg.querySelectorAll('input[type="checkbox"]:checked');
+    label.textContent = checked.length ? checked.length + ' selected' : 'All people';
+    btn.classList.toggle('filter-btn--active', checked.length > 0);
+  }
+
+  document.querySelector('.js-fu-whom-apply').addEventListener('click', function () {
+    updateLabel();
+    dlg.close();
+  });
+
+  document.querySelector('.js-fu-whom-clear').addEventListener('click', function () {
+    dlg.querySelectorAll('input[type="checkbox"]').forEach(function (cb) { cb.checked = false; });
+    updateLabel();
   });
 }());
 </script>
