@@ -1005,24 +1005,27 @@
       <span class="screen-url">GET /followups</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Lightweight "chase" list — who needs to be followed up with, on what topic, and by when. Done items hidden by default. Sorted by: in_progress first, then open, then by next date.</p>
+      <p class="screen-desc">Lightweight "chase" list — who needs to be followed up with, on what topic, and by when. Items can be assigned to a named group to cluster related topics. Done items hidden by default. Sorted by: in_progress first, then open, then by next date.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Status · With Whom · Topic · When Next · Notes count</span>
+        <span class="feat-value">With Whom · Topic · Group · When Next · Status · actions — all four text columns are sortable client-side (click header ▲/▼)</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
-          <span class="pill pill-filter">With Whom</span>
-          <span class="pill pill-filter">When Next (date)</span>
+          <span class="pill pill-filter">With Whom</span> (multi-select dialog — checkbox per person, same pattern as Spillover filters)<br>
+          <span class="pill pill-filter">Group</span> (multi-select dialog — only shown when at least one group exists)<br>
+          <span class="pill pill-filter">When Next (date)</span><br>
           <span class="pill pill-filter">Show done toggle</span>
         </span>
         <span class="feat-label">Status values</span>
         <span class="feat-value">open · in_progress · done</span>
         <span class="feat-label">Quick-add form</span>
-        <span class="feat-value">With Whom + Topic + When Next → <code>POST /followups/add</code></span>
-        <span class="feat-label">Inline actions (AJAX)</span>
+        <span class="feat-value">With Whom + Topic + Group (optional, autocomplete from existing groups) + When Next → <code>POST /followups/add</code></span>
+        <span class="feat-label">Inline actions</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Status change</span> → <code>POST /followups/&lt;id&gt;/status</code><br>
-          <span class="pill pill-ajax">Notes popup</span> → load/add via <code>/followups/&lt;id&gt;/notes</code>
+          <span class="pill pill-action">Edit</span> → dialog pre-filled with all fields → <code>POST /followups/&lt;id&gt;/edit</code><br>
+          <span class="pill pill-action">Delete</span> → confirm → <code>POST /followups/&lt;id&gt;/delete</code> (removes item + all its notes)<br>
+          <span class="pill pill-action">Notes</span> → detail page with full notes module
         </span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>followups</code> LEFT JOIN <code>notes</code></span>

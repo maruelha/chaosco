@@ -682,7 +682,7 @@
     <div class="table-card-header">
       <span class="tname">followups</span>
       <span class="badge badge-planning">Planning</span>
-      <span class="tdesc">General follow-up tracker — "I need to chase X about Y by Z date".</span>
+      <span class="tdesc">General follow-up tracker — "I need to chase X about Y by Z date". Supports optional group labels for clustering related items.</span>
     </div>
     <table>
       <thead>
@@ -690,15 +690,16 @@
       </thead>
       <tbody>
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Person to follow up with</td></tr>
+        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Person(s) to follow up with. Filtered via LIKE so comma-separated names work.</td></tr>
         <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">group_name</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional free-text group label for clustering items. Filterable via multi-select dialog. Added via ALTER TABLE.</td></tr>
         <tr><td class="col-name">when_next</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD target date; nullable</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open · in_progress · done (default: open)</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='followup'</div>
+    <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='followup' &nbsp;·&nbsp; <strong>Delete:</strong> <code>POST /followups/&lt;id&gt;/delete</code> removes item + notes &nbsp;·&nbsp; <strong>Edit:</strong> <code>POST /followups/&lt;id&gt;/edit</code></div>
   </div>
 
   <!-- cs_followups -->
