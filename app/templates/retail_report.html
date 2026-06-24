@@ -12,7 +12,36 @@
       <button type="button" class="btn" id="btn-excel">Save to Excel</button>
     </div>
   </div>
-  <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} rows total</p>
+  <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} of {{ total_test_cases }} tracked</p>
+</div>
+
+{# ---- Test case universe ---- #}
+{% set pct_passed = ((report.buckets.passed_with_dtc / total_test_cases) * 100) | round(1) %}
+{% set not_tracked = total_test_cases - report.total_rows %}
+<div class="rr-universe">
+  <div class="rr-universe-stat">
+    <span class="rr-universe-num">{{ total_test_cases }}</span>
+    <span class="rr-universe-lbl">Total test cases</span>
+  </div>
+  <div class="rr-universe-divider"></div>
+  <div class="rr-universe-stat">
+    <span class="rr-universe-num">{{ report.total_rows }}</span>
+    <span class="rr-universe-lbl">In tracker</span>
+  </div>
+  <div class="rr-universe-divider"></div>
+  <div class="rr-universe-stat rr-universe-stat--passed">
+    <span class="rr-universe-num">{{ pct_passed }}%</span>
+    <span class="rr-universe-lbl">Passed of total</span>
+  </div>
+  {% if not_tracked > 0 %}
+  <div class="rr-universe-divider"></div>
+  <div class="rr-universe-note">
+    <strong>{{ not_tracked }} not yet in tracker:</strong>
+    <ul>
+      {% for cat in missing_categories %}<li>{{ cat }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 </div>
 
 {# ---- Top-level buckets ---- #}

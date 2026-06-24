@@ -53,7 +53,35 @@
 <body>
 
 <h1>Retail Status Report</h1>
-<p class="meta">{{ today }} &nbsp;·&nbsp; {{ report.total_rows }} rows total</p>
+<p class="meta">{{ today }} &nbsp;·&nbsp; {{ report.total_rows }} of {{ total_test_cases }} tracked</p>
+
+{% set pct_passed = ((report.buckets.passed_with_dtc / total_test_cases) * 100) | round(1) %}
+{% set not_tracked = total_test_cases - report.total_rows %}
+<div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;background:#f5f5f7;border-radius:10px;padding:.9rem 1.25rem;margin-bottom:1.25rem">
+  <div style="text-align:center;min-width:70px">
+    <div style="font-size:1.8rem;font-weight:700;line-height:1;color:#1d1d1f">{{ total_test_cases }}</div>
+    <div style="font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-top:.2rem">Total test cases</div>
+  </div>
+  <div style="width:1px;align-self:stretch;min-height:2rem;background:#d2d2d7"></div>
+  <div style="text-align:center;min-width:70px">
+    <div style="font-size:1.8rem;font-weight:700;line-height:1;color:#1d1d1f">{{ report.total_rows }}</div>
+    <div style="font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-top:.2rem">In tracker</div>
+  </div>
+  <div style="width:1px;align-self:stretch;min-height:2rem;background:#d2d2d7"></div>
+  <div style="text-align:center;min-width:70px">
+    <div style="font-size:1.8rem;font-weight:700;line-height:1;color:#248a3d">{{ pct_passed }}%</div>
+    <div style="font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-top:.2rem">Passed of total</div>
+  </div>
+  {% if not_tracked > 0 %}
+  <div style="width:1px;align-self:stretch;min-height:2rem;background:#d2d2d7"></div>
+  <div style="font-size:.78rem;color:#6e6e73">
+    <strong style="color:#3a3a3c;display:block;margin-bottom:.2rem">{{ not_tracked }} not yet in tracker:</strong>
+    <ul style="margin:0;padding-left:1rem">
+      {% for cat in missing_categories %}<li style="line-height:1.65">{{ cat }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
 
 <h2>Overview</h2>
 <div class="bucket-grid">

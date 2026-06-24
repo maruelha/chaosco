@@ -881,6 +881,22 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .rr-diag-table--warn td:first-child { color: #b36200; font-weight: 600; }
 .rr-diag-none { font-size: 0.82rem; color: #aeaeb2; margin-bottom: 0.75rem; }
 
+/* Retail report — test case universe bar */
+.rr-universe {
+  display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  background: #f5f5f7; border-radius: 12px; padding: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.rr-universe-stat { text-align: center; min-width: 80px; }
+.rr-universe-num  { display: block; font-size: 2rem; font-weight: 700; line-height: 1; color: #1d1d1f; }
+.rr-universe-lbl  { display: block; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6e6e73; margin-top: 0.2rem; }
+.rr-universe-stat--passed .rr-universe-num { color: #248a3d; }
+.rr-universe-divider { width: 1px; align-self: stretch; min-height: 2.5rem; background: #d2d2d7; flex-shrink: 0; }
+.rr-universe-note { font-size: 0.8rem; color: #6e6e73; }
+.rr-universe-note strong { color: #3a3a3c; display: block; margin-bottom: 0.2rem; }
+.rr-universe-note ul { margin: 0; padding-left: 1rem; }
+.rr-universe-note li { line-height: 1.65; }
+
 /* --------------------------------------------------------------- defects prod column */
 .col-prod { width: 42px; text-align: center; padding-left: 0.4rem; padding-right: 0.4rem; }
 .prod-pill {

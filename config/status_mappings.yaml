@@ -1,6 +1,6 @@
 # Retail status bucket definitions — config-driven; no bucket logic in Python.
 #
-# known_statuses : the complete master list of 16 recognised statuses.
+# known_statuses : the complete master list of 18 recognised statuses.
 # known_unmapped : statuses in the master list but intentionally excluded from all
 #                  buckets (expected, informational, NOT errors).
 # buckets        : inclusion lists only — a status counts toward a bucket ONLY if
@@ -18,6 +18,7 @@ known_statuses:
   - "Clarification needed"
   - "Gatekeeper Check"
   - "Passed pending solman"
+  - "Passed, pending solman"
   - "Ready for Validation Prio"
   - "Failed"
   - "Not Ready"
@@ -53,6 +54,7 @@ buckets:
       - "Clarification needed"
       - "Gatekeeper Check"
       - "Passed pending solman"
+      - "Passed, pending solman"
       - "Ready for Validation Prio"
 
   in_progress_with_dtc:
@@ -72,6 +74,7 @@ buckets:
       - "Passed"
       - "conditionally passed"
       - "Passed pending solman"
+      - "Passed, pending solman"
 
   incoming_gatekeeper:
     label: "Incoming (Gatekeeper)"
