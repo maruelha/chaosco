@@ -78,3 +78,18 @@ archive_folder: 'archive'
 # Each click of "Save to Excel" on the retail report page appends one row here.
 # The file and a "Retail" sheet are created automatically on first use.
 retail_report_xlsx: 'output/retail_report_log.xlsx'
+
+# ---------------------------------------------------------------------------
+# Step 5 — retail test case universe
+# ---------------------------------------------------------------------------
+
+# The agreed total number of Retail test cases (used in the status report
+# to show % passed and highlight how many are not yet in the tracker).
+retail_total_test_cases: 646
+
+# Categories of test cases not yet imported into the tracker.
+# Shown as a bullet list in the status report next to the "not yet tracked" count.
+retail_missing_categories:
+  - "Manual test cases"
+  - "100% voucher cases"
+  - "Event store"

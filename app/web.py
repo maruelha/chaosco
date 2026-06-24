@@ -865,6 +865,8 @@ def retail_status_report():
         dtco2c_total=dtco2c_total,
         sales_total=sales_total,
         report_comments=report_comments,
+        total_test_cases=_cfg.get("retail_total_test_cases", 646),
+        missing_categories=_cfg.get("retail_missing_categories", []),
     )
 
 
@@ -947,6 +949,8 @@ def retail_report_download():
     html = render_template(
         "retail_report_download.html", report=report, today=today,
         report_comments=report_comments,
+        total_test_cases=_cfg.get("retail_total_test_cases", 646),
+        missing_categories=_cfg.get("retail_missing_categories", []),
     )
     return html, 200, {
         "Content-Type": "text/html; charset=utf-8",
