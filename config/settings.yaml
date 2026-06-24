@@ -87,6 +87,21 @@ retail_report_xlsx: 'output/retail_report_log.xlsx'
 # to show % passed and highlight how many are not yet in the tracker).
 retail_total_test_cases: 646
 
+# ---------------------------------------------------------------------------
+# Step 6 — SolMan defect status sync
+# ---------------------------------------------------------------------------
+
+# Folder containing the "Data aggregated by Defect" SolMan export files.
+# Picks the newest matching .xlsx automatically.
+solman_export_folder: 'Download'
+
+# File name stem — matches "Data aggregated by Defect (26).xlsx", etc.
+solman_export_stem: 'Data aggregated by Defect'
+
+# Sheet name inside that workbook.
+solman_export_sheet: 'SAP Document Export'
+
+# ---------------------------------------------------------------------------
 # Categories of test cases not yet imported into the tracker.
 # Shown as a bullet list in the status report next to the "not yet tracked" count.
 retail_missing_categories:

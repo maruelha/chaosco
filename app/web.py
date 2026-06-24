@@ -15,6 +15,7 @@ from app import database
 from app.config_loader import load_config
 from app.importer import run_import
 from app.reporter import compute_retail_report, load_status_mappings
+from app.solman_sync import run_solman_sync
 
 _HERE = Path(__file__).parent
 
@@ -83,6 +84,12 @@ def dashboard():
 def do_import():
     result = run_import(_cfg)
     return render_template("import_result.html", r=result)
+
+
+@app.route("/solman-sync", methods=["POST"])
+def do_solman_sync():
+    result = run_solman_sync(_cfg)
+    return render_template("solman_sync_result.html", r=result)
 
 
 @app.route("/defects")
