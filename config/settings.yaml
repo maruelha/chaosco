@@ -93,8 +93,8 @@ retail_total_test_cases: 646
 
 # Folder containing the "Data aggregated by Defect" SolMan export files.
 # Picks the newest matching .xlsx automatically.
-solman_export_folder: 'Download'
-
+#solman_export_folder: 'Download'
+solman_export_folder: 'E:\Downloads'
 # File name stem — matches "Data aggregated by Defect (26).xlsx", etc.
 solman_export_stem: 'Data aggregated by Defect'
 
