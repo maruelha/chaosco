@@ -86,16 +86,42 @@ Same pattern as Retail and ECOM.
 
 ---
 
-## PDF export (built 2026-06-25)
+## Report export → PowerPoint (PDF retired 2026-06-25)
 
-`app/pdf_utils.py` provides a reusable `render_pdf(html, filename) → Response` helper.
-Any route can generate a PDF by rendering an existing download template and passing it through.
-Currently wired to:
-- `GET /retail/report/pdf` — Retail Status Report
-- `GET /spillover/report/pdf` — Spillover Status Report view
+**PDF export via WeasyPrint is retired.** WeasyPrint's native GTK libraries (GObject,
+Pango, Cairo) could not load on the target Windows machine, so every PDF route errored;
+the output was also poor. WeasyPrint (and a Playwright/Chromium experiment) was uninstalled
+and removed from `requirements.txt`.
 
-To add PDF to any future report: one `render_pdf(render_template(...), filename)` call. No per-report boilerplate needed.
-WeasyPrint must be installed (`pip install -r requirements.txt`). The import is lazy — the app starts fine without it; only the PDF routes fail.
+**Non-functional code still present** (kept until the replacement lands):
+- `app/pdf_utils.py` — `render_pdf()` / `save_pdf()`
+- `GET /retail/report/pdf`, `GET /spillover/report/pdf`
+- the PDF step of `POST /export-reports` (so the Export Reports button currently errors)
+
+**Replacement: PowerPoint (`.pptx`) via `python-pptx`.**
+- Design a branded `template.pptx` (slide master + layouts + placeholders) in Claude chat,
+  save it into the project, then `python-pptx` opens it as the base and fills real data.
+  Ready-to-use prompts: `docs/ppt_template_prompts.txt`.
+- A direct-build proof-of-concept (title / exec-summary tiles / status table / blocked-defects
+  table / notes) was validated, then discarded in favour of the template approach.
+- `python-pptx` is intentionally **not** in `requirements.txt` yet — add it when the export
+  actually uses it.
+
+**To build:**
+1. Rework `app/report_exporter.py` to write `.html` + `.pptx` (drop the PDF step).
+2. Update `/retail/report/pdf` and `/spillover/report/pdf` — either repoint to `.pptx`
+   download or remove them.
+3. Add `python-pptx` to `requirements.txt`.
+4. Browser **Print → Save as PDF** on any report HTML remains the manual PDF fallback.
+
+---
+
+## Remove the one-time dep-cleanup block from run_web.bat (after propagation)
+
+`run_web.bat` has a guarded block that uninstalls the abandoned PDF deps
+(`weasyprint`, `playwright`, and their orphans) on launch — it only acts when a package is
+present and is a silent no-op afterwards. **Delete this block once every machine that runs
+the app has launched at least once** so the startup script stays clean.
 
 ---
 

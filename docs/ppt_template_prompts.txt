@@ -1,0 +1,91 @@
+==============================================================================
+PROMPTS FOR DESIGNING THE POWERPOINT REPORT TEMPLATE (use in Claude chat, web)
+==============================================================================
+
+Goal: get a real, editable .pptx TEMPLATE out of Claude chat that python-pptx
+can open as a base and fill with live data here in the project. Design the look
+in chat; wire it up in the console.
+
+Save the .pptx that chat produces into the project, then I (Claude Code) open it
+with  Presentation("template.pptx")  and populate the placeholders.
+
+------------------------------------------------------------------------------
+PROMPT 1 — MAIN REQUEST (copy/paste, fill the [brackets])
+------------------------------------------------------------------------------
+Build me a real, editable 16:9 PowerPoint TEMPLATE file (.pptx) — not an image,
+not a screenshot. I will fill it programmatically with python-pptx, so it must
+use proper slide LAYOUTS / a slide MASTER with reusable placeholders that code
+can target by name or index.
+
+It is a professional UAT status report for an SAP S/4 retail migration. Brand
+style: [describe — e.g. clean corporate, navy + teal accents, company colours
+as hex: ###### / ######, font: Segoe UI or Calibri, logo in top-left].
+
+Create these slide layouts, each as one example slide:
+
+1. TITLE
+   - Report title, subtitle line, date placeholder.
+
+2. EXECUTIVE SUMMARY
+   - A row of 5 metric tiles, each: a big number + a small caption.
+     Captions: "Test Case Universe", "Tracked in Tool", "Passed with DTC",
+     "Blocked", "% of Universe Passed".
+   - One line of supporting text below ("N test cases not yet tracked").
+
+3. STATUS BREAKDOWN
+   - A table placeholder with 2 columns (Status bucket | Count) and ~9 rows.
+   - An optional progress callout box on the right (passed / total).
+
+4. ACTIVE DEFECTS
+   - A table placeholder, 4 columns: Defect ID | Name | Blocked TCs | Owner.
+   - Room for ~10 rows.
+
+5. NOTES
+   - A bulleted-text placeholder for free-form coordinator commentary.
+
+Requirements:
+- Keep placeholders empty / with sample text I can replace.
+- Use only fonts that ship with Windows (Segoe UI, Calibri, Arial).
+- Give every placeholder a clear name so it's easy to target in code.
+- Deliver the actual .pptx file for download.
+
+------------------------------------------------------------------------------
+PROMPT 2 — ITERATE ON THE LOOK
+------------------------------------------------------------------------------
+Adjust the template: [e.g. make the metric tiles flatter, move the logo, change
+the accent colour to ######, tighten the table header height]. Keep the same
+layout names and placeholders so my code still maps to them. Re-send the .pptx.
+
+------------------------------------------------------------------------------
+DATA SLOTS THE CODE WILL FILL (so placeholders match the real report)
+------------------------------------------------------------------------------
+Title slide:
+  - title text, subtitle text, date
+
+Executive summary (5 tiles):
+  - Test Case Universe  = retail_total_test_cases (config, e.g. 646)
+  - Tracked in Tool     = total rows in the retail table
+  - Passed with DTC     = buckets.passed_with_dtc
+  - Blocked             = buckets.blocked
+  - % of Universe Passed= round(passed_with_dtc / universe * 100)
+  - supporting line     = (universe - tracked) not-yet-tracked count
+                          + list of missing categories
+
+Status breakdown table (9 rows, bucket -> count):
+  Back with Sales, With DTC, In Progress with DTC, Passed with DTC,
+  Incoming (Gatekeeper), Ready for Validation, In Progress,
+  In Clarification, Blocked
+
+Active defects table (per row):
+  - Defect ID, Solman Name, Blocked TC count, Owner (MB if dtco2c else Sales)
+
+Notes:
+  - report_comments for the 'retail' report (free-text bullet points)
+
+------------------------------------------------------------------------------
+NOTE
+------------------------------------------------------------------------------
+The same approach can produce a second template for the Spillover report later.
+A working python-pptx proof-of-concept already exists (kept as
+report_export/retail_report_*_PPTTEST.pptx) — use it as a reference for content,
+but the real design should come from the branded template.

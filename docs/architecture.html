@@ -296,12 +296,12 @@
         </tr>
         <tr>
           <td>app/pdf_utils.py</td>
-          <td>Reusable <code>render_pdf(html, filename) → Response</code> and <code>save_pdf(html, filepath)</code> via lazy WeasyPrint import</td>
+          <td><code>render_pdf</code> / <code>save_pdf</code> via lazy WeasyPrint import. <strong>Retired</strong> — WeasyPrint removed (couldn't load GTK on Windows); PDF being replaced by PowerPoint export</td>
           <td>Query the DB · import Flask request context</td>
         </tr>
         <tr>
           <td>app/report_exporter.py</td>
-          <td>Renders Retail + Spillover reports to HTML strings and saves HTML + PDF to the export folder. Called from <code>POST /export-reports</code>. Returns list of saved paths.</td>
+          <td>Renders Retail + Spillover reports to the export folder. HTML works; the PDF step is <strong>non-functional</strong> (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called from <code>POST /export-reports</code>.</td>
           <td>Write SQL directly · define Flask routes</td>
         </tr>
         <tr>
@@ -494,15 +494,11 @@
 
 <!-- ============================================================ -->
 <div class="section">
-  <h2>PDF export</h2>
-  <div class="card">
-    <p><code>app/pdf_utils.py</code> provides two reusable helpers:</p>
-    <ul>
-      <li><code>render_pdf(html: str, filename: str) → Response</code> — generates an A4 PDF and returns it as a Flask download response. Used by report PDF routes.</li>
-      <li><code>save_pdf(html: str, filepath: Path) → None</code> — writes the PDF to disk. Used by the report export feature.</li>
-    </ul>
-    <p>WeasyPrint is imported lazily — the app starts and runs normally without it installed. Only the PDF routes fail if it is absent.</p>
-    <p>To add PDF export to any new report: render the existing download template to a string, pass to <code>render_pdf()</code> or <code>save_pdf()</code>. No per-report boilerplate.</p>
+  <h2>PDF export — retired</h2>
+  <div class="card" style="border-left:4px solid #c05600">
+    <p><strong>PDF generation via WeasyPrint has been retired.</strong> WeasyPrint depends on native GTK libraries (GObject, Pango, Cairo) that could not be loaded on the target Windows machine, so every PDF route errored; the rendered output was also poor. WeasyPrint has been uninstalled and removed from <code>requirements.txt</code>.</p>
+    <p><code>app/pdf_utils.py</code> still defines <code>render_pdf()</code> and <code>save_pdf()</code>, and the three PDF routes (<code>/retail/report/pdf</code>, <code>/spillover/report/pdf</code>, and the PDF step of <code>/export-reports</code>) still exist — but all are <strong>non-functional</strong> until the replacement lands. They will be reworked or removed when the PowerPoint export is built.</p>
+    <p><strong>Replacement:</strong> PowerPoint export via <code>python-pptx</code> (see below). Browser <em>Print → Save as PDF</em> on any report's HTML view remains a manual fallback.</p>
   </div>
 </div>
 
@@ -512,12 +508,28 @@
   <h2>Report export (automation pickup)</h2>
   <div class="card">
     <p>The <strong>Export Reports</strong> dashboard button (<code>POST /export-reports</code>) saves dated snapshots of both status reports to a local folder for pickup by external automation (e.g. n8n).</p>
+    <p style="background:#fff3cd;border-left:4px solid #c05600;padding:0.6rem 0.9rem;border-radius:4px">
+      <strong>Current state:</strong> the HTML half works, but the route still calls the retired PDF step, so the button <strong>currently errors</strong>. Planned rework: write <strong>HTML + PowerPoint</strong> (<code>.html</code> + <code>.pptx</code>) instead of HTML + PDF.</p>
     <ul>
-      <li>Four files per click: <code>retail_report_YYYY-MM-DD.html</code>, <code>retail_report_YYYY-MM-DD.pdf</code>, <code>spillover_report_YYYY-MM-DD.html</code>, <code>spillover_report_YYYY-MM-DD.pdf</code></li>
+      <li><strong>Planned</strong> output per click: <code>retail_report_YYYY-MM-DD.html</code> + <code>.pptx</code>, <code>spillover_report_YYYY-MM-DD.html</code> + <code>.pptx</code></li>
       <li>Folder defaults to <code>report_export/</code> in the project root — gitignored, created automatically</li>
       <li>Path is configurable: <code>report_export_folder</code> in <code>config/settings.yaml</code></li>
       <li>Spillover export uses the current row selection in <code>spillover_report_selection</code> — keep the selection current before exporting</li>
       <li>Logic lives in <code>app/report_exporter.py</code> — to add a third report, add a rendering block there; no changes needed in the route</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>PowerPoint export (planned replacement)</h2>
+  <div class="card" style="border-left:4px solid #0e7490">
+    <p>The chosen replacement for PDF is <strong>PowerPoint (.pptx) via <code>python-pptx</code></strong> — a format recipients can read and edit, and that renders far better than the abandoned PDF.</p>
+    <ul>
+      <li><strong>Template-driven:</strong> design a branded <code>template.pptx</code> (slide master + layouts + placeholders) in Claude chat, save it into the project, then <code>python-pptx</code> opens it as the base and fills real data into the placeholders. Ready-to-use prompts live in <code>docs/ppt_template_prompts.txt</code>.</li>
+      <li>A working direct-build proof-of-concept (title / executive-summary metric tiles / status-breakdown table / blocked-defects table / notes) was validated, then discarded — the production build uses the branded template.</li>
+      <li><code>python-pptx</code> is <strong>not yet in <code>requirements.txt</code></strong> on purpose — it gets added when the export actually uses it, to avoid carrying an unused dependency.</li>
     </ul>
   </div>
 </div>
@@ -551,8 +563,8 @@
         <tr><td>app/spillover_importer.py</td><td>Spillover importer</td></tr>
         <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
         <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
-        <tr><td>app/pdf_utils.py</td><td>Reusable PDF generation helper (WeasyPrint, lazy import)</td></tr>
-        <tr><td>app/report_exporter.py</td><td>Renders + saves Retail and Spillover reports (HTML + PDF) to the export folder</td></tr>
+        <tr><td>app/pdf_utils.py</td><td>PDF helper (WeasyPrint) — <strong>retired/non-functional</strong>, kept until PPT export lands</td></tr>
+        <tr><td>app/report_exporter.py</td><td>Renders Retail + Spillover reports to the export folder (HTML works; PDF step retired → PowerPoint planned)</td></tr>
         <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>
         <tr><td>app/templates/base.html</td><td>Shared layout + Enhancements floating panel</td></tr>
         <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses, report_export_folder</td></tr>
@@ -564,7 +576,8 @@
         <tr><td>docs/database_schema.html</td><td>Full table + column reference</td></tr>
         <tr><td>docs/screens.html</td><td>Screen-by-screen UI reference</td></tr>
         <tr><td>docs/tech_backlog.md</td><td>Known deferrals, refactor plans, future work</td></tr>
-        <tr><td>run_web.bat</td><td>Windows launcher — kills port 5000, starts Flask</td></tr>
+        <tr><td>docs/ppt_template_prompts.txt</td><td>Prompts for designing the branded PowerPoint report template in Claude chat</td></tr>
+        <tr><td>run_web.bat</td><td>Windows launcher — one-time dep cleanup, kills port 5000, starts Flask</td></tr>
       </tbody>
     </table>
   </div>

@@ -196,8 +196,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `app/spillover_importer.py` | Spillover importer |
 | `app/retail_importer.py` | Retail importer |
 | `app/reporter.py` | Computes retail bucket counts from status_mappings.yaml |
-| `app/pdf_utils.py` | Reusable PDF helper — `render_pdf(html, filename) → Response` (Flask download) and `save_pdf(html, filepath)` (disk write). Lazily imports WeasyPrint so app starts without it installed |
-| `app/report_exporter.py` | Renders Retail + Spillover reports and saves HTML + PDF snapshots to the export folder. Called by `POST /export-reports`. |
+| `app/pdf_utils.py` | PDF helper (`render_pdf`, `save_pdf`) via lazy WeasyPrint import. **RETIRED / non-functional** — WeasyPrint removed (couldn't load GTK on Windows). PDF report export is being replaced by PowerPoint (python-pptx); see `docs/ppt_template_prompts.txt`. Code kept until the PPT export lands. |
+| `app/report_exporter.py` | Renders Retail + Spillover reports to the export folder. **HTML works; the PDF step is non-functional** (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called by `POST /export-reports`. |
 | `app/config_loader.py` | Loads settings.yaml |
 | `app/templates/base.html` | Shared layout + Enhancements floating panel |
 | `config/settings.yaml` | File paths, sheet names, hidden statuses |
@@ -213,11 +213,14 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ---
 
 ## Output / reports
-- **Retail Status Report** (`/retail/report`) — live bucket counts; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PDF"** generates an A4 PDF via WeasyPrint (`/retail/report/pdf`)
-- **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** generates an A4 PDF via WeasyPrint (`/spillover/report/pdf`); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary
+
+> **PDF is retired.** WeasyPrint can't run on the target Windows machine (GTK native libs won't load) and its output was poor. It has been uninstalled and removed from `requirements.txt`. The PDF routes below remain in code but are **non-functional**. The replacement is **PowerPoint export via python-pptx** — design the branded template in Claude chat using `docs/ppt_template_prompts.txt`, then wire it up here. Browser **Print → Save as PDF** on any report's HTML view still works as a manual fallback.
+
+- **Retail Status Report** (`/retail/report`) — live bucket counts; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PDF"** (`/retail/report/pdf`) is **non-functional** (WeasyPrint retired)
+- **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** (`/spillover/report/pdf`) is **non-functional** (WeasyPrint retired); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary; "Download HTML" + "Copy for Teams" still work
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section
-- **Export Reports** (`POST /export-reports`) — dashboard button; saves dated HTML + PDF of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. Four files: `retail_report_YYYY-MM-DD.{html,pdf}` and `spillover_report_YYYY-MM-DD.{html,pdf}`. Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
+- **Export Reports** (`POST /export-reports`) — dashboard button; intended to save dated snapshots of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. **Currently errors at the PDF step** (WeasyPrint removed). Planned rework: write **HTML + PowerPoint** (`.html` + `.pptx`). Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
 
 ---
 

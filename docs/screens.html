@@ -251,7 +251,7 @@
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
-        <span class="feat-value">AJAX button (teal card) — <code>POST /export-reports</code> — saves dated HTML + PDF snapshots of the Retail and Spillover reports to <code>report_export/</code> (gitignored). Four files per click: <code>retail_report_YYYY-MM-DD.html</code>, <code>retail_report_YYYY-MM-DD.pdf</code>, <code>spillover_report_YYYY-MM-DD.html</code>, <code>spillover_report_YYYY-MM-DD.pdf</code>. Spillover uses the current row selection. Success banner lists all saved paths. Folder path configurable via <code>report_export_folder</code> in <code>config/settings.yaml</code>.</span>
+        <span class="feat-value">AJAX button (teal card) — <code>POST /export-reports</code> — saves dated snapshots of the Retail and Spillover reports to <code>report_export/</code> (gitignored). <strong>Currently errors</strong>: the route still calls the retired PDF step (WeasyPrint removed). Planned rework writes <strong>HTML + PowerPoint</strong> per report (<code>.html</code> + <code>.pptx</code>) — PowerPoint replaces the abandoned PDF; template designed in Claude chat via <code>docs/ppt_template_prompts.txt</code>. Spillover uses the current row selection. Folder path configurable via <code>report_export_folder</code> in <code>config/settings.yaml</code>.</span>
         <span class="feat-label">Navigation</span>
         <span class="feat-value">Each card contains a link button to the corresponding list screen. The site title in the header also links back here from every page.</span>
       </div>
@@ -600,7 +600,7 @@
         <span class="feat-label">Passed items</span>
         <span class="feat-value">Items with status <strong>Passed</strong> or <strong>Passed, pending solman</strong> are visually celebrated: card header turns green and a 🎉 icon appears before the name. A <strong>"Closed this round"</strong> summary section appears at the bottom of the report (above Additional), listing each passed item with name · area · exact status. Both the green header and summary background are forced via <code>print-color-adjust: exact</code> so they survive PDF export.</span>
         <span class="feat-label">Actions (screen only)</span>
-        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download PDF</span> — server-generated A4 PDF via WeasyPrint (<code>GET /spillover/report/pdf</code>) · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot (includes Additional section) · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders, Additional bullets) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
+        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog (Save as PDF works here) · <span class="pill pill-action">Download PDF</span> — <strong>non-functional</strong> (<code>GET /spillover/report/pdf</code>; WeasyPrint retired, PowerPoint planned) · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot (includes Additional section) · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders, Additional bullets) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
         <span class="feat-label">Teams copy format</span>
         <span class="feat-value">Header line with title + date, then per item: bold name, next step (multi-line preserved), order bullets ([Type] OrderNo — Comment ✓ S4). If Additional bullets exist, a bold "Additional" line followed by bullet lines is appended. Toast confirms copy.</span>
         <span class="feat-label">Print / PDF optimised</span>
@@ -836,7 +836,7 @@
         <span class="feat-value">
           <span class="pill pill-action">Save to Excel</span> — appends one row to <code>output/retail_report_log.xlsx</code> (AJAX, date auto-filled with today)<br>
           <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes Additional section)<br>
-          <span class="pill pill-action">Download PDF</span> — server-generated A4 PDF via WeasyPrint (<code>GET /retail/report/pdf</code>); same content as HTML download with proper pagination
+          <span class="pill pill-action">Download PDF</span> — <strong>non-functional</strong> (<code>GET /retail/report/pdf</code>; WeasyPrint retired). Use browser Print → Save as PDF, or the planned PowerPoint export
         </span>
         <span class="feat-label">Config</span>
         <span class="feat-value">Bucket definitions in <code>config/status_mappings.yaml</code>; Excel log path in <code>config/settings.yaml → retail_report_xlsx</code></span>
