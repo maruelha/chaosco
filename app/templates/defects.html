@@ -6,6 +6,9 @@
   <div class="page-header-row">
     <h1>Defects</h1>
     <div class="page-header-actions">
+      <form method="post" action="{{ url_for('do_solman_sync') }}" style="display:inline">
+        <button type="submit" class="btn">↻ Update from SolMan</button>
+      </form>
       <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
     </div>
   </div>

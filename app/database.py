@@ -13,6 +13,7 @@ Public API:
     update_note(conn, ...)                  -> None
     delete_note(conn, note_id)              -> None
     upsert_defects(conn, rows, today)       -> dict
+    sync_solman_status(conn, rows)          -> dict
     upsert_spillover_rows(conn, rows, today) -> dict
     get_spillover(conn, ...)                -> list[dict]
     get_spillover_by_id(conn, spillover_id) -> dict | None
@@ -978,6 +979,41 @@ def _retail_match_key(test_case_id: str, country: str) -> str:
 def _spillover_match_key(excel_row: int | str) -> str:
     """Match key is the Excel row number — stable regardless of name/country edits."""
     return str(excel_row)
+
+
+def sync_solman_status(conn: sqlite3.Connection, rows: list[dict]) -> dict:
+    """Update solman_status and assigned_to for active defects from a SolMan export.
+
+    Skips defects that are Withdrawn or Confirmed (case-insensitive).
+    Skips defects not present in the DB (they may belong to other channels).
+
+    Returns:
+        {"updated": int, "skipped_not_found": int, "skipped_inactive": int}
+    """
+    _INACTIVE = {"withdrawn", "confirmed"}
+    updated = skipped_not_found = skipped_inactive = 0
+
+    for row in rows:
+        existing = conn.execute(
+            "SELECT solman_status FROM defects WHERE defect_id = ?", (row["defect_id"],)
+        ).fetchone()
+
+        if existing is None:
+            skipped_not_found += 1
+            continue
+
+        if (existing[0] or "").lower() in _INACTIVE:
+            skipped_inactive += 1
+            continue
+
+        conn.execute(
+            "UPDATE defects SET solman_status = ?, assigned_to = ? WHERE defect_id = ?",
+            (row["solman_status"], row["assigned_to"], row["defect_id"]),
+        )
+        updated += 1
+
+    conn.commit()
+    return {"updated": updated, "skipped_not_found": skipped_not_found, "skipped_inactive": skipped_inactive}
 
 
 def upsert_spillover_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
