@@ -14,6 +14,12 @@
     <a href="{{ url_for('inbox') }}" class="btn btn-primary">Open Inbox</a>
   </div>
 
+  <div class="action-card" style="border-left:3px solid #7c3aed">
+    <h2>Shelf {% if shelf_count %}<span class="notes-count-badge">{{ shelf_count }}</span>{% endif %}</h2>
+    <p>Catch-all store for notes and observations that don't belong to a specific defect or test case yet.</p>
+    <a href="{{ url_for('shelf_list') }}" class="btn">View Shelf</a>
+  </div>
+
   <div class="action-card">
     <h2>Import DTC ROE Tracking</h2>
     <p>Find the newest export, archive it, and upsert all enabled tabs into the database.</p>

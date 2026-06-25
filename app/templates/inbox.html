@@ -101,19 +101,41 @@
               <option value="spillover">Spillover</option>
               <option value="test_learning">Test Learning</option>
               <option value="followup">Follow-up</option>
+              <option value="shelf">Shelf</option>
             </select>
           </div>
-          <div>
+          <div id="search-box-{{ item.id }}">
             <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Search</label>
             <input type="text" class="form-control file-search-inp" data-item="{{ item.id }}"
               placeholder="type to search…" oninput="onSearchInput({{ item.id }})" style="min-width:220px">
           </div>
+          <div id="shelf-inputs-{{ item.id }}" style="display:none">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <div>
+                <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Area <span style="font-weight:400;color:#aaa">(optional)</span></label>
+                <input type="text" class="form-control shelf-area-inp" data-item="{{ item.id }}" placeholder="e.g. ECOM" style="min-width:150px">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Category <span style="font-weight:400;color:#aaa">(optional)</span></label>
+                <input type="text" class="form-control shelf-cat-inp" data-item="{{ item.id }}" placeholder="e.g. Process" style="min-width:150px">
+              </div>
+            </div>
+          </div>
         </div>
         <div id="search-results-{{ item.id }}" style="margin-bottom:0.75rem"></div>
-        <form method="post" action="{{ url_for('inbox_file', note_id=item.id) }}">
+        {# Standard file form (defect / retail / spillover / etc.) #}
+        <form method="post" action="{{ url_for('inbox_file', note_id=item.id) }}" id="file-std-form-{{ item.id }}">
           <input type="hidden" name="target_type" id="target-type-{{ item.id }}">
           <input type="hidden" name="target_id"   id="target-id-{{ item.id }}">
           <button type="submit" class="btn btn-sm btn-primary" id="file-btn-{{ item.id }}" disabled>Move ›</button>
+          <button type="button" class="btn btn-sm" onclick="toggleFile({{ item.id }})">Cancel</button>
+        </form>
+        {# Shelf-specific form #}
+        <form method="post" action="{{ url_for('inbox_file_to_shelf', note_id=item.id) }}"
+              id="file-shelf-form-{{ item.id }}" style="display:none">
+          <input type="hidden" name="shelf_area"     class="shelf-area-hid" data-item="{{ item.id }}">
+          <input type="hidden" name="shelf_category" class="shelf-cat-hid"  data-item="{{ item.id }}">
+          <button type="submit" class="btn btn-sm btn-primary">Shelf it ›</button>
           <button type="button" class="btn btn-sm" onclick="toggleFile({{ item.id }})">Cancel</button>
         </form>
       </div>
@@ -142,12 +164,25 @@
   };
 
   window.onTypeChange = function (id) {
+    var typeSel = document.querySelector('.file-type-sel[data-item="' + id + '"]');
+    var isShelf = typeSel && typeSel.value === 'shelf';
+    // toggle search vs shelf inputs
+    var searchBox   = document.getElementById('search-box-' + id);
+    var shelfInputs = document.getElementById('shelf-inputs-' + id);
+    var stdForm     = document.getElementById('file-std-form-' + id);
+    var shelfForm   = document.getElementById('file-shelf-form-' + id);
+    if (searchBox)   searchBox.style.display   = isShelf ? 'none' : '';
+    if (shelfInputs) shelfInputs.style.display  = isShelf ? ''     : 'none';
+    if (stdForm)     stdForm.style.display      = isShelf ? 'none' : '';
+    if (shelfForm)   shelfForm.style.display     = isShelf ? ''     : 'none';
+    // reset standard-form state
     document.getElementById('search-results-' + id).innerHTML = '';
     document.getElementById('target-type-' + id).value = '';
     document.getElementById('target-id-' + id).value = '';
     document.getElementById('file-btn-' + id).disabled = true;
-    document.querySelector('.file-search-inp[data-item="' + id + '"]').value = '';
-    onSearchInput(id);
+    var searchInp = document.querySelector('.file-search-inp[data-item="' + id + '"]');
+    if (searchInp) searchInp.value = '';
+    if (!isShelf) onSearchInput(id);
   };
 
   var _timers = {};
@@ -192,6 +227,21 @@
     btn.classList.add('btn-primary');
     var inp = document.querySelector('.file-search-inp[data-item="' + id + '"]');
     if (inp) inp.value = btn.dataset.label;
+  });
+
+  /* ---- Shelf area/category: sync visible inputs → hidden form fields ---- */
+  document.addEventListener('input', function (e) {
+    var inp = e.target;
+    var id  = inp.dataset && inp.dataset.item;
+    if (!id) return;
+    if (inp.classList.contains('shelf-area-inp')) {
+      var hid = document.querySelector('.shelf-area-hid[data-item="' + id + '"]');
+      if (hid) hid.value = inp.value;
+    }
+    if (inp.classList.contains('shelf-cat-inp')) {
+      var hid = document.querySelector('.shelf-cat-hid[data-item="' + id + '"]');
+      if (hid) hid.value = inp.value;
+    }
   });
 
   /* ---- Screenshots: file-input change ---- */
