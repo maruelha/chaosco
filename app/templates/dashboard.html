@@ -14,12 +14,25 @@
     <a href="{{ url_for('inbox') }}" class="btn btn-primary">Open Inbox</a>
   </div>
 
+  <div class="action-card" style="border-left:3px solid #7c3aed">
+    <h2>Shelf {% if shelf_count %}<span class="notes-count-badge">{{ shelf_count }}</span>{% endif %}</h2>
+    <p>Catch-all store for notes and observations that don't belong to a specific defect or test case yet.</p>
+    <a href="{{ url_for('shelf_list') }}" class="btn">View Shelf</a>
+  </div>
+
   <div class="action-card">
     <h2>Import DTC ROE Tracking</h2>
     <p>Find the newest export, archive it, and upsert all enabled tabs into the database.</p>
     <form method="post" action="{{ url_for('do_import') }}">
       <button type="submit" class="btn btn-primary">Run Import</button>
     </form>
+  </div>
+
+  <div class="action-card" style="border-left:3px solid #0e7490">
+    <h2>Export Reports</h2>
+    <p>Save dated HTML &amp; PDF snapshots of the Retail and Spillover reports to the export folder for automation pickup.</p>
+    <button type="button" class="btn" id="export-reports-btn" onclick="runExportReports()">Export Reports</button>
+    <div id="export-reports-result" style="margin-top:0.6rem;font-size:0.82rem;display:none"></div>
   </div>
 
   <div class="action-card">
@@ -95,4 +108,35 @@
   </div>
 
 </div>
+
+<script>
+function runExportReports() {
+  const btn    = document.getElementById('export-reports-btn');
+  const result = document.getElementById('export-reports-result');
+  btn.disabled = true;
+  btn.textContent = 'Exporting…';
+  result.style.display = 'none';
+
+  fetch("{{ url_for('export_reports') }}", { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        result.style.cssText = 'margin-top:0.6rem;font-size:0.82rem;color:#166534;display:block';
+        result.innerHTML = '✓ Saved ' + data.files.length + ' files:<br>'
+          + data.files.map(f => '<code style="font-size:0.78rem">' + f + '</code>').join('<br>');
+      } else {
+        result.style.cssText = 'margin-top:0.6rem;font-size:0.82rem;color:#b91c1c;display:block';
+        result.textContent = '✗ Error: ' + data.error;
+      }
+    })
+    .catch(err => {
+      result.style.cssText = 'margin-top:0.6rem;font-size:0.82rem;color:#b91c1c;display:block';
+      result.textContent = '✗ Request failed: ' + err;
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.textContent = 'Export Reports';
+    });
+}
+</script>
 {% endblock %}

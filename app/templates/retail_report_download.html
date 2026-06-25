@@ -48,6 +48,15 @@
     .breakdown-number { font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 0.15rem; }
     .breakdown-label  { font-size: 0.72rem; font-weight: 600; color: #3a3a3c; }
     .breakdown-owner  { font-size: 0.68rem; color: #6e6e73; margin-top: 0.1rem; }
+
+    /* PDF / print ---------------------------------------------------------- */
+    @page { size: A4; margin: 2cm; }
+    @media print {
+      body { padding: 0; max-width: none; }
+      .bucket-grid, .breakdown-grid { break-inside: avoid; }
+      .bucket, .breakdown-card { break-inside: avoid; }
+      h2 { break-after: avoid; }
+    }
   </style>
 </head>
 <body>
@@ -75,7 +84,7 @@
   {% if not_tracked > 0 %}
   <div style="width:1px;align-self:stretch;min-height:2rem;background:#d2d2d7"></div>
   <div style="font-size:.78rem;color:#6e6e73">
-    <strong style="color:#3a3a3c;display:block;margin-bottom:.2rem">{{ not_tracked }} not yet in tracker:</strong>
+    <strong style="color:#3a3a3c;display:block;margin-bottom:.2rem">Additional test cases on top of total test cases:</strong>
     <ul style="margin:0;padding-left:1rem">
       {% for cat in missing_categories %}<li style="line-height:1.65">{{ cat }}</li>{% endfor %}
     </ul>

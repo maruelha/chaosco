@@ -9,3 +9,4 @@ data/*.db-shm
 data/*.db-wal
 output/skiplog/*.csv
 data/uploads/
+report_export/

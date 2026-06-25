@@ -86,6 +86,25 @@ Same pattern as Retail and ECOM.
 
 ---
 
+## PDF export (built 2026-06-25)
+
+`app/pdf_utils.py` provides a reusable `render_pdf(html, filename) → Response` helper.
+Any route can generate a PDF by rendering an existing download template and passing it through.
+Currently wired to:
+- `GET /retail/report/pdf` — Retail Status Report
+- `GET /spillover/report/pdf` — Spillover Status Report view
+
+To add PDF to any future report: one `render_pdf(render_template(...), filename)` call. No per-report boilerplate needed.
+WeasyPrint must be installed (`pip install -r requirements.txt`). The import is lazy — the app starts fine without it; only the PDF routes fail.
+
+---
+
+## Shelf — catch-all note store (in progress 2026-06-25)
+
+DB table `shelf` exists. UI (list `/shelf`, detail `/shelf/<id>`, inbox filing, combine) is being built in steps. See plan in conversation history.
+
+---
+
 ## Future integrations
 
 ### Jira integration

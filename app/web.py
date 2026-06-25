@@ -14,6 +14,8 @@ from werkzeug.utils import secure_filename
 from app import database
 from app.config_loader import load_config
 from app.importer import run_import
+from app.pdf_utils import render_pdf
+from app.report_exporter import export_all_reports
 from app.reporter import compute_retail_report, load_status_mappings
 from app.solman_sync import run_solman_sync
 
@@ -73,11 +75,13 @@ def dashboard():
         inbox_count       = database.count_inbox_items(conn)
         open_enhancements = len(database.get_enhancements(conn))
         to_deliver        = database.count_encouragements_to_deliver(conn)
+        shelf_count       = database.count_shelf_items(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
                            open_enhancements=open_enhancements,
-                           to_deliver=to_deliver)
+                           to_deliver=to_deliver,
+                           shelf_count=shelf_count)
 
 
 @app.route("/import", methods=["POST"])
@@ -512,6 +516,32 @@ def spillover_report_view():
         report_comments=report_comments,
         today=date.today().strftime("%Y-%m-%d"),
     )
+
+
+@app.route("/spillover/report/pdf")
+def spillover_report_pdf():
+    conn = _get_conn()
+    try:
+        items           = database.get_spillover_report_items(conn)
+        order_details   = {}
+        for item in items:
+            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
+            if od:
+                order_details[item["spillover_id"]] = od
+        report_comments = database.list_report_comments(conn, "spillover")
+    finally:
+        conn.close()
+    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
+    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
+    from datetime import date
+    today = date.today().strftime("%Y-%m-%d")
+    html = render_template(
+        "spillover_report_view.html",
+        items=items, order_details=order_details,
+        report_comments=report_comments,
+        today=today,
+    )
+    return render_pdf(html, f"spillover_report_{today}.pdf")
 
 
 # ---------------------------------------------------------------------------
@@ -963,6 +993,40 @@ def retail_report_download():
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition": f'attachment; filename="retail_report_{today}.html"',
     }
+
+
+@app.route("/retail/report/pdf")
+def retail_report_pdf():
+    report = _get_retail_report()
+    today  = date.today().isoformat()
+    conn   = _get_conn()
+    try:
+        report_comments = database.list_report_comments(conn, "retail")
+    finally:
+        conn.close()
+    html = render_template(
+        "retail_report_download.html", report=report, today=today,
+        report_comments=report_comments,
+        total_test_cases=_cfg.get("retail_total_test_cases", 646),
+        missing_categories=_cfg.get("retail_missing_categories", []),
+    )
+    return render_pdf(html, f"retail_report_{today}.pdf")
+
+
+# ---------------------------------------------------------------------------
+# Report export — save HTML + PDF of both reports to disk for automation
+# ---------------------------------------------------------------------------
+
+@app.route("/export-reports", methods=["POST"])
+def export_reports():
+    conn = _get_conn()
+    try:
+        saved = export_all_reports(conn, _cfg)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "files": [str(p) for p in saved]})
 
 
 # ---------------------------------------------------------------------------
@@ -2596,6 +2660,22 @@ def inbox_file(note_id: int):
     return redirect(url_for("inbox"))
 
 
+@app.route("/inbox/<int:note_id>/file-to-shelf", methods=["POST"])
+def inbox_file_to_shelf(note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_inbox_item(conn, note_id)
+        if note is None:
+            return redirect(url_for("inbox"))
+        area     = request.form.get("shelf_area", "").strip() or None
+        category = request.form.get("shelf_category", "").strip() or None
+        shelf_id = database.create_shelf_item(conn, note["heading"], area, category)
+        database.file_inbox_item(conn, note_id, "shelf", str(shelf_id))
+    finally:
+        conn.close()
+    return redirect(url_for("inbox", note_filed="Shelf"))
+
+
 @app.route("/inbox/targets")
 def inbox_targets():
     target_type = request.args.get("type", "").strip()
@@ -2606,6 +2686,198 @@ def inbox_targets():
     finally:
         conn.close()
     return jsonify(results)
+
+
+# ---------------------------------------------------------------------------
+# Shelf — catch-all store for inbox items without a specific home
+# ---------------------------------------------------------------------------
+
+@app.route("/shelf")
+def shelf_list():
+    areas      = request.args.getlist("area")
+    categories = request.args.getlist("category")
+    conn = _get_conn()
+    try:
+        items   = database.list_shelf_items(conn, areas or None, categories or None)
+        options = database.get_shelf_filter_options(conn)
+    finally:
+        conn.close()
+    return render_template(
+        "shelf_list.html",
+        items=items, options=options,
+        sel_areas=areas, sel_categories=categories,
+        item_added=request.args.get("item_added"),
+        item_deleted=request.args.get("item_deleted"),
+    )
+
+
+@app.route("/shelf/<int:shelf_id>")
+def shelf_detail(shelf_id: int):
+    conn = _get_conn()
+    try:
+        item  = database.get_shelf_item(conn, shelf_id)
+        if item is None:
+            return render_template("404.html"), 404
+        notes = database.list_notes(conn, "shelf", str(shelf_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
+    finally:
+        conn.close()
+    return render_template(
+        "shelf_detail.html",
+        item=item, notes=notes, attachments_by_note=attachments_by_note,
+        note_added=request.args.get("note_added"),
+        note_saved=request.args.get("note_saved"),
+        note_deleted=request.args.get("note_deleted"),
+        item_saved=request.args.get("item_saved"),
+    )
+
+
+@app.route("/shelf/combine", methods=["POST"])
+def shelf_combine():
+    primary_id  = request.form.get("primary_id", "").strip()
+    item_ids    = request.form.getlist("item_ids")
+    if not primary_id or not item_ids:
+        return redirect(url_for("shelf_list"))
+    try:
+        primary_id = int(primary_id)
+        item_ids   = [int(i) for i in item_ids]
+    except ValueError:
+        return redirect(url_for("shelf_list"))
+    secondary_ids = [i for i in item_ids if i != primary_id]
+    conn = _get_conn()
+    try:
+        database.combine_shelf_items(conn, primary_id, secondary_ids)
+    finally:
+        conn.close()
+    return redirect(url_for("shelf_detail", shelf_id=primary_id))
+
+
+@app.route("/shelf/add", methods=["POST"])
+def shelf_add():
+    heading  = request.form.get("heading", "").strip() or None
+    area     = request.form.get("area", "").strip() or None
+    category = request.form.get("category", "").strip() or None
+    conn = _get_conn()
+    try:
+        database.create_shelf_item(conn, heading, area, category)
+    finally:
+        conn.close()
+    return redirect(url_for("shelf_list", item_added="1"))
+
+
+@app.route("/shelf/<int:shelf_id>/update", methods=["POST"])
+def shelf_update(shelf_id: int):
+    heading  = request.form.get("heading", "").strip() or None
+    area     = request.form.get("area", "").strip() or None
+    category = request.form.get("category", "").strip() or None
+    conn = _get_conn()
+    try:
+        database.update_shelf_item(conn, shelf_id, heading, area, category)
+    finally:
+        conn.close()
+    return redirect(url_for("shelf_detail", shelf_id=shelf_id, item_saved="1"))
+
+
+@app.route("/shelf/<int:shelf_id>/delete", methods=["POST"])
+def shelf_delete(shelf_id: int):
+    conn = _get_conn()
+    try:
+        filenames = database.delete_shelf_item(conn, shelf_id)
+    finally:
+        conn.close()
+    for fn in filenames:
+        fp = _UPLOAD_FOLDER / fn
+        if fp.exists():
+            fp.unlink()
+    return redirect(url_for("shelf_list", item_deleted="1"))
+
+
+@app.route("/shelf/<int:shelf_id>/notes/add", methods=["GET", "POST"])
+def shelf_note_add(shelf_id: int):
+    conn = _get_conn()
+    try:
+        item = database.get_shelf_item(conn, shelf_id)
+        if item is None:
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if not note_text:
+                return render_template(
+                    "note_form.html", mode="add",
+                    entity_label=item.get("heading") or f"Shelf #{shelf_id}",
+                    list_url=url_for("shelf_list"), list_label="Shelf",
+                    detail_url=url_for("shelf_detail", shelf_id=shelf_id),
+                    action_url=url_for("shelf_note_add", shelf_id=shelf_id),
+                    cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
+                    heading=heading or "", note_text="", error="Note text is required.",
+                )
+            database.add_note(conn, "shelf", str(shelf_id), heading, note_text)
+    finally:
+        conn.close()
+    if request.method == "POST":
+        return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_added="1"))
+    return render_template(
+        "note_form.html", mode="add",
+        entity_label=item.get("heading") or f"Shelf #{shelf_id}",
+        list_url=url_for("shelf_list"), list_label="Shelf",
+        detail_url=url_for("shelf_detail", shelf_id=shelf_id),
+        action_url=url_for("shelf_note_add", shelf_id=shelf_id),
+        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
+        heading="", note_text="", error=None,
+    )
+
+
+@app.route("/shelf/<int:shelf_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
+def shelf_note_edit(shelf_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "shelf" or note["entity_id"] != str(shelf_id):
+            return render_template("404.html"), 404
+        item = database.get_shelf_item(conn, shelf_id)
+        if request.method == "POST":
+            heading   = request.form.get("heading", "").strip() or None
+            note_text = request.form.get("note", "").strip() or None
+            if note_text:
+                database.update_note(conn, note_id, heading, note_text)
+                return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_saved="1"))
+    finally:
+        conn.close()
+    label = (item.get("heading") if item else None) or f"Shelf #{shelf_id}"
+    kwargs = dict(
+        mode="edit", entity_label=label,
+        list_url=url_for("shelf_list"), list_label="Shelf",
+        detail_url=url_for("shelf_detail", shelf_id=shelf_id),
+        action_url=url_for("shelf_note_edit", shelf_id=shelf_id, note_id=note_id),
+        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
+        created_at=note["created_at"],
+    )
+    if request.method == "POST":
+        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
+    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
+
+
+@app.route("/shelf/<int:shelf_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
+def shelf_note_delete(shelf_id: int, note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        if note is None or note["entity_type"] != "shelf" or note["entity_id"] != str(shelf_id):
+            return render_template("404.html"), 404
+        if request.method == "POST":
+            database.delete_note(conn, note_id)
+            return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_deleted="1"))
+        item = database.get_shelf_item(conn, shelf_id)
+    finally:
+        conn.close()
+    label = (item.get("heading") if item else None) or f"Shelf #{shelf_id}"
+    return render_template(
+        "note_confirm_delete.html", note=note,
+        entity_label=label,
+        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
+        delete_url=url_for("shelf_note_delete", shelf_id=shelf_id, note_id=note_id),
+    )
 
 
 # ---------------------------------------------------------------------------

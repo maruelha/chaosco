@@ -69,13 +69,16 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `retail_annotations` — retail_id (PK/FK), next_step, comment_history, action_needed, updated_at
 
 ### Shared
-- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `ecom_gatekeeper`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
+- `notes` — unified log for ALL entity types (entity_type + entity_id). entity_type values: `defect`, `retail`, `todo`, `followup`, `meeting_prep`, `test_learning`, `test_limitation`, `cs_followup`, `spillover`, `ecom_gatekeeper`, `shelf`, `input` (Inbox — unfiled items use entity_id `'inbox'`)
 - `attachments` — files (images and documents) attached to notes. Columns: id, note_id (FK → notes), filename (disk name), original_name, created_at. Actual files live in `data/uploads/`. Many-per-note.
 - `order_details` — generic order-number log (mirrors notes pattern). Columns: id, entity_type, entity_id, order_type TEXT, order_number TEXT, comment TEXT, docs_in_s4 INTEGER DEFAULT 0, created_at. Any module can use it: routes `GET/POST /order-details/<entity_type>/<entity_id>[/add]` and `POST /order-details/<detail_id>/update|delete`. Currently used by spillover (entity_type=`'spillover'`). `docs_in_s4` = "docs confirmed in S4" checkbox; green ✓ badge appears on the Order details button in the list when any linked row has it set.
 - `defect_notes` — LEGACY, no longer written to, kept for migration only
 
 ### ECOM Gatekeeper (manually authored, no importer)
 - `ecom_gatekeeper` — id (PK AI), jira_id, solman_id, testcase_name, status (open/inprogress/sf_requested/back_to_sales/tech_check/passed), next_step, created_at. Notes via `notes` (entity_type=`'ecom_gatekeeper'`). Order details via `order_details` (entity_type=`'ecom_gatekeeper'`). Future handover: UPDATE order_details SET entity_type='ecom', entity_id=<ecom_id> to re-point orders to an ECOM test case — no data copy needed.
+
+### Shelf (catch-all store — fully built 2026-06-25)
+- `shelf` — id (PK AI), heading, area (free text), category (free text), created_at. Catch-all for inbox items that don't belong to any specific entity. Notes and attachments link via `notes` (entity_type=`'shelf'`). Filing from inbox creates a new shelf row then re-parents the note. UI (list, detail, combine) is being built — DB table exists as of 2026-06-25.
 
 ### Planning & coordination (manually managed via UI)
 - `todos` — area, kind, topic, status (open/in_progress/blocked/closed), priority (High/Medium/Low), due_date, for_whom
@@ -104,13 +107,14 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All screens (as of 2026-06-23, report_comments added)
+## All screens (as of 2026-06-25, Shelf added)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
 |---|---|---|
-| Dashboard | `/` | Home — card grid + Run Import button |
-| **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up) when ready. Dashboard card shows pending count. |
+| Dashboard | `/` | Home — card grid + Run Import button + Export Reports button |
+| **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up/**Shelf**) when ready. Dashboard card shows pending count. Shelf filing creates a new shelf item from the inbox heading + optional area/category, then re-parents the note. |
+| **Shelf** | `/shelf` | Catch-all store for inbox items that don't belong anywhere specific yet. List with area + category filters (multi-select dialog), quick-add form, checkbox-select combine feature (merges notes from secondary items into a primary). Detail page has editable heading/area/category + full notes module (screenshots, documents, Ctrl+V paste). Dashboard card shows item count (purple accent). |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
 | Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
@@ -132,7 +136,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 |---|---|---|
 | Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown, **active Retail defects table** (all non-confirmed/withdrawn, with MB Blocked / Sales Blocked columns split by `dtco2c`), **Attribution Overview** (Back with Sales = Sales defects + other; Blocked Tech Team = MB defects + other/untracked), diagnostics. |
 | Spillover Status Report (select) | `/spillover/report` | "Status Report" button in Spillover list header. Select rows to include; rows persist in `spillover_report_selection`; batch select-page / clear-all. |
-| Spillover Status Report (view) | `/spillover/report/view` | "View Report" button on the select screen (opens new tab). Title: **Spillover Status Report — from DTC Perspective**. Standalone printable HTML. Items sorted critical-first (Yes → Slightly → No → unset). Per-item card: dark header, metadata strip (Area · Status · Critical), next step, order details table with S4 docs ✓. Summary stats in header. Download HTML + Print + **Copy for Teams** (Teams-formatted markdown). |
+| Spillover Status Report (view) | `/spillover/report/view` | "View Report" button on the select screen (opens new tab). Title: **Spillover Status Report — from DTC Perspective**. Standalone printable HTML. Items sorted critical-first (Yes → Slightly → No → unset). Per-item card: dark header (green for Passed/Passed-pending-solman items with 🎉 icon), metadata strip (Area · Status · Critical), next step, order details table with S4 docs ✓. Summary stats in header. **"Closed this round" wins section** at the bottom lists all passed items. Download PDF + Download HTML + Print + **Copy for Teams** (Teams-formatted markdown). |
 | Retail Spillover Report | `/report/retail` | Link in Spillover list header |
 | ECOM/Omni Spillover Report | `/report/ecom` | Link in Spillover list header |
 | Meeting Agenda | `/meeting-prep/agenda` | "Export agenda" button on Meeting Prep (respects meeting + status filters) |
@@ -144,6 +148,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | ECOM Gatekeeper Detail | `/ecom-gatekeeper/<id>` | From Notes button on Gatekeeper list — shows Jira ID, Solman ID, Status, Next step (read-only) + full notes module (heading, edit, delete, file attachments, Ctrl+V paste). Note routes: `/ecom-gatekeeper/<id>/notes/add\|edit\|delete`. |
 | Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
 | Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
+| Shelf Detail | `/shelf/<id>` | From heading link on Shelf list — editable heading/area/category + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste). Note routes: `/shelf/<id>/notes/add\|edit\|delete`. |
 | DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
 
 ### Shared sub-screens (note forms)
@@ -152,6 +157,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - Note add/edit/delete for Test Learnings: `/test_learnings/<id>/notes/...`
 - Note add/edit/delete for Spillover: `/spillover/<id>/notes/...`
 - Note add/edit/delete for Follow-ups: `/followups/<id>/notes/...`
+- Note add/edit/delete for Shelf: `/shelf/<id>/notes/...`
 
 ### File attachments (Defects, Retail, Test Learnings, Spillover, Follow-up, ECOM Gatekeeper, Inbox)
 - `GET /uploads/<filename>` — serve a stored file
@@ -190,6 +196,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `app/spillover_importer.py` | Spillover importer |
 | `app/retail_importer.py` | Retail importer |
 | `app/reporter.py` | Computes retail bucket counts from status_mappings.yaml |
+| `app/pdf_utils.py` | Reusable PDF helper — `render_pdf(html, filename) → Response` (Flask download) and `save_pdf(html, filepath)` (disk write). Lazily imports WeasyPrint so app starts without it installed |
+| `app/report_exporter.py` | Renders Retail + Spillover reports and saves HTML + PDF snapshots to the export folder. Called by `POST /export-reports`. |
 | `app/config_loader.py` | Loads settings.yaml |
 | `app/templates/base.html` | Shared layout + Enhancements floating panel |
 | `config/settings.yaml` | File paths, sheet names, hidden statuses |
@@ -198,15 +206,18 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `data/uploads/` | Files (images and documents) attached to notes (served via `/uploads/<filename>`) |
 | `output/retail_report_log.xlsx` | Appended by "Save to Excel" on the retail report |
 | `docs/database_schema.html` | Visual DB schema documentation |
+| `docs/architecture.html` | Architecture overview — layers, modules, shared patterns, how to add a vertical |
 | `docs/screens_visual.html` | Visual screen reference with real screenshots |
 | `docs/tech_backlog.md` | Technical backlog: known deferrals, refactor plans, future work |
 
 ---
 
 ## Output / reports
-- **Retail Status Report** (`/retail/report`) — live bucket counts; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot
+- **Retail Status Report** (`/retail/report`) — live bucket counts; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PDF"** generates an A4 PDF via WeasyPrint (`/retail/report/pdf`)
+- **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** generates an A4 PDF via WeasyPrint (`/spillover/report/pdf`); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section
+- **Export Reports** (`POST /export-reports`) — dashboard button; saves dated HTML + PDF of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. Four files: `retail_report_YYYY-MM-DD.{html,pdf}` and `spillover_report_YYYY-MM-DD.{html,pdf}`. Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
 
 ---
 

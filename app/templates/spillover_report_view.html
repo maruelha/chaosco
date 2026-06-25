@@ -142,7 +142,30 @@
     }
     .additional-list li { font-size: 0.85rem; color: #334155; line-height: 1.5; }
 
-    /* ---- Print ---- */
+    /* ---- Passed items ---- */
+    .item-header--passed { background: #15803d; }
+    .item-passed-icon { font-size: 1rem; flex-shrink: 0; }
+
+    /* ---- Wins summary ---- */
+    .wins-section {
+      margin-top: 2rem; border-top: 3px solid #15803d; padding-top: 1.1rem;
+    }
+    .wins-title {
+      font-size: 0.9rem; font-weight: 800; color: #15803d;
+      margin-bottom: 0.75rem;
+    }
+    .wins-grid { display: flex; flex-direction: column; gap: 0.35rem; }
+    .wins-row {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      font-size: 0.84rem; padding: 0.4rem 0.75rem;
+      background: #f0faf4; border-radius: 5px; border-left: 3px solid #15803d;
+    }
+    .wins-name   { font-weight: 600; color: #1e293b; flex: 1; }
+    .wins-area   { font-size: 0.76rem; color: #64748b; }
+    .wins-status { font-size: 0.73rem; color: #15803d; font-weight: 600; white-space: nowrap; }
+
+    /* ---- Print / PDF ---- */
+    @page { size: A4; margin: 2cm; }
     .print-header { display: none; }
 
     @media print {
@@ -154,10 +177,15 @@
       .item-card { margin-bottom: 1rem; }
       .item-header { background: #1e293b !important;
                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .item-header--passed { background: #15803d !important;
+                     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .item-meta   { background: #f8fafc !important;
                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .orders-table th { background: #f1f5f9 !important;
                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wins-row { background: #f0faf4 !important;
+                     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wins-section { page-break-inside: avoid; break-inside: avoid; }
     }
   </style>
 </head>
@@ -168,7 +196,8 @@
   <span class="toolbar-title">Spillover Status Report — from DTC Perspective</span>
   <a href="{{ url_for('spillover_report_select') }}" class="btn">← Edit selection</a>
   <button class="btn" onclick="window.print()">Print</button>
-  <button class="btn btn-primary" onclick="downloadHtml()">Download HTML</button>
+  <a href="/spillover/report/pdf" class="btn btn-primary">Download PDF</a>
+  <button class="btn" onclick="downloadHtml()">Download HTML</button>
   <button class="btn" id="btn-copy-teams" onclick="copyForTeams()">📋 Copy for Teams</button>
 </div>
 <div id="teams-toast" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;
@@ -221,11 +250,13 @@
 {% endif %}
 
 {% for item in items %}
+{% set is_passed = item.status and item.status.startswith('Passed') %}
 {% set od = order_details.get(item.spillover_id) %}
 <div class="item-card">
 
-  <div class="item-header">
+  <div class="item-header{% if is_passed %} item-header--passed{% endif %}">
     <span class="item-seq">{{ loop.index }}</span>
+    {% if is_passed %}<span class="item-passed-icon">🎉</span>{% endif %}
     <span class="item-name">{{ item.name or '(no name)' }}</span>
   </div>
 
@@ -295,6 +326,28 @@
   </div>
 </div>
 {% endfor %}
+
+{# ---- Wins summary ---- #}
+{% set ns = namespace(passed=[]) %}
+{% for item in items %}
+  {% if item.status and item.status.startswith('Passed') %}
+    {% set ns.passed = ns.passed + [item] %}
+  {% endif %}
+{% endfor %}
+{% if ns.passed %}
+<div class="wins-section">
+  <div class="wins-title">🎉 Closed this round — {{ ns.passed | length }} item{{ 's' if ns.passed | length != 1 else '' }}</div>
+  <div class="wins-grid">
+    {% for item in ns.passed %}
+    <div class="wins-row">
+      <span class="wins-name">{{ item.name or '(no name)' }}</span>
+      {% if item.area %}<span class="wins-area">{{ item.area }}</span>{% endif %}
+      <span class="wins-status">✓ {{ item.status }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 {% set visible_comments = report_comments | selectattr('comment') | list %}
 {% if visible_comments %}

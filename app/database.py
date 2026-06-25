@@ -42,6 +42,13 @@ Public API:
     add_report_comment(conn, report)                 -> int  (new row id)
     update_report_comment(conn, comment_id, comment) -> None
     delete_report_comment(conn, comment_id)          -> None
+    create_shelf_item(conn, heading, area, category) -> int  (new row id)
+    list_shelf_items(conn, areas, categories)        -> list[dict]
+    get_shelf_item(conn, shelf_id)                   -> dict | None
+    update_shelf_item(conn, shelf_id, ...)           -> None
+    delete_shelf_item(conn, shelf_id)                -> list[str]  (filenames to unlink)
+    get_shelf_filter_options(conn)                   -> dict
+    combine_shelf_items(conn, primary_id, secondary_ids) -> None
 """
 from __future__ import annotations
 
@@ -452,6 +459,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             comment    TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
         );
+
+        -- Shelf — catch-all store for inbox items that don't belong to a specific entity.
+        -- Notes and attachments link via the shared notes table (entity_type='shelf').
+        CREATE TABLE IF NOT EXISTS shelf (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            heading    TEXT,
+            area       TEXT,
+            category   TEXT,
+            created_at TEXT NOT NULL
+        );
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
@@ -762,7 +779,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup", "shelf"}
 
 
 def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
@@ -783,6 +800,18 @@ def list_inbox_items(conn: sqlite3.Connection) -> list[dict]:
         " WHERE n.entity_type = 'input' AND n.entity_id = 'inbox'"
         " GROUP BY n.id ORDER BY n.created_at DESC"
     ))
+
+
+def get_inbox_item(conn: sqlite3.Connection, note_id: int) -> dict | None:
+    cur = conn.execute(
+        "SELECT * FROM notes WHERE id = ? AND entity_type = 'input' AND entity_id = 'inbox'",
+        (note_id,)
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None
+    cols = [d[0] for d in cur.description]
+    return dict(zip(cols, row))
 
 
 def count_inbox_items(conn: sqlite3.Connection) -> int:
@@ -820,6 +849,10 @@ def file_inbox_item(
     elif target_type == "followup":
         target_exists = conn.execute(
             "SELECT 1 FROM followups WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "shelf":
+        target_exists = conn.execute(
+            "SELECT 1 FROM shelf WHERE id = ?", (target_id,)
         ).fetchone() is not None
     if not target_exists:
         return False
@@ -898,6 +931,151 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
                  "label": f"{r['with_whom'] or '—'} — {r['topic'] or ''}".rstrip(" —")}
                 for r in rows]
     return []
+
+
+# ---------------------------------------------------------------------------
+# Shelf — catch-all store for inbox items without a specific home
+# ---------------------------------------------------------------------------
+
+def create_shelf_item(
+    conn: sqlite3.Connection,
+    heading: str | None,
+    area: str | None,
+    category: str | None,
+) -> int:
+    """Insert a new shelf row and return its id."""
+    now = datetime.utcnow().isoformat(sep=" ", timespec="seconds")
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO shelf (heading, area, category, created_at) VALUES (?, ?, ?, ?)",
+            (heading or None, area or None, category or None, now),
+        )
+    return cur.lastrowid
+
+
+def count_shelf_items(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT COUNT(*) FROM shelf").fetchone()
+    return row[0] if row else 0
+
+
+def list_shelf_items(
+    conn: sqlite3.Connection,
+    areas: list[str] | None = None,
+    categories: list[str] | None = None,
+) -> list[dict]:
+    """Return all shelf rows, optionally filtered by area and/or category.
+
+    Each row is augmented with a note_count (number of linked notes).
+    """
+    sql = """
+        SELECT s.*,
+               COUNT(n.id) AS note_count
+          FROM shelf s
+          LEFT JOIN notes n ON n.entity_type = 'shelf' AND n.entity_id = CAST(s.id AS TEXT)
+    """
+    params: list = []
+    conditions: list[str] = []
+
+    if areas:
+        placeholders = ",".join("?" * len(areas))
+        conditions.append(f"s.area IN ({placeholders})")
+        params.extend(areas)
+    if categories:
+        placeholders = ",".join("?" * len(categories))
+        conditions.append(f"s.category IN ({placeholders})")
+        params.extend(categories)
+
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
+    sql += " GROUP BY s.id ORDER BY s.created_at DESC"
+
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_shelf_item(conn: sqlite3.Connection, shelf_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT * FROM shelf WHERE id = ?", (shelf_id,)
+    ))
+    return rows[0] if rows else None
+
+
+def update_shelf_item(
+    conn: sqlite3.Connection,
+    shelf_id: int,
+    heading: str | None,
+    area: str | None,
+    category: str | None,
+) -> None:
+    with conn:
+        conn.execute(
+            "UPDATE shelf SET heading = ?, area = ?, category = ? WHERE id = ?",
+            (heading or None, area or None, category or None, shelf_id),
+        )
+
+
+def delete_shelf_item(conn: sqlite3.Connection, shelf_id: int) -> list[str]:
+    """Delete a shelf item, its linked notes, and their attachments.
+
+    Returns the list of attachment filenames so the caller can remove them from disk.
+    """
+    entity_id = str(shelf_id)
+    note_ids = [
+        r["id"] for r in _rows_to_dicts(conn.execute(
+            "SELECT id FROM notes WHERE entity_type = 'shelf' AND entity_id = ?",
+            (entity_id,),
+        ))
+    ]
+    filenames: list[str] = []
+    if note_ids:
+        placeholders = ",".join("?" * len(note_ids))
+        filenames = [
+            r["filename"] for r in _rows_to_dicts(conn.execute(
+                f"SELECT filename FROM attachments WHERE note_id IN ({placeholders})",
+                note_ids,
+            ))
+        ]
+        with conn:
+            conn.execute(
+                f"DELETE FROM attachments WHERE note_id IN ({placeholders})", note_ids
+            )
+            conn.execute(
+                f"DELETE FROM notes WHERE id IN ({placeholders})", note_ids
+            )
+    with conn:
+        conn.execute("DELETE FROM shelf WHERE id = ?", (shelf_id,))
+    return filenames
+
+
+def get_shelf_filter_options(conn: sqlite3.Connection) -> dict:
+    """Return distinct area and category values for filter dropdowns."""
+    def _vals(col: str) -> list[str]:
+        return [
+            r[col] for r in _rows_to_dicts(conn.execute(
+                f"SELECT DISTINCT {col} FROM shelf WHERE {col} IS NOT NULL ORDER BY {col}"
+            ))
+        ]
+    return {"areas": _vals("area"), "categories": _vals("category")}
+
+
+def combine_shelf_items(
+    conn: sqlite3.Connection,
+    primary_id: int,
+    secondary_ids: list[int],
+) -> None:
+    """Re-parent all notes from secondary shelf items to the primary, then delete secondaries.
+
+    Attachments follow automatically because they reference note_id, not shelf_id.
+    """
+    if not secondary_ids:
+        return
+    primary_entity_id = str(primary_id)
+    for sid in secondary_ids:
+        with conn:
+            conn.execute(
+                "UPDATE notes SET entity_id = ? WHERE entity_type = 'shelf' AND entity_id = ?",
+                (primary_entity_id, str(sid)),
+            )
+            conn.execute("DELETE FROM shelf WHERE id = ?", (sid,))
 
 
 def upsert_defects(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:

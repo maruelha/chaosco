@@ -78,3 +78,42 @@ archive_folder: 'archive'
 # Each click of "Save to Excel" on the retail report page appends one row here.
 # The file and a "Retail" sheet are created automatically on first use.
 retail_report_xlsx: 'output/retail_report_log.xlsx'
+
+# ---------------------------------------------------------------------------
+# Step 5 — retail test case universe
+# ---------------------------------------------------------------------------
+
+# The agreed total number of Retail test cases (used in the status report
+# to show % passed and highlight how many are not yet in the tracker).
+retail_total_test_cases: 646
+
+# ---------------------------------------------------------------------------
+# Step 6 — SolMan defect status sync
+# ---------------------------------------------------------------------------
+
+# Folder containing the "Data aggregated by Defect" SolMan export files.
+# Picks the newest matching .xlsx automatically.
+solman_export_folder: 'Download'
+
+# File name stem — matches "Data aggregated by Defect (26).xlsx", etc.
+solman_export_stem: 'Data aggregated by Defect'
+
+# Sheet name inside that workbook.
+solman_export_sheet: 'SAP Document Export'
+
+# ---------------------------------------------------------------------------
+# Step 7 — report export folder
+# ---------------------------------------------------------------------------
+
+# Folder where "Export Reports" saves dated HTML + PDF snapshots of both reports.
+# Relative to repo root or absolute. Created automatically if it does not exist.
+# This folder is gitignored — files here are for automation pickup only.
+report_export_folder: 'report_export'
+
+# ---------------------------------------------------------------------------
+# Categories of test cases not yet imported into the tracker.
+# Shown as a bullet list in the status report next to the "not yet tracked" count.
+retail_missing_categories:
+  - "Manual test cases"
+  - "100% voucher cases"
+  - "Event store"
