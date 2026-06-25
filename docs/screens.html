@@ -156,7 +156,7 @@
 <body>
 
 <h1>chaosco — Screen Reference</h1>
-<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-22</p>
+<p class="subtitle">Local web UI · <code>http://127.0.0.1:5000</code> · Generated 2026-06-25</p>
 
 <!-- TOC -->
 <div class="toc">
@@ -511,12 +511,14 @@
         <span class="feat-value">Green ✓ shown in the S4 docs column of the order details table for any line where the flag is set; — (muted) otherwise.</span>
         <span class="feat-label">Additional section</span>
         <span class="feat-value">Below all item cards: bullet list of report comments (from <code>report_comments</code> where <code>report='spillover'</code>). Only shown when comments exist. Edit the bullets on the Spillover list page. Included in the Downloaded HTML snapshot.</span>
+        <span class="feat-label">Passed items</span>
+        <span class="feat-value">Items with status <strong>Passed</strong> or <strong>Passed, pending solman</strong> are visually celebrated: card header turns green and a 🎉 icon appears before the name. A <strong>"Closed this round"</strong> summary section appears at the bottom of the report (above Additional), listing each passed item with name · area · exact status. Both the green header and summary background are forced via <code>print-color-adjust: exact</code> so they survive PDF export.</span>
         <span class="feat-label">Actions (screen only)</span>
-        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot (includes Additional section) · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders, Additional bullets) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
+        <span class="feat-value"><span class="pill pill-action">Print</span> — browser print dialog · <span class="pill pill-action">Download PDF</span> — server-generated A4 PDF via WeasyPrint (<code>GET /spillover/report/pdf</code>) · <span class="pill pill-action">Download HTML</span> — saves a self-contained snapshot (includes Additional section) · <span class="pill pill-action">📋 Copy for Teams</span> — copies Teams-formatted markdown (name, next step, orders, Additional bullets) to clipboard · <span class="pill pill-nav">← Edit selection</span></span>
         <span class="feat-label">Teams copy format</span>
         <span class="feat-value">Header line with title + date, then per item: bold name, next step (multi-line preserved), order bullets ([Type] OrderNo — Comment ✓ S4). If Additional bullets exist, a bold "Additional" line followed by bullet lines is appended. Toast confirms copy.</span>
-        <span class="feat-label">Print optimised</span>
-        <span class="feat-value">Toolbar hidden in print; cards have page-break-inside: avoid; background colours forced via print-color-adjust.</span>
+        <span class="feat-label">Print / PDF optimised</span>
+        <span class="feat-value">Toolbar hidden in print; item cards have <code>break-inside: avoid</code>; background colours forced via <code>print-color-adjust</code>. PDF uses A4 with 2 cm margins (<code>@page</code> rule).</span>
         <span class="feat-label">Data source</span>
         <span class="feat-value"><code>spillover_report_selection</code> JOIN <code>spillover</code> JOIN <code>spillover_annotations</code>; order details loaded per item from <code>order_details</code> (entity_type=<code>'spillover'</code>).</span>
       </div>
@@ -742,10 +744,13 @@
         <span class="feat-value">Count per bucket + overall total row count</span>
         <span class="feat-label">Additional section</span>
         <span class="feat-value">Below the diagnostics: bullet list of report comments (from <code>report_comments</code> where <code>report='retail'</code>). Only shown when comments exist. Edit the bullets on the Retail list page. Included in the Downloaded HTML snapshot.</span>
+        <span class="feat-label">Universe bar</span>
+        <span class="feat-value">Shows total test cases · in-tracker count · % passed. If additional test cases exist outside the total (configured in <code>settings.yaml → retail_missing_categories</code>), a fourth segment lists them under the label <strong>"Additional test cases on top of total test cases:"</strong></span>
         <span class="feat-label">Export actions</span>
         <span class="feat-value">
           <span class="pill pill-action">Save to Excel</span> — appends one row to <code>output/retail_report_log.xlsx</code> (AJAX, date auto-filled with today)<br>
-          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes Additional section)
+          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes Additional section)<br>
+          <span class="pill pill-action">Download PDF</span> — server-generated A4 PDF via WeasyPrint (<code>GET /retail/report/pdf</code>); same content as HTML download with proper pagination
         </span>
         <span class="feat-label">Config</span>
         <span class="feat-value">Bucket definitions in <code>config/status_mappings.yaml</code>; Excel log path in <code>config/settings.yaml → retail_report_xlsx</code></span>
