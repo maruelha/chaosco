@@ -205,6 +205,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `data/uploads/` | Files (images and documents) attached to notes (served via `/uploads/<filename>`) |
 | `output/retail_report_log.xlsx` | Appended by "Save to Excel" on the retail report |
 | `docs/database_schema.html` | Visual DB schema documentation |
+| `docs/architecture.html` | Architecture overview — layers, modules, shared patterns, how to add a vertical |
 | `docs/screens_visual.html` | Visual screen reference with real screenshots |
 | `docs/tech_backlog.md` | Technical backlog: known deferrals, refactor plans, future work |
 

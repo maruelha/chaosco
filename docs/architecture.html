@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chaosco — Architecture</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --surface: #ffffff;
+      --border: #dee2e6;
+      --text: #212529;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+      --green: #198754;
+      --purple: #6610f2;
+      --orange: #c05600;
+      --teal: #0e7490;
+      --red: #dc3545;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem;
+      line-height: 1.6;
+      max-width: 1100px;
+    }
+
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.2rem; }
+    h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 2px solid var(--border); padding-bottom: 0.35rem; }
+    h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2.5rem; font-size: 0.9rem; }
+
+    .section { margin-bottom: 3rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    .card h3 { margin-bottom: 0.4rem; }
+
+    p { margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol { padding-left: 1.4rem; margin-bottom: 0.75rem; }
+    li { margin-bottom: 0.3rem; }
+
+    code {
+      font-family: "Consolas", "Cascadia Code", monospace;
+      font-size: 0.83rem;
+      background: #f1f3f5;
+      padding: 0.05em 0.35em;
+      border-radius: 3px;
+    }
+
+    /* Layer diagram */
+    .layer-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 680px;
+      margin: 1rem 0 1.5rem 0;
+    }
+
+    .layer {
+      padding: 0.7rem 1.25rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      position: relative;
+    }
+
+    .layer-label {
+      font-size: 0.68rem;
+      font-weight: 400;
+      opacity: 0.82;
+      margin-left: 0.75rem;
+    }
+
+    .layer-arrow {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1.1rem;
+      padding: 0.1rem 0;
+    }
+
+    .layer-browser  { background: #2b6cb0; border-radius: 6px 6px 0 0; }
+    .layer-flask    { background: #276749; }
+    .layer-database { background: #5a2d82; }
+    .layer-sqlite   { background: #7c3aed; border-radius: 0 0 6px 6px; }
+    .layer-excel    { background: #166534; border-radius: 6px; margin-top: 1rem; }
+
+    /* Rule table */
+    .rule-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    .rule-table th {
+      background: #f1f3f5; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.4rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .rule-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #f1f3f5; font-size: 0.85rem; vertical-align: top; }
+    .rule-table tr:last-child td { border-bottom: none; }
+    .rule-table td:first-child { font-family: "Consolas", monospace; font-size: 0.8rem; white-space: nowrap; }
+
+    /* Module responsibility table */
+    .mod-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    .mod-table th {
+      background: #f1f3f5; color: var(--muted); font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.4rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .mod-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid #f1f3f5; font-size: 0.85rem; vertical-align: top; }
+    .mod-table tr:last-child td { border-bottom: none; }
+    .mod-table td:first-child { font-family: "Consolas", monospace; font-size: 0.8rem; white-space: nowrap; color: #5a2d82; }
+    .mod-table td:nth-child(2) { font-weight: 600; white-space: nowrap; }
+    .mod-table td:nth-child(3) { color: var(--red); font-size: 0.78rem; }
+
+    /* Data flow diagram */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+    }
+    .flow-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.35rem 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .flow-box.source   { border-color: #166534; color: #166534; }
+    .flow-box.importer { border-color: #0e7490; color: #0e7490; }
+    .flow-box.db       { border-color: #5a2d82; color: #5a2d82; }
+    .flow-box.web      { border-color: #2b6cb0; color: #2b6cb0; }
+    .flow-box.browser  { border-color: #343a40; color: #343a40; }
+    .flow-arrow { color: var(--muted); font-size: 1rem; }
+
+    /* Pill badges */
+    .pill {
+      display: inline-block; font-size: 0.68rem; font-weight: 600;
+      padding: 0.12em 0.5em; border-radius: 3px; margin: 1px 2px 1px 0;
+    }
+    .pill-rule  { background: #fde8d8; color: #7a3505; }
+    .pill-ok    { background: #d1fadf; color: #166534; }
+    .pill-warn  { background: #fff3cd; color: #664d03; }
+
+    .note {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 0.4rem;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>chaosco — Architecture</h1>
+<p class="subtitle">Local Flask app · SQLite database · Excel as read-only data source · Updated 2026-06-25</p>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Purpose in one paragraph</h2>
+  <div class="card">
+    <p>chaosco is Marina's personal UAT coordination toolkit for an SAP S/4 retail migration go-live. The team tracks defects in SolMan, test-case execution in a shared Excel workbook, and sign-off decisions in various lists. chaosco reads that shared Excel file (read-only), imports it into a local SQLite database, and serves a private Flask browser UI at <code>http://127.0.0.1:5000</code>. The UI adds annotation layers (next steps, comments, flags, notes) on top of the imported data without ever writing back to Excel. It also stores personal coordination data (to-dos, follow-ups, meeting prep, encouragements) that lives entirely in the local database.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Layer diagram</h2>
+
+  <div class="layer-diagram">
+    <div class="layer layer-browser">Browser (HTML / JS) <span class="layer-label">Jinja2 server-rendered pages · minimal inline JS for AJAX and UI state</span></div>
+    <div class="layer-arrow">↕</div>
+    <div class="layer layer-flask">Flask web layer — <code>app/web.py</code> <span class="layer-label">All routes · assembles template context · calls database.py for every read and write</span></div>
+    <div class="layer-arrow">↕</div>
+    <div class="layer layer-database">Data layer — <code>app/database.py</code> <span class="layer-label">ALL SQL lives here · the only module that writes to the DB</span></div>
+    <div class="layer-arrow">↕</div>
+    <div class="layer layer-sqlite">SQLite — <code>data/test_coordination.db</code> <span class="layer-label">Single file · WAL mode for concurrent reads</span></div>
+  </div>
+
+  <div class="layer-diagram">
+    <div class="layer layer-excel">Excel workbook (read-only) — <code>DTC_UAT_testtracking_ROE.xlsx</code> <span class="layer-label">Managed by the whole team · importers read it via pandas/openpyxl · never written to</span></div>
+    <div class="layer-arrow">↓  (import only)</div>
+    <div class="layer layer-database" style="border-radius:6px">Data layer — <code>app/database.py</code></div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Non-negotiable architecture rules</h2>
+  <div class="card">
+    <table class="rule-table">
+      <thead><tr><th>Rule</th><th>What it means in practice</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>SQL only in database.py</td>
+          <td><code>app/web.py</code> never writes SQL directly. Every read and write goes through a function in <code>database.py</code>. This makes the DB contract visible in one place and keeps routes thin.</td>
+        </tr>
+        <tr>
+          <td>Excel is read-only</td>
+          <td>No importer or route ever writes to the Excel file. chaosco is a personal read layer on top of the shared workbook.</td>
+        </tr>
+        <tr>
+          <td>Imported data and authored data never mix</td>
+          <td>Importers write only to their primary tables (<code>defects</code>, <code>spillover</code>, <code>retail</code>). User annotations live in separate tables (<code>defect_annotations</code>, <code>spillover_annotations</code>, <code>retail_annotations</code>). An import run can never overwrite a note, flag, or next-step.</td>
+        </tr>
+        <tr>
+          <td>One notes table for everything</td>
+          <td>Every module that needs a notes log — defects, retail, todos, follow-ups, shelf, inbox, etc. — writes to the single <code>notes</code> table using (entity_type, entity_id) as the address. Never create a module-specific notes table.</td>
+        </tr>
+        <tr>
+          <td>Each Excel tab = its own importer + its own DB table</td>
+          <td>Defects, Spillover, and Retail each have a dedicated importer module. When ECOM/Omni are added, they get their own importer and table. Importers are never modified to touch another importer's table.</td>
+        </tr>
+        <tr>
+          <td>Config-driven, not code-driven</td>
+          <td>File paths, sheet names, and hidden statuses live in <code>config/settings.yaml</code>. Retail report bucket definitions live in <code>config/status_mappings.yaml</code>. Changing a status label or folder path requires no code edit.</td>
+        </tr>
+        <tr>
+          <td>Retail is the template vertical</td>
+          <td>When adding ECOM or Omni, copy the Retail importer, Retail annotation table, and Retail UI screens as the starting point. Do not invent a new pattern.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Module responsibilities</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="mod-table">
+      <thead><tr><th>File</th><th>Owns</th><th>Must never</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>app/web.py</td>
+          <td>All Flask routes · template rendering · request parsing · redirects</td>
+          <td>Write SQL directly · import pandas · touch disk (except uploads)</td>
+        </tr>
+        <tr>
+          <td>app/database.py</td>
+          <td>All SQL · schema creation (<code>init_db</code>) · every read and write function</td>
+          <td>Import Flask · render templates · know about routes</td>
+        </tr>
+        <tr>
+          <td>app/importer.py</td>
+          <td>Orchestrates all importers in sequence · reads config · calls each vertical importer</td>
+          <td>Write SQL directly (delegates to each importer module)</td>
+        </tr>
+        <tr>
+          <td>app/read_defects.py</td>
+          <td>Defects Excel tab → <code>database.upsert_defects()</code></td>
+          <td>Touch any table other than <code>defects</code></td>
+        </tr>
+        <tr>
+          <td>app/spillover_importer.py</td>
+          <td>Core South Spillover Excel tab → <code>database.upsert_spillover()</code></td>
+          <td>Touch any table other than <code>spillover</code></td>
+        </tr>
+        <tr>
+          <td>app/retail_importer.py</td>
+          <td>Retail Excel tab → <code>database.upsert_retail()</code></td>
+          <td>Touch any table other than <code>retail</code></td>
+        </tr>
+        <tr>
+          <td>app/reporter.py</td>
+          <td>Reads <code>status_mappings.yaml</code> · counts retail rows per bucket · returns structured report data</td>
+          <td>Write to DB · know about routes</td>
+        </tr>
+        <tr>
+          <td>app/pdf_utils.py</td>
+          <td>Reusable <code>render_pdf(html, filename) → Response</code> and <code>save_pdf(html, filepath)</code> via lazy WeasyPrint import</td>
+          <td>Query the DB · import Flask request context</td>
+        </tr>
+        <tr>
+          <td>app/config_loader.py</td>
+          <td>Loads <code>config/settings.yaml</code> · returns a plain dict</td>
+          <td>Everything else</td>
+        </tr>
+        <tr>
+          <td>app/templates/base.html</td>
+          <td>Shared layout · top navigation · Enhancements floating panel (present on every page)</td>
+          <td>Contain route-specific logic</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Data flow — import path</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="flow-box source">Excel workbook</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box importer">pandas + openpyxl</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box importer">vertical importer<br><small>(read_defects / spillover_importer / retail_importer)</small></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box db">database.upsert_*()</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box db">SQLite</div>
+    </div>
+    <p>Import is <strong>idempotent</strong> — safe to run multiple times. Each run upserts rows by match key: <code>first_seen</code> is set once and never overwritten; <code>last_seen</code> updates every run. Rows are never deleted by an import. The source file is copied to an archive folder on each run.</p>
+    <p>Match keys per vertical:</p>
+    <ul>
+      <li><strong>Defects:</strong> <code>defect_id</code> (SolMan ID, TEXT primary key)</li>
+      <li><strong>Spillover:</strong> <code>excel_row</code> cast to TEXT (stable after 2026-05 migration)</li>
+      <li><strong>Retail:</strong> <code>lower(test_case_id) || "||" || lower(country)</code></li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Data flow — web request path</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="flow-box browser">Browser request</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box web">web.py route</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box db">database.py function(s)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box db">SQLite</div>
+    </div>
+    <div class="flow">
+      <div class="flow-box db">SQLite result</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box db">database.py (rows → dicts)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box web">render_template()</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box browser">HTML response</div>
+    </div>
+    <p class="note">AJAX routes return JSON instead of HTML. The route still calls database.py — never writes SQL inline.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Shared patterns — plug-in modules</h2>
+
+  <div class="two-col">
+
+    <div class="card">
+      <h3>Notes module</h3>
+      <p>One <code>notes</code> table for all entity types. Address = <code>(entity_type, entity_id)</code>. Adding notes to any new module requires:</p>
+      <ul>
+        <li>Call <code>database.add_note(conn, entity_type, entity_id, heading, text)</code></li>
+        <li>Call <code>database.list_notes(conn, entity_type, entity_id)</code> to fetch</li>
+        <li>Add note routes to <code>web.py</code> (add / edit / delete)</li>
+        <li>Render the notes block in the detail template</li>
+      </ul>
+      <p class="note">Never create a module-specific notes table. The shared table is the only correct path.</p>
+    </div>
+
+    <div class="card">
+      <h3>Attachments module</h3>
+      <p>Files (images + documents) link to <code>notes.id</code>, not to entity rows directly. This means attachments automatically follow a note when it is re-parented (e.g. when an inbox item is filed to Shelf or another entity).</p>
+      <ul>
+        <li>Files stored in <code>data/uploads/&lt;note_id&gt;_&lt;timestamp&gt;_&lt;name&gt;</code></li>
+        <li>Upload: <code>POST /notes/&lt;note_id&gt;/attachments/add</code></li>
+        <li>Delete: <code>POST /notes/&lt;note_id&gt;/attachments/&lt;id&gt;/delete</code> — removes DB row + disk file</li>
+        <li>Serve: <code>GET /uploads/&lt;filename&gt;</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Order details module</h3>
+      <p>Generic order-number log, mirrors the notes pattern. Any module can attach order lines without a dedicated table. Currently used by Spillover and ECOM Gatekeeper.</p>
+      <ul>
+        <li>Address = <code>(entity_type, entity_id)</code></li>
+        <li>Columns: order_type · order_number · comment · docs_in_s4 (S4 confirmed flag)</li>
+        <li>Routes: <code>GET/POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;[/add]</code></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Inbox + filing</h3>
+      <p>Unfiled items are <code>notes</code> rows with <code>entity_type='input'</code> and <code>entity_id='inbox'</code>. Filing is a single SQL UPDATE:</p>
+      <ul>
+        <li><code>UPDATE notes SET entity_type=?, entity_id=? WHERE id=?</code></li>
+        <li>All attachments follow automatically (linked to <code>note_id</code>)</li>
+        <li>Filing to <strong>Shelf</strong> additionally creates a new <code>shelf</code> row first, then re-parents the note to it</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Import vertical — how to add a new one (ECOM / Omni)</h2>
+  <div class="card">
+    <p>Use Retail as the template. Steps:</p>
+    <ol>
+      <li>Create <code>app/ecom_importer.py</code> — copy <code>retail_importer.py</code>, adjust column mappings and match key</li>
+      <li>Add <code>CREATE TABLE IF NOT EXISTS ecom (...)</code> to <code>database.init_db()</code></li>
+      <li>Add <code>CREATE TABLE IF NOT EXISTS ecom_annotations (...)</code> to <code>database.init_db()</code></li>
+      <li>Add <code>database.upsert_ecom()</code> — copy <code>upsert_retail()</code>, adjust for new table</li>
+      <li>Wire the importer into <code>app/importer.py</code></li>
+      <li>Add routes to <code>app/web.py</code> — copy Retail list + detail + annotation routes</li>
+      <li>Create templates — copy <code>retail_list.html</code> and <code>retail_detail.html</code> as starting points</li>
+      <li>Add dashboard card; update <code>docs/screens.html</code>, <code>docs/database_schema.html</code>, <code>CLAUDE.md</code></li>
+    </ol>
+    <p class="note">ECOM orders already captured in <code>order_details</code> with <code>entity_type='ecom_gatekeeper'</code> can be re-pointed to the new ECOM rows via <code>UPDATE order_details SET entity_type='ecom', entity_id=&lt;ecom_id&gt;</code> — no data copy needed.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Config files</h2>
+  <div class="card">
+    <table class="rule-table">
+      <thead><tr><th>File</th><th>Controls</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>config/settings.yaml</td>
+          <td>Excel file paths and archive folder · sheet names per importer · hidden statuses (defects list default filter, spillover list default filter) · retail report Excel log path · report export folder path (planned)</td>
+        </tr>
+        <tr>
+          <td>config/status_mappings.yaml</td>
+          <td>Retail status report bucket definitions — which raw status values map to which named bucket (e.g. "Passed", "In Progress"). Changing a bucket name or adding a new status requires only a YAML edit, no code change.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Database design principles</h2>
+
+  <div class="two-col">
+    <div class="card">
+      <h3>Imported vs authored data separation</h3>
+      <p>Every imported table (<code>defects</code>, <code>spillover</code>, <code>retail</code>) has a paired annotations table (<code>defect_annotations</code>, etc.). Import runs upsert the primary table; they never touch the annotations table. A user's next step or flag is never overwritten by a re-import.</p>
+    </div>
+    <div class="card">
+      <h3>Migrations via ALTER TABLE</h3>
+      <p>When a new column is added to an existing table, it is added via <code>ALTER TABLE ... ADD COLUMN</code> in a migration block at the bottom of <code>init_db()</code>. These are safe to re-run (they use <code>IF NOT EXISTS</code> equivalents or are wrapped in try/except). Column additions are tagged <span class="pill pill-warn">migration</span> in the schema doc.</p>
+    </div>
+    <div class="card">
+      <h3>All datetimes as TEXT (ISO 8601)</h3>
+      <p>SQLite has no native datetime type. All timestamps are stored as ISO 8601 TEXT strings (<code>YYYY-MM-DDTHH:MM:SS</code>). Sorting and comparison work correctly with TEXT comparison on ISO strings.</p>
+    </div>
+    <div class="card">
+      <h3>Entity-type + entity-id addressing</h3>
+      <p>The shared tables (<code>notes</code>, <code>order_details</code>) use a <code>(entity_type TEXT, entity_id TEXT)</code> pair as the address instead of typed foreign keys. This lets any new module plug into shared infrastructure without a schema change. <code>entity_id</code> is always the TEXT representation of the primary key.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>PDF export</h2>
+  <div class="card">
+    <p><code>app/pdf_utils.py</code> provides two reusable helpers:</p>
+    <ul>
+      <li><code>render_pdf(html: str, filename: str) → Response</code> — generates an A4 PDF and returns it as a Flask download response. Used by report PDF routes.</li>
+      <li><code>save_pdf(html: str, filepath: Path) → None</code> — writes the PDF to disk. Used by the planned report export feature.</li>
+    </ul>
+    <p>WeasyPrint is imported lazily — the app starts and runs normally without it installed. Only the PDF routes fail if it is absent.</p>
+    <p>To add PDF export to any new report: render the existing download template to a string, pass to <code>render_pdf()</code> or <code>save_pdf()</code>. No per-report boilerplate.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>How to start the app</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Windows (normal use):</strong> double-click <code>run_web.bat</code> — kills any existing process on port 5000, then starts Flask</li>
+      <li><strong>Command line:</strong> <code>python -m app.web</code> from the project root</li>
+      <li><strong>URL:</strong> <code>http://127.0.0.1:5000</code></li>
+      <li><strong>Database:</strong> auto-created at <code>data/test_coordination.db</code> on first start via <code>database.init_db()</code></li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Key files at a glance</h2>
+  <div class="card">
+    <table class="rule-table">
+      <thead><tr><th>File / folder</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>app/web.py</td><td>All Flask routes — the only place HTML responses are assembled</td></tr>
+        <tr><td>app/database.py</td><td>All SQL — the ONLY module that writes to the DB</td></tr>
+        <tr><td>app/importer.py</td><td>Orchestrates all three importers in sequence</td></tr>
+        <tr><td>app/read_defects.py</td><td>Defects importer</td></tr>
+        <tr><td>app/spillover_importer.py</td><td>Spillover importer</td></tr>
+        <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
+        <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
+        <tr><td>app/pdf_utils.py</td><td>Reusable PDF generation helper (WeasyPrint, lazy import)</td></tr>
+        <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>
+        <tr><td>app/templates/base.html</td><td>Shared layout + Enhancements floating panel</td></tr>
+        <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses</td></tr>
+        <tr><td>config/status_mappings.yaml</td><td>Retail report bucket definitions</td></tr>
+        <tr><td>data/test_coordination.db</td><td>SQLite database (gitignored)</td></tr>
+        <tr><td>data/uploads/</td><td>Uploaded files attached to notes (gitignored)</td></tr>
+        <tr><td>output/</td><td>Retail report Excel log + planned report_export folder</td></tr>
+        <tr><td>docs/database_schema.html</td><td>Full table + column reference</td></tr>
+        <tr><td>docs/screens.html</td><td>Screen-by-screen UI reference</td></tr>
+        <tr><td>docs/tech_backlog.md</td><td>Known deferrals, refactor plans, future work</td></tr>
+        <tr><td>run_web.bat</td><td>Windows launcher — kills port 5000, starts Flask</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>
