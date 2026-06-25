@@ -112,7 +112,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
 |---|---|---|
-| Dashboard | `/` | Home — card grid + Run Import button |
+| Dashboard | `/` | Home — card grid + Run Import button + Export Reports button |
 | **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up/**Shelf**) when ready. Dashboard card shows pending count. Shelf filing creates a new shelf item from the inbox heading + optional area/category, then re-parents the note. |
 | **Shelf** | `/shelf` | Catch-all store for inbox items that don't belong anywhere specific yet. List with area + category filters (multi-select dialog), quick-add form, checkbox-select combine feature (merges notes from secondary items into a primary). Detail page has editable heading/area/category + full notes module (screenshots, documents, Ctrl+V paste). Dashboard card shows item count (purple accent). |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
@@ -196,7 +196,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `app/spillover_importer.py` | Spillover importer |
 | `app/retail_importer.py` | Retail importer |
 | `app/reporter.py` | Computes retail bucket counts from status_mappings.yaml |
-| `app/pdf_utils.py` | Reusable PDF helper — `render_pdf(html, filename) → Response`. Used by all report PDF routes; lazily imports WeasyPrint so app starts without it installed |
+| `app/pdf_utils.py` | Reusable PDF helper — `render_pdf(html, filename) → Response` (Flask download) and `save_pdf(html, filepath)` (disk write). Lazily imports WeasyPrint so app starts without it installed |
+| `app/report_exporter.py` | Renders Retail + Spillover reports and saves HTML + PDF snapshots to the export folder. Called by `POST /export-reports`. |
 | `app/config_loader.py` | Loads settings.yaml |
 | `app/templates/base.html` | Shared layout + Enhancements floating panel |
 | `config/settings.yaml` | File paths, sheet names, hidden statuses |
@@ -216,6 +217,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** generates an A4 PDF via WeasyPrint (`/spillover/report/pdf`); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section
+- **Export Reports** (`POST /export-reports`) — dashboard button; saves dated HTML + PDF of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. Four files: `retail_report_YYYY-MM-DD.{html,pdf}` and `spillover_report_YYYY-MM-DD.{html,pdf}`. Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
 
 ---
 

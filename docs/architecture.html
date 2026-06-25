@@ -300,6 +300,11 @@
           <td>Query the DB · import Flask request context</td>
         </tr>
         <tr>
+          <td>app/report_exporter.py</td>
+          <td>Renders Retail + Spillover reports to HTML strings and saves HTML + PDF to the export folder. Called from <code>POST /export-reports</code>. Returns list of saved paths.</td>
+          <td>Write SQL directly · define Flask routes</td>
+        </tr>
+        <tr>
           <td>app/config_loader.py</td>
           <td>Loads <code>config/settings.yaml</code> · returns a plain dict</td>
           <td>Everything else</td>
@@ -494,10 +499,26 @@
     <p><code>app/pdf_utils.py</code> provides two reusable helpers:</p>
     <ul>
       <li><code>render_pdf(html: str, filename: str) → Response</code> — generates an A4 PDF and returns it as a Flask download response. Used by report PDF routes.</li>
-      <li><code>save_pdf(html: str, filepath: Path) → None</code> — writes the PDF to disk. Used by the planned report export feature.</li>
+      <li><code>save_pdf(html: str, filepath: Path) → None</code> — writes the PDF to disk. Used by the report export feature.</li>
     </ul>
     <p>WeasyPrint is imported lazily — the app starts and runs normally without it installed. Only the PDF routes fail if it is absent.</p>
     <p>To add PDF export to any new report: render the existing download template to a string, pass to <code>render_pdf()</code> or <code>save_pdf()</code>. No per-report boilerplate.</p>
+  </div>
+</div>
+
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Report export (automation pickup)</h2>
+  <div class="card">
+    <p>The <strong>Export Reports</strong> dashboard button (<code>POST /export-reports</code>) saves dated snapshots of both status reports to a local folder for pickup by external automation (e.g. n8n).</p>
+    <ul>
+      <li>Four files per click: <code>retail_report_YYYY-MM-DD.html</code>, <code>retail_report_YYYY-MM-DD.pdf</code>, <code>spillover_report_YYYY-MM-DD.html</code>, <code>spillover_report_YYYY-MM-DD.pdf</code></li>
+      <li>Folder defaults to <code>report_export/</code> in the project root — gitignored, created automatically</li>
+      <li>Path is configurable: <code>report_export_folder</code> in <code>config/settings.yaml</code></li>
+      <li>Spillover export uses the current row selection in <code>spillover_report_selection</code> — keep the selection current before exporting</li>
+      <li>Logic lives in <code>app/report_exporter.py</code> — to add a third report, add a rendering block there; no changes needed in the route</li>
+    </ul>
   </div>
 </div>
 
@@ -531,13 +552,15 @@
         <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
         <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
         <tr><td>app/pdf_utils.py</td><td>Reusable PDF generation helper (WeasyPrint, lazy import)</td></tr>
+        <tr><td>app/report_exporter.py</td><td>Renders + saves Retail and Spillover reports (HTML + PDF) to the export folder</td></tr>
         <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>
         <tr><td>app/templates/base.html</td><td>Shared layout + Enhancements floating panel</td></tr>
-        <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses</td></tr>
+        <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses, report_export_folder</td></tr>
         <tr><td>config/status_mappings.yaml</td><td>Retail report bucket definitions</td></tr>
         <tr><td>data/test_coordination.db</td><td>SQLite database (gitignored)</td></tr>
         <tr><td>data/uploads/</td><td>Uploaded files attached to notes (gitignored)</td></tr>
-        <tr><td>output/</td><td>Retail report Excel log + planned report_export folder</td></tr>
+        <tr><td>report_export/</td><td>Dated report snapshots for automation pickup (gitignored, auto-created)</td></tr>
+        <tr><td>output/</td><td>Retail report Excel log</td></tr>
         <tr><td>docs/database_schema.html</td><td>Full table + column reference</td></tr>
         <tr><td>docs/screens.html</td><td>Screen-by-screen UI reference</td></tr>
         <tr><td>docs/tech_backlog.md</td><td>Known deferrals, refactor plans, future work</td></tr>

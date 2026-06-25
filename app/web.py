@@ -15,6 +15,7 @@ from app import database
 from app.config_loader import load_config
 from app.importer import run_import
 from app.pdf_utils import render_pdf
+from app.report_exporter import export_all_reports
 from app.reporter import compute_retail_report, load_status_mappings
 from app.solman_sync import run_solman_sync
 
@@ -1010,6 +1011,22 @@ def retail_report_pdf():
         missing_categories=_cfg.get("retail_missing_categories", []),
     )
     return render_pdf(html, f"retail_report_{today}.pdf")
+
+
+# ---------------------------------------------------------------------------
+# Report export — save HTML + PDF of both reports to disk for automation
+# ---------------------------------------------------------------------------
+
+@app.route("/export-reports", methods=["POST"])
+def export_reports():
+    conn = _get_conn()
+    try:
+        saved = export_all_reports(conn, _cfg)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "files": [str(p) for p in saved]})
 
 
 # ---------------------------------------------------------------------------

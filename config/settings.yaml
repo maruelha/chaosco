@@ -102,6 +102,15 @@ solman_export_stem: 'Data aggregated by Defect'
 solman_export_sheet: 'SAP Document Export'
 
 # ---------------------------------------------------------------------------
+# Step 7 — report export folder
+# ---------------------------------------------------------------------------
+
+# Folder where "Export Reports" saves dated HTML + PDF snapshots of both reports.
+# Relative to repo root or absolute. Created automatically if it does not exist.
+# This folder is gitignored — files here are for automation pickup only.
+report_export_folder: 'report_export'
+
+# ---------------------------------------------------------------------------
 # Categories of test cases not yet imported into the tracker.
 # Shown as a bullet list in the status report next to the "not yet tracked" count.
 retail_missing_categories:

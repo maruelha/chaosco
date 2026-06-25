@@ -247,9 +247,11 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
+        <span class="feat-label">Export Reports</span>
+        <span class="feat-value">AJAX button (teal card) — <code>POST /export-reports</code> — saves dated HTML + PDF snapshots of the Retail and Spillover reports to <code>report_export/</code> (gitignored). Four files per click: <code>retail_report_YYYY-MM-DD.html</code>, <code>retail_report_YYYY-MM-DD.pdf</code>, <code>spillover_report_YYYY-MM-DD.html</code>, <code>spillover_report_YYYY-MM-DD.pdf</code>. Spillover uses the current row selection. Success banner lists all saved paths. Folder path configurable via <code>report_export_folder</code> in <code>config/settings.yaml</code>.</span>
         <span class="feat-label">Navigation</span>
         <span class="feat-value">Each card contains a link button to the corresponding list screen. The site title in the header also links back here from every page.</span>
       </div>
