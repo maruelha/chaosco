@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 from app import database
 from app.config_loader import load_config
 from app.importer import run_import
+from app.pdf_utils import render_pdf
 from app.reporter import compute_retail_report, load_status_mappings
 from app.solman_sync import run_solman_sync
 
@@ -514,6 +515,32 @@ def spillover_report_view():
     )
 
 
+@app.route("/spillover/report/pdf")
+def spillover_report_pdf():
+    conn = _get_conn()
+    try:
+        items           = database.get_spillover_report_items(conn)
+        order_details   = {}
+        for item in items:
+            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
+            if od:
+                order_details[item["spillover_id"]] = od
+        report_comments = database.list_report_comments(conn, "spillover")
+    finally:
+        conn.close()
+    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
+    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
+    from datetime import date
+    today = date.today().strftime("%Y-%m-%d")
+    html = render_template(
+        "spillover_report_view.html",
+        items=items, order_details=order_details,
+        report_comments=report_comments,
+        today=today,
+    )
+    return render_pdf(html, f"spillover_report_{today}.pdf")
+
+
 # ---------------------------------------------------------------------------
 # Generic order_details routes — work for any entity type
 # ---------------------------------------------------------------------------
@@ -963,6 +990,24 @@ def retail_report_download():
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition": f'attachment; filename="retail_report_{today}.html"',
     }
+
+
+@app.route("/retail/report/pdf")
+def retail_report_pdf():
+    report = _get_retail_report()
+    today  = date.today().isoformat()
+    conn   = _get_conn()
+    try:
+        report_comments = database.list_report_comments(conn, "retail")
+    finally:
+        conn.close()
+    html = render_template(
+        "retail_report_download.html", report=report, today=today,
+        report_comments=report_comments,
+        total_test_cases=_cfg.get("retail_total_test_cases", 646),
+        missing_categories=_cfg.get("retail_missing_categories", []),
+    )
+    return render_pdf(html, f"retail_report_{today}.pdf")
 
 
 # ---------------------------------------------------------------------------
