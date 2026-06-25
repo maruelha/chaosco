@@ -77,7 +77,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### ECOM Gatekeeper (manually authored, no importer)
 - `ecom_gatekeeper` — id (PK AI), jira_id, solman_id, testcase_name, status (open/inprogress/sf_requested/back_to_sales/tech_check/passed), next_step, created_at. Notes via `notes` (entity_type=`'ecom_gatekeeper'`). Order details via `order_details` (entity_type=`'ecom_gatekeeper'`). Future handover: UPDATE order_details SET entity_type='ecom', entity_id=<ecom_id> to re-point orders to an ECOM test case — no data copy needed.
 
-### Shelf (catch-all store — UI in progress)
+### Shelf (catch-all store — fully built 2026-06-25)
 - `shelf` — id (PK AI), heading, area (free text), category (free text), created_at. Catch-all for inbox items that don't belong to any specific entity. Notes and attachments link via `notes` (entity_type=`'shelf'`). Filing from inbox creates a new shelf row then re-parents the note. UI (list, detail, combine) is being built — DB table exists as of 2026-06-25.
 
 ### Planning & coordination (manually managed via UI)
@@ -107,13 +107,14 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ---
 
-## All screens (as of 2026-06-23, report_comments added)
+## All screens (as of 2026-06-25, Shelf added)
 
 ### On the dashboard (linked from home cards)
 | Screen | URL | Purpose |
 |---|---|---|
 | Dashboard | `/` | Home — card grid + Run Import button |
-| **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up) when ready. Dashboard card shows pending count. |
+| **Inbox** | `/inbox` | Daily capture pad. Paste notes + screenshots during the day; file each item to its target (Defect/Retail/Spillover/Test Learning/Follow-up/**Shelf**) when ready. Dashboard card shows pending count. Shelf filing creates a new shelf item from the inbox heading + optional area/category, then re-parents the note. |
+| **Shelf** | `/shelf` | Catch-all store for inbox items that don't belong anywhere specific yet. List with area + category filters (multi-select dialog), quick-add form, checkbox-select combine feature (merges notes from secondary items into a primary). Detail page has editable heading/area/category + full notes module (screenshots, documents, Ctrl+V paste). Dashboard card shows item count (purple accent). |
 | Import Result | POST `/import` | Post-import summary (counts per tab + archive status) |
 | Defects List | `/defects` | Filterable defects table (search, channel, status, DTC O2C, **Daily**). Columns: Defect ID, Solman Name, Blocked TCs (links to Retail list), Channel, Status, Priority, Assigned To, Date Reported, Prod, DTC O2C (inline AJAX checkbox), **Daily** (inline AJAX checkbox). Sortable by any column. Horizontally scrollable. **DTC O2C** (`dtco2c`) is a per-defect flag meaning "MB needs to follow up"; **Daily** (`daily`) flags the defect for discussion on the DTC O2C Daily call. Both toggled inline or via detail form. |
 | Defect Detail | `/defects/<id>` | Annotations form (incl. DTC O2C checkbox + DTC O2C Responsible field + **To discuss on daily** checkbox) → Notes log → Add to Meeting Prep → Imported fields (read-only, at bottom) |
@@ -147,6 +148,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | ECOM Gatekeeper Detail | `/ecom-gatekeeper/<id>` | From Notes button on Gatekeeper list — shows Jira ID, Solman ID, Status, Next step (read-only) + full notes module (heading, edit, delete, file attachments, Ctrl+V paste). Note routes: `/ecom-gatekeeper/<id>/notes/add\|edit\|delete`. |
 | Spillover Detail | `/spillover/<id>` | From Notes button on Spillover list — read-only field display + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
 | Follow-up Detail | `/followups/<id>` | From Notes button on Follow-ups list — field display + inline status dropdown + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste) |
+| Shelf Detail | `/shelf/<id>` | From heading link on Shelf list — editable heading/area/category + complete notes module (heading, edit, delete, file attachments, Ctrl+V paste). Note routes: `/shelf/<id>/notes/add\|edit\|delete`. |
 | DTC O2C Daily Agenda | `/meeting-prep/dtco2c-daily` | "DTC O2C Daily Agenda" button in Meeting Prep header. Three sections: (1) planned topics for the DTC O2C Daily meeting grouped by overall_topic, (2) all defects with `daily=1` (Defect ID, Solman Name, Channel, Next Steps), (3) open follow-ups where `with_whom = 'DTC O2C'`. Standalone HTML page; Download HTML + Print. |
 
 ### Shared sub-screens (note forms)
@@ -155,6 +157,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - Note add/edit/delete for Test Learnings: `/test_learnings/<id>/notes/...`
 - Note add/edit/delete for Spillover: `/spillover/<id>/notes/...`
 - Note add/edit/delete for Follow-ups: `/followups/<id>/notes/...`
+- Note add/edit/delete for Shelf: `/shelf/<id>/notes/...`
 
 ### File attachments (Defects, Retail, Test Learnings, Spillover, Follow-up, ECOM Gatekeeper, Inbox)
 - `GET /uploads/<filename>` — serve a stored file

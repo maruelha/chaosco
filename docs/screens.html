@@ -25,6 +25,7 @@
       --c-planning: #c05600;
       --c-reference:#5a3e8a;
       --c-global:   #2d6a4f;
+      --c-shelf:    #7c3aed;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -140,6 +141,8 @@
     .s-planning  .section-heading { color: var(--c-planning); }
     .s-reference .section-heading { color: var(--c-reference); }
     .s-global    .section-heading { color: var(--c-global); }
+    .s-shelf     .screen-card-header { background: var(--c-shelf); }
+    .s-shelf     .section-heading { color: var(--c-shelf); }
 
     /* API endpoint table */
     .api-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 1rem; }
@@ -166,6 +169,10 @@
     <li><a href="#dashboard">Dashboard</a></li>
     <li><a href="#inbox">Inbox</a></li>
     <li><a href="#import-result">Import Result</a></li>
+
+    <li class="group-label">Shelf</li>
+    <li><a href="#shelf-list">Shelf — List</a></li>
+    <li><a href="#shelf-detail">Shelf — Detail</a></li>
 
     <li class="group-label">Defects</li>
     <li><a href="#defects-list">Defects — List</a></li>
@@ -240,7 +247,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Import · Defects · Core South Spillover · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Navigation</span>
@@ -256,7 +263,7 @@
       <span class="screen-url">GET /inbox</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, Test Learning, or Follow-up) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
+      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, Test Learning, Follow-up, or Shelf) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
       <div class="features">
         <span class="feat-label">Add item</span>
         <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
@@ -267,7 +274,8 @@
           <span class="pill pill-ajax">File ›</span> — opens filing picker: choose type, search by name, select target, then Move ›
         </span>
         <span class="feat-label">Filing behaviour</span>
-        <span class="feat-value">Single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.</span>
+        <span class="feat-value">For Defect / Retail / Spillover / Test Learning / Follow-up: single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.<br>
+        For <strong>Shelf</strong>: a new Shelf item is created from the inbox heading; area and category are entered in the picker (both optional); the note is then re-parented to the new shelf item. Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>.</span>
         <span class="feat-label">Attachment support</span>
         <span class="feat-value">Images (PNG/JPG/GIF/WEBP) shown as thumbnails. Documents (PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/TXT/CSV/MSG/EML/ZIP) shown as download links. Ctrl+V pastes a Snipping Tool image into the last-hovered item. ✕ to delete any attachment.</span>
         <span class="feat-label">Table source</span>
@@ -295,6 +303,82 @@
         <span class="feat-value">Path to the per-run CSV if any rows were skipped</span>
         <span class="feat-label">Navigation</span>
         <span class="feat-value"><span class="pill pill-nav">Back to Dashboard</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SHELF -->
+<!-- ================================================================ -->
+<div class="section s-shelf">
+  <div class="section-heading">Shelf</div>
+
+  <!-- Shelf List -->
+  <div class="screen-card" id="shelf-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Shelf — List</span>
+      <span class="screen-url">GET /shelf</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Catch-all store for notes and observations that don't belong to a specific defect, test case, or spillover item yet. Items have a heading, optional area, and optional category. Dashboard card shows total item count with a purple accent. Reachable from the Inbox filing picker (Shelf option) or directly from the dashboard.</p>
+      <div class="features">
+        <span class="feat-label">Quick-add form</span>
+        <span class="feat-value">Heading (optional) · Area (optional) · Category (optional) → <code>POST /shelf/add</code></span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">
+          <span class="pill pill-filter">Area (multi-select dialog)</span>
+          <span class="pill pill-filter">Category (multi-select dialog)</span>
+          — same <code>&lt;dialog&gt;</code>-based multi-select pattern as Spillover and CS Follow-ups
+        </span>
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Heading (link → detail) · Area (blue pill) · Category (purple pill) · Added date · Notes count badge</span>
+        <span class="feat-label">Combine feature</span>
+        <span class="feat-value">Each row has a checkbox. When 2+ rows are checked a <strong>"Combine N selected ›"</strong> button appears above the table. Clicking it opens a modal listing the selected items as radio buttons — pick the <strong>primary</strong> item to keep; all notes from the others are moved into it and the secondary rows are deleted. Route: <code>POST /shelf/combine</code> (fields: <code>primary_id</code> + <code>item_ids[]</code>). Redirects to the primary item's detail page. A "Select all" checkbox in the header selects every visible row.</span>
+        <span class="feat-label">From Inbox</span>
+        <span class="feat-value">Selecting <strong>Shelf</strong> in the Inbox filing picker shows area + category text inputs (no search — a new shelf item is always created). Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>. The inbox item's heading becomes the shelf item's heading; the note is re-parented.</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Item added · Item deleted</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>shelf</code> LEFT JOIN <code>notes</code> (note_count subquery)</span>
+        <span class="feat-label">Routes</span>
+        <span class="feat-value">
+          <code>GET  /shelf</code> — list (accepts <code>area[]</code> + <code>category[]</code> query params)<br>
+          <code>POST /shelf/add</code> — create item<br>
+          <code>POST /shelf/combine</code> — merge selected items into primary
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shelf Detail -->
+  <div class="screen-card" id="shelf-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Shelf — Detail</span>
+      <span class="screen-url">GET /shelf/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Full view of a single shelf item. Metadata (heading, area, category) is editable inline. Below the metadata card: a complete notes module with add, edit, delete, file attachments, and Ctrl+V paste — identical to Defect and Retail detail pages.</p>
+      <div class="features">
+        <span class="feat-label">Editable metadata</span>
+        <span class="feat-value">Heading · Area · Category — all in one inline form row; <span class="pill pill-action">Save</span> → <code>POST /shelf/&lt;id&gt;/update</code> → redirect with <code>?saved=1</code> flash</span>
+        <span class="feat-label">Notes section</span>
+        <span class="feat-value">Full notes log: heading + body + timestamp. Per-note <span class="pill pill-action">Edit</span> and <span class="pill pill-action">Delete</span>. <span class="pill pill-action">📷 Add screenshot</span> and <span class="pill pill-action">📎 Attach file</span> per note; images as thumbnails, documents as download links. Ctrl+V pastes a clipboard image (e.g. from Snipping Tool) into the last-hovered note.</span>
+        <span class="feat-label">Delete item</span>
+        <span class="feat-value"><span class="pill pill-action">Delete</span> button in page header — confirm dialog → <code>POST /shelf/&lt;id&gt;/delete</code> → cascades to notes + attachments (disk files also removed); redirects to shelf list.</span>
+        <span class="feat-label">Flash banners</span>
+        <span class="feat-value">Saved · Note added · Note saved · Note deleted</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value">Breadcrumb (<span class="pill pill-nav">Shelf › Item heading</span>) · <span class="pill pill-nav">← Back to Shelf</span></span>
+        <span class="feat-label">Note routes</span>
+        <span class="feat-value">
+          <code>GET/POST /shelf/&lt;id&gt;/notes/add</code><br>
+          <code>GET/POST /shelf/&lt;id&gt;/notes/&lt;note_id&gt;/edit</code><br>
+          <code>GET/POST /shelf/&lt;id&gt;/notes/&lt;note_id&gt;/delete</code>
+        </span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>shelf</code> + <code>notes</code> (entity_type='shelf') + <code>attachments</code></span>
       </div>
     </div>
   </div>
