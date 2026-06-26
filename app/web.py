@@ -980,11 +980,19 @@ def retail_report_download():
     today  = date.today().isoformat()
     conn   = _get_conn()
     try:
+        blocked_defects = database.get_retail_defects_blocked(conn)
         report_comments = database.list_report_comments(conn, "retail")
     finally:
         conn.close()
+    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
+    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
+    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
     html = render_template(
         "retail_report_download.html", report=report, today=today,
+        blocked_defects=blocked_defects,
+        blocked_defects_total=blocked_total,
+        dtco2c_total=dtco2c_total,
+        sales_total=sales_total,
         report_comments=report_comments,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         missing_categories=_cfg.get("retail_missing_categories", []),

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Retail Status Report — {{ today }}</title>
+  <title>Retail Status Report — DTC Viewpoint — {{ today }}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -14,7 +14,6 @@
     h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.15rem; }
     .meta { font-size: 0.78rem; color: #aeaeb2; margin-bottom: 1.75rem; }
     h2 { font-size: 0.95rem; font-weight: 700; margin: 1.5rem 0 0.65rem; color: #1d1d1f; }
-    .informational { font-size: 0.72rem; font-weight: 400; color: #6e6e73; margin-left: 0.4rem; }
 
     .bucket-grid { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
     .bucket {
@@ -31,23 +30,24 @@
     .bucket-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #3a3a3c; }
     .bucket-sub   { margin-top: 0.35rem; font-size: 0.72rem; color: #6e6e73; }
 
-    .sanity {
-      display: flex; align-items: flex-start; gap: 0.5rem;
-      padding: 0.65rem 0.9rem; border-radius: 7px; margin: 0.5rem 0 1.25rem;
-      font-size: 0.82rem;
-    }
-    .sanity--pass { background: #f0faf3; border: 1px solid #34c759; color: #1a6b35; }
-    .sanity--fail { background: #fff5f5; border: 1px solid #ff3b30; color: #c0392b; }
-    .sanity-icon  { font-size: 1rem; font-weight: 700; }
-
     .breakdown-grid { display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .breakdown-card {
       flex: 1; min-width: 100px; border: 1px solid #e5e5ea; border-radius: 8px;
       padding: 0.85rem 1rem; background: #fafafa; text-align: center;
     }
+    .breakdown-icon   { font-size: 1.4rem; line-height: 1; margin-bottom: 0.2rem; }
     .breakdown-number { font-size: 1.8rem; font-weight: 700; line-height: 1; margin-bottom: 0.15rem; }
     .breakdown-label  { font-size: 0.72rem; font-weight: 600; color: #3a3a3c; }
     .breakdown-owner  { font-size: 0.68rem; color: #6e6e73; margin-top: 0.1rem; }
+
+    .def-table { width: 100%; border-collapse: collapse; margin-bottom: 0.75rem; font-size: 0.8rem; }
+    .def-table th {
+      background: #f5f5f7; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #6e6e73; padding: 0.35rem 0.6rem;
+      text-align: left; border-bottom: 1px solid #d2d2d7;
+    }
+    .def-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #f0f0f5; vertical-align: top; }
+    .def-table tfoot td { border-bottom: none; }
 
     /* PDF / print ---------------------------------------------------------- */
     @page { size: A4; margin: 2cm; }
@@ -61,7 +61,7 @@
 </head>
 <body>
 
-<h1>Retail Status Report</h1>
+<h1>Retail Status Report — DTC Viewpoint</h1>
 <p class="meta">{{ today }} &nbsp;·&nbsp; {{ report.total_rows }} of {{ total_test_cases }} tracked</p>
 
 {% set pct_passed = ((report.buckets.passed_with_dtc / total_test_cases) * 100) | round(1) %}
@@ -113,50 +113,108 @@
   </div>
 </div>
 
-<div class="sanity {% if report.sanity.identity_ok %}sanity--pass{% else %}sanity--fail{% endif %}">
-  <span class="sanity-icon">{% if report.sanity.identity_ok %}✓{% else %}✗{% endif %}</span>
-  <span>
-    Identity check: In Progress with DTC ({{ report.sanity.in_progress_with_dtc }})
-    + Passed with DTC ({{ report.sanity.passed_with_dtc }})
-    = {{ report.sanity.lhs }}
-    {% if report.sanity.identity_ok %}
-      = With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>PASS</strong>
-    {% else %}
-      ≠ With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>FAIL — discrepancy of {{ (report.sanity.with_dtc - report.sanity.lhs)|abs }}</strong>
-    {% endif %}
-  </span>
-</div>
-
-<h2>In-Progress Breakdown
-  <span class="informational">(informational — does not reconcile to In Progress with DTC)</span>
-</h2>
+<h2>In-Progress Breakdown</h2>
 <div class="breakdown-grid">
   <div class="breakdown-card">
+    <div class="breakdown-icon">📥</div>
     <div class="breakdown-number">{{ report.buckets.incoming_gatekeeper }}</div>
     <div class="breakdown-label">Incoming (Gatekeeper)</div>
     <div class="breakdown-owner">Jose</div>
   </div>
   <div class="breakdown-card">
+    <div class="breakdown-icon">🎯</div>
     <div class="breakdown-number">{{ report.buckets.ready_for_validation }}</div>
     <div class="breakdown-label">Ready for validation</div>
     <div class="breakdown-owner">Key users</div>
   </div>
   <div class="breakdown-card">
+    <div class="breakdown-icon">⚙️</div>
     <div class="breakdown-number">{{ report.buckets.in_progress }}</div>
     <div class="breakdown-label">In Progress</div>
     <div class="breakdown-owner">Key users</div>
   </div>
   <div class="breakdown-card">
+    <div class="breakdown-icon">💬</div>
     <div class="breakdown-number">{{ report.buckets.in_clarification }}</div>
     <div class="breakdown-label">In Clarification</div>
     <div class="breakdown-owner">Key users</div>
   </div>
   <div class="breakdown-card">
+    <div class="breakdown-icon">🚫</div>
     <div class="breakdown-number">{{ report.buckets.blocked }}</div>
     <div class="breakdown-label">Blocked</div>
     <div class="breakdown-owner">Tech team</div>
   </div>
 </div>
+
+{# ---- Defects ---- #}
+<h2>Retail Defects — Active (excl. Confirmed &amp; Withdrawn)</h2>
+{% if blocked_defects %}
+<table class="def-table">
+  <thead>
+    <tr>
+      <th style="text-align:right;width:2rem">#</th>
+      <th>Defect ID</th>
+      <th>Solman Name</th>
+      <th>Assigned To</th>
+      <th>Date Reported</th>
+      <th>Status</th>
+      <th style="text-align:right">MB Blocked</th>
+      <th style="text-align:right">Sales Blocked</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for d in blocked_defects %}
+    <tr{% if not d.blocked_tc_count %} style="color:#aeaeb2"{% endif %}>
+      <td style="text-align:right;color:#aeaeb2">{{ loop.index }}</td>
+      <td>{{ d.defect_id }}</td>
+      <td>{{ d.solman_name or '—' }}</td>
+      <td>{{ d.assigned_to or '—' }}</td>
+      <td>{{ d.date_reported or '—' }}</td>
+      <td>{{ d.solman_status or '—' }}</td>
+      <td style="text-align:right">
+        {% if d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+      </td>
+      <td style="text-align:right">
+        {% if not d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr style="border-top:2px solid #d2d2d7;font-weight:600">
+      <td colspan="6" style="text-align:right;padding-right:.75rem">Total blocked TCs</td>
+      <td style="text-align:right">{{ dtco2c_total }}</td>
+      <td style="text-align:right">{{ sales_total }}</td>
+    </tr>
+    <tr style="font-size:.72rem;color:#6e6e73">
+      <td colspan="6" style="text-align:right;padding-right:.75rem">Combined total</td>
+      <td colspan="2" style="text-align:right"><strong>{{ blocked_defects_total }}</strong></td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="breakdown-grid" style="margin-bottom:1.5rem">
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ dtco2c_total }}</div>
+    <div class="breakdown-label">Blocked test cases — MB</div>
+    <div class="breakdown-owner">Our follow-up</div>
+  </div>
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ sales_total }}</div>
+    <div class="breakdown-label">Blocked test cases — Sales</div>
+    <div class="breakdown-owner">Sales follow-up</div>
+  </div>
+  {% set blocking_defect_count = blocked_defects | selectattr('blocked_tc_count') | list | length %}
+  <div class="breakdown-card">
+    <div class="breakdown-number">{{ blocked_defects_total }}</div>
+    <div class="breakdown-label">Total blocked test cases</div>
+    <div class="breakdown-owner">from {{ blocking_defect_count }} defect{{ 's' if blocking_defect_count != 1 else '' }}</div>
+  </div>
+</div>
+{% else %}
+<p style="font-size:.82rem;color:#aeaeb2;margin-bottom:1.25rem">No active Retail defects found.</p>
+{% endif %}
 
 {% set visible_comments = report_comments | selectattr('comment') | list %}
 {% if visible_comments %}
