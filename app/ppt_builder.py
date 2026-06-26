@@ -159,10 +159,10 @@ def _slide1_summary(prs, report: dict, today: str, total_test_cases: int,
 
     sw = 1.9
     def stat(x, num, label, color):
-        _add_text(s, str(num), x, strip_y + 0.14, sw, 0.45,
-                  font=HEAD, size=26, bold=True, color=color, align=PP_ALIGN.CENTER)
-        _add_text(s, label.upper(), x, strip_y + 0.60, sw, 0.30,
-                  font=BODY, size=8, bold=True, color=SUB, align=PP_ALIGN.CENTER)
+        _add_text(s, str(num), x, strip_y + 0.12, sw, 0.42,
+                  font=HEAD, size=22, bold=True, color=color, align=PP_ALIGN.CENTER)
+        _add_text(s, label.upper(), x, strip_y + 0.57, sw, 0.32,
+                  font=BODY, size=11, bold=True, color=SUB, align=PP_ALIGN.CENTER)
 
     stat(M + 0.2,        total_test_cases, "Total test cases", INK)
     stat(M + 0.2 + sw,   b["with_dtc"] + b["back_with_sales"], "In tracker",    INK)
@@ -194,13 +194,13 @@ def _slide1_summary(prs, report: dict, today: str, total_test_cases: int,
     for i, bkt in enumerate(buckets):
         x = M + i * (bw + gap)
         _add_rect(s, x, y, bw, bh, fill=WHITE, line=bkt["border"], rounded=True)
-        _add_text(s, str(bkt["n"]), x, y + 0.18, bw, 0.70,
-                  font=HEAD, size=38, bold=True, color=bkt["color"], align=PP_ALIGN.CENTER)
-        _add_text(s, bkt["label"].upper(), x + 0.1, y + 0.92, bw - 0.2, 0.30,
-                  font=BODY, size=8, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
+        _add_text(s, str(bkt["n"]), x, y + 0.15, bw, 0.62,
+                  font=HEAD, size=32, bold=True, color=bkt["color"], align=PP_ALIGN.CENTER)
+        _add_text(s, bkt["label"].upper(), x + 0.1, y + 0.82, bw - 0.2, 0.34,
+                  font=BODY, size=11, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
         if bkt["sub"]:
-            _add_text(s, bkt["sub"], x + 0.1, y + 1.20, bw - 0.2, 0.22,
-                      font=BODY, size=7.5, color=SUB, align=PP_ALIGN.CENTER)
+            _add_text(s, bkt["sub"], x + 0.1, y + 1.18, bw - 0.2, 0.24,
+                      font=BODY, size=9, color=SUB, align=PP_ALIGN.CENTER)
     y += bh + 0.14
 
     # ── In-Progress Breakdown ─────────────────────────────────────────────────
@@ -224,12 +224,12 @@ def _slide1_summary(prs, report: dict, today: str, total_test_cases: int,
                   font=BODY, size=14, color=card["color"], align=PP_ALIGN.CENTER)
         # Number
         num_color = card["color"] if val > 0 else SUB
-        _add_text(s, str(val), x, y + 0.56, cw, 0.32,
-                  font=HEAD, size=21, bold=True, color=num_color, align=PP_ALIGN.CENTER)
-        _add_text(s, card["label"], x + 0.06, y + 0.86, cw - 0.12, 0.20,
-                  font=BODY, size=8, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
-        _add_text(s, card["owner"], x + 0.06, y + 1.02, cw - 0.12, 0.14,
-                  font=BODY, size=7.5, color=SUB, align=PP_ALIGN.CENTER)
+        _add_text(s, str(val), x, y + 0.54, cw, 0.30,
+                  font=HEAD, size=18, bold=True, color=num_color, align=PP_ALIGN.CENTER)
+        _add_text(s, card["label"], x + 0.06, y + 0.82, cw - 0.12, 0.22,
+                  font=BODY, size=10, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
+        _add_text(s, card["owner"], x + 0.06, y + 1.01, cw - 0.12, 0.16,
+                  font=BODY, size=9, color=SUB, align=PP_ALIGN.CENTER)
     y += ch + 0.16
 
     # ── Comments box ─────────────────────────────────────────────────────────
@@ -335,12 +335,12 @@ def _slide_defects(prs, defects: list[dict], today: str,
             for i, c in enumerate(sum_cards):
                 x = M + i * (scw + sg)
                 _add_rect(s, x, after, scw, sch, fill=CARDBG, line=HAIR, rounded=True)
-                _add_text(s, str(c["n"]), x, after + 0.10, scw, 0.42,
-                          font=HEAD, size=26, bold=True, color=INK, align=PP_ALIGN.CENTER)
-                _add_text(s, c["label"], x + 0.1, after + 0.50, scw - 0.2, 0.24,
-                          font=BODY, size=9, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
-                _add_text(s, c["sub"],   x + 0.1, after + 0.71, scw - 0.2, 0.20,
-                          font=BODY, size=8, color=c["sub_color"], align=PP_ALIGN.CENTER)
+                _add_text(s, str(c["n"]), x, after + 0.08, scw, 0.38,
+                          font=HEAD, size=22, bold=True, color=INK, align=PP_ALIGN.CENTER)
+                _add_text(s, c["label"], x + 0.1, after + 0.46, scw - 0.2, 0.28,
+                          font=BODY, size=11, bold=True, color=INK3A, align=PP_ALIGN.CENTER)
+                _add_text(s, c["sub"],   x + 0.1, after + 0.72, scw - 0.2, 0.20,
+                          font=BODY, size=10, color=c["sub_color"], align=PP_ALIGN.CENTER)
 
 
 # ---------------------------------------------------------------------------
