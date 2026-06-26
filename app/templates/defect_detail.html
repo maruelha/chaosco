@@ -136,7 +136,7 @@
         <label class="btn btn-sm att-pick-btn" for="att-{{ n.id }}">&#128247; Add screenshot</label>
         <input id="att-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept="image/*" style="display:none">
         <label class="btn btn-sm att-pick-btn" for="att-doc-{{ n.id }}" style="margin-left:0.3rem">&#128206; Attach file</label>
-        <input id="att-doc-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.msg,.eml,.zip" style="display:none">
+        <input id="att-doc-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.msg,.eml,.zip,.xml,.json" style="display:none">
       </div>
       <div class="note-actions">
         <a href="{{ url_for('note_edit', defect_id=defect.defect_id, note_id=n.id) }}" class="btn btn-sm">Edit</a>

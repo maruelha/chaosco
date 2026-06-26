@@ -165,7 +165,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 - `POST /notes/<note_id>/attachments/add` — upload a file (multipart, field: `file`). Saves to `data/uploads/<note_id>_<timestamp>_<name>`. Returns JSON `{ok, attachment}`.
 - `POST /notes/<note_id>/attachments/<attachment_id>/delete` — delete DB record + disk file. Returns JSON `{ok}`.
 - Allowed images (shown as thumbnails): `.png .jpg .jpeg .gif .webp`
-- Allowed documents (shown as download links): `.pdf .doc .docx .xls .xlsx .ppt .pptx .txt .csv .msg .eml .zip`
+- Allowed documents (shown as download links): `.pdf .doc .docx .xls .xlsx .ppt .pptx .txt .csv .msg .eml .zip .xml .json`
 - Both types share the same `attachments` table and `data/uploads/` folder.
 - **📷 Add screenshot** button — image picker (image/* filter). **📎 Attach file** button — document picker (above extensions). Both use the same AJAX upload route.
 - **Ctrl+V paste** supported: hover a note, then Ctrl+V pastes a Snipping Tool image directly into it (images only).

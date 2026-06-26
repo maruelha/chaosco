@@ -33,7 +33,7 @@ _cfg = load_config()
 _db_path = Path(_cfg["database_path"])
 _UPLOAD_FOLDER = _HERE.parent / "data" / "uploads"
 _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
-_ALLOWED_EXTS = _IMAGE_EXTS | {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".msg", ".eml", ".zip"}
+_ALLOWED_EXTS = _IMAGE_EXTS | {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv", ".msg", ".eml", ".zip", ".xml", ".json"}
 
 # Create schema once at startup; routes use get_connection() after this.
 database.init_db(_db_path).close()
