@@ -15,6 +15,7 @@ from app import database
 from app.config_loader import load_config
 from app.importer import run_import
 from app.pdf_utils import render_pdf
+from app.ppt_builder import build_retail_ppt
 from app.report_exporter import export_all_reports
 from app.reporter import compute_retail_report, load_status_mappings
 from app.solman_sync import run_solman_sync
@@ -1064,22 +1065,32 @@ def retail_report_diagnostics():
     )
 
 
-@app.route("/retail/report/pdf")
-def retail_report_pdf():
+@app.route("/retail/report/ppt")
+def retail_report_ppt():
     report = _get_retail_report()
     today  = date.today().isoformat()
     conn   = _get_conn()
     try:
-        report_comments = database.list_report_comments(conn, "retail")
+        blocked_defects = database.get_retail_defects_blocked(conn)
     finally:
         conn.close()
-    html = render_template(
-        "retail_report_download.html", report=report, today=today,
-        report_comments=report_comments,
+    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
+    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
+    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
+    pptx_bytes = build_retail_ppt(
+        report=report,
+        blocked_defects=blocked_defects,
+        dtco2c_total=dtco2c_total,
+        sales_total=sales_total,
+        blocked_total=blocked_total,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
+        today=today,
         missing_categories=_cfg.get("retail_missing_categories", []),
     )
-    return render_pdf(html, f"retail_report_{today}.pdf")
+    return pptx_bytes, 200, {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "Content-Disposition": f'attachment; filename="retail_report_{today}.pptx"',
+    }
 
 
 # ---------------------------------------------------------------------------
