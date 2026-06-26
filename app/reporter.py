@@ -10,12 +10,10 @@ from pathlib import Path
 import yaml
 
 _DEFAULT_MAPPINGS = Path(__file__).parent.parent / "config" / "status_mappings.yaml"
-_LOCAL_MAPPINGS   = Path(__file__).parent.parent / "config" / "status_mappings.local.yaml"
 
 
 def load_status_mappings(path: Path | None = None) -> dict:
-    # Explicit path wins; otherwise prefer local override if it exists.
-    p = path or (_LOCAL_MAPPINGS if _LOCAL_MAPPINGS.exists() else _DEFAULT_MAPPINGS)
+    p = path or _DEFAULT_MAPPINGS
     with p.open(encoding="utf-8") as fh:
         return yaml.safe_load(fh)
 
