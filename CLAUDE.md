@@ -134,7 +134,8 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 ### NOT on the dashboard (linked from other screens)
 | Screen | URL | How to reach |
 |---|---|---|
-| Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown, **active Retail defects table** (all non-confirmed/withdrawn, with MB Blocked / Sales Blocked columns split by `dtco2c`), **Attribution Overview** (Back with Sales = Sales defects + other; Blocked Tech Team = MB defects + other/untracked), diagnostics. |
+| Retail Status Report | `/retail/report` | Link in Retail list header. Includes: bucket overview, in-progress breakdown with emoji icons (📥🎯⚙️💬🚫), active Retail defects table (MB Blocked / Sales Blocked), summary cards. Identity check + Attribution Overview moved to Diagnostics page. |
+| Retail Report Diagnostics | `/retail/report/diagnostics` | "Diagnostics" button on Retail Status Report. Identity check, Attribution Overview, and a bucket-grouped table of all raw status values with row counts. Unknown statuses shown as a red warning. |
 | Spillover Status Report (select) | `/spillover/report` | "Status Report" button in Spillover list header. Select rows to include; rows persist in `spillover_report_selection`; batch select-page / clear-all. |
 | Spillover Status Report (view) | `/spillover/report/view` | "View Report" button on the select screen (opens new tab). Title: **Spillover Status Report — from DTC Perspective**. Standalone printable HTML. Items sorted critical-first (Yes → Slightly → No → unset). Per-item card: dark header (green for Passed/Passed-pending-solman items with 🎉 icon), metadata strip (Area · Status · Critical), next step, order details table with S4 docs ✓. Summary stats in header. **"Closed this round" wins section** at the bottom lists all passed items. Download PDF + Download HTML + Print + **Copy for Teams** (Teams-formatted markdown). |
 | Retail Spillover Report | `/report/retail` | Link in Spillover list header |
@@ -196,11 +197,13 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `app/spillover_importer.py` | Spillover importer |
 | `app/retail_importer.py` | Retail importer |
 | `app/reporter.py` | Computes retail bucket counts from status_mappings.yaml |
-| `app/pdf_utils.py` | PDF helper (`render_pdf`, `save_pdf`) via lazy WeasyPrint import. **RETIRED / non-functional** — WeasyPrint removed (couldn't load GTK on Windows). PDF report export is being replaced by PowerPoint (python-pptx); see `docs/ppt_template_prompts.txt`. Code kept until the PPT export lands. |
+| `app/ppt_builder.py` | Generates Retail Status Report as `.pptx` bytes via python-pptx. Called by `GET /retail/report/ppt`. |
+| `app/pdf_utils.py` | PDF helper (`render_pdf`, `save_pdf`) via lazy WeasyPrint import. **RETIRED / non-functional** — WeasyPrint removed (couldn't load GTK on Windows). Kept until PDF routes are cleaned up. |
 | `app/report_exporter.py` | Renders Retail + Spillover reports to the export folder. **HTML works; the PDF step is non-functional** (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called by `POST /export-reports`. |
-| `app/config_loader.py` | Loads settings.yaml |
+| `app/config_loader.py` | Loads settings.yaml (prefers `settings.local.yaml` if it exists) |
 | `app/templates/base.html` | Shared layout + Enhancements floating panel |
-| `config/settings.yaml` | File paths, sheet names, hidden statuses |
+| `config/settings.yaml` | File paths, sheet names, hidden statuses. Committed with real content. Machine-specific overrides go in `config/settings.local.yaml` (gitignored). |
+| `config/settings.local.yaml` | Machine-specific config overrides (gitignored). Preferred over `settings.yaml` when present. Not committed. |
 | `config/status_mappings.yaml` | Retail report bucket definitions |
 | `data/test_coordination.db` | SQLite database |
 | `data/uploads/` | Files (images and documents) attached to notes (served via `/uploads/<filename>`) |
@@ -214,9 +217,9 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 
 ## Output / reports
 
-> **PDF is retired.** WeasyPrint can't run on the target Windows machine (GTK native libs won't load) and its output was poor. It has been uninstalled and removed from `requirements.txt`. The PDF routes below remain in code but are **non-functional**. The replacement is **PowerPoint export via python-pptx** — design the branded template in Claude chat using `docs/ppt_template_prompts.txt`, then wire it up here. Browser **Print → Save as PDF** on any report's HTML view still works as a manual fallback.
+> **PDF is retired.** WeasyPrint can't run on the target Windows machine (GTK native libs won't load) and its output was poor. It has been uninstalled and removed from `requirements.txt`. The replacement is **PowerPoint export via python-pptx** (in `requirements.txt`). Browser **Print → Save as PDF** on any report's HTML view works as a manual fallback.
 
-- **Retail Status Report** (`/retail/report`) — live bucket counts; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PDF"** (`/retail/report/pdf`) is **non-functional** (WeasyPrint retired)
+- **Retail Status Report** (`/retail/report`) — live bucket counts + in-progress breakdown + blocked defects table; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PPT"** (`/retail/report/ppt`) generates a `.pptx` via `app/ppt_builder.py` ✅; **"Diagnostics"** links to `/retail/report/diagnostics` (identity check, attribution, status counts by bucket)
 - **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** (`/spillover/report/pdf`) is **non-functional** (WeasyPrint retired); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary; "Download HTML" + "Copy for Teams" still work
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section

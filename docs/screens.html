@@ -194,6 +194,7 @@
     <li><a href="#retail-detail">Retail — Detail</a></li>
     <li><a href="#retail-note">Retail — Note Add / Edit / Delete</a></li>
     <li><a href="#retail-report">Retail — Status Report</a></li>
+    <li><a href="#retail-report-diagnostics">Retail — Report Diagnostics</a></li>
 
     <li class="group-label">Sign-Off Reports</li>
     <li><a href="#report-retail">Retail Spillover Report</a></li>
@@ -820,28 +821,52 @@
       <span class="screen-url">GET /retail/report</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Live report that maps raw <code>retail.status</code> values to named buckets defined in <code>config/status_mappings.yaml</code>. Shows total counts per bucket and overall. Provides two export options.</p>
+      <p class="screen-desc">Live report that maps raw <code>retail.status</code> values to named buckets defined in <code>config/status_mappings.yaml</code>. Shows total counts per bucket, an in-progress breakdown with icons, a blocked-defects table, and summary cards. Identity check and attribution overview have been moved to the <a href="#retail-report-diagnostics">Diagnostics</a> page.</p>
       <div class="features">
         <span class="feat-label">Buckets</span>
         <span class="feat-value">Back with Sales · With DTC · In Progress with DTC · Passed with DTC · Incoming (Gatekeeper) · Ready for Validation · In Progress · In Clarification · Blocked</span>
-        <span class="feat-label">Passed with DTC statuses</span>
-        <span class="feat-value">Passed · conditionally passed · Passed pending solman · Passed, pending solman</span>
-        <span class="feat-label">Totals</span>
-        <span class="feat-value">Count per bucket + overall total row count</span>
+        <span class="feat-label">In-Progress Breakdown</span>
+        <span class="feat-value">Five cards with emoji icons (📥🎯⚙️💬🚫): Incoming (Gatekeeper) · Ready for validation · In Progress · In Clarification · Blocked. Informational — does not reconcile to With DTC.</span>
+        <span class="feat-label">Blocked defects table</span>
+        <span class="feat-value">All active Retail defects (excl. Confirmed &amp; Withdrawn). Columns: # · Defect ID · Solman Name · Assigned To · Date Reported · Status · MB Blocked · Sales Blocked. Footer totals per column. Three summary cards below: Blocked — MB / Blocked — Sales / Total Blocked by Defects.</span>
         <span class="feat-label">Additional section</span>
-        <span class="feat-value">Below the diagnostics: bullet list of report comments (from <code>report_comments</code> where <code>report='retail'</code>). Only shown when comments exist. Edit the bullets on the Retail list page. Included in the Downloaded HTML snapshot.</span>
+        <span class="feat-value">Below the defects table: bullet list of report comments (from <code>report_comments</code> where <code>report='retail'</code>). Only shown when comments exist. Edit the bullets on the Retail list page. Included in the Downloaded HTML snapshot.</span>
         <span class="feat-label">Universe bar</span>
         <span class="feat-value">Shows total test cases · in-tracker count · % passed. If additional test cases exist outside the total (configured in <code>settings.yaml → retail_missing_categories</code>), a fourth segment lists them under the label <strong>"Additional test cases on top of total test cases:"</strong></span>
         <span class="feat-label">Export actions</span>
         <span class="feat-value">
           <span class="pill pill-action">Save to Excel</span> — appends one row to <code>output/retail_report_log.xlsx</code> (AJAX, date auto-filled with today)<br>
-          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes Additional section)<br>
-          <span class="pill pill-action">Download PDF</span> — <strong>non-functional</strong> (<code>GET /retail/report/pdf</code>; WeasyPrint retired). Use browser Print → Save as PDF, or the planned PowerPoint export
+          <span class="pill pill-action">Download HTML</span> — downloads a standalone <code>retail_report_YYYY-MM-DD.html</code> snapshot (includes defects table + Additional section)<br>
+          <span class="pill pill-action">Download PPT</span> — <code>GET /retail/report/ppt</code> — generates a <code>.pptx</code> file via <code>app/ppt_builder.py</code> (python-pptx). Slide 1: stats strip + overview cards + breakdown cards + comments. Slide 2+: blocked-defects table (12 rows/slide) + summary cards.<br>
+          <span class="pill pill-nav">Diagnostics</span> — link to <code>/retail/report/diagnostics</code>
         </span>
         <span class="feat-label">Config</span>
         <span class="feat-value">Bucket definitions in <code>config/status_mappings.yaml</code>; Excel log path in <code>config/settings.yaml → retail_report_xlsx</code></span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>retail</code> (GROUP BY status) + <code>defects</code> LEFT JOIN <code>defect_annotations</code> (blocked defects section) + <code>report_comments</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Report Diagnostics -->
+  <div class="screen-card" id="retail-report-diagnostics">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail — Report Diagnostics</span>
+      <span class="screen-url">GET /retail/report/diagnostics</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Diagnostic view reachable from the "Diagnostics" button on the Retail Status Report. Surfaces data-quality information that was previously on the report itself.</p>
+      <div class="features">
+        <span class="feat-label">Identity check</span>
+        <span class="feat-value">Verifies that In Progress with DTC + Passed with DTC = With DTC. Shows green ✓ or red ✗ with the three values.</span>
+        <span class="feat-label">Attribution Overview</span>
+        <span class="feat-value">Back with Sales breakdown (Sales defects + other) and Blocked Tech Team breakdown (MB defects + other/untracked).</span>
+        <span class="feat-label">Status counts by bucket</span>
+        <span class="feat-value">Each bucket rendered as a card listing every raw status value it contains and its row count. Totalled per bucket.</span>
+        <span class="feat-label">Unmapped statuses</span>
+        <span class="feat-value">Known exclusions (grey) and unknown statuses (red warning) that fall outside all buckets.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>retail</code> (GROUP BY status)</span>
       </div>
     </div>
   </div>

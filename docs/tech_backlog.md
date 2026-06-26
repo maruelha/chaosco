@@ -93,26 +93,24 @@ Pango, Cairo) could not load on the target Windows machine, so every PDF route e
 the output was also poor. WeasyPrint (and a Playwright/Chromium experiment) was uninstalled
 and removed from `requirements.txt`.
 
-**Non-functional code still present** (kept until the replacement lands):
-- `app/pdf_utils.py` — `render_pdf()` / `save_pdf()`
-- `GET /retail/report/pdf`, `GET /spillover/report/pdf`
-- the PDF step of `POST /export-reports` (so the Export Reports button currently errors)
+**Retail Status Report PPT — ✅ DONE (2026-06-26)**
+- `GET /retail/report/ppt` is live. Logic in `app/ppt_builder.py` (`build_retail_ppt()`).
+- Direct-build approach (no external template): all shapes drawn via `python-pptx`. Slide 1:
+  stats strip + 4 overview cards + 5 breakdown cards with emoji icons + comments box.
+  Slide 2+: blocked-defects table (12 rows/slide) + 3 summary cards.
+- The "Download PDF" button on the Retail report is now "Download PPT".
+- `python-pptx>=1.0` is in `requirements.txt`.
 
-**Replacement: PowerPoint (`.pptx`) via `python-pptx`.**
-- Design a branded `template.pptx` (slide master + layouts + placeholders) in Claude chat,
-  save it into the project, then `python-pptx` opens it as the base and fills real data.
-  Ready-to-use prompts: `docs/ppt_template_prompts.txt`.
-- A direct-build proof-of-concept (title / exec-summary tiles / status table / blocked-defects
-  table / notes) was validated, then discarded in favour of the template approach.
-- `python-pptx` is intentionally **not** in `requirements.txt` yet — add it when the export
-  actually uses it.
+**Still non-functional / to do:**
+- `app/pdf_utils.py` — `render_pdf()` / `save_pdf()` (kept until cleaned up)
+- `GET /spillover/report/pdf` — still points to WeasyPrint; to be replaced or removed
+- `POST /export-reports` (dashboard "Export Reports" button) — still calls the retired PDF step,
+  so the button currently errors. Planned rework: write `.html` + `.pptx` for both reports.
 
-**To build:**
-1. Rework `app/report_exporter.py` to write `.html` + `.pptx` (drop the PDF step).
-2. Update `/retail/report/pdf` and `/spillover/report/pdf` — either repoint to `.pptx`
-   download or remove them.
-3. Add `python-pptx` to `requirements.txt`.
-4. Browser **Print → Save as PDF** on any report HTML remains the manual PDF fallback.
+**To complete:**
+1. Replace `GET /spillover/report/pdf` with a PPT equivalent (or remove it).
+2. Rework `app/report_exporter.py` to write `.html` + `.pptx` (drop the PDF step).
+3. Browser **Print → Save as PDF** on any report HTML remains the manual PDF fallback.
 
 ---
 

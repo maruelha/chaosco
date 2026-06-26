@@ -295,8 +295,13 @@
           <td>Write to DB · know about routes</td>
         </tr>
         <tr>
+          <td>app/ppt_builder.py</td>
+          <td><code>build_retail_ppt()</code> — generates a <code>.pptx</code> file for the Retail Status Report via <code>python-pptx</code>. Slide 1: stats strip + 4 overview cards + 5 breakdown cards with emoji icons + comments box. Slide 2+: blocked-defects table (12 rows/slide) + 3 summary cards. Returns raw bytes.</td>
+          <td>Query the DB · import Flask request context</td>
+        </tr>
+        <tr>
           <td>app/pdf_utils.py</td>
-          <td><code>render_pdf</code> / <code>save_pdf</code> via lazy WeasyPrint import. <strong>Retired</strong> — WeasyPrint removed (couldn't load GTK on Windows); PDF being replaced by PowerPoint export</td>
+          <td><code>render_pdf</code> / <code>save_pdf</code> via lazy WeasyPrint import. <strong>Retired</strong> — WeasyPrint removed (couldn't load GTK on Windows). Kept until all PDF routes are cleaned up.</td>
           <td>Query the DB · import Flask request context</td>
         </tr>
         <tr>
@@ -455,7 +460,11 @@
       <tbody>
         <tr>
           <td>config/settings.yaml</td>
-          <td>Excel file paths and archive folder · sheet names per importer · hidden statuses (defects list default filter, spillover list default filter) · retail report Excel log path · report export folder path (planned)</td>
+          <td>Excel file paths and archive folder · sheet names per importer · hidden statuses (defects list default filter, spillover list default filter) · retail report Excel log path · report export folder path. Committed with real content. For machine-specific overrides (e.g. different Downloads path) copy relevant keys to <code>config/settings.local.yaml</code> (gitignored) — the config loader prefers that file when it exists.</td>
+        </tr>
+        <tr>
+          <td>config/settings.local.yaml</td>
+          <td>Machine-specific config overrides — gitignored. When present, takes precedence over <code>settings.yaml</code>. Create this file on each machine with only the keys that differ (e.g. <code>downloads_folder</code>). Not committed.</td>
         </tr>
         <tr>
           <td>config/status_mappings.yaml</td>
@@ -523,13 +532,15 @@
 
 <!-- ============================================================ -->
 <div class="section">
-  <h2>PowerPoint export (planned replacement)</h2>
+  <h2>PowerPoint export — implemented for Retail report</h2>
   <div class="card" style="border-left:4px solid #0e7490">
-    <p>The chosen replacement for PDF is <strong>PowerPoint (.pptx) via <code>python-pptx</code></strong> — a format recipients can read and edit, and that renders far better than the abandoned PDF.</p>
+    <p>The replacement for PDF is <strong>PowerPoint (.pptx) via <code>python-pptx</code></strong>. <code>python-pptx</code> is in <code>requirements.txt</code>.</p>
     <ul>
-      <li><strong>Template-driven:</strong> design a branded <code>template.pptx</code> (slide master + layouts + placeholders) in Claude chat, save it into the project, then <code>python-pptx</code> opens it as the base and fills real data into the placeholders. Ready-to-use prompts live in <code>docs/ppt_template_prompts.txt</code>.</li>
-      <li>A working direct-build proof-of-concept (title / executive-summary metric tiles / status-breakdown table / blocked-defects table / notes) was validated, then discarded — the production build uses the branded template.</li>
-      <li><code>python-pptx</code> is <strong>not yet in <code>requirements.txt</code></strong> on purpose — it gets added when the export actually uses it, to avoid carrying an unused dependency.</li>
+      <li><strong>Retail Status Report PPT</strong> (<code>GET /retail/report/ppt</code>) is <strong>live</strong>. Logic lives in <code>app/ppt_builder.py</code> (<code>build_retail_ppt()</code>). Replaces the old non-functional <code>/retail/report/pdf</code> route. The "Download PDF" button on the Retail report is now "Download PPT".</li>
+      <li><strong>Slide layout:</strong> Slide 1 — stats strip (total TCs · in tracker · % passed) + 4 overview bucket cards + 5 in-progress breakdown cards with emoji icons (📥🎯⚙️💬🚫) + optional comments box. Slide 2+ — blocked-defects table (12 rows/slide) with header + 3 summary cards in the footer.</li>
+      <li><strong>Direct-build approach</strong> (no template file needed): all shapes, colours, and fonts are drawn programmatically in Python — no dependency on an external <code>.pptx</code> template. Palette mirrors the Apple-inspired colour scheme used on the HTML report. Fonts: Bookman Old Style (headings) / Calibri (body).</li>
+      <li><strong>Still needed:</strong> Spillover report PPT and the <code>POST /export-reports</code> automation button (currently errors at the PDF step). See <code>docs/tech_backlog.md</code>.</li>
+      <li>Design reference: <code>docs/ppt_template_prompts.txt</code> contains the PptxGenJS spec used as the build blueprint.</li>
     </ul>
   </div>
 </div>
@@ -563,8 +574,9 @@
         <tr><td>app/spillover_importer.py</td><td>Spillover importer</td></tr>
         <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
         <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
-        <tr><td>app/pdf_utils.py</td><td>PDF helper (WeasyPrint) — <strong>retired/non-functional</strong>, kept until PPT export lands</td></tr>
-        <tr><td>app/report_exporter.py</td><td>Renders Retail + Spillover reports to the export folder (HTML works; PDF step retired → PowerPoint planned)</td></tr>
+        <tr><td>app/ppt_builder.py</td><td>Generates Retail Status Report as <code>.pptx</code> bytes (python-pptx direct-build)</td></tr>
+        <tr><td>app/pdf_utils.py</td><td>PDF helper (WeasyPrint) — <strong>retired/non-functional</strong>, kept until PDF routes are cleaned up</td></tr>
+        <tr><td>app/report_exporter.py</td><td>Renders Retail + Spillover reports to the export folder (HTML works; PDF step retired → PowerPoint planned for automation export)</td></tr>
         <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>
         <tr><td>app/templates/base.html</td><td>Shared layout + Enhancements floating panel</td></tr>
         <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses, report_export_folder</td></tr>
