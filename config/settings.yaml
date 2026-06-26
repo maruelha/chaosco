@@ -1,16 +1,13 @@
-# chaosco – configuration template
-#
-# Copy this file to config/settings.local.yaml and fill in your local paths.
-# settings.local.yaml is gitignored — your local copy won't affect other machines.
-#
-# If settings.local.yaml exists the app uses it; otherwise this file is used as-is.
+# chaosco – configuration
+# Edit the values below to match your environment.
+# For machine-specific overrides (e.g. a different downloads_folder),
+# copy relevant keys to config/settings.local.yaml (gitignored).
 
 # ---------------------------------------------------------------------------
 # Step 1 — file location
 # ---------------------------------------------------------------------------
 
-# Folder where the Excel export is manually saved (set in settings.local.yaml)
-downloads_folder:
+downloads_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download'
 
 # Base name of the file WITHOUT extension.
 # Matches both  DTC_UAT_testtracking_ROE.xlsx
@@ -70,10 +67,10 @@ retail_report_xlsx: 'output/retail_report_log.xlsx'
 retail_total_test_cases: 646
 
 # ---------------------------------------------------------------------------
-# Step 6 — SolMan defect status sync (set path in settings.local.yaml)
+# Step 6 — SolMan defect status sync
 # ---------------------------------------------------------------------------
 
-solman_export_folder:
+solman_export_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download'
 solman_export_stem: 'Data aggregated by Defect'
 solman_export_sheet: 'SAP Document Export'
 
