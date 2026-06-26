@@ -16,12 +16,12 @@
 {# ---- Add new item ---- #}
 <div class="detail-card">
   <h2 style="margin-top:0">New item</h2>
-  <form method="post" action="{{ url_for('inbox_add') }}">
+  <form method="post" action="{{ url_for('inbox_add') }}" onsubmit="return validateInbox(this)">
     <div style="margin-bottom:0.5rem">
       <input type="text" name="heading" class="form-control" placeholder="Heading (optional)" style="width:100%">
     </div>
     <div style="margin-bottom:0.75rem">
-      <textarea name="note" class="form-control" rows="10" placeholder="Paste your note here…" required style="width:100%;resize:vertical"></textarea>
+      <textarea name="note" class="form-control" rows="10" placeholder="Paste your note here…" style="width:100%;resize:vertical"></textarea>
     </div>
     <button type="submit" class="btn btn-primary">Save to Inbox</button>
   </form>
@@ -77,7 +77,7 @@
 
       {# Inline edit (hidden) #}
       <div id="edit-form-{{ item.id }}" style="display:none;margin-top:1rem">
-        <form method="post" action="{{ url_for('inbox_edit', note_id=item.id) }}">
+        <form method="post" action="{{ url_for('inbox_edit', note_id=item.id) }}" onsubmit="return validateInbox(this)">
           <div style="margin-bottom:0.5rem">
             <input type="text" name="heading" value="{{ item.heading or '' }}" class="form-control" placeholder="Heading (optional)" style="width:100%">
           </div>
@@ -152,6 +152,18 @@
 
 <script>
 (function () {
+
+  window.validateInbox = function (form) {
+    var heading = form.querySelector('[name=heading]');
+    var note    = form.querySelector('[name=note]');
+    var hVal = heading ? heading.value.trim() : '';
+    var nVal = note    ? note.value.trim()    : '';
+    if (!hVal && !nVal) {
+      alert('Please fill in at least a heading or a note.');
+      return false;
+    }
+    return true;
+  };
 
   window.toggleEdit = function (id) {
     var el = document.getElementById('edit-form-' + id);

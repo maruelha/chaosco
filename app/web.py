@@ -2711,7 +2711,7 @@ def inbox():
 def inbox_add():
     heading   = request.form.get("heading", "").strip() or None
     note_text = request.form.get("note", "").strip() or None
-    if note_text:
+    if heading or note_text:
         conn = _get_conn()
         try:
             database.add_inbox_item(conn, heading, note_text)
@@ -2724,7 +2724,7 @@ def inbox_add():
 def inbox_edit(note_id: int):
     heading   = request.form.get("heading", "").strip() or None
     note_text = request.form.get("note", "").strip() or None
-    if note_text:
+    if heading or note_text:
         conn = _get_conn()
         try:
             note = database.get_note(conn, note_id)
