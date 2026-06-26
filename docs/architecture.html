@@ -295,8 +295,18 @@
           <td>Write to DB · know about routes</td>
         </tr>
         <tr>
-          <td>app/ppt_builder.py</td>
-          <td><code>build_retail_ppt()</code> — generates a <code>.pptx</code> file for the Retail Status Report via <code>python-pptx</code>. Slide 1: stats strip + 4 overview cards + 5 breakdown cards with emoji icons + comments box. Slide 2+: blocked-defects table (12 rows/slide) + 3 summary cards. Returns raw bytes.</td>
+          <td>app/ppt_utils.py</td>
+          <td>Shared PPT primitives: default palette, fonts, slide dimensions, and drawing helpers (<code>_add_rect</code>, <code>_add_text</code>, <code>_add_header</code>). Each report builder imports what it needs and can override any constant locally for a different look.</td>
+          <td>Query the DB · import Flask request context</td>
+        </tr>
+        <tr>
+          <td>app/ppt_retail.py</td>
+          <td><code>build_retail_ppt()</code> — Retail Status Report PPT. Slide 1: stats strip + 4 overview bucket cards + 5 breakdown cards with emoji icons + comments box. Slide 2+: blocked-defects table (12 rows/slide) + 3 summary cards. Returns raw bytes.</td>
+          <td>Query the DB · import Flask request context</td>
+        </tr>
+        <tr>
+          <td>app/ppt_spillover.py</td>
+          <td><code>build_spillover_ppt()</code> — Spillover Status Report PPT. Header with stat chips (Open · Critical · Slightly · Non-Critical). Items grouped by criticality with coloured section banners. Per-item row: status badge (from <code>spillover.status</code>) + name + next step + order numbers. Paginated with orphan-banner prevention. Returns raw bytes.</td>
           <td>Query the DB · import Flask request context</td>
         </tr>
         <tr>
@@ -536,7 +546,8 @@
   <div class="card" style="border-left:4px solid #0e7490">
     <p>The replacement for PDF is <strong>PowerPoint (.pptx) via <code>python-pptx</code></strong>. <code>python-pptx</code> is in <code>requirements.txt</code>.</p>
     <ul>
-      <li><strong>Retail Status Report PPT</strong> (<code>GET /retail/report/ppt</code>) is <strong>live</strong>. Logic lives in <code>app/ppt_builder.py</code> (<code>build_retail_ppt()</code>). Replaces the old non-functional <code>/retail/report/pdf</code> route. The "Download PDF" button on the Retail report is now "Download PPT".</li>
+      <li><strong>Retail Status Report PPT</strong> (<code>GET /retail/report/ppt</code>) is <strong>live</strong>. Logic in <code>app/ppt_retail.py</code> (<code>build_retail_ppt()</code>). The "Download PDF" button on the Retail report is now "Download PPT".</li>
+      <li><strong>Spillover Status Report PPT</strong> (<code>GET /spillover/report/ppt</code>) is <strong>live</strong>. Logic in <code>app/ppt_spillover.py</code> (<code>build_spillover_ppt()</code>). The "Download PDF" button on the Spillover report view is now "Download PPT".</li>
       <li><strong>Slide layout:</strong> Slide 1 — stats strip (total TCs · in tracker · % passed) + 4 overview bucket cards + 5 in-progress breakdown cards with emoji icons (📥🎯⚙️💬🚫) + optional comments box. Slide 2+ — blocked-defects table (12 rows/slide) with header + 3 summary cards in the footer.</li>
       <li><strong>Direct-build approach</strong> (no template file needed): all shapes, colours, and fonts are drawn programmatically in Python — no dependency on an external <code>.pptx</code> template. Palette mirrors the Apple-inspired colour scheme used on the HTML report. Fonts: Bookman Old Style (headings) / Calibri (body).</li>
       <li><strong>Still needed:</strong> Spillover report PPT and the <code>POST /export-reports</code> automation button (currently errors at the PDF step). See <code>docs/tech_backlog.md</code>.</li>
@@ -574,7 +585,9 @@
         <tr><td>app/spillover_importer.py</td><td>Spillover importer</td></tr>
         <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
         <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
-        <tr><td>app/ppt_builder.py</td><td>Generates Retail Status Report as <code>.pptx</code> bytes (python-pptx direct-build)</td></tr>
+        <tr><td>app/ppt_utils.py</td><td>Shared PPT palette, fonts, dimensions, and drawing primitives</td></tr>
+        <tr><td>app/ppt_retail.py</td><td>Generates Retail Status Report as <code>.pptx</code> bytes</td></tr>
+        <tr><td>app/ppt_spillover.py</td><td>Generates Spillover Status Report as <code>.pptx</code> bytes</td></tr>
         <tr><td>app/pdf_utils.py</td><td>PDF helper (WeasyPrint) — <strong>retired/non-functional</strong>, kept until PDF routes are cleaned up</td></tr>
         <tr><td>app/report_exporter.py</td><td>Renders Retail + Spillover reports to the export folder (HTML works; PDF step retired → PowerPoint planned for automation export)</td></tr>
         <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>

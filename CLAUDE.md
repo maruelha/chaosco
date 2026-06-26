@@ -197,7 +197,9 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 | `app/spillover_importer.py` | Spillover importer |
 | `app/retail_importer.py` | Retail importer |
 | `app/reporter.py` | Computes retail bucket counts from status_mappings.yaml |
-| `app/ppt_builder.py` | Generates Retail Status Report as `.pptx` bytes via python-pptx. Called by `GET /retail/report/ppt`. |
+| `app/ppt_utils.py` | Shared PPT primitives — palette, fonts, dimensions, `_add_rect`, `_add_text`, `_add_header`. Imported by all PPT builders; any constant can be overridden locally per report. |
+| `app/ppt_retail.py` | Retail Status Report PPT builder. Called by `GET /retail/report/ppt`. |
+| `app/ppt_spillover.py` | Spillover Status Report PPT builder. Called by `GET /spillover/report/ppt`. |
 | `app/pdf_utils.py` | PDF helper (`render_pdf`, `save_pdf`) via lazy WeasyPrint import. **RETIRED / non-functional** — WeasyPrint removed (couldn't load GTK on Windows). Kept until PDF routes are cleaned up. |
 | `app/report_exporter.py` | Renders Retail + Spillover reports to the export folder. **HTML works; the PDF step is non-functional** (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called by `POST /export-reports`. |
 | `app/config_loader.py` | Loads settings.yaml (prefers `settings.local.yaml` if it exists) |
@@ -220,7 +222,7 @@ Import is idempotent (upsert, never delete). `first_seen` is set once; `last_see
 > **PDF is retired.** WeasyPrint can't run on the target Windows machine (GTK native libs won't load) and its output was poor. It has been uninstalled and removed from `requirements.txt`. The replacement is **PowerPoint export via python-pptx** (in `requirements.txt`). Browser **Print → Save as PDF** on any report's HTML view works as a manual fallback.
 
 - **Retail Status Report** (`/retail/report`) — live bucket counts + in-progress breakdown + blocked defects table; "Save to Excel" appends a row to `output/retail_report_log.xlsx`; "Download HTML" gives a dated standalone snapshot; **"Download PPT"** (`/retail/report/ppt`) generates a `.pptx` via `app/ppt_builder.py` ✅; **"Diagnostics"** links to `/retail/report/diagnostics` (identity check, attribution, status counts by bucket)
-- **Spillover Status Report** (`/spillover/report/view`) — **"Download PDF"** (`/spillover/report/pdf`) is **non-functional** (WeasyPrint retired); passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary; "Download HTML" + "Copy for Teams" still work
+- **Spillover Status Report** (`/spillover/report/view`) — **"Download PPT"** (`/spillover/report/ppt`) generates a `.pptx` via `app/ppt_spillover.py` ✅; passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary; "Download HTML" + "Copy for Teams" still work
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section
 - **Export Reports** (`POST /export-reports`) — dashboard button; intended to save dated snapshots of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. **Currently errors at the PDF step** (WeasyPrint removed). Planned rework: write **HTML + PowerPoint** (`.html` + `.pptx`). Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.

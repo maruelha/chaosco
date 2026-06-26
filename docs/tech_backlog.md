@@ -101,15 +101,28 @@ and removed from `requirements.txt`.
 - The "Download PDF" button on the Retail report is now "Download PPT".
 - `python-pptx>=1.0` is in `requirements.txt`.
 
+**Spillover Status Report PPT — ✅ DONE (2026-06-26)**
+- `GET /spillover/report/ppt` is live. Logic in `app/ppt_spillover.py` (`build_spillover_ppt()`).
+- Header with stat chips (Open · Critical · Slightly · Non-Critical). Items grouped by
+  criticality with coloured section banners. Status badge from `spillover.status` field.
+  Order numbers on the right. Paginated with orphan-banner prevention.
+- The "Download PDF" button on the Spillover report view is now "Download PPT".
+
+**PPT layer refactored (2026-06-26)**
+- `app/ppt_utils.py` — shared palette, fonts, dims, drawing primitives. Each builder
+  imports what it needs and can override locally for a different look.
+- `app/ppt_retail.py` — retail builder (renamed from `ppt_builder.py`)
+- `app/ppt_spillover.py` — spillover builder
+
 **Still non-functional / to do:**
 - `app/pdf_utils.py` — `render_pdf()` / `save_pdf()` (kept until cleaned up)
-- `GET /spillover/report/pdf` — still points to WeasyPrint; to be replaced or removed
+- `GET /spillover/report/pdf` — dead route pointing to WeasyPrint; remove when convenient
 - `POST /export-reports` (dashboard "Export Reports" button) — still calls the retired PDF step,
   so the button currently errors. Planned rework: write `.html` + `.pptx` for both reports.
 
 **To complete:**
-1. Replace `GET /spillover/report/pdf` with a PPT equivalent (or remove it).
-2. Rework `app/report_exporter.py` to write `.html` + `.pptx` (drop the PDF step).
+1. Rework `app/report_exporter.py` to write `.html` + `.pptx` (drop the PDF step).
+2. Remove the dead `GET /spillover/report/pdf` route.
 3. Browser **Print → Save as PDF** on any report HTML remains the manual PDF fallback.
 
 ---
