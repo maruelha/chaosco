@@ -127,6 +127,23 @@ and removed from `requirements.txt`.
 
 ---
 
+## Inbox: attach screenshot without creating a note first (maybe)
+
+Currently you must save a note before you can attach a file, because the `attachments`
+table references `note_id` — a database-generated PK that doesn't exist until the INSERT runs.
+
+The UX friction: to add a quick screenshot you have to type something in the note field first,
+even if a heading alone would be enough.
+
+**Best option if this gets built:** silent AJAX create — the Save button fires a `fetch()` to
+create the note, gets the `note_id` back, then opens the file picker immediately. From the
+user's perspective it's one action. The rest of the form/attachment system stays unchanged.
+
+**Why it's a maybe:** the current two-step flow (save → attach) is fine once you know about it,
+and the fix adds meaningful JS complexity. Low priority unless the friction becomes annoying.
+
+---
+
 ## Remove the one-time dep-cleanup block from run_web.bat (after propagation)
 
 `run_web.bat` has a guarded block that uninstalls the abandoned PDF deps
