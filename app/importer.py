@@ -110,7 +110,11 @@ def run_import(cfg: dict) -> dict:
     }
 
     # 1. Locate file
-    folder = Path(cfg["downloads_folder"])
+    raw_folder = cfg.get("downloads_folder")
+    if not raw_folder:
+        result["error"] = "downloads_folder is not set in config/settings.yaml — please add your Downloads path."
+        return result
+    folder = Path(raw_folder)
     stem   = cfg["filename_stem"]
     if not folder.exists():
         result["error"] = f"downloads_folder does not exist: {folder}"

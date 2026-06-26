@@ -1003,6 +1003,67 @@ def retail_report_download():
     }
 
 
+@app.route("/retail/report/diagnostics")
+def retail_report_diagnostics():
+    conn = _get_conn()
+    try:
+        status_counts   = database.get_retail_status_counts(conn)
+        blocked_defects = database.get_retail_defects_blocked(conn)
+    finally:
+        conn.close()
+    mappings = load_status_mappings()
+    report   = compute_retail_report(status_counts, mappings)
+
+    buckets_cfg    = mappings["buckets"]
+    known_unmapped = set(mappings.get("known_unmapped", []))
+    known_statuses = set(mappings.get("known_statuses", []))
+    bucketed       = {s for bkt in buckets_cfg.values() for s in bkt["statuses"]}
+
+    bucket_order = [
+        "back_with_sales", "with_dtc", "in_progress_with_dtc", "passed_with_dtc",
+        "incoming_gatekeeper", "ready_for_validation", "in_progress",
+        "in_clarification", "blocked",
+    ]
+    grouped = []
+    for key in bucket_order:
+        bkt      = buckets_cfg[key]
+        statuses = [{"status": s, "count": status_counts.get(s, 0)} for s in bkt["statuses"]]
+        grouped.append({
+            "bucket_key":   key,
+            "bucket_label": bkt["label"],
+            "bucket_total": sum(r["count"] for r in statuses),
+            "statuses":     statuses,
+        })
+
+    unmapped_known, unknown = [], []
+    for status, count in sorted(status_counts.items(), key=lambda x: -x[1]):
+        if status in bucketed:
+            continue
+        label = status if status else "(blank)"
+        if status in known_unmapped or status in known_statuses:
+            unmapped_known.append({"status": label, "count": count})
+        else:
+            unknown.append({"status": label, "count": count})
+
+    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
+    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
+    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
+
+    return render_template(
+        "retail_report_diagnostics.html",
+        report=report,
+        today=date.today().isoformat(),
+        grouped=grouped,
+        unmapped_known=unmapped_known,
+        unknown=unknown,
+        blocked_defects=blocked_defects,
+        blocked_defects_total=blocked_total,
+        dtco2c_total=dtco2c_total,
+        sales_total=sales_total,
+        total_test_cases=_cfg.get("retail_total_test_cases", 646),
+    )
+
+
 @app.route("/retail/report/pdf")
 def retail_report_pdf():
     report = _get_retail_report()

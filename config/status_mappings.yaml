@@ -26,6 +26,7 @@ known_statuses:
   - "Yet to Upload"
   - "Dropped"
   - "Sales In Progress"
+  - "New Order Required"
 
 known_unmapped:
   - "Failed"
@@ -40,12 +41,13 @@ buckets:
     label: "Back with Sales"
     statuses:
       - "Blocked - returned to sales"
-      - "Ready for retest"
+      - "New Order Required"
 
   with_dtc:
     label: "With DTC"
     statuses:
       - "Ready for Validation"
+      - "Ready for retest"
       - "In Progress"
       - "Blocked DTC"
       - "Passed"
@@ -61,6 +63,7 @@ buckets:
     label: "In Progress with DTC"
     statuses:
       - "Ready for Validation"
+      - "Ready for retest"
       - "In Progress"
       - "Blocked DTC"
       - "Waiting for SF creation"
@@ -88,6 +91,7 @@ buckets:
     statuses:
       - "Ready for Validation"
       - "Ready for Validation Prio"
+      - "Ready for retest"
 
   in_progress:
     label: "In Progress"

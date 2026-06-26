@@ -7,6 +7,7 @@
     <h1>Retail Status Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+      <a href="{{ url_for('retail_report_diagnostics') }}" class="btn">Diagnostics</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
       <a href="{{ url_for('retail_report_download') }}" class="btn">Download HTML</a>
       <a href="{{ url_for('retail_report_pdf') }}" class="btn">Download PDF</a>
@@ -73,21 +74,6 @@
     <div class="rr-bucket-label">Passed with DTC</div>
   </div>
 
-</div>
-
-{# ---- Sanity check ---- #}
-<div class="rr-sanity {% if report.sanity.identity_ok %}rr-sanity--pass{% else %}rr-sanity--fail{% endif %}">
-  <span class="rr-sanity-icon">{% if report.sanity.identity_ok %}✓{% else %}✗{% endif %}</span>
-  <span class="rr-sanity-label">
-    Identity check: In Progress with DTC ({{ report.sanity.in_progress_with_dtc }})
-    + Passed with DTC ({{ report.sanity.passed_with_dtc }})
-    = {{ report.sanity.lhs }}
-    {% if report.sanity.identity_ok %}
-      = With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>PASS</strong>
-    {% else %}
-      ≠ With DTC ({{ report.sanity.with_dtc }}) &nbsp;<strong>FAIL — discrepancy of {{ (report.sanity.with_dtc - report.sanity.lhs)|abs }}</strong>
-    {% endif %}
-  </span>
 </div>
 
 {# ---- In-progress breakdown ---- #}
@@ -193,88 +179,6 @@
 
 {% else %}
 <p class="rr-diag-none">No active Retail defects found.</p>
-{% endif %}
-
-{# ---- Attribution overview ---- #}
-<h2 class="rr-section-title" style="margin-top:2rem">Attribution Overview</h2>
-<div style="display:flex;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap">
-
-  {# Back with Sales breakdown #}
-  <div style="flex:1;min-width:280px;background:#fff;border:1px solid #d2d2d7;border-radius:12px;padding:1.25rem">
-    <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-bottom:.75rem">Back with Sales</div>
-    <div style="font-size:2.2rem;font-weight:700;color:#1d1d1f;line-height:1;margin-bottom:1rem">{{ report.buckets.back_with_sales }}</div>
-    <div style="display:flex;flex-direction:column;gap:.4rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:#fff8f0;border-radius:6px">
-        <span style="font-size:.82rem;color:#6e6e73">Sales defects (tracked)</span>
-        <span style="font-weight:700;font-size:.95rem">{{ sales_total }}</span>
-      </div>
-      {% set sales_other = report.buckets.back_with_sales - sales_total %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:#f5f5f7;border-radius:6px">
-        <span style="font-size:.82rem;color:#6e6e73">Other reasons</span>
-        <span style="font-weight:700;font-size:.95rem">{{ sales_other }}</span>
-      </div>
-    </div>
-    {% if sales_other < 0 %}
-    <p style="font-size:.75rem;color:#c0392b;margin-top:.5rem">⚠ Sales defects exceed Back with Sales bucket — some defects may span multiple TCs counted elsewhere.</p>
-    {% endif %}
-  </div>
-
-  {# Blocked Tech Team breakdown #}
-  <div style="flex:1;min-width:280px;background:#fff;border:1px solid #d2d2d7;border-radius:12px;padding:1.25rem">
-    <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-bottom:.75rem">Blocked — Tech Team</div>
-    <div style="font-size:2.2rem;font-weight:700;color:#1d1d1f;line-height:1;margin-bottom:1rem">{{ report.buckets.blocked }}</div>
-    <div style="display:flex;flex-direction:column;gap:.4rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:#f0f5ff;border-radius:6px">
-        <span style="font-size:.82rem;color:#6e6e73">MB defects (tracked)</span>
-        <span style="font-weight:700;font-size:.95rem">{{ dtco2c_total }}</span>
-      </div>
-      {% set blocked_other = report.buckets.blocked - dtco2c_total %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:.35rem .5rem;background:#f5f5f7;border-radius:6px">
-        <span style="font-size:.82rem;color:#6e6e73">Other / untracked</span>
-        <span style="font-weight:700;font-size:.95rem">{{ blocked_other }}</span>
-      </div>
-    </div>
-    {% if blocked_other < 0 %}
-    <p style="font-size:.75rem;color:#c0392b;margin-top:.5rem">⚠ DTC O2C defects exceed Blocked bucket — check defect_id_ref references.</p>
-    {% endif %}
-  </div>
-
-</div>
-
-{# ---- Diagnostics ---- #}
-<h2 class="rr-section-title" style="margin-top:2rem">Diagnostics</h2>
-
-<div class="rr-diag-row">
-  <span class="rr-diag-key">Total rows not in any bucket</span>
-  <span class="rr-diag-val">{{ report.diagnostics.leftover_count }}</span>
-</div>
-
-{% if report.diagnostics.unmapped_known %}
-<h3 class="rr-diag-heading">Unmapped — known exclusions (expected, informational)</h3>
-<table class="rr-diag-table">
-  <thead><tr><th>Status</th><th>Count</th></tr></thead>
-  <tbody>
-  {% for status, count in report.diagnostics.unmapped_known.items() %}
-    <tr><td>{{ status }}</td><td>{{ count }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p class="rr-diag-none">No known-unmapped statuses present in data.</p>
-{% endif %}
-
-{% if report.diagnostics.unknown %}
-<h3 class="rr-diag-heading rr-diag-heading--warn">⚠ Unknown statuses (not in master list — possible typo or new status)</h3>
-<table class="rr-diag-table rr-diag-table--warn">
-  <thead><tr><th>Status</th><th>Count</th></tr></thead>
-  <tbody>
-  {% for status, count in report.diagnostics.unknown.items() %}
-    <tr><td>{{ status }}</td><td>{{ count }}</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p class="rr-diag-none">No unknown statuses — all values are in the master list.</p>
 {% endif %}
 
 {% set visible_comments = report_comments | selectattr('comment') | list %}
