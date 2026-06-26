@@ -79,10 +79,10 @@
       <div id="edit-form-{{ item.id }}" style="display:none;margin-top:1rem">
         <form method="post" action="{{ url_for('inbox_edit', note_id=item.id) }}">
           <div style="margin-bottom:0.5rem">
-            <input type="text" name="heading" value="{{ item.heading or '' }}" class="form-control" placeholder="Heading (optional)">
+            <input type="text" name="heading" value="{{ item.heading or '' }}" class="form-control" placeholder="Heading (optional)" style="width:100%">
           </div>
           <div style="margin-bottom:0.5rem">
-            <textarea name="note" class="form-control" rows="4">{{ item.note or '' }}</textarea>
+            <textarea name="note" class="form-control" rows="10" style="width:100%;resize:vertical">{{ item.note or '' }}</textarea>
           </div>
           <button type="submit" class="btn btn-sm btn-primary">Save</button>
           <button type="button" class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Cancel</button>
