@@ -196,7 +196,7 @@
   <span class="toolbar-title">Spillover Status Report — from DTC Perspective</span>
   <a href="{{ url_for('spillover_report_select') }}" class="btn">← Edit selection</a>
   <button class="btn" onclick="window.print()">Print</button>
-  <a href="/spillover/report/pdf" class="btn btn-primary">Download PDF</a>
+  <a href="{{ url_for('spillover_report_ppt') }}" class="btn btn-primary">Download PPT</a>
   <button class="btn" onclick="downloadHtml()">Download HTML</button>
   <button class="btn" id="btn-copy-teams" onclick="copyForTeams()">📋 Copy for Teams</button>
 </div>

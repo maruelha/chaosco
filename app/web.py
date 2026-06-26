@@ -15,7 +15,8 @@ from app import database
 from app.config_loader import load_config
 from app.importer import run_import
 from app.pdf_utils import render_pdf
-from app.ppt_builder import build_retail_ppt
+from app.ppt_retail import build_retail_ppt
+from app.ppt_spillover import build_spillover_ppt
 from app.report_exporter import export_all_reports
 from app.reporter import compute_retail_report, load_status_mappings
 from app.solman_sync import run_solman_sync
@@ -543,6 +544,28 @@ def spillover_report_pdf():
         today=today,
     )
     return render_pdf(html, f"spillover_report_{today}.pdf")
+
+
+@app.route("/spillover/report/ppt")
+def spillover_report_ppt():
+    conn = _get_conn()
+    try:
+        items         = database.get_spillover_report_items(conn)
+        order_details = {}
+        for item in items:
+            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
+            if od:
+                order_details[item["spillover_id"]] = od
+    finally:
+        conn.close()
+    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
+    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
+    today = date.today().strftime("%Y-%m-%d")
+    pptx_bytes = build_spillover_ppt(items=items, order_details=order_details, today=today)
+    return pptx_bytes, 200, {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "Content-Disposition": f'attachment; filename="spillover_report_{today}.pptx"',
+    }
 
 
 # ---------------------------------------------------------------------------
