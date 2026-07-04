@@ -14,7 +14,6 @@ from werkzeug.utils import secure_filename
 from app import database
 from app.config_loader import load_config
 from app.importer import run_import
-from app.pdf_utils import render_pdf
 from app.ppt_retail import build_retail_ppt
 from app.ppt_spillover import build_spillover_ppt
 from app.report_exporter import export_all_reports
@@ -526,32 +525,6 @@ def spillover_report_view():
         report_comments=report_comments,
         today=date.today().strftime("%Y-%m-%d"),
     )
-
-
-@app.route("/spillover/report/pdf")
-def spillover_report_pdf():
-    conn = _get_conn()
-    try:
-        items           = database.get_spillover_report_items(conn)
-        order_details   = {}
-        for item in items:
-            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
-            if od:
-                order_details[item["spillover_id"]] = od
-        report_comments = database.list_report_comments(conn, "spillover")
-    finally:
-        conn.close()
-    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
-    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
-    from datetime import date
-    today = date.today().strftime("%Y-%m-%d")
-    html = render_template(
-        "spillover_report_view.html",
-        items=items, order_details=order_details,
-        report_comments=report_comments,
-        today=today,
-    )
-    return render_pdf(html, f"spillover_report_{today}.pdf")
 
 
 @app.route("/spillover/report/ppt")

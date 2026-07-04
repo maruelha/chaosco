@@ -44,9 +44,9 @@ Last updated: 2026-07-04
 
 ### Reports / Export (dashboard "Export Reports" button)
 
-1. **Fix the broken button**: rework `app/report_exporter.py` to write
-   `.html` + `.pptx` (drop the retired WeasyPrint PDF step). Until then the
-   button errors. (Deleting the dead PDF code is refactoring step 1.)
+1. ~~**Fix the broken button**~~ ✅ DONE 2026-07-04 (with refactoring step 1):
+   `app/report_exporter.py` writes `.html` + `.pptx` via the existing PPT
+   builders; dead PDF code (`pdf_utils.py`, `/spillover/report/pdf`) deleted.
 
 ### ECOM vertical (planned, not started)
 
@@ -73,7 +73,7 @@ Last updated: 2026-07-04
 > the app keeps running throughout. "Do refactoring step N" = do exactly the
 > bullet list under N, nothing more.
 
-### Refactoring step 1 — Hygiene pass (~half a day)
+### Refactoring step 1 — Hygiene pass ✅ DONE 2026-07-04
 
 - Untrack committed junk (files stay on disk, leave git):
   `git rm --cached` for: `archive_db/*.db`, `archive/test_coordination.db`,

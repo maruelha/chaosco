@@ -219,8 +219,7 @@ Spec: `retail-tracker-handoff.md`. SQL in `app/db_retail_tracker.py`, routes in 
 | `app/ppt_utils.py` | Shared PPT primitives — palette, fonts, dimensions, `_add_rect`, `_add_text`, `_add_header`. Imported by all PPT builders; any constant can be overridden locally per report. |
 | `app/ppt_retail.py` | Retail Status Report PPT builder. Called by `GET /retail/report/ppt`. |
 | `app/ppt_spillover.py` | Spillover Status Report PPT builder. Called by `GET /spillover/report/ppt`. |
-| `app/pdf_utils.py` | PDF helper (`render_pdf`, `save_pdf`) via lazy WeasyPrint import. **RETIRED / non-functional** — WeasyPrint removed (couldn't load GTK on Windows). Kept until PDF routes are cleaned up. |
-| `app/report_exporter.py` | Renders Retail + Spillover reports to the export folder. **HTML works; the PDF step is non-functional** (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called by `POST /export-reports`. |
+| `app/report_exporter.py` | Renders Retail + Spillover reports to the export folder as HTML + PPTX. Called by `POST /export-reports`. |
 | `app/config_loader.py` | Loads settings.yaml (prefers `settings.local.yaml` if it exists) |
 | `app/templates/base.html` | Shared layout + Enhancements floating panel |
 | `config/settings.yaml` | File paths, sheet names, hidden statuses. Committed with real content. Machine-specific overrides go in `config/settings.local.yaml` (gitignored). |
@@ -245,7 +244,7 @@ Spec: `retail-tracker-handoff.md`. SQL in `app/db_retail_tracker.py`, routes in 
 - **Spillover Status Report** (`/spillover/report/view`) — **"Download PPT"** (`/spillover/report/ppt`) generates a `.pptx` via `app/ppt_spillover.py` ✅; passed items celebrated with green header + 🎉 icon + "Closed this round" wins summary; "Download HTML" + "Copy for Teams" still work
 - **Retail Spillover Sign-Off Report** (`/report/retail`) — spillover items grouped by critical_for_signoff, Retail areas only
 - **ECOM/Omni Sign-Off Report** (`/report/ecom`) — same format, ECOM/Omni areas + Known Production Defects section
-- **Export Reports** (`POST /export-reports`) — dashboard button; intended to save dated snapshots of both Retail and Spillover reports to `report_export/` (gitignored) for automation pickup. **Currently errors at the PDF step** (WeasyPrint removed). Planned rework: write **HTML + PowerPoint** (`.html` + `.pptx`). Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
+- **Export Reports** (`POST /export-reports`) — dashboard button; saves dated snapshots of both Retail and Spillover reports to `report_export/` (gitignored): **HTML + PowerPoint** (`.html` + `.pptx`, via the same PPT builders as the download buttons). Fixed 2026-07-04. Spillover uses current selection. Folder path set by `report_export_folder` in `settings.yaml`. Logic in `app/report_exporter.py`.
 
 ---
 
