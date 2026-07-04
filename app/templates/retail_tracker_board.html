@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block title %}Requirements Board — Retail Tracker{% endblock %}
+
+{% block content %}
+<style>
+  .rt-stats { display:flex; gap:0.8rem; flex-wrap:wrap; margin:1rem 0 1.4rem; }
+  .rt-stat { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+             padding:0.7rem 1.1rem; min-width:9.5rem;
+             box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .rt-stat .num { font-size:1.5rem; font-weight:800; line-height:1.2; }
+  .rt-stat .lbl { font-size:0.72rem; text-transform:uppercase; letter-spacing:.05em; color:#666; }
+  .rt-stat--done  { border-top:4px solid #1a7f37; } .rt-stat--done .num  { color:#1a7f37; }
+  .rt-stat--open  { border-top:4px solid #b45309; } .rt-stat--open .num  { color:#b45309; }
+  .rt-stat--pay   { border-top:4px solid #0e7490; } .rt-stat--pay .num   { color:#0e7490; }
+  .rt-stat--alarm { border-top:4px solid #c1121f; } .rt-stat--alarm .num { color:#c1121f; }
+
+  details.rt-section { margin:1.1rem 0; background:#fff; border:1px solid #e2e2ea;
+                       border-radius:10px; overflow:hidden;
+                       box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  details.rt-section > summary { cursor:pointer; list-style:none; display:flex;
+      align-items:center; gap:0.7rem; padding:0.75rem 1rem; font-weight:700;
+      font-size:1.02rem; color:#fff; user-select:none; }
+  details.rt-section > summary::before { content:"▸"; transition:transform .15s; }
+  details.rt-section[open] > summary::before { transform:rotate(90deg); }
+  .rt-sales   > summary { background:#2b6cb0; }
+  .rt-return  > summary { background:#7c3aed; }
+  .rt-tab4    > summary { background:#334155; }
+  .rt-count { margin-left:auto; background:rgba(255,255,255,.22); border-radius:20px;
+              padding:2px 12px; font-size:0.85rem; font-weight:700; }
+  .rt-count--full { background:#1a7f37; }
+
+  .rt-filterbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap;
+                  padding:0.6rem 1rem; background:#fafafd; border-bottom:1px solid #eee; }
+  .rt-fbtn { border:1px solid #c9c9d4; background:#fff; border-radius:8px;
+             padding:5px 12px; cursor:pointer; font-size:0.84rem; }
+  .rt-fbtn--active { border-color:#2b6cb0; color:#2b6cb0; font-weight:700; background:#eef4ff; }
+  .rt-filterbar select, .rt-filterbar input[type=text] {
+    padding:5px 10px; border:1px solid #c9c9d4; border-radius:8px; font-size:0.84rem; }
+  .rt-dlg { border:1px solid #c9c9d4; border-radius:10px; padding:1rem 1.2rem;
+            max-width:30rem; max-height:70vh; overflow-y:auto; }
+  .rt-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
+
+  .rt-table { width:100%; border-collapse:collapse; font-size:0.86rem; }
+  .rt-table th { background:#f6f7fb; color:#333; text-align:left;
+                 padding:8px 10px; border-bottom:2px solid #d9d9e3;
+                 font-size:0.72rem; text-transform:uppercase; letter-spacing:.04em; }
+  .rt-table td { padding:7px 10px; border-bottom:1px solid #eee; }
+  .rt-table tbody tr.rt-req:hover { background:#f5f8ff; }
+  tr.rt-done { background:#e9f8ec; }
+  tr.rt-done td:first-child { border-left:4px solid #1a7f37; }
+  tr.rt-req td:first-child { border-left:4px solid transparent; }
+
+  .rt-prog { font-weight:800; }
+  .rt-prog--done { color:#1a7f37; } .rt-prog--open { color:#b45309; }
+  .rt-prog--zero { color:#c1121f; }
+  .rt-prog--over { color:#0e7490; }   /* overachieved: more passes than required */
+
+  .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
+             font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }
+  .rt-chip--pass   { background:#1a7f37; color:#fff; }
+  .rt-chip--other  { background:#fff; border-color:#d97706; color:#b45309; }
+  .rt-chip--none   { background:#f0f0f5; color:#9a9aa5; }
+  .rt-chip--target { box-shadow:0 0 0 2px #c1121f; }
+  .rt-cbtn { border:1px solid #c9c9d4; background:#fff; border-radius:6px;
+             padding:2px 10px; cursor:pointer; font-size:0.78rem; color:#444; }
+  .rt-cbtn:hover { background:#eef4ff; border-color:#2b6cb0; color:#2b6cb0; }
+  tr.rt-countries td { background:#fafafd; padding:8px 12px 10px; }
+
+  .rt-comment { width:100%; min-width:9rem; padding:3px 8px; border:1px solid #ddd;
+                border-radius:6px; font-size:0.79rem; background:#fff; }
+  .rt-comment:focus { border-color:#2b6cb0; outline:none; }
+
+  .rt-missing { border:2px solid #c1121f; border-radius:10px; background:#fff5f5;
+                padding:1rem 1.2rem; margin:1.6rem 0; }
+  .rt-missing h2 { color:#c1121f; margin:0 0 0.6rem; }
+  .rt-missing li { color:#a10d19; font-weight:600; padding:5px 0;
+                   display:flex; align-items:center; gap:.6rem; }
+  .rt-missing li::before { content:"⚠"; }
+  .rt-asof { color:#666; font-size:0.85rem; margin:-0.4rem 0 0.8rem; }
+  .rt-topbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap; margin:0 0 1rem; }
+
+  @media print {
+    .rt-topbar, .rt-filterbar, .rt-cbtn, .btn, .btn-row, dialog, form, #enh-widget,
+    header a.site-title { display:none !important; }
+    details.rt-section { box-shadow:none; border-color:#999; break-inside:avoid-page; }
+    .rt-stat { box-shadow:none; }
+    .rt-comment { border:none; }
+    body { background:#fff; }
+  }
+</style>
+
+<div class="page-header">
+  <h1>Retail Requirements Board</h1>
+  <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}" class="btn">Payment methods</a>
+  <a href="{{ url_for('retail_tracker.tracker_home') }}" class="btn">Import &amp; admin</a>
+</div>
+<p class="rt-asof">As of <strong>{{ as_of }}</strong> — derived live from Retail statuses</p>
+
+<div class="rt-topbar">
+  <button type="button" class="btn btn-primary" onclick="rtDownload()">⬇ Download HTML</button>
+  <button type="button" class="btn" onclick="rtPrint()">🖨 Print</button>
+  <span style="color:#888; font-size:0.82rem">the download is a dated standalone snapshot of the current view (filters included)</span>
+</div>
+
+{# ---- stat cards ---- #}
+<div class="rt-stats">
+  <div class="rt-stat rt-stat--done"><div class="num">{{ req_summary.done }} / {{ req_summary.total }}</div><div class="lbl">requirements complete</div></div>
+  <div class="rt-stat rt-stat--open"><div class="num">{{ req_summary.open }}</div><div class="lbl">still open</div></div>
+  <div class="rt-stat rt-stat--pay"><div class="num">{{ cpm_summary.done }} / {{ cpm_summary.total }}</div><div class="lbl">payment matrix</div></div>
+  {% if missing_tests %}
+  <div class="rt-stat rt-stat--alarm"><div class="num">{{ missing_tests|length }}</div><div class="lbl">tests missing!</div></div>
+  {% endif %}
+</div>
+
+{% set colors = {"sales": "rt-sales", "return": "rt-return"} %}
+{% for a in areas %}
+<details class="rt-section {{ colors[a.area] }}" data-area="{{ a.area }}" open>
+  <summary>{{ a.label }}
+    <span class="rt-count {% if a.summary.done == a.summary.total and a.summary.total %}rt-count--full{% endif %}">
+      {{ a.summary.done }} / {{ a.summary.total }}</span>
+  </summary>
+
+  {# per-section filter bar #}
+  <div class="rt-filterbar">
+    <button type="button" class="rt-fbtn rt-scen-btn"
+            onclick="document.getElementById('rt-dlg-{{ a.area }}').showModal()">Scenario ▾</button>
+    <button type="button" class="rt-fbtn rt-all-btn" onclick="rtToggleAll('{{ a.area }}', this)">ALL-countries only</button>
+    <span class="rt-info" style="color:#888; font-size:0.82rem"></span>
+  </div>
+  <dialog id="rt-dlg-{{ a.area }}" class="rt-dlg">
+    <strong>Filter {{ a.label }} by scenario</strong>
+    <div style="margin:0.6rem 0">
+      {% for s in a.scenarios %}
+      <label><input type="checkbox" class="rt-scen-cb" value="{{ s }}"> {{ s }}</label>
+      {% endfor %}
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" onclick="rtApply('{{ a.area }}'); document.getElementById('rt-dlg-{{ a.area }}').close()">Apply</button>
+      <button type="button" class="btn" onclick="this.closest('dialog').querySelectorAll('.rt-scen-cb').forEach(c => c.checked = false); rtApply('{{ a.area }}'); document.getElementById('rt-dlg-{{ a.area }}').close()">Clear</button>
+    </div>
+  </dialog>
+
+  <table class="rt-table">
+    <thead>
+      <tr>
+        <th style="width:8.5rem">Test case</th>
+        <th style="width:14rem">Scenario</th>
+        <th>Test name</th>
+        <th>Requirement</th>
+        <th style="text-align:center; width:5.5rem">Required</th>
+        <th style="text-align:center; width:5.5rem">Progress</th>
+        <th style="width:13rem">Comment</th>
+        <th style="width:6.5rem"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in a.rows %}
+      {% set i = row.item %}
+      <tr class="rt-req{% if i.done %} rt-done{% endif %}"
+          data-id="{{ i.id }}" data-scenario="{{ i.scenario_label or '' }}" data-all="{{ i.all_countries }}">
+        <td class="mono" style="font-size:0.76rem">
+          {% if i.test_case_id %}{{ i.test_case_id }}{% else %}<span class="pill pill--red">unresolved</span>{% endif %}
+        </td>
+        <td style="font-weight:700; color:#333; font-size:0.8rem">{{ i.scenario_label or "" }}</td>
+        <td>{{ i.display_test_name }}</td>
+        <td style="font-weight:600">{{ i.name }}</td>
+        <td style="text-align:center">
+          {% if i.targets %}<span title="named targets: {{ i.targets|join(', ') }}" style="color:#c1121f; font-weight:700">{{ i.targets|join(' + ') }}</span>
+          {% elif i.all_countries %}<strong>ALL</strong>
+          {% else %}{{ i.required if i.required is not none else "?" }}{% endif %}
+        </td>
+        <td style="text-align:center">
+          {% if i.unresolved %}<span style="color:#999">—</span>
+          {% else %}
+          {% set over = i.done and i.required is not none and i.progress_count > i.required %}
+          <span class="rt-prog {% if over %}rt-prog--over{% elif i.done %}rt-prog--done{% elif i.progress_count %}rt-prog--open{% else %}rt-prog--zero{% endif %}"
+                {% if over %}title="overachieved: passed in more countries than required"{% endif %}>
+            {% if i.done %}✓ {% endif %}{{ i.progress_count }}/{{ i.required if i.required is not none else "?" }}{% if over %} ★{% endif %}</span>
+          {% endif %}
+        </td>
+        <td><input type="text" class="rt-comment" value="{{ i.user_comment or '' }}"
+                   placeholder="comment…" onblur="rtComment(this)"></td>
+        <td style="text-align:right">
+          <button type="button" class="rt-cbtn" onclick="rtToggle(this)">countries ▸</button>
+        </td>
+      </tr>
+      <tr class="rt-countries" style="display:none">
+        <td colspan="8">
+          {% for cell in row.cells %}
+          <span class="rt-chip rt-chip--{{ cell.state }}{% if cell.target %} rt-chip--target{% endif %}"
+                title="{{ countries[loop.index0].name }}: {{ cell.status }}{% if cell.target %} — NAMED TARGET{% endif %}">
+            {{ countries[loop.index0].excel_header }}{% if cell.state == "pass" %} ✓{% endif %}</span>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endfor %}
+
+{# ---- tab 4 ---- #}
+<details class="rt-section rt-tab4" id="rt-tab4">
+  <summary>Country-specific payment methods
+    <span class="rt-count {% if cpm_summary.done == cpm_summary.total and cpm_summary.total %}rt-count--full{% endif %}">
+      {{ cpm_summary.done }} / {{ cpm_summary.total }}</span>
+  </summary>
+
+  <div class="rt-filterbar">
+    <button type="button" class="rt-fbtn" id="rt4-country-btn"
+            onclick="document.getElementById('rt4-country-dlg').showModal()">Country ▾</button>
+    <select id="rt4-cat" onchange="rt4Apply()">
+      <option value="">All categories</option>
+      <option value="card">Card</option>
+      <option value="voucher">Voucher</option>
+      <option value="unknown">Unknown</option>
+    </select>
+    <input type="text" id="rt4-method" placeholder="Filter payment method…" oninput="rt4Apply()">
+    <span id="rt4-info" style="color:#888; font-size:0.82rem"></span>
+    <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}" style="margin-left:auto; font-size:0.82rem">manage checks &#8594;</a>
+  </div>
+  <dialog id="rt4-country-dlg" class="rt-dlg">
+    <strong>Filter by country</strong>
+    <div style="margin:0.6rem 0">
+      {% for c in cpm_countries %}
+      <label><input type="checkbox" class="rt4-country-cb" value="{{ c }}"> {{ c }}</label>
+      {% endfor %}
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" onclick="rt4Apply(); document.getElementById('rt4-country-dlg').close()">Apply</button>
+      <button type="button" class="btn" onclick="document.querySelectorAll('.rt4-country-cb').forEach(c => c.checked = false); rt4Apply(); document.getElementById('rt4-country-dlg').close()">Clear</button>
+    </div>
+  </dialog>
+
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Sale / Return show the <strong>manual check-off</strong> — ticked on the
+    <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}">Payment methods page</a>
+    once someone confirms which methods a passed run covered.
+  </p>
+  <table class="rt-table">
+    <thead>
+      <tr><th>Country</th><th>Payment method</th><th>Category</th>
+          <th style="text-align:center">Sale checked</th><th style="text-align:center">Return checked</th>
+          <th style="text-align:center">Status</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for r in cpm_items %}
+      <tr class="rt-req rt4-row{% if r.done %} rt-done{% endif %}"
+          data-id="{{ r.id }}" data-country="{{ r.country }}" data-cat="{{ r.category or 'unknown' }}"
+          data-method="{{ r.method_name|lower }}">
+        <td style="font-weight:600">{{ r.country }}</td>
+        <td>{{ r.method_name }}</td>
+        <td>{% if r.unknown_category %}<span class="pill pill--red">unknown</span>{% else %}{{ r.category }}{% endif %}</td>
+        <td style="text-align:center">{% if r.unknown_category %}?{% elif r.sale_ok %}<span class="rt-prog--done" style="font-weight:800">✓</span>{% else %}<span style="color:#c5c5cc">·</span>{% endif %}</td>
+        <td style="text-align:center">{% if r.unknown_category %}?{% elif r.return_ok %}<span class="rt-prog--done" style="font-weight:800">✓</span>{% else %}<span style="color:#c5c5cc">·</span>{% endif %}</td>
+        <td style="text-align:center">
+          {% if r.done %}<span class="pill pill--green">done</span>
+          {% elif r.ready %}<span class="pill" style="background:#e0f2fe; color:#0e7490">ready to check</span>{% endif %}
+        </td>
+        <td><input type="text" class="rt-comment" value="{{ r.user_comment or '' }}"
+                   placeholder="{{ r.comment or 'comment…' }}" onblur="rt4Comment(this)"></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+
+{# ---- missing tests (alarm list) ---- #}
+<div class="rt-missing" id="missing-tests">
+  <h2>⚠ Tests missing</h2>
+  <p style="color:#a10d19; font-size:0.85rem; margin-top:0">
+    Requirements or scenarios with <strong>no test case in the Retail module at all</strong> —
+    they can never turn green until a test exists. Anything on this list is a gap.
+  </p>
+  {% if missing_tests %}
+  <ul style="list-style:none; padding:0; margin:0.4rem 0 0.8rem">
+    {% for m in missing_tests %}
+    <li>{{ m.text }}
+      <form method="post" action="{{ url_for('retail_tracker.missing_delete', item_id=m.id) }}" style="margin-left:auto">
+        <button type="submit" class="btn btn-sm" title="remove">✕</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="{{ url_for('retail_tracker.missing_add') }}" style="display:flex; gap:0.6rem">
+    <input type="text" name="text" placeholder="e.g. Exchange Even Plus 1 — no test case exists yet"
+           style="flex:1; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px" required>
+    <button type="submit" class="btn btn-danger">Add missing test</button>
+  </form>
+</div>
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+</div>
+
+<script>
+const RT_BASE = "{{ url_for('retail_tracker.tracker_board') }}".replace(/\/board$/, "");
+const rtAllOnly = {};
+
+function rtToggle(btn) {
+  const detail = btn.closest("tr").nextElementSibling;
+  const open = detail.style.display !== "none";
+  detail.style.display = open ? "none" : "";
+  btn.textContent = open ? "countries ▸" : "countries ▾";
+}
+
+function rtToggleAll(area, btn) {
+  rtAllOnly[area] = !rtAllOnly[area];
+  btn.classList.toggle("rt-fbtn--active", rtAllOnly[area]);
+  rtApply(area);
+}
+
+function rtApply(area) {
+  const sec = document.querySelector(`details[data-area="${area}"]`);
+  const picked = [...sec.querySelectorAll(".rt-scen-cb:checked")].map(c => c.value);
+  let shown = 0, hidden = 0;
+  sec.querySelectorAll("tr.rt-req").forEach(tr => {
+    const okScen = picked.length === 0 || picked.includes(tr.dataset.scenario);
+    const okAll = !rtAllOnly[area] || tr.dataset.all === "1";
+    const show = okScen && okAll;
+    tr.style.display = show ? "" : "none";
+    const detail = tr.nextElementSibling;
+    if (!show && detail) {
+      detail.style.display = "none";
+      const b = tr.querySelector(".rt-cbtn");
+      if (b) b.textContent = "countries ▸";
+    }
+    show ? shown++ : hidden++;
+  });
+  const btn = sec.querySelector(".rt-scen-btn");
+  btn.classList.toggle("rt-fbtn--active", picked.length > 0);
+  btn.textContent = picked.length ? `Scenario (${picked.length}) ▾` : "Scenario ▾";
+  sec.querySelector(".rt-info").textContent =
+    hidden ? `${shown} shown · ${hidden} hidden by filter` : "";
+}
+
+function rt4Apply() {
+  const picked = [...document.querySelectorAll(".rt4-country-cb:checked")].map(c => c.value);
+  const cat = document.getElementById("rt4-cat").value;
+  const method = document.getElementById("rt4-method").value.trim().toLowerCase();
+  let shown = 0, hidden = 0;
+  document.querySelectorAll("tr.rt4-row").forEach(tr => {
+    const ok = (picked.length === 0 || picked.includes(tr.dataset.country))
+      && (!cat || tr.dataset.cat === cat)
+      && (!method || tr.dataset.method.includes(method));
+    tr.style.display = ok ? "" : "none";
+    ok ? shown++ : hidden++;
+  });
+  const btn = document.getElementById("rt4-country-btn");
+  btn.classList.toggle("rt-fbtn--active", picked.length > 0);
+  btn.textContent = picked.length ? `Country (${picked.length}) ▾` : "Country ▾";
+  document.getElementById("rt4-info").textContent =
+    hidden ? `${shown} shown · ${hidden} hidden by filter` : "";
+}
+
+function rtComment(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({user_comment: input.value});
+  fetch(`${RT_BASE}/requirements/${tr.dataset.id}/comment`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+
+function rt4Comment(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({user_comment: input.value});
+  fetch(`${RT_BASE}/payment-methods/${tr.dataset.id}/comment`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+
+function rtPrint() {
+  document.querySelectorAll("details.rt-section").forEach(d => d.open = true);
+  window.print();
+}
+
+function rtDownload() {
+  // dated standalone snapshot of the CURRENT view (filters and inputs included)
+  document.querySelectorAll("details.rt-section").forEach(d => d.open = true);
+  document.querySelectorAll("input").forEach(i => {
+    if (i.type === "checkbox") { i.checked ? i.setAttribute("checked", "") : i.removeAttribute("checked"); }
+    else i.setAttribute("value", i.value);
+  });
+  const cssLink = document.querySelector("link[rel=stylesheet]");
+  fetch(cssLink.href).then(r => r.text()).then(css => {
+    const doc = document.documentElement.cloneNode(true);
+    doc.querySelectorAll(".rt-topbar, .rt-filterbar, dialog, #enh-widget, .rt-cbtn, .btn-row, .btn, form, script, link[rel=stylesheet]")
+       .forEach(e => e.remove());
+    doc.querySelectorAll(".rt-comment").forEach(inp => {
+      const span = doc.ownerDocument.createElement("span");
+      span.textContent = inp.getAttribute("value") || "";
+      span.style.cssText = "color:#555; font-size:0.79rem";
+      inp.replaceWith(span);
+    });
+    const style = document.createElement("style");
+    style.textContent = css;
+    doc.querySelector("head").appendChild(style);
+    const blob = new Blob(["<!DOCTYPE html>\n" + doc.outerHTML], {type: "text/html"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "retail_requirements_board_{{ today }}.html";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+</script>
+{% endblock %}

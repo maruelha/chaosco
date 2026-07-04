@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Retail Requirements Tracker — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Retail Requirements Tracker — Import &amp; Admin</h1>
+  <a href="{{ url_for('retail_tracker.tracker_board') }}" class="btn btn-primary">Open Requirements Board &#8594;</a>
+</div>
+
+<p style="color:#666; max-width:60rem">
+  One-time import of the tracking Excel (tabs 1–3). Requirements are matched to
+  dashboard test cases by <strong>test name</strong>; "tested" will always be derived live
+  from Retail statuses — nothing is stored as a yes-mark.
+</p>
+
+{# ---- Import trigger ---- #}
+<form method="post" action="{{ url_for('retail_tracker.tracker_import') }}" style="margin:1rem 0">
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Run import</button>
+    <span class="mono" style="align-self:center; color:#888">{{ excel_path }}</span>
+  </div>
+</form>
+
+{# ---- Import result ---- #}
+{% if result %}
+  {% if result.error %}
+  <div class="result-box result-box--error">
+    <div class="result-row">
+      <span class="result-label">Error</span>
+      <span class="result-value">{{ result.error }}</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="result-box">
+    <div class="result-row">
+      <span class="result-label">File</span>
+      <span class="result-value mono">{{ result.xlsx_path }}</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Parsed</span>
+      <span class="result-value">
+        {% for area, n in result.per_tab.items() %}{{ area }}: {{ n }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
+      </span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Upserted</span>
+      <span class="result-value">{{ result.inserted }} inserted &middot; {{ result.updated }} updated</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Resolution</span>
+      <span class="result-value">
+        <span class="pill pill--green">{{ result.resolved }} auto-resolved</span>
+        {% if result.unresolved %}<span class="pill pill--gray">{{ result.unresolved|length }} need manual pick (below)</span>{% endif %}
+      </span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Countries</span>
+      <span class="result-value">{{ result.countries_seeded }} newly seeded</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Payment matrix (tab 4)</span>
+      <span class="result-value">{{ result.cpm_inserted }} inserted &middot; {{ result.cpm_updated }} updated
+        {% if result.cpm_unknown_category %} &middot; <span class="pill pill--gray">{{ result.cpm_unknown_category }} without Card/Voucher mark</span>{% endif %}
+      </span>
+    </div>
+    {% if result.skipped_dups %}
+    <div class="result-row">
+      <span class="result-label">Skipped duplicates</span>
+      <span class="result-value">
+        {% for d in result.skipped_dups %}
+          {{ d.area }} row {{ d.excel_row }} — {{ d.name }} <span class="mono">({{ d.excel_test_ref }})</span>, duplicate of {{ d.dup_of }}{% if not loop.last %}<br>{% endif %}
+        {% endfor %}
+      </span>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endif %}
+
+{# ---- Current state ---- #}
+<h2 style="margin-top:1.5rem">Requirements in the tracker</h2>
+<div class="result-box">
+  <div class="result-row">
+    <span class="result-label">Total</span>
+    <span class="result-value">
+      {{ counts.total }}
+      {% if counts.by_area %}
+        ({% for area, n in counts.by_area.items() %}{{ area }}: {{ n }}{% if not loop.last %} &middot; {% endif %}{% endfor %})
+      {% endif %}
+    </span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Unresolved</span>
+    <span class="result-value">{{ counts.unresolved }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Required needs decision</span>
+    <span class="result-value">{{ counts.needs_decision }} (non-numeric "DTC required", e.g. "1 or 5")</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Countries</span>
+    <span class="result-value">{{ countries|length }} seeded, {{ countries|selectattr('active')|list|length }} active</span>
+  </div>
+</div>
+
+{# ---- Unresolved: manual pick ---- #}
+{% if unresolved %}
+<h2 style="margin-top:1.5rem">Unresolved — pick the dashboard test</h2>
+<table>
+  <thead>
+    <tr><th>Area</th><th>Requirement</th><th>Excel test</th><th>Dashboard test</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for r in unresolved %}
+    <tr>
+      <td>{{ r.area }}</td>
+      <td>{{ r.name }}</td>
+      <td class="mono">{{ r.excel_test_ref }}_{{ r.test_name }}</td>
+      <td colspan="2">
+        <form method="post" action="{{ url_for('retail_tracker.tracker_resolve', req_id=r.id) }}"
+              style="display:flex; gap:.5rem">
+          <select name="test_case_id" style="max-width:28rem">
+            <option value="">— not in dashboard (leave unresolved) —</option>
+            {% for t in test_options %}
+            <option value="{{ t.test_case_id }}">{{ t.testcase_name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm">Save</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{# ---- Coverage check: passed tests vs requirements ---- #}
+<h2 style="margin-top:1.5rem">Coverage check — passed tests vs requirements</h2>
+<div class="result-box">
+  <div class="result-row">
+    <span class="result-label">Matched</span>
+    <span class="result-value">
+      <strong>{{ coverage.matched }} of {{ coverage.passed_total }}</strong> test cases with at least one
+      pass are linked to a requirement (or a tab-4 fixed test)
+      {% if not coverage.unmatched %}<span class="pill pill--green">full coverage</span>{% endif %}
+    </span>
+  </div>
+  {% if coverage.unmatched %}
+  <div class="result-row">
+    <span class="result-label">Not matched</span>
+    <span class="result-value">
+      <strong>{{ coverage.unmatched|length }} passed test case(s) count toward NO requirement</strong> —
+      either fine (out of tracker scope) or a missing requirement line:<br>
+      {% for t in coverage.unmatched %}
+      <span class="mono" style="font-size:0.78rem">{{ t.testcase_name }}</span><br>
+      {% endfor %}
+    </span>
+  </div>
+  {% endif %}
+</div>
+
+{# ---- Tab 4: country-specific payment methods ---- #}
+<h2 style="margin-top:1.5rem">Country-specific payment methods (tab 4)</h2>
+<div class="result-box">
+  <div class="result-row">
+    <span class="result-label">Matrix</span>
+    <span class="result-value">{{ cpm_counts.total }} rows &middot; {{ cpm_counts.countries }} countries
+      &middot; {{ cpm_counts.card }} card &middot; {{ cpm_counts.voucher }} voucher
+      {% if cpm_counts.unknown %} &middot; <span class="pill pill--gray">{{ cpm_counts.unknown }} category unknown</span>{% endif %}
+    </span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Manage</span>
+    <span class="result-value">
+      <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}" class="btn btn-primary">Open Payment Methods page &#8594;</a>
+      &nbsp;the four fixed tests, per-method check-off, categories, comments, and filters live there
+    </span>
+  </div>
+</div>
+
+{# ---- Needs decision ---- #}
+{% if needs_decision %}
+<h2 style="margin-top:1.5rem">"DTC required" needs a decision</h2>
+<table>
+  <thead>
+    <tr><th>Area</th><th>Requirement</th><th>Excel value</th><th>Comment</th></tr>
+  </thead>
+  <tbody>
+    {% for r in needs_decision %}
+    <tr>
+      <td>{{ r.area }}</td>
+      <td>{{ r.name }}</td>
+      <td class="mono">{{ r.required_raw }}</td>
+      <td>{{ r.comment or "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div class="btn-row" style="margin-top:1.5rem">
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+</div>
+{% endblock %}

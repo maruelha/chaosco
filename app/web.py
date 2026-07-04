@@ -38,6 +38,12 @@ _ALLOWED_EXTS = _IMAGE_EXTS | {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt",
 # Create schema once at startup; routes use get_connection() after this.
 database.init_db(_db_path).close()
 
+# Retail Requirements Tracker vertical — own module + Blueprint (v2 pattern).
+from app import db_retail_tracker
+from app.web_retail_tracker import bp as _retail_tracker_bp
+db_retail_tracker.init_schema(_db_path)
+app.register_blueprint(_retail_tracker_bp)
+
 
 def _get_conn():
     return database.get_connection(_db_path)
@@ -78,12 +84,14 @@ def dashboard():
         open_enhancements = len(database.get_enhancements(conn))
         to_deliver        = database.count_encouragements_to_deliver(conn)
         shelf_count       = database.count_shelf_items(conn)
+        tracker_unresolved = db_retail_tracker.requirement_counts(conn)["unresolved"]
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
                            open_enhancements=open_enhancements,
                            to_deliver=to_deliver,
-                           shelf_count=shelf_count)
+                           shelf_count=shelf_count,
+                           tracker_unresolved=tracker_unresolved)
 
 
 @app.route("/import", methods=["POST"])

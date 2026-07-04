@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Payment Methods — Retail Tracker{% endblock %}
+
+{% block content %}
+<style>
+  .pm-tests { display:flex; gap:0.8rem; flex-wrap:wrap; margin:0.8rem 0 1.2rem; }
+  .pm-test { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+             padding:0.6rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,.06);
+             border-top:4px solid #0e7490; min-width:14rem; }
+  .pm-test .kind { font-size:0.7rem; text-transform:uppercase; letter-spacing:.05em;
+                   color:#0e7490; font-weight:800; }
+  .pm-test .name { font-weight:600; font-size:0.86rem; }
+  .pm-test .id { font-family:monospace; font-size:0.74rem; color:#888; }
+
+  .pm-filterbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap; margin:0 0 1rem; }
+  .pm-fbtn { border:1px solid #c9c9d4; background:#fff; border-radius:8px;
+             padding:6px 14px; cursor:pointer; font-size:0.86rem; }
+  .pm-fbtn--active { border-color:#2b6cb0; color:#2b6cb0; font-weight:700; background:#eef4ff; }
+  .pm-filterbar select, .pm-filterbar input[type=text] {
+    padding:6px 10px; border:1px solid #c9c9d4; border-radius:8px; font-size:0.86rem; }
+  .pm-dlg { border:1px solid #c9c9d4; border-radius:10px; padding:1rem 1.2rem;
+            max-width:24rem; max-height:70vh; overflow-y:auto; }
+  .pm-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
+
+  .pm-table { width:100%; border-collapse:collapse; font-size:0.85rem;
+              background:#fff; border:1px solid #e2e2ea; border-radius:10px; }
+  .pm-table th { background:#f6f7fb; text-align:left; padding:8px 10px;
+                 border-bottom:2px solid #d9d9e3; font-size:0.72rem;
+                 text-transform:uppercase; letter-spacing:.04em; }
+  .pm-table td { padding:6px 10px; border-bottom:1px solid #eee; }
+  .pm-table tbody tr:hover { background:#f5f8ff; }
+  tr.pm-done { background:#e9f8ec; }
+  .pm-hint { font-size:0.7rem; font-weight:700; }
+  .pm-hint--pass { color:#1a7f37; }
+  .pm-hint--wait { color:#b0b0ba; }
+  .pm-comment { width:100%; min-width:11rem; padding:4px 8px; border:1px solid #ddd;
+                border-radius:6px; font-size:0.8rem; }
+  .pm-comment:focus { border-color:#2b6cb0; outline:none; }
+  .pill--ready { background:#e0f2fe; color:#0e7490; }
+</style>
+
+<div class="page-header">
+  <h1>Country-specific Payment Methods</h1>
+  <a href="{{ url_for('retail_tracker.tracker_board') }}" class="btn">&#8592; Board</a>
+  <a href="{{ url_for('retail_tracker.tracker_home') }}" class="btn">Import &amp; admin</a>
+</div>
+<p style="color:#666; font-size:0.85rem; margin:-0.4rem 0 0.6rem">As of <strong>{{ as_of }}</strong></p>
+
+<p style="color:#555; max-width:64rem">
+  The four fixed tests below pass <em>once per country</em> — but a pass cannot say which
+  payment methods the run actually used. When a test is green (shown as
+  <span class="pm-hint pm-hint--pass">●&nbsp;test passed</span> next to the checkbox),
+  <strong>tick the methods that were covered</strong> and comment the ones that were not.
+  A row is done when all its applicable checks are ticked.
+</p>
+
+{# ---- the four fixed tests ---- #}
+<div class="pm-tests">
+  {% for t in tab4_tests %}
+  <div class="pm-test">
+    <div class="kind">{{ t.test_kind.replace("_", " ") }}</div>
+    <div class="name">{{ t.test_name }}</div>
+    <div class="id">{{ t.excel_test_ref }} → {{ t.test_case_id or "unresolved" }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ---- summary + filters ---- #}
+<div class="result-box" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Progress</span>
+    <span class="result-value"><strong>{{ summary.done }} of {{ summary.total }} done</strong>
+      &middot; <span class="pill pill--ready">{{ summary.ready }} ready to check</span>
+      {% if summary.unknown_category %} &middot; <span class="pill pill--red">{{ summary.unknown_category }} category unknown</span>{% endif %}
+    </span>
+  </div>
+</div>
+
+<div class="pm-filterbar">
+  <button type="button" class="pm-fbtn" id="pm-country-btn"
+          onclick="document.getElementById('pm-country-dlg').showModal()">Country ▾</button>
+  <select id="pm-cat" onchange="pmApply()">
+    <option value="">All categories</option>
+    <option value="card">Card</option>
+    <option value="voucher">Voucher</option>
+    <option value="unknown">Unknown</option>
+  </select>
+  <input type="text" id="pm-method" placeholder="Filter payment method…" oninput="pmApply()">
+  <span id="pm-info" style="color:#888; font-size:0.82rem"></span>
+</div>
+
+<dialog id="pm-country-dlg" class="pm-dlg">
+  <strong>Filter by country</strong>
+  <div style="margin:0.6rem 0">
+    {% for c in fcountries %}
+    <label><input type="checkbox" class="pm-country-cb" value="{{ c }}"> {{ c }}</label>
+    {% endfor %}
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn btn-primary" onclick="pmApply(); document.getElementById('pm-country-dlg').close()">Apply</button>
+    <button type="button" class="btn" onclick="document.querySelectorAll('.pm-country-cb').forEach(c => c.checked = false); pmApply(); document.getElementById('pm-country-dlg').close()">Clear</button>
+  </div>
+</dialog>
+
+<table class="pm-table">
+  <thead>
+    <tr>
+      <th>Country</th><th>Payment method</th><th>Category</th>
+      <th>Sale covered?</th><th>Return covered?</th>
+      <th style="text-align:center">Status</th>
+      <th style="min-width:14rem">Comment (e.g. what was NOT tested)</th>
+      <th>Excel note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in items %}
+    {% set sale_kind = "sale_card" if r.category == "card" else ("sale_voucher" if r.category == "voucher" else "") %}
+    {% set return_kind = "return_card" if r.category == "card" else ("return_voucher" if r.category == "voucher" else "") %}
+    <tr class="pm-row{% if r.done %} pm-done{% endif %}" data-id="{{ r.id }}"
+        data-country="{{ r.country }}" data-cat="{{ r.category or 'unknown' }}"
+        data-method="{{ r.method_name|lower }}">
+      <td style="font-weight:600">{{ r.country }}</td>
+      <td>{{ r.method_name }}</td>
+      <td>
+        {% if r.unknown_category %}
+        {# category editable ONLY while unknown — once set, only the checks change #}
+        <form method="post" action="{{ url_for('retail_tracker.tracker_cpm_category', cpm_id=r.id) }}"
+              style="display:flex; gap:.3rem">
+          <select name="category" onchange="this.form.submit()">
+            <option value="" selected>unknown</option>
+            <option value="card">card</option>
+            <option value="voucher">voucher</option>
+          </select>
+        </form>
+        {% else %}{{ r.category }}{% endif %}
+      </td>
+      {% for kind in [sale_kind, return_kind] %}
+      <td>
+        {% if kind and r.kinds.get(kind) is not none %}
+        {% set k = r.kinds[kind] %}
+        <label style="cursor:pointer; white-space:nowrap">
+          <input type="checkbox" class="pm-check" data-kind="{{ kind }}"
+                 {% if k.checked %}checked{% endif %} onchange="pmCheck(this)">
+          {% if k.passed %}<span class="pm-hint pm-hint--pass" title="the {{ kind.replace('_',' ') }} test is PASSED in {{ r.country }} — checking possible">● test passed</span>
+          {% else %}<span class="pm-hint pm-hint--wait" title="the {{ kind.replace('_',' ') }} test has not passed in {{ r.country }} yet">○ test open</span>{% endif %}
+        </label>
+        {% else %}<span style="color:#bbb">—</span>{% endif %}
+      </td>
+      {% endfor %}
+      <td style="text-align:center" class="pm-status">
+        {% if r.done %}<span class="pill pill--green">done</span>
+        {% elif r.ready %}<span class="pill pill--ready">ready</span>
+        {% elif r.unknown_category %}<span class="pill pill--red">category?</span>{% endif %}
+      </td>
+      <td><input type="text" class="pm-comment" value="{{ r.user_comment or '' }}"
+                 placeholder="comment…" onblur="pmComment(this)"></td>
+      <td style="color:#999; font-size:0.76rem">{{ r.comment or "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+</div>
+
+<script>
+const PM_BASE = "{{ url_for('retail_tracker.tracker_payment_methods') }}";
+
+function pmApply() {
+  const picked = [...document.querySelectorAll(".pm-country-cb:checked")].map(c => c.value);
+  const cat = document.getElementById("pm-cat").value;
+  const method = document.getElementById("pm-method").value.trim().toLowerCase();
+  let shown = 0, hidden = 0;
+  document.querySelectorAll("tr.pm-row").forEach(tr => {
+    const ok = (picked.length === 0 || picked.includes(tr.dataset.country))
+      && (!cat || tr.dataset.cat === cat)
+      && (!method || tr.dataset.method.includes(method));
+    tr.style.display = ok ? "" : "none";
+    ok ? shown++ : hidden++;
+  });
+  const btn = document.getElementById("pm-country-btn");
+  btn.classList.toggle("pm-fbtn--active", picked.length > 0);
+  btn.textContent = picked.length ? `Country (${picked.length}) ▾` : "Country ▾";
+  document.getElementById("pm-info").textContent =
+    hidden ? `${shown} shown · ${hidden} hidden by filter` : "";
+}
+
+function pmCheck(cb) {
+  const tr = cb.closest("tr");
+  const body = new URLSearchParams({kind: cb.dataset.kind, value: cb.checked ? "1" : "0"});
+  fetch(`${PM_BASE}/${tr.dataset.id}/check`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error(); pmRefreshRow(tr); })
+    .catch(() => { cb.checked = !cb.checked; alert("Saving failed — try again."); });
+}
+
+function pmRefreshRow(tr) {
+  const boxes = [...tr.querySelectorAll(".pm-check")];
+  const done = boxes.length > 0 && boxes.every(b => b.checked);
+  tr.classList.toggle("pm-done", done);
+  const st = tr.querySelector(".pm-status");
+  if (done) st.innerHTML = '<span class="pill pill--green">done</span>';
+  else if (st.querySelector(".pill--green")) st.innerHTML = "";
+}
+
+function pmComment(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({user_comment: input.value});
+  fetch(`${PM_BASE}/${tr.dataset.id}/comment`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+</script>
+{% endblock %}

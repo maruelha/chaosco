@@ -88,3 +88,6 @@ retail_missing_categories:
   - "Manual test cases"
   - "100% voucher cases"
   - "Event store"
+
+# Retail Requirements Tracker — one-time import source (tabs 1-3 + tab 4)
+retail_tracker_excel: 'report_export/TRACKING_Retail ROE UAT Testcases DTC (1).xlsx'

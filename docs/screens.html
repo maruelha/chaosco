@@ -195,6 +195,7 @@
     <li><a href="#retail-note">Retail — Note Add / Edit / Delete</a></li>
     <li><a href="#retail-report">Retail — Status Report</a></li>
     <li><a href="#retail-report-diagnostics">Retail — Report Diagnostics</a></li>
+    <li><a href="#retail-tracker">Retail Requirements Tracker</a></li>
 
     <li class="group-label">Sign-Off Reports</li>
     <li><a href="#report-retail">Retail Spillover Report</a></li>
@@ -248,7 +249,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -867,6 +868,41 @@
         <span class="feat-value">Known exclusions (grey) and unknown statuses (red warning) that fall outside all buckets.</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>retail</code> (GROUP BY status)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retail Requirements Tracker -->
+  <div class="screen-card" id="retail-tracker">
+    <div class="screen-card-header">
+      <span class="screen-title">Retail Requirements Tracker</span>
+      <span class="screen-url">GET /retail-tracker/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Tracks that Retail (ROE UAT) test <em>requirements</em> are tested across countries — replaces the 4-tab <code>TRACKING_Retail…</code> Excel. "Tested" is always derived <strong>live</strong> from Retail statuses (a reopened test un-counts automatically); nothing is stored as a yes-mark. Spec: <code>retail-tracker-handoff.md</code>. Built as its own vertical: Blueprint <code>app/web_retail_tracker.py</code>, SQL in <code>app/db_retail_tracker.py</code>, counting in <code>app/retail_tracker_counting.py</code> (pure functions). <strong>Steps 1–4 of 5 built</strong>; overrides (step 5) remain.</p>
+      <div class="features" style="margin-bottom:0.85rem">
+        <span class="feat-label">Board filters, download &amp; comments</span>
+        <span class="feat-value"><strong>Per-section filter bars</strong>: Sales and Return each have a Scenario ▾ multi-select (that section's scenarios only) + ALL-countries toggle; the payment-methods section has country ▾ / category / method-text filters. <strong>⬇ Download HTML</strong> saves a dated standalone snapshot of the current view (CSS inlined, filters respected); 🖨 Print secondary; "As of &lt;date time&gt;" under the title. Editable <strong>Comment</strong> column on every requirement row (blur-save, <code>retail_requirements.user_comment</code>, importer never touches it). Scenario is the bold 2nd column. Progress shows teal "✓ X/N ★" when overachieved. Named-target rules: comments like "UK, IE" AND names like "(special case PL)" become specific-country targets, propagated across areas by requirement name.</span>
+        <span class="feat-label">Board (GET /retail-tracker/board)</span>
+        <span class="feat-value">THE daily view. Two collapsible colored sections — Tracking Sales (blue), Tracking Return (purple) — plus the tab-4 matrix (slate, collapsed by default). <strong>No payment area</strong>: the Excel's Payment methods tab was duplicative; its two unique rows (OFFLINE Return, Blind return) are folded into Return. Rows sorted by test case; columns Test case · Test name · Scenario · Requirement · Required · Progress all visible without scrolling; per-row <strong>countries ▸</strong> button expands country chips (green = passed, amber outline = executed not passed with status tooltip, gray = no execution, red ring = named target). Stat cards on top (done / open / payment matrix / red "tests missing"). Red <strong>⚠ Tests missing</strong> alarm section at the bottom: free-text list saved in <code>tracker_missing_tests</code> (add + delete; routes <code>POST /retail-tracker/missing/add</code>, <code>POST /retail-tracker/missing/&lt;id&gt;/delete</code>).</span>
+      </div>
+      <div class="features">
+        <span class="feat-label">Import</span>
+        <span class="feat-value"><span class="pill pill-action">Run import</span> — one-time import of tabs 1–3 (<code>POST /retail-tracker/import</code>, path via <code>retail_tracker_excel</code> in settings). Result box: parsed counts per tab · inserted/updated · auto-resolved vs manual · newly seeded countries · skipped duplicates (rows the Excel repeats across tabs).</span>
+        <span class="feat-label">Name resolution</span>
+        <span class="feat-value">Excel test IDs (<code>GKP…MU01_Name</code>) and dashboard IDs (<code>GKPMU000…</code>) are unrelated numbering schemes — matching is by the test <strong>name after the underscore</strong>, resolved once at import. Unresolved rows get a dropdown of all dashboard tests (<code>POST /retail-tracker/requirements/&lt;id&gt;/resolve</code>). Re-imports never overwrite a manual resolution.</span>
+        <span class="feat-label">Payment methods page (GET /retail-tracker/payment-methods)</span>
+        <span class="feat-value">Tab-4 restructured to <strong>manual per-method check-off</strong>: the four fixed tests (shown as cards with dashboard IDs) pass once per country, but a pass can't say which payment methods the run covered — a human ticks per (country × method × Sale/Return kind) checkbox (AJAX, table <code>cpm_checks</code>) and writes a comment (e.g. what was NOT tested; <code>user_comment</code>, importer never touches it). "● test passed" hint = checking possible; row done = all applicable kinds checked; "ready" pill = tests green, checks pending. Filters: country (multi-select dialog) · category · method text. Inline category select for the unknown rows. Board's tab-4 table shows checked-state and links here; admin shows a summary + link.</span>
+        <span class="feat-label">Coverage check</span>
+        <span class="feat-value">On Import &amp; admin: "X of Y passed test cases are linked to a requirement (or tab-4 fixed test)" + the list of passed tests that count toward NO requirement — either out of tracker scope or a missing requirement line.</span>
+        <span class="feat-label">Needs decision</span>
+        <span class="feat-value">Rows whose "DTC required" isn't a number (e.g. <code>1 or 5</code> on the discount rows) are listed for a human decision — stored raw, never guessed.</span>
+        <span class="feat-label">Tab 4 matrix</span>
+        <span class="feat-value">147 (country × payment method) rows, country codes mapped to names (AU=Austria, BU=Bulgaria; Cyprus only exists in tab 4). Category from the X in the Card/Voucher column; ~17 rows without a clean X get an inline Card/Voucher picker (<code>POST /retail-tracker/payment-methods/&lt;id&gt;/category</code>), odd Excel texts kept as comments. The four fixed tests (Sale/Return × Multi Tender/Payment Voucher) are parsed from tab-4 row 2 and auto-resolved.</span>
+        <span class="feat-label">Tables</span>
+        <span class="feat-value"><code>tracker_countries</code> (18 seeded from Excel headers, UK→United Kingdom fix) · <code>retail_requirements</code> · <code>country_payment_methods</code> · <code>tracker_tab4_tests</code> · <code>tested_overrides</code> (step 5)</span>
+        <span class="feat-label">Tests</span>
+        <span class="feat-value"><code>tests/test_retail_tracker_importer.py</code> — 11 pytest cases on parsing + resolution (the project's first test suite)</span>
       </div>
     </div>
   </div>

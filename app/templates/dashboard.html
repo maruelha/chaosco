@@ -59,6 +59,13 @@
     <a href="{{ url_for('retail_list') }}" class="btn">View Retail</a>
   </div>
 
+  <div class="action-card" style="border-left:3px solid #b45309">
+    <h2>Retail Requirements Tracker {% if tracker_unresolved %}<span class="notes-count-badge">{{ tracker_unresolved }}</span>{% endif %}</h2>
+    <p>Track that retail test requirements are tested across countries — derived live from Retail statuses.</p>
+    <a href="{{ url_for('retail_tracker.tracker_board') }}" class="btn btn-primary">Open Board</a>
+    <a href="{{ url_for('retail_tracker.tracker_home') }}" class="btn">Import &amp; admin</a>
+  </div>
+
   <div class="action-card">
     <h2>Meeting Prep</h2>
     <p>Track topics per meeting, filter by meeting, mark items as discussed.</p>
