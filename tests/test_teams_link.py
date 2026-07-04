@@ -77,6 +77,24 @@ def test_ping_page_prefills_email_and_message(client):
 
 def test_ping_page_404_for_unknown_followup(client):
     assert client.get("/teams-ping/followup/99999").status_code == 404
+    assert client.get("/teams-ping/nonsense/1").status_code == 404
+
+
+def test_registry_serves_other_entity_types(client):
+    # cs_followup: same page, driven purely by its registry entry
+    conn = database.get_connection(client.db_path)
+    try:
+        rec = database.create_cs_followup(conn, area=None, jira_id=None,
+                                          topic="Sign-off open point",
+                                          description=None, next_step=None,
+                                          with_whom="Bernd")
+    finally:
+        conn.close()
+    r = client.get(f"/teams-ping/cs_followup/{rec['id']}")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert 'value="bernd.homner@company.com"' in html   # same contact lookup
+    assert "Sign-off open point" in html
 
 
 def test_save_contact_creates_and_updates(client):

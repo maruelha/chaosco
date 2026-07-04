@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% import '_macros.html' as ui %}
-{% block title %}Teams ping — {{ row.with_whom }}{% endblock %}
+{% block title %}Teams ping — {{ person }}{% endblock %}
 
 {% block content %}
 {{ ui.breadcrumb([("Dashboard", url_for('dashboard')),
-                  ("Follow-ups", url_for('followup_list')),
-                  (row.with_whom ~ " — " ~ row.topic, None)]) }}
+                  (list_label, back_url),
+                  ("Teams ping", None)]) }}
 
-{% call ui.page_header('Teams ping', subtitle=row.with_whom ~ ' — ' ~ row.topic) %}
-  <a href="{{ url_for('followup_detail', followup_id=row.id) }}" class="btn">&#8592; Follow-up</a>
+{% call ui.page_header('Teams ping', subtitle=person ~ ' — ' ~ topic) %}
+  <a href="{{ back_url }}" class="btn">&#8592; Back</a>
 {% endcall %}
 
 <p style="color:#555; max-width:44rem">
@@ -34,14 +34,14 @@
       </p>
       {% elif not email %}
       <p style="color:#b45309; font-size:0.8rem; margin:0.3rem 0 0">
-        No contact matched "{{ row.with_whom }}" — type the address, then save it below
+        No contact matched "{{ person }}" — type the address, then save it below
         so it is pre-filled next time.
       </p>
       {% endif %}
-      <form method="post" action="{{ url_for('teams_ping.save_contact', followup_id=row.id) }}"
+      <form method="post" action="{{ url_for('teams_ping.save_contact', entity_type=entity_type, entity_id=entity_id) }}"
             style="display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem">
         <input type="hidden" name="email" id="tp-save-email">
-        <input type="text" name="contact_name" value="{{ row.with_whom }}"
+        <input type="text" name="contact_name" value="{{ person }}"
                title="contact name to save the address under"
                style="padding:4px 8px; border:1px solid #c9c9d4; border-radius:6px; font-size:0.8rem; width:12rem">
         <button type="submit" class="btn btn-sm"
@@ -52,7 +52,7 @@
     </div>
     <div class="form-field" id="tp-name-field" style="display:none">
       <label for="tp-chatname">Group chat name (only used if Teams creates a new group)</label>
-      <input id="tp-chatname" type="text" value="{{ row.topic }}" oninput="tpUpdate()" style="width:100%">
+      <input id="tp-chatname" type="text" value="{{ topic }}" oninput="tpUpdate()" style="width:100%">
     </div>
     <div class="form-field">
       <label for="tp-message">Message</label>

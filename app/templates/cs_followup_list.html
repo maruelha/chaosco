@@ -143,6 +143,8 @@
           </select>
         </td>
         <td class="kpd-actions">
+          <a href="{{ url_for('teams_ping.ping', entity_type='cs_followup', entity_id=row.id) }}"
+             class="btn btn-sm" title="open a pre-filled Teams chat">&#128172;</a>
           <a href="{{ url_for('cs_followup_detail', followup_id=row.id) }}" class="btn btn-sm">Edit</a>
           <button type="button" class="btn btn-sm js-csfu-notes-toggle">
             Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}

@@ -69,7 +69,11 @@ rendered through the app and made standalone by `emailer.standalone_html`
 
 ## Teams ping (app/teams_link.py + app/web_teams.py)
 
-`/teams-ping/followup/<id>` — from a follow-up's "Teams" button: opens a page
+REGISTRY-driven like the notes module: `/teams-ping/<entity_type>/<id>` — a
+new card gets a ping button by adding ONE PingEntity to `web_teams.REGISTRY`
+(get_row, person, topic, back endpoint) and linking to
+`url_for('teams_ping.ping', entity_type=..., entity_id=...)`. Registered:
+followup, cs_followup, defect (assigned_to). `/teams-ping/followup/<id>` — from a follow-up's "Teams" button: opens a page
 with recipient email(s) (pre-filled via `find_contact_email` match against
 contacts; datalist of all contacts), editable message (template overridable
 via `teams_message_template` config), and an "Open in Teams" deep link

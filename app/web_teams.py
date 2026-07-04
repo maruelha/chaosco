@@ -1,14 +1,21 @@
-"""Teams ping — Blueprint (/teams-ping).
+"""Teams ping — Blueprint (/teams-ping), registry-driven like the notes module.
 
-Opens a pre-filled Teams chat via deep link (see app/teams_link.py). The page
-shows the follow-up context, an editable recipient list (pre-filled from the
-contacts table when the name matches) and an editable message; the "Open in
-Teams" button hands the link to the locally installed Teams client. Nothing
-is sent by the app itself — the user reviews and presses Enter in Teams.
+Opens a pre-filled Teams chat via deep link (see app/teams_link.py). Any card
+can offer a ping button by adding ONE registry entry below: how to fetch the
+row, whom to ping, what the topic is, and where "back" points. The page
+pre-fills the recipient from the contacts table and can save typed addresses
+back to it. Nothing is sent by the app — the user reviews in Teams and
+presses Enter.
+
+Adding a ping button to a new module:
+    1. add a PingEntity to REGISTRY
+    2. link to url_for('teams_ping.ping', entity_type='<key>', entity_id=id)
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
@@ -25,28 +32,73 @@ def _get_conn():
     return database.get_connection(_db_path)
 
 
-@bp.route("/followup/<int:followup_id>")
-def followup_ping(followup_id: int):
+@dataclass(frozen=True)
+class PingEntity:
+    get_row: Callable                       # (conn, id) -> dict | None
+    person: Callable[[dict], str]           # row -> whom to ping (name text)
+    topic: Callable[[dict], str]            # row -> what it is about
+    back_endpoint: str                      # detail/list page endpoint
+    back_arg: str | None                    # kwarg name for back_endpoint (None = no arg)
+    list_label: str                         # breadcrumb text
+
+
+REGISTRY: dict[str, PingEntity] = {
+    "followup": PingEntity(
+        lambda c, i: database.get_followup_by_id(c, int(i)),
+        lambda r: r["with_whom"], lambda r: r["topic"],
+        "followup_detail", "followup_id", "Follow-ups",
+    ),
+    "cs_followup": PingEntity(
+        lambda c, i: database.get_cs_followup(c, int(i)),
+        lambda r: r.get("with_whom") or "", lambda r: r.get("topic") or "",
+        "cs_followup_detail", "followup_id", "CS Follow-Up Tracker",
+    ),
+    "defect": PingEntity(
+        lambda c, i: database.get_defect(c, str(i)),
+        lambda r: r.get("assigned_to") or "",
+        lambda r: f"defect {r['defect_id']}" + (f" — {r['solman_name']}" if r.get("solman_name") else ""),
+        "defect_detail", "defect_id", "Defects",
+    ),
+}
+
+
+def _entity_and_row(conn, entity_type: str, entity_id: str):
+    ent = REGISTRY.get(entity_type)
+    if ent is None:
+        abort(404)
+    row = ent.get_row(conn, entity_id)
+    if row is None:
+        abort(404)
+    return ent, row
+
+
+@bp.route("/<entity_type>/<entity_id>")
+def ping(entity_type: str, entity_id: str):
     conn = _get_conn()
     try:
-        row = database.get_followup_by_id(conn, followup_id)
-        if row is None:
-            abort(404)
-        email = database.find_contact_email(conn, row["with_whom"]) or ""
+        ent, row = _entity_and_row(conn, entity_type, entity_id)
+        person, topic = ent.person(row), ent.topic(row)
+        email = database.find_contact_email(conn, person) or ""
         contacts = [c for c in database.list_contacts(conn) if c.get("email")]
     finally:
         conn.close()
-    message = teams_link.default_message(
-        row["with_whom"], row["topic"], _cfg.get("teams_message_template"))
+    message = teams_link.default_message(person, topic,
+                                         _cfg.get("teams_message_template"))
+    back_kw = {ent.back_arg: row.get(ent.back_arg) or entity_id} if ent.back_arg else {}
     return render_template(
         "teams_ping.html",
-        row=row, email=email, message=message, contacts=contacts,
+        entity_type=entity_type, entity_id=entity_id,
+        person=person, topic=topic,
+        back_url=url_for(ent.back_endpoint, **back_kw), list_label=ent.list_label,
+        email=email, message=message, contacts=contacts,
         contact_saved=request.args.get("contact_saved"),
     )
 
 
-@bp.route("/followup/<int:followup_id>/save-contact", methods=["POST"])
-def save_contact(followup_id: int):
+@bp.route("/<entity_type>/<entity_id>/save-contact", methods=["POST"])
+def save_contact(entity_type: str, entity_id: str):
+    if entity_type not in REGISTRY:
+        abort(404)
     name = request.form.get("contact_name", "").strip()
     # group chats: save only the first address under this name
     email = request.form.get("email", "").split(",")[0].strip()
@@ -56,6 +108,7 @@ def save_contact(followup_id: int):
             outcome = database.upsert_contact_email(conn, name, email)
         finally:
             conn.close()
-        return redirect(url_for("teams_ping.followup_ping",
-                                followup_id=followup_id, contact_saved=outcome))
-    return redirect(url_for("teams_ping.followup_ping", followup_id=followup_id))
+        return redirect(url_for("teams_ping.ping", entity_type=entity_type,
+                                entity_id=entity_id, contact_saved=outcome))
+    return redirect(url_for("teams_ping.ping", entity_type=entity_type,
+                            entity_id=entity_id))
