@@ -92,7 +92,7 @@ Last updated: 2026-07-04
 - Delete stray temp files: `output/~$…`, `report_export/~$…`, `Download/~$…`
 - **Done when:** `git status` clean-by-intent, app starts, all tests green.
 
-### Refactoring step 2 — Test safety net (~a day)
+### Refactoring step 2 — Test safety net ✅ DONE 2026-07-04
 
 - `tests/` exists (tracker suite, 33 tests). Add:
   - Characterization tests for the three existing importers
