@@ -174,6 +174,13 @@
     <li><a href="#shelf-list">Shelf — List</a></li>
     <li><a href="#shelf-detail">Shelf — Detail</a></li>
 
+    <li class="group-label">Topics &amp; Communication (2026-07-04)</li>
+    <li><a href="#topics-list">Topics — List</a></li>
+    <li><a href="#topic-detail">Topics — Working page</a></li>
+    <li><a href="#email-reports">Email Reports</a></li>
+    <li><a href="#teams-ping">Teams Ping</a></li>
+    <li><a href="#teams-entity-components">Drop-in components (channels, links)</a></li>
+
     <li class="group-label">Defects</li>
     <li><a href="#defects-list">Defects — List</a></li>
     <li><a href="#defect-detail">Defects — Detail</a></li>
@@ -249,7 +256,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Topics (active count badge, green accent) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent, + Email Reports link) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -1471,6 +1478,109 @@
 <!-- ================================================================ -->
 <!-- GLOBAL WIDGET -->
 <!-- ================================================================ -->
+<div class="section s-planning">
+  <div class="section-heading">Topics &amp; Communication (added 2026-07-04)</div>
+
+  <!-- Topics list -->
+  <div class="screen-card" id="topics-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Topics — List</span>
+      <span class="screen-url">GET /topics/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Active working topics — the counterpart to Shelf (Shelf = archive, Topic = being worked on NOW). Dashboard card (green accent) shows the active count. Blueprint <code>app/web_topics.py</code>, storage <code>app/db/topics.py</code>.</p>
+      <div class="features">
+        <span class="feat-label">Quick add</span>
+        <span class="feat-value">Title * &middot; category (autocomplete from existing values) &middot; priority &rarr; <code>POST /topics/add</code> (opens the new topic's working page)</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value"><span class="pill pill-filter">title search</span> <span class="pill pill-filter">category</span> <span class="pill pill-filter">priority</span> — done topics hidden by default ("show done" toggle). Sorted High priority first, then last-touched.</span>
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Topic (link) &middot; Category &middot; Priority (colored) &middot; Open steps &middot; Notes count &middot; Updated</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topic working page -->
+  <div class="screen-card" id="topic-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Topics — Working page</span>
+      <span class="screen-url">GET /topics/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">The per-topic workbench: meta, next steps, links, a screen-filling formatted workpad, and the shared notes module.</p>
+      <div class="features">
+        <span class="feat-label">Meta</span>
+        <span class="feat-value">Title / category / priority / status (active | done) editable; delete (with confirm) removes topic + steps + notes/attachments.</span>
+        <span class="feat-label">Next steps</span>
+        <span class="feat-value"><span class="pill pill-ajax">AJAX</span> add (Enter), inline edit (blur-save), delete. Checking a step ARCHIVES it into a collapsed "archived — N done" section with done-date; untick to reopen.</span>
+        <span class="feat-label">Links</span>
+        <span class="feat-value">Per-topic URL list via the drop-in <code>_entity_links.html</code> component (see components card below).</span>
+        <span class="feat-label">Workpad</span>
+        <span class="feat-value">contenteditable rich text (min 65vh): bold/italic/underline/strike, H2/H3/&para;, bullet + numbered lists, quote, highlight, clear formatting. Stored as HTML in <code>topics.workpad</code>. Autosaves on blur + every 30 s + <strong>Ctrl+S</strong>; unload guard; save-state indicator in the sticky toolbar.</span>
+        <span class="feat-label">Notes</span>
+        <span class="feat-value">Full shared notes module (registry entry <code>topic</code>). Inbox files into topics via the standard picker (searches ACTIVE topics by title/category).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email reports -->
+  <div class="screen-card" id="email-reports">
+    <div class="screen-card-header">
+      <span class="screen-title">Email Reports</span>
+      <span class="screen-url">GET /email-report/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Send the status reports as standalone-HTML attachments via GMX SMTP. Linked from the dashboard Export card. Credentials (<code>email_user</code>/<code>email_password</code>) live ONLY in gitignored <code>settings.local.yaml</code> — the page shows setup instructions and disables Send until configured.</p>
+      <div class="features">
+        <span class="feat-label">Reports to attach</span>
+        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board (board rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
+        <span class="feat-label">Message</span>
+        <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.").</span>
+        <span class="feat-label">Recipients</span>
+        <span class="feat-value">Managed in table <code>report_recipients</code>: add / set active-inactive / delete; active ones pre-ticked per send.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams ping -->
+  <div class="screen-card" id="teams-ping">
+    <div class="screen-card-header">
+      <span class="screen-title">Teams Ping</span>
+      <span class="screen-url">GET /teams-ping/&lt;entity_type&gt;/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Opens a Teams chat with a pre-typed message via deep link — nothing is sent by the app; the user reviews in Teams and presses Enter. No API, no credentials, no approvals. Registry-driven (<code>web_teams.REGISTRY</code>) like the notes module: registered for followup (buttons on list + detail), cs_followup, defect (registry-ready), and "chat" (blank — bottom of Defects/Spillover lists).</p>
+      <div class="features">
+        <span class="feat-label">Recipient</span>
+        <span class="feat-value">Pre-filled by matching the entity's person against Contacts; datalist of all contacts; comma-separated addresses open a GROUP chat (optional chat name). <span class="pill pill-action">Save to contacts</span> stores typed addresses (updates name-matched contact or creates one).</span>
+        <span class="feat-label">Message</span>
+        <span class="feat-value">Default "Hi {name}, do you have an update on '{topic}'?" (template via <code>teams_message_template</code> config), fully editable.</span>
+        <span class="feat-label">Limits</span>
+        <span class="feat-value">Deep links cannot target existing named group/meeting chats (needs Graph thread ids) or pre-fill channel posts.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drop-in components -->
+  <div class="screen-card" id="teams-entity-components">
+    <div class="screen-card-header">
+      <span class="screen-title">Drop-in components — Teams channels &amp; Entity links</span>
+      <span class="screen-url">include-anywhere</span>
+    </div>
+    <div class="screen-card-body">
+      <div class="features">
+        <span class="feat-label">Teams channel picker</span>
+        <span class="feat-value"><code>_teams_channels.html</code> include — button + dialog: saved channels open in the Teams client; add via "Get link to channel" (validated) / remove inline. Stored as Links with tool = "Teams Channel" (also on /links). Fully AJAX. Currently at the bottom of Defects and Spillover.</span>
+        <span class="feat-label">Entity links</span>
+        <span class="feat-value"><code>_entity_links.html</code> include (with el_entity_type / el_entity_id) — per-entity URL list (table <code>entity_links</code>), add/delete, http(s)-only. Currently on the Topic working page.</span>
+        <span class="feat-label">Notes coverage update</span>
+        <span class="feat-value">Contacts and Links now carry the FULL notes module and are inbox filing targets (picker options Contact / Link).</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div class="section s-global">
   <div class="section-heading">Global Widget</div>
 
