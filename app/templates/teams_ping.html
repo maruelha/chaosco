@@ -7,7 +7,7 @@
                   (list_label, back_url),
                   ("Teams ping", None)]) }}
 
-{% call ui.page_header('Teams ping', subtitle=person ~ ' — ' ~ topic) %}
+{% call ui.page_header('Teams ping', subtitle=(person ~ ' — ' ~ topic) if person else 'new chat') %}
   <a href="{{ back_url }}" class="btn">&#8592; Back</a>
 {% endcall %}
 
@@ -32,7 +32,7 @@
       <p style="color:#1a7f37; font-size:0.8rem; margin:0.3rem 0 0">
         &#10003; Contact {{ contact_saved }} — this address will be pre-filled next time.
       </p>
-      {% elif not email %}
+      {% elif person and not email %}
       <p style="color:#b45309; font-size:0.8rem; margin:0.3rem 0 0">
         No contact matched "{{ person }}" — type the address, then save it below
         so it is pre-filled next time.

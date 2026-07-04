@@ -9,7 +9,6 @@
       <form method="post" action="{{ url_for('do_solman_sync') }}" style="display:inline">
         <button type="submit" class="btn">↻ Update from SolMan</button>
       </form>
-      {% include '_teams_channels.html' %}
       <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
     </div>
   </div>
@@ -287,4 +286,9 @@ document.querySelectorAll('.daily-toggle').forEach(function (cb) {
   });
 });
 </script>
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <a href="{{ url_for('teams_ping.ping', entity_type='chat', entity_id=0) }}" class="btn" title="open a Teams chat with anyone">&#128172; Teams chat</a>
+  {% include '_teams_channels.html' %}
+</div>
 {% endblock %}

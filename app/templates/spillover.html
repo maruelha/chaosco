@@ -631,4 +631,9 @@
   });
 }());
 </script>
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <a href="{{ url_for('teams_ping.ping', entity_type='chat', entity_id=0) }}" class="btn" title="open a Teams chat with anyone">&#128172; Teams chat</a>
+  {% include '_teams_channels.html' %}
+</div>
 {% endblock %}

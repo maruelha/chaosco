@@ -95,4 +95,7 @@ add (name + "Get link to channel" URL, validated to teams.microsoft.com) and
 remove inline. Fully AJAX (`/teams-ping/channels.json|add|<id>/delete`), so
 the including page needs NO route/context changes. Channels are stored as
 Links with tool = "Teams Channel" (no parallel table; also manageable on
-/links). Currently included on: Defects list.
+/links). Currently included at the BOTTOM of the Defects and Spillover lists,
+next to a generic "Teams chat" button (/teams-ping/chat/0 — the ping
+page without entity context: empty message, recipient from contacts
+autocomplete).

@@ -59,6 +59,12 @@ REGISTRY: dict[str, PingEntity] = {
         lambda r: f"defect {r['defect_id']}" + (f" — {r['solman_name']}" if r.get("solman_name") else ""),
         "defect_detail", "defect_id", "Defects",
     ),
+    # blank chat — no entity context; link to /teams-ping/chat/0 from anywhere
+    "chat": PingEntity(
+        lambda c, i: {},
+        lambda r: "", lambda r: "",
+        "dashboard", None, "Dashboard",
+    ),
 }
 
 
@@ -133,8 +139,10 @@ def ping(entity_type: str, entity_id: str):
         contacts = [c for c in database.list_contacts(conn) if c.get("email")]
     finally:
         conn.close()
-    message = teams_link.default_message(person, topic,
-                                         _cfg.get("teams_message_template"))
+    # entity-less chat: start with an empty message instead of the chase template
+    message = (teams_link.default_message(person, topic,
+                                          _cfg.get("teams_message_template"))
+               if person else "")
     back_kw = {ent.back_arg: row.get(ent.back_arg) or entity_id} if ent.back_arg else {}
     return render_template(
         "teams_ping.html",
