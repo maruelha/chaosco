@@ -145,7 +145,7 @@ Last updated: 2026-07-04
 - Mark `docs/code-review-findings.md` findings as resolved / archive it
 - **Done when:** CLAUDE.md under ~150 lines; README matches reality.
 
-### Refactoring step 6 — UI component library
+### Refactoring step 6 — UI component library ✅ DONE 2026-07-04
 
 - `app/templates/_macros.html`: shared Jinja macros — page header (title +
   action buttons), filter bar, data table shell, pills/badges, stat cards,

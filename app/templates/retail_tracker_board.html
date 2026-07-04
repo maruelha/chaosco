@@ -1,94 +1,8 @@
 {% extends "base.html" %}
+{% import '_macros.html' as ui %}
 {% block title %}Requirements Board — Retail Tracker{% endblock %}
 
 {% block content %}
-<style>
-  .rt-stats { display:flex; gap:0.8rem; flex-wrap:wrap; margin:1rem 0 1.4rem; }
-  .rt-stat { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
-             padding:0.7rem 1.1rem; min-width:9.5rem;
-             box-shadow:0 1px 3px rgba(0,0,0,.06); }
-  .rt-stat .num { font-size:1.5rem; font-weight:800; line-height:1.2; }
-  .rt-stat .lbl { font-size:0.72rem; text-transform:uppercase; letter-spacing:.05em; color:#666; }
-  .rt-stat--done  { border-top:4px solid #1a7f37; } .rt-stat--done .num  { color:#1a7f37; }
-  .rt-stat--open  { border-top:4px solid #b45309; } .rt-stat--open .num  { color:#b45309; }
-  .rt-stat--pay   { border-top:4px solid #0e7490; } .rt-stat--pay .num   { color:#0e7490; }
-  .rt-stat--alarm { border-top:4px solid #c1121f; } .rt-stat--alarm .num { color:#c1121f; }
-
-  details.rt-section { margin:1.1rem 0; background:#fff; border:1px solid #e2e2ea;
-                       border-radius:10px; overflow:hidden;
-                       box-shadow:0 1px 3px rgba(0,0,0,.06); }
-  details.rt-section > summary { cursor:pointer; list-style:none; display:flex;
-      align-items:center; gap:0.7rem; padding:0.75rem 1rem; font-weight:700;
-      font-size:1.02rem; color:#fff; user-select:none; }
-  details.rt-section > summary::before { content:"▸"; transition:transform .15s; }
-  details.rt-section[open] > summary::before { transform:rotate(90deg); }
-  .rt-sales   > summary { background:#2b6cb0; }
-  .rt-return  > summary { background:#7c3aed; }
-  .rt-tab4    > summary { background:#334155; }
-  .rt-count { margin-left:auto; background:rgba(255,255,255,.22); border-radius:20px;
-              padding:2px 12px; font-size:0.85rem; font-weight:700; }
-  .rt-count--full { background:#1a7f37; }
-
-  .rt-filterbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap;
-                  padding:0.6rem 1rem; background:#fafafd; border-bottom:1px solid #eee; }
-  .rt-fbtn { border:1px solid #c9c9d4; background:#fff; border-radius:8px;
-             padding:5px 12px; cursor:pointer; font-size:0.84rem; }
-  .rt-fbtn--active { border-color:#2b6cb0; color:#2b6cb0; font-weight:700; background:#eef4ff; }
-  .rt-filterbar select, .rt-filterbar input[type=text] {
-    padding:5px 10px; border:1px solid #c9c9d4; border-radius:8px; font-size:0.84rem; }
-  .rt-dlg { border:1px solid #c9c9d4; border-radius:10px; padding:1rem 1.2rem;
-            max-width:30rem; max-height:70vh; overflow-y:auto; }
-  .rt-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
-
-  .rt-table { width:100%; border-collapse:collapse; font-size:0.86rem; }
-  .rt-table th { background:#f6f7fb; color:#333; text-align:left;
-                 padding:8px 10px; border-bottom:2px solid #d9d9e3;
-                 font-size:0.72rem; text-transform:uppercase; letter-spacing:.04em; }
-  .rt-table td { padding:7px 10px; border-bottom:1px solid #eee; }
-  .rt-table tbody tr.rt-req:hover { background:#f5f8ff; }
-  tr.rt-done { background:#e9f8ec; }
-  tr.rt-done td:first-child { border-left:4px solid #1a7f37; }
-  tr.rt-req td:first-child { border-left:4px solid transparent; }
-
-  .rt-prog { font-weight:800; }
-  .rt-prog--done { color:#1a7f37; } .rt-prog--open { color:#b45309; }
-  .rt-prog--zero { color:#c1121f; }
-  .rt-prog--over { color:#0e7490; }   /* overachieved: more passes than required */
-
-  .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
-             font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }
-  .rt-chip--pass   { background:#1a7f37; color:#fff; }
-  .rt-chip--other  { background:#fff; border-color:#d97706; color:#b45309; }
-  .rt-chip--none   { background:#f0f0f5; color:#9a9aa5; }
-  .rt-chip--target { box-shadow:0 0 0 2px #c1121f; }
-  .rt-cbtn { border:1px solid #c9c9d4; background:#fff; border-radius:6px;
-             padding:2px 10px; cursor:pointer; font-size:0.78rem; color:#444; }
-  .rt-cbtn:hover { background:#eef4ff; border-color:#2b6cb0; color:#2b6cb0; }
-  tr.rt-countries td { background:#fafafd; padding:8px 12px 10px; }
-
-  .rt-comment { width:100%; min-width:9rem; padding:3px 8px; border:1px solid #ddd;
-                border-radius:6px; font-size:0.79rem; background:#fff; }
-  .rt-comment:focus { border-color:#2b6cb0; outline:none; }
-
-  .rt-missing { border:2px solid #c1121f; border-radius:10px; background:#fff5f5;
-                padding:1rem 1.2rem; margin:1.6rem 0; }
-  .rt-missing h2 { color:#c1121f; margin:0 0 0.6rem; }
-  .rt-missing li { color:#a10d19; font-weight:600; padding:5px 0;
-                   display:flex; align-items:center; gap:.6rem; }
-  .rt-missing li::before { content:"⚠"; }
-  .rt-asof { color:#666; font-size:0.85rem; margin:-0.4rem 0 0.8rem; }
-  .rt-topbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap; margin:0 0 1rem; }
-
-  @media print {
-    .rt-topbar, .rt-filterbar, .rt-cbtn, .btn, .btn-row, dialog, form, #enh-widget,
-    header a.site-title { display:none !important; }
-    details.rt-section { box-shadow:none; border-color:#999; break-inside:avoid-page; }
-    .rt-stat { box-shadow:none; }
-    .rt-comment { border:none; }
-    body { background:#fff; }
-  }
-</style>
-
 <div class="page-header">
   <h1>Retail Requirements Board</h1>
   <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}" class="btn">Payment methods</a>
@@ -102,15 +16,13 @@
   <span style="color:#888; font-size:0.82rem">the download is a dated standalone snapshot of the current view (filters included)</span>
 </div>
 
-{# ---- stat cards ---- #}
-<div class="rt-stats">
-  <div class="rt-stat rt-stat--done"><div class="num">{{ req_summary.done }} / {{ req_summary.total }}</div><div class="lbl">requirements complete</div></div>
-  <div class="rt-stat rt-stat--open"><div class="num">{{ req_summary.open }}</div><div class="lbl">still open</div></div>
-  <div class="rt-stat rt-stat--pay"><div class="num">{{ cpm_summary.done }} / {{ cpm_summary.total }}</div><div class="lbl">payment matrix</div></div>
-  {% if missing_tests %}
-  <div class="rt-stat rt-stat--alarm"><div class="num">{{ missing_tests|length }}</div><div class="lbl">tests missing!</div></div>
-  {% endif %}
-</div>
+{# ---- stat cards (shared ui macros) ---- #}
+{% call ui.stat_cards() %}
+  {{ ui.stat_card(req_summary.done ~ ' / ' ~ req_summary.total, 'requirements complete', 'done') }}
+  {{ ui.stat_card(req_summary.open, 'still open', 'open') }}
+  {{ ui.stat_card(cpm_summary.done ~ ' / ' ~ cpm_summary.total, 'payment matrix', 'info') }}
+  {% if missing_tests %}{{ ui.stat_card(missing_tests|length, 'tests missing!', 'alarm') }}{% endif %}
+{% endcall %}
 
 {% set colors = {"sales": "rt-sales", "return": "rt-return"} %}
 {% for a in areas %}

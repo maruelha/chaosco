@@ -1176,3 +1176,130 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .att-thumb:hover .att-del { opacity: 1; }
 .att-add { margin: 0.25rem 0 0.5rem; }
 .att-pick-btn { cursor: pointer; font-size: 0.8rem; }
+
+
+/* ===================================================================
+   UI COMPONENT LIBRARY (refactoring step 6)
+   Canonical components for ALL modules - new pages use these classes
+   (via the macros in templates/_macros.html) instead of copying HTML.
+   The rt-*/pm-* aliases keep the Retail Tracker pages working; new
+   code should use the ui-*/stat-*/chip names.
+   =================================================================== */
+
+/* ---- stat cards ---- */
+.stat-cards, .rt-stats { display:flex; gap:0.8rem; flex-wrap:wrap; margin:1rem 0 1.4rem; }
+.stat-card, .rt-stat { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+             padding:0.7rem 1.1rem; min-width:9.5rem;
+             box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.stat-card .num, .rt-stat .num { font-size:1.5rem; font-weight:800; line-height:1.2; }
+.stat-card .lbl, .rt-stat .lbl { font-size:0.72rem; text-transform:uppercase; letter-spacing:.05em; color:#666; }
+.stat-card--done, .rt-stat--done   { border-top:4px solid #1a7f37; }
+.stat-card--done .num, .rt-stat--done .num { color:#1a7f37; }
+.stat-card--open, .rt-stat--open   { border-top:4px solid #b45309; }
+.stat-card--open .num, .rt-stat--open .num { color:#b45309; }
+.stat-card--info, .rt-stat--pay    { border-top:4px solid #0e7490; }
+.stat-card--info .num, .rt-stat--pay .num { color:#0e7490; }
+.stat-card--alarm, .rt-stat--alarm { border-top:4px solid #c1121f; }
+.stat-card--alarm .num, .rt-stat--alarm .num { color:#c1121f; }
+
+/* ---- collapsible colored sections ---- */
+details.ui-section, details.rt-section { margin:1.1rem 0; background:#fff; border:1px solid #e2e2ea;
+                     border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+details.ui-section > summary, details.rt-section > summary { cursor:pointer; list-style:none;
+    display:flex; align-items:center; gap:0.7rem; padding:0.75rem 1rem; font-weight:700;
+    font-size:1.02rem; color:#fff; user-select:none; }
+details.ui-section > summary::before, details.rt-section > summary::before {
+    content:"\25B8"; transition:transform .15s; }
+details.ui-section[open] > summary::before, details.rt-section[open] > summary::before {
+    transform:rotate(90deg); }
+.ui-section--blue > summary,   .rt-sales   > summary { background:#2b6cb0; }
+.ui-section--purple > summary, .rt-return  > summary { background:#7c3aed; }
+.ui-section--teal > summary   { background:#0e7490; }
+.ui-section--slate > summary,  .rt-tab4    > summary { background:#334155; }
+.ui-section--green > summary  { background:#1a7f37; }
+.ui-section-count, .rt-count { margin-left:auto; background:rgba(255,255,255,.22);
+    border-radius:20px; padding:2px 12px; font-size:0.85rem; font-weight:700; }
+.ui-section-count--full, .rt-count--full { background:#1a7f37; }
+
+/* ---- data tables ---- */
+.ui-table, .rt-table, .pm-table { width:100%; border-collapse:collapse; font-size:0.86rem; }
+.ui-table th, .rt-table th, .pm-table th { background:#f6f7fb; color:#333; text-align:left;
+    padding:8px 10px; border-bottom:2px solid #d9d9e3; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:.04em; }
+.ui-table td, .rt-table td, .pm-table td { padding:7px 10px; border-bottom:1px solid #eee; }
+.ui-table tbody tr:hover, .rt-table tbody tr.rt-req:hover, .pm-table tbody tr:hover { background:#f5f8ff; }
+tr.ui-row--done, tr.rt-done, tr.pm-done { background:#e9f8ec; }
+tr.rt-done td:first-child { border-left:4px solid #1a7f37; }
+tr.rt-req td:first-child { border-left:4px solid transparent; }
+
+/* ---- filter bar + dialogs ---- */
+.ui-filterbar, .rt-filterbar, .pm-filterbar { display:flex; gap:0.7rem; align-items:center;
+    flex-wrap:wrap; padding:0.6rem 1rem; background:#fafafd; border-bottom:1px solid #eee; }
+.pm-filterbar { padding:0; background:transparent; border:none; margin:0 0 1rem; }
+.ui-fbtn, .rt-fbtn, .pm-fbtn { border:1px solid #c9c9d4; background:#fff; border-radius:8px;
+    padding:5px 12px; cursor:pointer; font-size:0.84rem; }
+.ui-fbtn--active, .rt-fbtn--active, .pm-fbtn--active { border-color:#2b6cb0; color:#2b6cb0;
+    font-weight:700; background:#eef4ff; }
+.ui-filterbar select, .ui-filterbar input[type=text],
+.rt-filterbar select, .rt-filterbar input[type=text],
+.pm-filterbar select, .pm-filterbar input[type=text] {
+    padding:5px 10px; border:1px solid #c9c9d4; border-radius:8px; font-size:0.84rem; }
+.ui-dlg, .rt-dlg, .pm-dlg { border:1px solid #c9c9d4; border-radius:10px; padding:1rem 1.2rem;
+    max-width:30rem; max-height:70vh; overflow-y:auto; }
+.ui-dlg label, .rt-dlg label, .pm-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
+
+/* ---- chips (per-country state marks) ---- */
+.chip, .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
+    font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }
+.chip--pass, .rt-chip--pass   { background:#1a7f37; color:#fff; }
+.chip--other, .rt-chip--other { background:#fff; border-color:#d97706; color:#b45309; }
+.chip--none, .rt-chip--none   { background:#f0f0f5; color:#9a9aa5; }
+.chip--target, .rt-chip--target { box-shadow:0 0 0 2px #c1121f; }
+
+/* ---- inline comment inputs (blur-save) ---- */
+.comment-input, .rt-comment, .pm-comment { width:100%; min-width:9rem; padding:3px 8px;
+    border:1px solid #ddd; border-radius:6px; font-size:0.79rem; background:#fff; }
+.comment-input:focus, .rt-comment:focus, .pm-comment:focus { border-color:#2b6cb0; outline:none; }
+
+/* ---- alarm box (red attention list) ---- */
+.alarm-box, .rt-missing { border:2px solid #c1121f; border-radius:10px; background:#fff5f5;
+    padding:1rem 1.2rem; margin:1.6rem 0; }
+.alarm-box h2, .rt-missing h2 { color:#c1121f; margin:0 0 0.6rem; }
+.alarm-box li, .rt-missing li { color:#a10d19; font-weight:600; padding:5px 0;
+    display:flex; align-items:center; gap:.6rem; }
+.alarm-box li::before, .rt-missing li::before { content:"\26A0"; }
+
+/* ---- progress emphasis + small helpers ---- */
+.rt-prog { font-weight:800; }
+.rt-prog--done { color:#1a7f37; } .rt-prog--open { color:#b45309; }
+.rt-prog--zero { color:#c1121f; } .rt-prog--over { color:#0e7490; }
+.rt-cbtn { border:1px solid #c9c9d4; background:#fff; border-radius:6px;
+    padding:2px 10px; cursor:pointer; font-size:0.78rem; color:#444; }
+.rt-cbtn:hover { background:#eef4ff; border-color:#2b6cb0; color:#2b6cb0; }
+tr.rt-countries td { background:#fafafd; padding:8px 12px 10px; }
+.rt-asof, .as-of-line { color:#666; font-size:0.85rem; margin:-0.4rem 0 0.8rem; }
+.rt-topbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap; margin:0 0 1rem; }
+.pill--ready { background:#e0f2fe; color:#0e7490; }
+
+/* ---- payment methods page specifics ---- */
+.pm-tests { display:flex; gap:0.8rem; flex-wrap:wrap; margin:0.8rem 0 1.2rem; }
+.pm-test { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+    padding:0.6rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,.06);
+    border-top:4px solid #0e7490; min-width:14rem; }
+.pm-test .kind { font-size:0.7rem; text-transform:uppercase; letter-spacing:.05em;
+    color:#0e7490; font-weight:800; }
+.pm-test .name { font-weight:600; font-size:0.86rem; }
+.pm-test .id { font-family:monospace; font-size:0.74rem; color:#888; }
+.pm-hint { font-size:0.7rem; font-weight:700; }
+.pm-hint--pass { color:#1a7f37; }
+.pm-hint--wait { color:#b0b0ba; }
+
+/* ---- print (reports/boards print clean) ---- */
+@media print {
+  .rt-topbar, .ui-filterbar, .rt-filterbar, .pm-filterbar, .rt-cbtn, .btn, .btn-row,
+  dialog, form, #enh-widget, header a.site-title { display:none !important; }
+  details.ui-section, details.rt-section { box-shadow:none; border-color:#999; break-inside:avoid-page; }
+  .stat-card, .rt-stat { box-shadow:none; }
+  .comment-input, .rt-comment, .pm-comment { border:none; }
+  body { background:#fff; }
+}

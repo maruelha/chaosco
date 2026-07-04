@@ -2,43 +2,6 @@
 {% block title %}Payment Methods — Retail Tracker{% endblock %}
 
 {% block content %}
-<style>
-  .pm-tests { display:flex; gap:0.8rem; flex-wrap:wrap; margin:0.8rem 0 1.2rem; }
-  .pm-test { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
-             padding:0.6rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,.06);
-             border-top:4px solid #0e7490; min-width:14rem; }
-  .pm-test .kind { font-size:0.7rem; text-transform:uppercase; letter-spacing:.05em;
-                   color:#0e7490; font-weight:800; }
-  .pm-test .name { font-weight:600; font-size:0.86rem; }
-  .pm-test .id { font-family:monospace; font-size:0.74rem; color:#888; }
-
-  .pm-filterbar { display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap; margin:0 0 1rem; }
-  .pm-fbtn { border:1px solid #c9c9d4; background:#fff; border-radius:8px;
-             padding:6px 14px; cursor:pointer; font-size:0.86rem; }
-  .pm-fbtn--active { border-color:#2b6cb0; color:#2b6cb0; font-weight:700; background:#eef4ff; }
-  .pm-filterbar select, .pm-filterbar input[type=text] {
-    padding:6px 10px; border:1px solid #c9c9d4; border-radius:8px; font-size:0.86rem; }
-  .pm-dlg { border:1px solid #c9c9d4; border-radius:10px; padding:1rem 1.2rem;
-            max-width:24rem; max-height:70vh; overflow-y:auto; }
-  .pm-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
-
-  .pm-table { width:100%; border-collapse:collapse; font-size:0.85rem;
-              background:#fff; border:1px solid #e2e2ea; border-radius:10px; }
-  .pm-table th { background:#f6f7fb; text-align:left; padding:8px 10px;
-                 border-bottom:2px solid #d9d9e3; font-size:0.72rem;
-                 text-transform:uppercase; letter-spacing:.04em; }
-  .pm-table td { padding:6px 10px; border-bottom:1px solid #eee; }
-  .pm-table tbody tr:hover { background:#f5f8ff; }
-  tr.pm-done { background:#e9f8ec; }
-  .pm-hint { font-size:0.7rem; font-weight:700; }
-  .pm-hint--pass { color:#1a7f37; }
-  .pm-hint--wait { color:#b0b0ba; }
-  .pm-comment { width:100%; min-width:11rem; padding:4px 8px; border:1px solid #ddd;
-                border-radius:6px; font-size:0.8rem; }
-  .pm-comment:focus { border-color:#2b6cb0; outline:none; }
-  .pill--ready { background:#e0f2fe; color:#0e7490; }
-</style>
-
 <div class="page-header">
   <h1>Country-specific Payment Methods</h1>
   <a href="{{ url_for('retail_tracker.tracker_board') }}" class="btn">&#8592; Board</a>

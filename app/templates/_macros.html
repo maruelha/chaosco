@@ -1,0 +1,97 @@
+{# Shared UI components (refactoring step 6).
+
+   Import at the top of a template:
+     {% import '_macros.html' as ui %}
+
+   A new module's pages should be assembled from these + the shared
+   component classes in style.css — never by copying HTML from a sibling
+   template. Existing templates adopt them opportunistically when touched.
+#}
+
+{# ---- page header: title + optional subtitle + action buttons ----
+   {% call ui.page_header('Defects', subtitle='All imported defects') %}
+     <a href="..." class="btn btn-primary">Action</a>
+   {% endcall %}
+#}
+{% macro page_header(title, subtitle=None) %}
+<div class="page-header">
+  <h1>{{ title }}</h1>
+  {% if subtitle %}<p class="page-subtitle">{{ subtitle }}</p>{% endif %}
+  {{ caller() if caller }}
+</div>
+{% endmacro %}
+
+{# ---- breadcrumb: pairs of (label, url); last item = current page (no url) ---- #}
+{% macro breadcrumb(items) %}
+<nav class="breadcrumb">
+  {% for label, url in items %}
+    {% if url %}<a href="{{ url }}">{{ label }}</a>{% else %}<span>{{ label }}</span>{% endif %}
+    {% if not loop.last %}<span>›</span>{% endif %}
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{# ---- saved banner: shown when the query flag is present ----
+   {{ ui.flag_banner('saved', 'Changes saved.') }}
+#}
+{% macro flag_banner(flag, message) %}
+{% if request.args.get(flag) %}<div class="saved-banner">&#10003;&nbsp; {{ message }}</div>{% endif %}
+{% endmacro %}
+
+{# ---- pill: variant in green | gray | red | ready | amber ---- #}
+{% macro pill(text, variant='gray') %}
+<span class="pill pill--{{ variant }}">{{ text }}</span>
+{% endmacro %}
+
+{# ---- stat cards row (the tracker-board look, now app-wide) ----
+   {% call ui.stat_cards() %}
+     {{ ui.stat_card('19 / 90', 'requirements complete', 'done') }}
+     {{ ui.stat_card('71', 'still open', 'open') }}
+   {% endcall %}
+   accents: done (green) | open (amber) | info (teal) | alarm (red)
+#}
+{% macro stat_cards() %}
+<div class="stat-cards">{{ caller() }}</div>
+{% endmacro %}
+
+{% macro stat_card(number, label, accent='info') %}
+<div class="stat-card stat-card--{{ accent }}">
+  <div class="num">{{ number }}</div>
+  <div class="lbl">{{ label }}</div>
+</div>
+{% endmacro %}
+
+{# ---- collapsible section with colored header + count badge ----
+   {% call ui.section('Tracking Sales', 'blue', badge='10 / 42', open=true) %}
+     ...table...
+   {% endcall %}
+   colors: blue | purple | teal | slate | green
+#}
+{% macro section(title, color='slate', badge=None, badge_full=False, open=True) %}
+<details class="ui-section ui-section--{{ color }}"{% if open %} open{% endif %}>
+  <summary>{{ title }}
+    {% if badge is not none %}
+    <span class="ui-section-count{% if badge_full %} ui-section-count--full{% endif %}">{{ badge }}</span>
+    {% endif %}
+  </summary>
+  {{ caller() }}
+</details>
+{% endmacro %}
+
+{# ---- data table shell: consistent header styling + horizontal scroll ----
+   {% call ui.table(['Test case', 'Name', 'Status']) %}
+     <tr><td>...</td></tr>
+   {% endcall %}
+#}
+{% macro table(headers) %}
+<div class="table-wrap" style="overflow-x:auto">
+  <table class="ui-table">
+    <thead>
+      <tr>{% for h in headers %}<th>{{ h }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {{ caller() }}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
