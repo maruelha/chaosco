@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Teams ping — {{ row.with_whom }}{% endblock %}
+
+{% block content %}
+{{ ui.breadcrumb([("Dashboard", url_for('dashboard')),
+                  ("Follow-ups", url_for('followup_list')),
+                  (row.with_whom ~ " — " ~ row.topic, None)]) }}
+
+{% call ui.page_header('Teams ping', subtitle=row.with_whom ~ ' — ' ~ row.topic) %}
+  <a href="{{ url_for('followup_detail', followup_id=row.id) }}" class="btn">&#8592; Follow-up</a>
+{% endcall %}
+
+<p style="color:#555; max-width:44rem">
+  This opens a Teams chat with the message <strong>pre-typed</strong> — nothing is sent
+  until you press Enter in Teams. Several addresses (comma-separated) open a group chat.
+</p>
+
+<div class="annotation-card" style="max-width:44rem">
+  <div class="form-stack">
+    <div class="form-field">
+      <label for="tp-email">Recipient email(s)</label>
+      <input id="tp-email" type="text" value="{{ email }}" list="tp-contacts"
+             placeholder="person@company.com or a,b,c for a group chat"
+             oninput="tpUpdate()" style="width:100%">
+      <datalist id="tp-contacts">
+        {% for c in contacts %}
+        <option value="{{ c.email.split(',')[0].strip() }}">{{ c.name }}</option>
+        {% endfor %}
+      </datalist>
+      {% if not email %}
+      <p style="color:#b45309; font-size:0.8rem; margin:0.3rem 0 0">
+        No contact matched "{{ row.with_whom }}" — type the address (and consider adding
+        them to <a href="{{ url_for('contacts_list') }}">Contacts</a> so it is found next time).
+      </p>
+      {% endif %}
+    </div>
+    <div class="form-field" id="tp-name-field" style="display:none">
+      <label for="tp-chatname">Group chat name (only used if Teams creates a new group)</label>
+      <input id="tp-chatname" type="text" value="{{ row.topic }}" oninput="tpUpdate()" style="width:100%">
+    </div>
+    <div class="form-field">
+      <label for="tp-message">Message</label>
+      <textarea id="tp-message" rows="4" oninput="tpUpdate()" style="width:100%">{{ message }}</textarea>
+    </div>
+  </div>
+  <div class="form-footer">
+    <span style="color:#888; font-size:0.8rem">review in Teams, then press Enter to send</span>
+    <a id="tp-open" class="btn btn-primary" href="#" target="_blank" rel="noopener">&#128172; Open in Teams</a>
+  </div>
+</div>
+
+<script>
+function tpUpdate() {
+  const emails = document.getElementById('tp-email').value.trim();
+  const msg = document.getElementById('tp-message').value;
+  const isGroup = emails.includes(',');
+  document.getElementById('tp-name-field').style.display = isGroup ? '' : 'none';
+  let url = 'https://teams.microsoft.com/l/chat/0/0?users='
+          + encodeURIComponent(emails).replaceAll('%40', '@').replaceAll('%2C', ',');
+  if (isGroup) {
+    const name = document.getElementById('tp-chatname').value.trim();
+    if (name) url += '&topicName=' + encodeURIComponent(name);
+  }
+  url += '&message=' + encodeURIComponent(msg);
+  const a = document.getElementById('tp-open');
+  a.href = url;
+  a.classList.toggle('btn-primary', !!emails);
+}
+tpUpdate();
+</script>
+{% endblock %}

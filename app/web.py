@@ -29,6 +29,9 @@ from app.web_email import bp as _email_bp
 _db_email.init_schema(_db_path)
 app.register_blueprint(_email_bp)
 
+from app.web_teams import bp as _teams_bp
+app.register_blueprint(_teams_bp)
+
 
 if __name__ == "__main__":
     import threading

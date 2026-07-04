@@ -314,6 +314,21 @@ def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
 # Contacts
 # ---------------------------------------------------------------------------
 
+def find_contact_email(conn: sqlite3.Connection, name: str) -> str | None:
+    """Best-effort contact email for a free-text name (e.g. followups.with_whom).
+    Case-insensitive substring match either way; first hit wins."""
+    name = (name or "").strip().lower()
+    if not name:
+        return None
+    for row in conn.execute(
+            "SELECT name, email FROM contacts WHERE email IS NOT NULL AND email != ''"):
+        cname = (row[0] or "").strip().lower()
+        if cname and (name in cname or cname in name):
+            # contacts.email is free text and may hold several — take the first
+            return row[1].replace(";", ",").split(",")[0].strip()
+    return None
+
+
 def get_contact_options(conn: sqlite3.Connection) -> dict:
     rows = _rows_to_dicts(conn.execute("SELECT area, topic, tags FROM contacts"))
     areas = sorted({r["area"] for r in rows if r.get("area")})

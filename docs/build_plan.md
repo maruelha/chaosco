@@ -63,6 +63,14 @@ Last updated: 2026-07-04
 
 1. Same as ECOM, after ECOM.
 
+### Follow-ups
+
+1. ~~**Teams ping**~~ ✅ DONE 2026-07-04: deep-link button on list + detail —
+   opens a pre-filled Teams chat (1:1 or group via comma-separated emails);
+   recipient auto-matched from contacts. Deep links cannot target existing
+   named/meeting chats or pre-fill channels — if that is ever needed, the
+   Power Automate webhook route (VDI-created, cloud-run) is the upgrade path.
+
 ### Cross-module navigation
 
 1. Make `defect_id_ref` on Retail rows a clickable link to the Defect detail.

@@ -66,3 +66,16 @@ instructions and disables Send until configured. The board attachment is
 rendered through the app and made standalone by `emailer.standalone_html`
 (CSS inlined, scripts stripped, sections opened). Tests: tests/test_emailer.py
 (assembly, snapshot, CRUD, mocked SMTP).
+
+## Teams ping (app/teams_link.py + app/web_teams.py)
+
+`/teams-ping/followup/<id>` — from a follow-up's "Teams" button: opens a page
+with recipient email(s) (pre-filled via `find_contact_email` match against
+contacts; datalist of all contacts), editable message (template overridable
+via `teams_message_template` config), and an "Open in Teams" deep link
+(`https://teams.microsoft.com/l/chat/0/0?users=...&message=...`) that opens
+the local Teams client with the chat pre-typed — the user presses Enter.
+Comma-separated emails open a group chat (optional topicName). No API, no
+credentials, no approvals. Deep links CANNOT target existing named group
+chats/meeting chats (needs Graph thread ids) or pre-fill channel posts.
+Tests: tests/test_teams_link.py.

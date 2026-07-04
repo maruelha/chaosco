@@ -150,6 +150,8 @@
         </select>
       </td>
       <td class="fu-col-notes">
+        <a href="{{ url_for('teams_ping.followup_ping', followup_id=item.id) }}"
+           class="btn btn-sm" title="open a pre-filled Teams chat">&#128172; Teams</a>
         <a href="{{ url_for('followup_detail', followup_id=item.id) }}" class="btn btn-sm">
           Notes{% if item.note_count %} ({{ item.note_count }}){% endif %}
         </a>

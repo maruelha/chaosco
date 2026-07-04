@@ -12,6 +12,8 @@
   <div class="page-header-row">
     <h1>{{ row.with_whom }}</h1>
     <div class="page-header-actions">
+      <a href="{{ url_for('teams_ping.followup_ping', followup_id=row.id) }}" class="btn"
+         title="open a pre-filled Teams chat">&#128172; Teams ping</a>
       <a href="{{ url_for('followup_list') }}" class="btn">← Back to Follow-ups</a>
     </div>
   </div>
