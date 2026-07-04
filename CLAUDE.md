@@ -66,6 +66,9 @@ app/
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export
+  web_topics.py     Topics card (/topics) — active work: steps, workpad, notes;
+                    storage in db/topics.py; teams_link.py/web_teams.py = Teams
+                    ping + channel picker; web_email.py + emailer.py below
   emailer.py        email reports via GMX SMTP (creds ONLY in settings.local.yaml);
                     web_email.py = /email-report Blueprint; recipients in db/email.py
   ppt_utils.py / ppt_retail.py / ppt_spillover.py

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}{{ topic.title }} — Topics{% endblock %}
+
+{% block content %}
+<style>
+  .tp-steps li { display:flex; align-items:center; gap:0.5rem; padding:4px 0;
+                 border-bottom:1px solid #f2f2f6; list-style:none; }
+  .tp-steps input[type=text] { flex:1; border:none; background:transparent;
+                 font:inherit; padding:2px 4px; }
+  .tp-steps input[type=text]:focus { outline:1px solid #2b6cb0; border-radius:4px; background:#fff; }
+  .tp-step-done input[type=text] { text-decoration:line-through; color:#999; }
+  .tp-toolbar { display:flex; gap:0.3rem; flex-wrap:wrap; padding:0.4rem 0;
+                border-bottom:1px solid #eee; margin-bottom:0.6rem;
+                position:sticky; top:0; background:#fff; z-index:2; }
+  .tp-toolbar button { border:1px solid #d5d5dd; background:#fff; border-radius:6px;
+                padding:3px 10px; cursor:pointer; font-size:0.85rem; min-width:2.1rem; }
+  .tp-toolbar button:hover { background:#eef4ff; border-color:#2b6cb0; }
+  #tp-pad { min-height:65vh; outline:none; padding:0.8rem 1rem; line-height:1.55;
+            border:1px solid #e2e2ea; border-radius:8px; background:#fff; }
+  #tp-pad:focus { border-color:#2b6cb0; }
+  #tp-pad h2 { font-size:1.15rem; margin:0.9em 0 0.35em; }
+  #tp-pad h3 { font-size:1.0rem; margin:0.8em 0 0.3em; }
+  #tp-pad ul, #tp-pad ol { padding-left:1.6rem; }
+  #tp-pad blockquote { border-left:3px solid #c9c9d4; margin:0.5em 0; padding:0.2em 0.8em; color:#555; }
+  .tp-savestate { font-size:0.78rem; color:#888; }
+</style>
+
+{{ ui.breadcrumb([("Dashboard", url_for('dashboard')),
+                  ("Topics", url_for('topics.topics_list')),
+                  (topic.title, None)]) }}
+
+{% call ui.page_header(topic.title) %}
+  <a href="{{ url_for('topics.topics_list') }}" class="btn">&#8592; Topics</a>
+{% endcall %}
+{{ ui.flag_banner('saved', 'Changes saved.') }}
+
+{# ---- meta ---- #}
+<form method="post" action="{{ url_for('topics.topic_update', topic_id=topic.id) }}"
+      style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem">
+  <input name="title" type="text" value="{{ topic.title }}" required
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:22rem; font-weight:600">
+  <input name="category" type="text" value="{{ topic.category or '' }}" placeholder="category" list="topic-cats"
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; width:10rem">
+  <datalist id="topic-cats">
+    {% for c in categories %}<option value="{{ c }}">{% endfor %}
+  </datalist>
+  <select name="priority" style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+    {% for p in priorities %}<option {% if p == topic.priority %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+  <select name="status" style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+    <option value="active" {% if topic.status == 'active' %}selected{% endif %}>active</option>
+    <option value="done" {% if topic.status == 'done' %}selected{% endif %}>done</option>
+  </select>
+  <button type="submit" class="btn btn-sm">Save</button>
+  <button type="submit" class="btn btn-sm btn-danger" style="margin-left:auto"
+          formaction="{{ url_for('topics.topic_delete', topic_id=topic.id) }}"
+          onclick="return confirm('Delete this topic with all steps and notes? This cannot be undone.')">Delete topic</button>
+</form>
+
+{# ---- next steps ---- #}
+{% call ui.section('Next steps', 'blue', badge=open_steps|length ~ ' open', open=True) %}
+<div style="padding:0.6rem 1rem 0.9rem">
+  <ul class="tp-steps" id="tp-steps-open" style="margin:0; padding:0">
+    {% for s in open_steps %}
+    <li data-id="{{ s.id }}">
+      <input type="checkbox" onchange="tpStepToggle(this, true)" title="done — moves to the archive below">
+      <input type="text" value="{{ s.step }}" onblur="tpStepSave(this)">
+      <button type="button" class="btn btn-sm" onclick="tpStepDelete(this)" title="delete">&#10005;</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <div style="display:flex; gap:0.5rem; margin-top:0.6rem">
+    <input id="tp-new-step" type="text" placeholder="Add a next step…"
+           style="flex:1; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px"
+           onkeydown="if(event.key === 'Enter'){event.preventDefault(); tpStepAdd();}">
+    <button type="button" class="btn" onclick="tpStepAdd()">+ Add</button>
+  </div>
+
+  {% if done_steps %}
+  <details style="margin-top:0.8rem">
+    <summary style="cursor:pointer; color:#888; font-size:0.85rem">
+      &#128452; archived — {{ done_steps|length }} done</summary>
+    <ul class="tp-steps" style="margin:0.4rem 0 0; padding:0">
+      {% for s in done_steps %}
+      <li data-id="{{ s.id }}" class="tp-step-done">
+        <input type="checkbox" checked onchange="tpStepToggle(this, false)" title="reopen">
+        <input type="text" value="{{ s.step }}" onblur="tpStepSave(this)">
+        <span class="mono" style="font-size:0.7rem; color:#aaa">{{ (s.done_at or '')[:10] }}</span>
+        <button type="button" class="btn btn-sm" onclick="tpStepDelete(this)" title="delete">&#10005;</button>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endcall %}
+
+{# ---- workpad ---- #}
+{% call ui.section('Workpad', 'slate', open=True) %}
+<div style="padding:0.6rem 1rem 1rem">
+  <div class="tp-toolbar">
+    <button type="button" onclick="tpFmt('bold')" title="bold"><b>B</b></button>
+    <button type="button" onclick="tpFmt('italic')" title="italic"><i>I</i></button>
+    <button type="button" onclick="tpFmt('underline')" title="underline"><u>U</u></button>
+    <button type="button" onclick="tpFmt('strikeThrough')" title="strike"><s>S</s></button>
+    <button type="button" onclick="tpBlock('H2')" title="heading">H2</button>
+    <button type="button" onclick="tpBlock('H3')" title="sub-heading">H3</button>
+    <button type="button" onclick="tpBlock('P')" title="normal text">¶</button>
+    <button type="button" onclick="tpFmt('insertUnorderedList')" title="bullet list">&bull; list</button>
+    <button type="button" onclick="tpFmt('insertOrderedList')" title="numbered list">1. list</button>
+    <button type="button" onclick="tpBlock('BLOCKQUOTE')" title="quote">&#10077;</button>
+    <button type="button" onclick="tpHighlight()" title="highlight">&#128397;</button>
+    <button type="button" onclick="tpFmt('removeFormat')" title="clear formatting">T&#824;</button>
+    <span style="margin-left:auto" class="tp-savestate" id="tp-savestate">saved</span>
+    <button type="button" class="btn btn-sm btn-primary" onclick="tpSave()">Save</button>
+  </div>
+  <div id="tp-pad" contenteditable="true">{{ topic.workpad | safe if topic.workpad else '' }}</div>
+</div>
+{% endcall %}
+
+{# ---- notes (shared module) ---- #}
+{% with entity_type='topic', entity_id=topic.id %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<script>
+const TP_BASE = "{{ url_for('topics.topics_list') }}".replace(/\/$/, "");
+const TP_ID = {{ topic.id }};
+
+/* ---- next steps ---- */
+function tpStepAdd() {
+  const inp = document.getElementById('tp-new-step');
+  const text = inp.value.trim();
+  if (!text) return;
+  fetch(`${TP_BASE}/${TP_ID}/steps/add`, {method: 'POST', body: new URLSearchParams({step: text})})
+    .then(r => r.json()).then(d => { if (d.ok) location.reload(); });
+}
+function tpStepToggle(cb, done) {
+  const li = cb.closest('li');
+  fetch(`${TP_BASE}/steps/${li.dataset.id}/toggle`,
+        {method: 'POST', body: new URLSearchParams({done: done ? '1' : '0'})})
+    .then(r => r.json()).then(d => { if (d.ok) location.reload(); });
+}
+function tpStepSave(inp) {
+  const li = inp.closest('li');
+  fetch(`${TP_BASE}/steps/${li.dataset.id}/update`,
+        {method: 'POST', body: new URLSearchParams({step: inp.value})})
+    .then(r => { if (r.ok) { inp.style.outline = '1px solid #1a7f37';
+                             setTimeout(() => inp.style.outline = '', 700); } });
+}
+function tpStepDelete(btn) {
+  if (!confirm('Delete this step?')) return;
+  const li = btn.closest('li');
+  fetch(`${TP_BASE}/steps/${li.dataset.id}/delete`, {method: 'POST'})
+    .then(() => li.remove());
+}
+
+/* ---- workpad: execCommand toolbar + autosave ---- */
+let tpDirty = false;
+function tpFmt(cmd) { document.execCommand(cmd, false, null); tpMarkDirty(); tpPadFocus(); }
+function tpBlock(tag) { document.execCommand('formatBlock', false, tag); tpMarkDirty(); tpPadFocus(); }
+function tpHighlight() { document.execCommand('hiliteColor', false, '#fff3a3'); tpMarkDirty(); tpPadFocus(); }
+function tpPadFocus() { document.getElementById('tp-pad').focus(); }
+function tpMarkDirty() {
+  tpDirty = true;
+  document.getElementById('tp-savestate').textContent = 'unsaved changes…';
+}
+function tpSave() {
+  const html = document.getElementById('tp-pad').innerHTML;
+  fetch(`${TP_BASE}/${TP_ID}/workpad`, {method: 'POST', body: new URLSearchParams({workpad: html})})
+    .then(r => r.json()).then(d => {
+      if (d.ok) { tpDirty = false;
+                  document.getElementById('tp-savestate').textContent =
+                    'saved ' + new Date().toLocaleTimeString(); }
+    });
+}
+const pad = document.getElementById('tp-pad');
+pad.addEventListener('input', tpMarkDirty);
+pad.addEventListener('blur', () => { if (tpDirty) tpSave(); });
+setInterval(() => { if (tpDirty) tpSave(); }, 30000);   // autosave safety net
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); tpSave(); }
+});
+window.addEventListener('beforeunload', e => { if (tpDirty) { e.preventDefault(); } });
+</script>
+{% endblock %}

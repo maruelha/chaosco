@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup", "shelf"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup", "shelf", "topic"}
 
 
 def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
@@ -128,6 +128,10 @@ def file_inbox_item(
     elif target_type == "spillover":
         target_exists = conn.execute(
             "SELECT 1 FROM spillover WHERE spillover_id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "topic":
+        target_exists = conn.execute(
+            "SELECT 1 FROM topics WHERE id = ?", (target_id,)
         ).fetchone() is not None
     elif target_type == "test_learning":
         target_exists = conn.execute(
@@ -198,6 +202,16 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
         ))
         return [{"value": str(r["spillover_id"]),
                  "label": f"{r['name'] or '—'} ({r['area'] or ''}, {r['country'] or ''})".strip(", ()")}
+                for r in rows]
+    elif target_type == "topic":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, title, category FROM topics"
+            " WHERE (title LIKE ? OR category LIKE ?) AND status = 'active'"
+            " ORDER BY title LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['title']} ({r['category'] or 'no category'})"}
                 for r in rows]
     elif target_type == "test_learning":
         rows = _rows_to_dicts(conn.execute(

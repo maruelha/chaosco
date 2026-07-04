@@ -14,6 +14,12 @@
     <a href="{{ url_for('inbox') }}" class="btn btn-primary">Open Inbox</a>
   </div>
 
+  <div class="action-card" style="border-left:3px solid #16a34a">
+    <h2>Topics {% if active_topics %}<span class="notes-count-badge">{{ active_topics }}</span>{% endif %}</h2>
+    <p>Topics you are actively working on — next steps, notes, and a big formatted workpad per topic.</p>
+    <a href="{{ url_for('topics.topics_list') }}" class="btn btn-primary">Open Topics</a>
+  </div>
+
   <div class="action-card" style="border-left:3px solid #7c3aed">
     <h2>Shelf {% if shelf_count %}<span class="notes-count-badge">{{ shelf_count }}</span>{% endif %}</h2>
     <p>Catch-all store for notes and observations that don't belong to a specific defect or test case yet.</p>

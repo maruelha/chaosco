@@ -99,3 +99,17 @@ Links with tool = "Teams Channel" (no parallel table; also manageable on
 next to a generic "Teams chat" button (/teams-ping/chat/0 — the ping
 page without entity context: empty message, recipient from contacts
 autocomplete).
+
+## Topics (app/db/topics.py + app/web_topics.py)
+
+Active-work counterpart to Shelf (Shelf = archive, Topic = being worked on).
+`/topics` list: quick-add, filters (title search, category, priority; done
+hidden by default). `/topics/<id>` = the working page: editable meta
+(title/category/priority/status), NEXT STEPS (AJAX checkboxes; done steps
+archive into a collapsed section, reopenable), a screen-filling WORKPAD
+(contenteditable rich text — bold/italic/underline/strike, H2/H3, lists,
+quote, highlight; stored as HTML in topics.workpad; autosave on blur +
+every 30s + Ctrl+S), and the shared notes module. Inbox files into topics
+via the standard picker (search by title/category, active only). Dashboard
+card (green accent) shows active count. Tables: topics, topic_steps.
+Tests: tests/test_topics.py.

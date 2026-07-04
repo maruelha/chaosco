@@ -92,6 +92,11 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_cs_followup(c, int(i)),
         lambda r: r.get("topic") or f"CS follow-up #{r['id']}", int,
     ),
+    "topic": NoteEntity(
+        "Topics", "topics.topics_list", "topics.topic_detail", "topic_id",
+        lambda c, i: database.get_topic(c, int(i)),
+        lambda r: r.get("title") or f"Topic #{r['id']}", int,
+    ),
     # list-only quick-add entities: no detail page, no 404 label lookup
     "meeting_prep": NoteEntity(
         "Meeting Prep", "meeting_prep_list", None, None, None,

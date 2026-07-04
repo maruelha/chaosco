@@ -32,6 +32,11 @@ app.register_blueprint(_email_bp)
 from app.web_teams import bp as _teams_bp
 app.register_blueprint(_teams_bp)
 
+from app.db import topics as _db_topics
+from app.web_topics import bp as _topics_bp
+_db_topics.init_schema(_db_path)
+app.register_blueprint(_topics_bp)
+
 
 if __name__ == "__main__":
     import threading

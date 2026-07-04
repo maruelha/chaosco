@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Topics — Test Coordination{% endblock %}
+
+{% block content %}
+{% call ui.page_header('Topics') %}
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+{% endcall %}
+
+<p style="color:#555; max-width:60rem">
+  Things you are <strong>actively working on</strong> (the Shelf is the archive).
+  Open a topic for its working page: next steps, notes, and the big workpad.
+</p>
+
+{# ---- quick add ---- #}
+<form method="post" action="{{ url_for('topics.topic_add') }}"
+      style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem">
+  <input name="title" type="text" placeholder="New topic *" required
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:18rem">
+  <input name="category" type="text" placeholder="category" list="topic-cats"
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; width:10rem">
+  <datalist id="topic-cats">
+    {% for c in categories %}<option value="{{ c }}">{% endfor %}
+  </datalist>
+  <select name="priority" style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+    {% for p in priorities %}<option {% if p == 'Medium' %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary">+ Add topic</button>
+</form>
+
+{# ---- filters ---- #}
+<form method="get" class="ui-filterbar" style="border:1px solid #eee; border-radius:8px; margin-bottom:1rem">
+  <input name="q" type="text" placeholder="Search topic…" value="{{ q }}"
+         style="min-width:14rem">
+  <select name="category">
+    <option value="">All categories</option>
+    {% for c in categories %}<option {% if c == f_category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <select name="priority">
+    <option value="">All priorities</option>
+    {% for p in priorities %}<option {% if p == f_priority %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+  <label style="font-size:0.85rem; color:#555; cursor:pointer">
+    <input type="checkbox" name="show_done" value="1" {% if show_done %}checked{% endif %}> show done
+  </label>
+  <button type="submit" class="btn">Filter</button>
+  <a href="{{ url_for('topics.topics_list') }}" class="btn btn-sm">Clear</a>
+</form>
+
+{% if items %}
+{% call ui.table(['Topic', 'Category', 'Priority', 'Open steps', 'Notes', 'Updated', '']) %}
+  {% for t in items %}
+  <tr {% if t.status == 'done' %}style="opacity:0.55"{% endif %}>
+    <td style="font-weight:600">
+      <a href="{{ url_for('topics.topic_detail', topic_id=t.id) }}">{{ t.title }}</a>
+      {% if t.status == 'done' %}{{ ui.pill('done', 'green') }}{% endif %}
+    </td>
+    <td>{{ t.category or "" }}</td>
+    <td>
+      <span class="rt-prog {% if t.priority == 'High' %}rt-prog--zero{% elif t.priority == 'Medium' %}rt-prog--open{% else %}rt-prog--done{% endif %}"
+            style="font-weight:600">{{ t.priority }}</span>
+    </td>
+    <td style="text-align:center">{% if t.open_steps %}<strong>{{ t.open_steps }}</strong>{% else %}<span style="color:#bbb">—</span>{% endif %}</td>
+    <td style="text-align:center">{% if t.note_count %}<span class="notes-count-badge">{{ t.note_count }}</span>{% endif %}</td>
+    <td class="mono" style="font-size:0.75rem; color:#888">{{ t.updated_at[:16].replace('T', ' ') }}</td>
+    <td style="text-align:right">
+      <a href="{{ url_for('topics.topic_detail', topic_id=t.id) }}" class="btn btn-sm">Open</a>
+    </td>
+  </tr>
+  {% endfor %}
+{% endcall %}
+{% else %}
+<p style="color:#888">No topics{% if q or f_category or f_priority %} for this filter{% endif %} — add the first one above.</p>
+{% endif %}
+{% endblock %}
