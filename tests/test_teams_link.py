@@ -77,3 +77,32 @@ def test_ping_page_prefills_email_and_message(client):
 
 def test_ping_page_404_for_unknown_followup(client):
     assert client.get("/teams-ping/followup/99999").status_code == 404
+
+
+def test_save_contact_creates_and_updates(client):
+    fid = client.fid
+    # new name -> created; next ping page pre-fills it
+    r = client.post(f"/teams-ping/followup/{fid}/save-contact",
+                    data={"contact_name": "Maria Neu", "email": "maria.neu@x.com, extra@x.com"})
+    assert "contact_saved=created" in r.headers["Location"]
+    conn = database.get_connection(client.db_path)
+    try:
+        assert database.find_contact_email(conn, "Maria Neu") == "maria.neu@x.com"
+        # existing (partial) name -> email updated, no duplicate created
+        client.post(f"/teams-ping/followup/{fid}/save-contact",
+                    data={"contact_name": "Bernd", "email": "bernd.new@x.com"})
+        assert database.find_contact_email(conn, "Bernd") == "bernd.new@x.com"
+        names = [c["name"] for c in database.list_contacts(conn)]
+        assert names.count("Bernd Homner") == 1 and "Bernd" not in names
+    finally:
+        conn.close()
+
+
+def test_save_contact_rejects_invalid_email(client):
+    client.post(f"/teams-ping/followup/{client.fid}/save-contact",
+                data={"contact_name": "X", "email": "not-an-email"})
+    conn = database.get_connection(client.db_path)
+    try:
+        assert database.find_contact_email(conn, "X") is None
+    finally:
+        conn.close()

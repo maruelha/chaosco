@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Blueprint, abort, render_template
+from flask import Blueprint, abort, redirect, render_template, request, url_for
 
 from app import database, teams_link
 from app.config_loader import load_config
@@ -41,4 +41,21 @@ def followup_ping(followup_id: int):
     return render_template(
         "teams_ping.html",
         row=row, email=email, message=message, contacts=contacts,
+        contact_saved=request.args.get("contact_saved"),
     )
+
+
+@bp.route("/followup/<int:followup_id>/save-contact", methods=["POST"])
+def save_contact(followup_id: int):
+    name = request.form.get("contact_name", "").strip()
+    # group chats: save only the first address under this name
+    email = request.form.get("email", "").split(",")[0].strip()
+    if name and email and "@" in email:
+        conn = _get_conn()
+        try:
+            outcome = database.upsert_contact_email(conn, name, email)
+        finally:
+            conn.close()
+        return redirect(url_for("teams_ping.followup_ping",
+                                followup_id=followup_id, contact_saved=outcome))
+    return redirect(url_for("teams_ping.followup_ping", followup_id=followup_id))

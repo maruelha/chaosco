@@ -78,4 +78,7 @@ the local Teams client with the chat pre-typed — the user presses Enter.
 Comma-separated emails open a group chat (optional topicName). No API, no
 credentials, no approvals. Deep links CANNOT target existing named group
 chats/meeting chats (needs Graph thread ids) or pre-fill channel posts.
-Tests: tests/test_teams_link.py.
+"Save to contacts" on the page stores a typed address under the
+follow-up's name (`upsert_contact_email`: updates a name-matched contact
+or creates a minimal one) so it pre-fills next time. Tests:
+tests/test_teams_link.py.

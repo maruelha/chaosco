@@ -329,6 +329,25 @@ def find_contact_email(conn: sqlite3.Connection, name: str) -> str | None:
     return None
 
 
+def upsert_contact_email(conn: sqlite3.Connection, name: str, email: str) -> str:
+    """Save an email under a contact name (Teams-ping 'save to contacts').
+    Updates the email of an existing name-matched contact, else creates a
+    minimal contact. Returns 'updated' or 'created'."""
+    name, email = (name or "").strip(), (email or "").strip()
+    lname = name.lower()
+    for row in conn.execute("SELECT id, name FROM contacts"):
+        cname = (row[1] or "").strip().lower()
+        if cname and (lname in cname or cname in lname):
+            with conn:
+                conn.execute("UPDATE contacts SET email=? WHERE id=?", (email, row[0]))
+            return "updated"
+    with conn:
+        conn.execute(
+            "INSERT INTO contacts (name, email, created_at, updated_at)"
+            " VALUES (?, ?, datetime('now'), datetime('now'))", (name, email))
+    return "created"
+
+
 def get_contact_options(conn: sqlite3.Connection) -> dict:
     rows = _rows_to_dicts(conn.execute("SELECT area, topic, tags FROM contacts"))
     areas = sorted({r["area"] for r in rows if r.get("area")})

@@ -28,12 +28,27 @@
         <option value="{{ c.email.split(',')[0].strip() }}">{{ c.name }}</option>
         {% endfor %}
       </datalist>
-      {% if not email %}
+      {% if contact_saved %}
+      <p style="color:#1a7f37; font-size:0.8rem; margin:0.3rem 0 0">
+        &#10003; Contact {{ contact_saved }} — this address will be pre-filled next time.
+      </p>
+      {% elif not email %}
       <p style="color:#b45309; font-size:0.8rem; margin:0.3rem 0 0">
-        No contact matched "{{ row.with_whom }}" — type the address (and consider adding
-        them to <a href="{{ url_for('contacts_list') }}">Contacts</a> so it is found next time).
+        No contact matched "{{ row.with_whom }}" — type the address, then save it below
+        so it is pre-filled next time.
       </p>
       {% endif %}
+      <form method="post" action="{{ url_for('teams_ping.save_contact', followup_id=row.id) }}"
+            style="display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem">
+        <input type="hidden" name="email" id="tp-save-email">
+        <input type="text" name="contact_name" value="{{ row.with_whom }}"
+               title="contact name to save the address under"
+               style="padding:4px 8px; border:1px solid #c9c9d4; border-radius:6px; font-size:0.8rem; width:12rem">
+        <button type="submit" class="btn btn-sm"
+                onclick="document.getElementById('tp-save-email').value = document.getElementById('tp-email').value">
+          &#128190; Save to contacts</button>
+        <span style="color:#888; font-size:0.75rem">(for group chats: saves the first address)</span>
+      </form>
     </div>
     <div class="form-field" id="tp-name-field" style="display:none">
       <label for="tp-chatname">Group chat name (only used if Teams creates a new group)</label>
