@@ -82,6 +82,11 @@
 </form>
 
 {% if not is_new %}
+{% with entity_type='link', entity_id=record.id %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+
 <script>
 document.getElementById('btn-delete').addEventListener('click', async () => {
   if (!confirm('Delete this link? This cannot be undone.')) return;

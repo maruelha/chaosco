@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup", "shelf", "topic"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "test_learning", "followup", "shelf", "topic", "contact", "link"}
 
 
 def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
@@ -132,6 +132,14 @@ def file_inbox_item(
     elif target_type == "topic":
         target_exists = conn.execute(
             "SELECT 1 FROM topics WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "contact":
+        target_exists = conn.execute(
+            "SELECT 1 FROM contacts WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "link":
+        target_exists = conn.execute(
+            "SELECT 1 FROM links WHERE id = ?", (target_id,)
         ).fetchone() is not None
     elif target_type == "test_learning":
         target_exists = conn.execute(
@@ -212,6 +220,24 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
         ))
         return [{"value": str(r["id"]),
                  "label": f"{r['title']} ({r['category'] or 'no category'})"}
+                for r in rows]
+    elif target_type == "contact":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, name, email FROM contacts"
+            " WHERE name LIKE ? OR email LIKE ? ORDER BY name LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['name']}" + (f" ({r['email'].split(',')[0].strip()})" if r.get("email") else "")}
+                for r in rows]
+    elif target_type == "link":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, description, tool FROM links"
+            " WHERE description LIKE ? OR url LIKE ? OR tool LIKE ? ORDER BY description LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['description']}" + (f" [{r['tool']}]" if r.get("tool") else "")}
                 for r in rows]
     elif target_type == "test_learning":
         rows = _rows_to_dicts(conn.execute(

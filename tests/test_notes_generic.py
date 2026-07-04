@@ -87,3 +87,29 @@ def test_note_entity_mismatch_404s(client):
     note_id = _notes(client.db_path)[0]["id"]
     # the same note id must not be editable through another entity's URL
     assert client.get(f"/n/defect/XYZ/{note_id}/edit").status_code == 404
+
+
+def test_contact_and_link_notes_and_inbox_filing(client, monkeypatch):
+    """Contacts and Links carry notes and are inbox filing targets."""
+    from app import database
+    conn = database.get_connection(client.db_path)
+    try:
+        contact = database.create_contact(conn, name="Maria Test", email="m@x.com",
+                                          area=None, topic=None, comments=None, tags=None)
+        link = database.create_link(conn, description="Confluence UAT page",
+                                    url="https://conf/x", area=None, tool=None, tags=None)
+        # inbox search finds both
+        assert database.search_targets(conn, "contact", "maria")[0]["value"] == str(contact["id"])
+        assert database.search_targets(conn, "link", "confluence")[0]["value"] == str(link["id"])
+        # filing works
+        n1 = database.add_inbox_item(conn, None, "ask about voucher process")
+        assert database.file_inbox_item(conn, n1, "contact", str(contact["id"])) is True
+        assert database.list_notes(conn, "contact", str(contact["id"]))[0]["note"] \
+            == "ask about voucher process"
+        n2 = database.add_inbox_item(conn, None, "update this page after signoff")
+        assert database.file_inbox_item(conn, n2, "link", str(link["id"])) is True
+    finally:
+        conn.close()
+    # generic note routes serve both types
+    assert client.get(f"/n/contact/{contact['id']}/add").status_code == 200
+    assert client.get(f"/n/link/{link['id']}/add").status_code == 200

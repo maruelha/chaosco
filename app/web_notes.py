@@ -97,6 +97,16 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_topic(c, int(i)),
         lambda r: r.get("title") or f"Topic #{r['id']}", int,
     ),
+    "contact": NoteEntity(
+        "Contacts", "contacts_list", "contact_detail", "contact_id",
+        lambda c, i: database.get_contact(c, int(i)),
+        lambda r: r.get("name") or f"Contact #{r['id']}", int,
+    ),
+    "link": NoteEntity(
+        "Links", "links_list", "link_detail", "link_id",
+        lambda c, i: database.get_link(c, int(i)),
+        lambda r: r.get("description") or f"Link #{r['id']}", int,
+    ),
     # list-only quick-add entities: no detail page, no 404 label lookup
     "meeting_prep": NoteEntity(
         "Meeting Prep", "meeting_prep_list", None, None, None,

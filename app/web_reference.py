@@ -137,11 +137,14 @@ def link_detail(link_id: int):
                 tool=_f("tool"),
                 tags=_f("tags"),
             )
+        notes = database.list_notes(conn, "link", str(link_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("link_detail", link_id=link_id, saved="1"))
-    return render_template("link_detail.html", record=record, is_new=False, saved=saved)
+    return render_template("link_detail.html", record=record, is_new=False, saved=saved,
+                           notes=notes, attachments_by_note=attachments_by_note)
 
 
 @app.route("/links/<int:link_id>/delete", methods=["POST"])
@@ -215,11 +218,14 @@ def contact_detail(contact_id: int):
                 comments=_f("comments"),
                 tags=_f("tags"),
             )
+        notes = database.list_notes(conn, "contact", str(contact_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("contact_detail", contact_id=contact_id, saved="1"))
-    return render_template("contact_detail.html", record=record, is_new=False, saved=saved)
+    return render_template("contact_detail.html", record=record, is_new=False, saved=saved,
+                           notes=notes, attachments_by_note=attachments_by_note)
 
 
 @app.route("/contacts/<int:contact_id>/delete", methods=["POST"])

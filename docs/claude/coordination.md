@@ -22,6 +22,9 @@ for it:
 
 Never create a module-specific notes table, route set, or attachment script.
 
+Notes-capable entities now include **contacts** and **links** (registry
+entries + detail-page includes), so inbox items can be filed to them.
+
 **Inbox special case**: unfiled items are notes with entity_type='input',
 entity_id='inbox'. Filing = one UPDATE re-parenting the row (attachments
 follow automatically). Inbox keeps its own routes/UI (capture pad + filing).
