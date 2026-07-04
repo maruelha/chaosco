@@ -113,3 +113,16 @@ every 30s + Ctrl+S), and the shared notes module. Inbox files into topics
 via the standard picker (search by title/category, active only). Dashboard
 card (green accent) shows active count. Tables: topics, topic_steps.
 Tests: tests/test_topics.py.
+
+## Entity links (component)
+
+Generic per-entity URL list (table `entity_links`), same idea as notes/
+order_details. Drop-in include (AJAX, zero route/context changes):
+
+    {% with el_entity_type='topic', el_entity_id=topic.id %}
+      {% include '_entity_links.html' %}
+    {% endwith %}
+
+Routes: /elinks/<etype>/<eid>/list.json|add, /elinks/<id>/delete (http(s)
+URLs only; label defaults from the URL). Storage app/db/entity_links.py,
+routes app/web_entity_links.py. Currently on: Topic detail.

@@ -13,6 +13,8 @@ def client(tmp_path, monkeypatch):
     db_path = tmp_path / "topics.db"
     database.init_db(db_path).close()
     db_topics.init_schema(db_path)
+    from app.db import entity_links as db_entity_links
+    db_entity_links.init_schema(db_path)
     monkeypatch.setattr(web_topics, "_db_path", db_path)
     monkeypatch.setattr(web_notes, "_db_path", db_path)
     c = app.test_client()
@@ -121,3 +123,40 @@ def test_delete_topic_cleans_steps_and_notes(client):
         assert database.list_notes(conn, "topic", str(tid)) == []
     finally:
         conn.close()
+
+
+def test_entity_links_roundtrip(client):
+    conn = _conn(client)
+    try:
+        tid = db_topics.create_topic(conn, "linked topic")
+    finally:
+        conn.close()
+    import app.web_entity_links as wel
+    # (fixture monkeypatches would be nicer; do it inline for this one)
+    orig = wel._db_path
+    wel._db_path = client.db_path
+    try:
+        r = client.post(f"/elinks/topic/{tid}/add",
+                        data={"label": "Confluence", "url": "https://conf.example.com/x"})
+        assert r.get_json()["ok"] is True
+        # label defaults from the url when omitted
+        client.post(f"/elinks/topic/{tid}/add", data={"label": "", "url": "https://xyz.example.com/page"})
+        links = client.get(f"/elinks/topic/{tid}/list.json").get_json()
+        assert [l["label"] for l in links] == ["Confluence", "xyz.example.com/page"]
+        # invalid url rejected
+        assert client.post(f"/elinks/topic/{tid}/add",
+                           data={"label": "x", "url": "notaurl"}).get_json()["ok"] is False
+        assert client.post(f"/elinks/{links[0]['id']}/delete").get_json()["ok"] is True
+        assert len(client.get(f"/elinks/topic/{tid}/list.json").get_json()) == 1
+    finally:
+        wel._db_path = orig
+
+
+def test_topic_page_includes_links_component(client):
+    conn = _conn(client)
+    try:
+        tid = db_topics.create_topic(conn, "T")
+    finally:
+        conn.close()
+    page = client.get(f"/topics/{tid}").get_data(as_text=True)
+    assert 'data-etype="topic"' in page and "el-list" in page

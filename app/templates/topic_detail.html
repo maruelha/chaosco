@@ -96,6 +96,11 @@
 </div>
 {% endcall %}
 
+{# ---- links (drop-in component) ---- #}
+{% with el_entity_type='topic', el_entity_id=topic.id %}
+  {% include '_entity_links.html' %}
+{% endwith %}
+
 {# ---- workpad ---- #}
 {% call ui.section('Workpad', 'slate', open=True) %}
 <div style="padding:0.6rem 1rem 1rem">

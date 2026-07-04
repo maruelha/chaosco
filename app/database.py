@@ -25,3 +25,4 @@ from app.db.retail import *         # noqa: F401,F403
 from app.db.planning import *      # noqa: F401,F403
 from app.db.reference import *     # noqa: F401,F403
 from app.db.topics import *        # noqa: F401,F403
+from app.db.entity_links import *  # noqa: F401,F403

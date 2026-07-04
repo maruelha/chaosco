@@ -37,6 +37,11 @@ from app.web_topics import bp as _topics_bp
 _db_topics.init_schema(_db_path)
 app.register_blueprint(_topics_bp)
 
+from app.db import entity_links as _db_entity_links
+from app.web_entity_links import bp as _entity_links_bp
+_db_entity_links.init_schema(_db_path)
+app.register_blueprint(_entity_links_bp)
+
 
 if __name__ == "__main__":
     import threading

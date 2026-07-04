@@ -1,0 +1,70 @@
+{# Entity links — drop-in component: a per-entity list of relevant URLs.
+
+     {% with el_entity_type='topic', el_entity_id=topic.id %}
+       {% include '_entity_links.html' %}
+     {% endwith %}
+
+   Fully AJAX-driven (routes in app/web_entity_links.py) — the including
+   page needs NO route or context changes. One include per page.
+#}
+{% import '_macros.html' as ui %}
+{% call ui.section('Links', 'teal', open=True) %}
+<div style="padding:0.6rem 1rem 0.9rem" id="el-root"
+     data-etype="{{ el_entity_type }}" data-eid="{{ el_entity_id }}">
+  <div id="el-list"><em style="color:#999; font-size:0.85rem">Loading…</em></div>
+  <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.6rem">
+    <input id="el-label" type="text" placeholder="label (e.g. Confluence page)"
+           style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px; width:14rem">
+    <input id="el-url" type="text" placeholder="https://…"
+           style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px; flex:1; min-width:16rem"
+           onkeydown="if(event.key === 'Enter'){event.preventDefault(); elAdd();}">
+    <button type="button" class="btn btn-sm" onclick="elAdd()">+ Add link</button>
+  </div>
+  <p id="el-error" style="color:#c00; font-size:0.78rem; margin:0.3rem 0 0; display:none"></p>
+</div>
+{% endcall %}
+
+<script>
+(function () {
+  const root = document.getElementById('el-root');
+  const base = '/elinks/' + root.dataset.etype + '/' + root.dataset.eid;
+
+  window.elLoad = function () {
+    fetch(base + '/list.json').then(r => r.json()).then(links => {
+      const el = document.getElementById('el-list');
+      if (!links.length) {
+        el.innerHTML = '<em style="color:#999; font-size:0.85rem">No links yet.</em>';
+        return;
+      }
+      el.innerHTML = links.map(l =>
+        '<div style="display:flex; align-items:center; gap:0.5rem; padding:2px 0">' +
+        '<a href="' + l.url + '" target="_blank" rel="noopener" style="font-size:0.9rem">&#128279; ' + elEsc(l.label) + '</a>' +
+        '<span class="mono" style="font-size:0.7rem; color:#bbb; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">' + elEsc(l.url) + '</span>' +
+        '<button type="button" class="btn btn-sm" title="remove" onclick="elDel(' + l.id + ')">&#10005;</button></div>'
+      ).join('');
+    });
+  };
+  window.elAdd = function () {
+    const body = new URLSearchParams({
+      label: document.getElementById('el-label').value,
+      url: document.getElementById('el-url').value,
+    });
+    fetch(base + '/add', {method: 'POST', body}).then(r => r.json()).then(d => {
+      const err = document.getElementById('el-error');
+      if (!d.ok) { err.textContent = d.error; err.style.display = ''; return; }
+      err.style.display = 'none';
+      document.getElementById('el-label').value = '';
+      document.getElementById('el-url').value = '';
+      elLoad();
+    });
+  };
+  window.elDel = function (id) {
+    if (!confirm('Remove this link?')) return;
+    fetch('/elinks/' + id + '/delete', {method: 'POST'}).then(() => elLoad());
+  };
+  window.elEsc = function (s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+  elLoad();
+})();
+</script>
