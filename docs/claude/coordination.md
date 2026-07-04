@@ -86,3 +86,13 @@ chats/meeting chats (needs Graph thread ids) or pre-fill channel posts.
 follow-up's name (`upsert_contact_email`: updates a name-matched contact
 or creates a minimal one) so it pre-fills next time. Tests:
 tests/test_teams_link.py.
+
+## Teams channel picker (component)
+
+`{% include '_teams_channels.html' %}` in any card's header renders a
+"Teams channels" button + dialog: saved channels open in the Teams client,
+add (name + "Get link to channel" URL, validated to teams.microsoft.com) and
+remove inline. Fully AJAX (`/teams-ping/channels.json|add|<id>/delete`), so
+the including page needs NO route/context changes. Channels are stored as
+Links with tool = "Teams Channel" (no parallel table; also manageable on
+/links). Currently included on: Defects list.

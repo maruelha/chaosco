@@ -1,0 +1,74 @@
+{# Teams channel picker — drop-in component for any card's header:
+
+     {% include '_teams_channels.html' %}
+
+   Fully AJAX-driven (no route/context changes needed on the including page).
+   Channels are stored as Links with tool = "Teams Channel" (also manageable
+   on /links). Clicking a channel opens it in the local Teams client.
+#}
+<button type="button" class="btn" onclick="tcOpen()">&#128250; Teams channels ▾</button>
+
+<dialog id="tc-dlg" class="ui-dlg" style="min-width:24rem">
+  <strong>Teams channels</strong>
+  <div id="tc-list" style="margin:0.6rem 0"><em style="color:#999">Loading…</em></div>
+  <div style="border-top:1px solid #eee; padding-top:0.6rem">
+    <p style="color:#888; font-size:0.78rem; margin:0 0 0.4rem">
+      Add: in Teams, ⋯ next to the channel → "Get link to channel", paste it here.
+    </p>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap">
+      <input id="tc-name" type="text" placeholder="name (e.g. DTC O2C Daily)"
+             style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px; width:11rem">
+      <input id="tc-url" type="text" placeholder="https://teams.microsoft.com/l/channel/…"
+             style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px; flex:1; min-width:14rem">
+      <button type="button" class="btn btn-sm" onclick="tcAdd()">+ Save</button>
+    </div>
+    <p id="tc-error" style="color:#c00; font-size:0.78rem; margin:0.3rem 0 0; display:none"></p>
+  </div>
+  <div class="btn-row" style="margin-top:0.8rem">
+    <button type="button" class="btn" onclick="document.getElementById('tc-dlg').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+if (!window.tcOpen) {
+  window.tcOpen = function () {
+    document.getElementById('tc-dlg').showModal();
+    tcLoad();
+  };
+  window.tcLoad = function () {
+    fetch('/teams-ping/channels.json').then(r => r.json()).then(chs => {
+      const el = document.getElementById('tc-list');
+      if (!chs.length) {
+        el.innerHTML = '<em style="color:#999; font-size:0.85rem">No channels saved yet — add the first one below.</em>';
+        return;
+      }
+      el.innerHTML = chs.map(c =>
+        '<div style="display:flex; align-items:center; gap:0.5rem; padding:3px 0">' +
+        '<a href="' + c.url + '" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1; text-align:left">&#128250; ' + tcEsc(c.name) + '</a>' +
+        '<button type="button" class="btn btn-sm" title="remove" onclick="tcDel(' + c.id + ')">&#10005;</button></div>'
+      ).join('');
+    });
+  };
+  window.tcAdd = function () {
+    const body = new URLSearchParams({
+      name: document.getElementById('tc-name').value,
+      url: document.getElementById('tc-url').value,
+    });
+    fetch('/teams-ping/channels/add', {method: 'POST', body}).then(r => r.json()).then(d => {
+      const err = document.getElementById('tc-error');
+      if (!d.ok) { err.textContent = d.error; err.style.display = ''; return; }
+      err.style.display = 'none';
+      document.getElementById('tc-name').value = '';
+      document.getElementById('tc-url').value = '';
+      tcLoad();
+    });
+  };
+  window.tcDel = function (id) {
+    if (!confirm('Remove this channel from the list?')) return;
+    fetch('/teams-ping/channels/' + id + '/delete', {method: 'POST'}).then(() => tcLoad());
+  };
+  window.tcEsc = function (s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
+}
+</script>

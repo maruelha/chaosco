@@ -124,3 +124,42 @@ def test_save_contact_rejects_invalid_email(client):
         assert database.find_contact_email(conn, "X") is None
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Teams channels (saved as Links with tool='Teams Channel')
+# ---------------------------------------------------------------------------
+
+def test_channels_add_list_delete_roundtrip(client):
+    r = client.post("/teams-ping/channels/add",
+                    data={"name": "DTC O2C Daily",
+                          "url": "https://teams.microsoft.com/l/channel/19%3Aabc/General?groupId=1"})
+    assert r.get_json()["ok"] is True
+    chs = client.get("/teams-ping/channels.json").get_json()
+    assert [c["name"] for c in chs] == ["DTC O2C Daily"]
+    # stored as a normal link, visible to the links module
+    conn = database.get_connection(client.db_path)
+    try:
+        links = database.list_links(conn, tools=["Teams Channel"])
+        assert links[0]["description"] == "DTC O2C Daily"
+    finally:
+        conn.close()
+    assert client.post(f"/teams-ping/channels/{chs[0]['id']}/delete").get_json()["ok"] is True
+    assert client.get("/teams-ping/channels.json").get_json() == []
+
+
+def test_channel_add_rejects_non_teams_urls(client):
+    r = client.post("/teams-ping/channels/add",
+                    data={"name": "x", "url": "https://evil.example.com"})
+    assert r.get_json()["ok"] is False
+
+
+def test_channel_delete_refuses_ordinary_links(client):
+    conn = database.get_connection(client.db_path)
+    try:
+        link = database.create_link(conn, description="normal bookmark",
+                                    url="https://example.com", area=None,
+                                    tool="Confluence", tags=None)
+    finally:
+        conn.close()
+    assert client.post(f"/teams-ping/channels/{link['id']}/delete").status_code == 404

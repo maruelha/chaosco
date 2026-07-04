@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 
 from app import database, teams_link
 from app.config_loader import load_config
@@ -70,6 +70,57 @@ def _entity_and_row(conn, entity_type: str, entity_id: str):
     if row is None:
         abort(404)
     return ent, row
+
+
+# ---------------------------------------------------------------------------
+# Teams channels — saved as Links with tool = TEAMS_CHANNEL_TOOL (no parallel
+# table; they also appear on /links). The picker component
+# (_teams_channels.html) is fully AJAX-driven, so ANY card can include it
+# without route/context changes: {% include '_teams_channels.html' %}
+# ---------------------------------------------------------------------------
+
+TEAMS_CHANNEL_TOOL = "Teams Channel"
+
+
+@bp.route("/channels.json")
+def channels_json():
+    conn = _get_conn()
+    try:
+        rows = database.list_links(conn, tools=[TEAMS_CHANNEL_TOOL])
+    finally:
+        conn.close()
+    return jsonify([{"id": r["id"], "name": r["description"], "url": r["url"]}
+                    for r in rows])
+
+
+@bp.route("/channels/add", methods=["POST"])
+def channel_add():
+    name = request.form.get("name", "").strip()
+    url = request.form.get("url", "").strip()
+    if not name or not url.startswith("https://teams.microsoft.com/"):
+        return jsonify({"ok": False,
+                        "error": "Need a name and a link copied from Teams "
+                                 "(starts with https://teams.microsoft.com/)."})
+    conn = _get_conn()
+    try:
+        database.create_link(conn, description=name, url=url,
+                             area=None, tool=TEAMS_CHANNEL_TOOL, tags=None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/channels/<int:link_id>/delete", methods=["POST"])
+def channel_delete(link_id: int):
+    conn = _get_conn()
+    try:
+        row = database.get_link(conn, link_id)
+        if row is None or row.get("tool") != TEAMS_CHANNEL_TOOL:
+            return jsonify({"ok": False, "error": "not a Teams channel link"}), 404
+        database.delete_link(conn, link_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/<entity_type>/<entity_id>")
