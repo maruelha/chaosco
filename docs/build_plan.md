@@ -71,6 +71,21 @@ Last updated: 2026-07-04
    named/meeting chats or pre-fill channels — if that is ever needed, the
    Power Automate webhook route (VDI-created, cloud-run) is the upgrade path.
 
+### Jira card (CONCEPT NOT YET CLEAR — do not build)
+
+Parked 2026-07-04 after a feasibility chat. Known so far:
+- Source: Jira **XML export** (issue search → Export → XML) — unlike CSV it
+  includes the full comment thread (author, timestamp, HTML body). ~1000-issue
+  cap per export. Python stdlib ElementTree reads it fine, no new deps.
+- Architecture (per the existing future-integration rule): own tables
+  (`jira_issues` upserted by key + `jira_comments` replaced per import),
+  NEVER merged into Excel-sourced tables. Importer mirrors the Excel pattern
+  (newest matching file in downloads_folder, first_seen/last_seen).
+- Card sketch: filterable list; detail with description + comment thread
+  (rendered HTML) + open-in-Jira link + notes module + inbox filing.
+- Before building: Marina defines the concept; then ONE real sample XML
+  export to pin the parser + tests against.
+
 ### Cross-module navigation
 
 1. Make `defect_id_ref` on Retail rows a clickable link to the Defect detail.
