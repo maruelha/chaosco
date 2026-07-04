@@ -47,6 +47,10 @@ Last updated: 2026-07-04
 1. ~~**Fix the broken button**~~ ✅ DONE 2026-07-04 (with refactoring step 1):
    `app/report_exporter.py` writes `.html` + `.pptx` via the existing PPT
    builders; dead PDF code (`pdf_utils.py`, `/spillover/report/pdf`) deleted.
+2. ~~**Email reports**~~ ✅ DONE 2026-07-04: `/email-report` — GMX SMTP,
+   per-report checkboxes, DB-managed recipients, date-driven subject/text.
+   Future option: `email_transport: n8n_webhook` switch if distribution
+   grows (Teams, schedules).
 
 ### ECOM vertical (planned, not started)
 

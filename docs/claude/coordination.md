@@ -53,3 +53,16 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 - `order_details` — generic per-entity order log
   (`/order-details/<entity_type>/<entity_id>`), docs_in_s4 checkbox
 - `report_comments` — free-text bullets under the Spillover/Retail reports
+
+## Email reports (app/emailer.py + app/web_email.py + app/db/email.py)
+
+`/email-report` — send the status reports as standalone-HTML attachments via
+GMX SMTP. Checkbox per report (Spillover / Retail / Requirements Board),
+date field (default today) drives subject + body text (both editable),
+recipients managed in the `report_recipients` table (add / toggle active /
+delete; active ones pre-ticked). Credentials `email_user`/`email_password`
+belong ONLY in gitignored settings.local.yaml — the page shows setup
+instructions and disables Send until configured. The board attachment is
+rendered through the app and made standalone by `emailer.standalone_html`
+(CSS inlined, scripts stripped, sections opened). Tests: tests/test_emailer.py
+(assembly, snapshot, CRUD, mocked SMTP).

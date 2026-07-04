@@ -66,6 +66,8 @@ app/
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export
+  emailer.py        email reports via GMX SMTP (creds ONLY in settings.local.yaml);
+                    web_email.py = /email-report Blueprint; recipients in db/email.py
   ppt_utils.py / ppt_retail.py / ppt_spillover.py
   templates/        _macros.html, _notes_section.html, base.html, pages
   static/           style.css (component library), notes.js

@@ -32,6 +32,7 @@
     <h2>Export Reports</h2>
     <p>Save dated HTML &amp; PowerPoint snapshots of the Retail and Spillover reports to the export folder for automation pickup.</p>
     <button type="button" class="btn" id="export-reports-btn" onclick="runExportReports()">Export Reports</button>
+    <a href="{{ url_for('email_report.email_page') }}" class="btn">&#128231; Email Reports</a>
     <div id="export-reports-result" style="margin-top:0.6rem;font-size:0.82rem;display:none"></div>
   </div>
 

@@ -24,6 +24,11 @@ app.register_blueprint(_retail_tracker_bp)
 from app.web_notes import bp as _notes_bp
 app.register_blueprint(_notes_bp)
 
+from app.db import email as _db_email
+from app.web_email import bp as _email_bp
+_db_email.init_schema(_db_path)
+app.register_blueprint(_email_bp)
+
 
 if __name__ == "__main__":
     import threading

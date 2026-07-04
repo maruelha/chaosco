@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Email Reports — Test Coordination{% endblock %}
+
+{% block content %}
+{% call ui.page_header('Email Reports') %}
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+{% endcall %}
+
+{% if result %}<div class="saved-banner">&#10003;&nbsp; {{ result }}</div>{% endif %}
+{% if error %}<div class="saved-banner" style="background:#fff0f0; color:#c00">&#9888;&nbsp; {{ error }}</div>{% endif %}
+
+{% if not configured %}
+<div class="alarm-box">
+  <h2>⚠ Email not configured</h2>
+  <p style="color:#a10d19">
+    Add your GMX credentials to <code>config/settings.local.yaml</code> (gitignored — never committed):
+  </p>
+  <pre style="background:#fff; border:1px solid #eee; border-radius:6px; padding:0.6rem 0.9rem; font-size:0.82rem">email_user: 'you@gmx.de'
+email_password: 'your-app-password'
+# optional (these are the defaults):
+# email_smtp_host: 'mail.gmx.net'
+# email_smtp_port: 587</pre>
+  <p style="color:#a10d19; font-size:0.85rem">Then restart the app. Sending is disabled until this is set.</p>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('email_report.send') }}">
+
+{# ---- what to send ---- #}
+{% call ui.section('Reports to attach', 'teal') %}
+<div style="padding:0.8rem 1rem">
+  {% for key, label in report_choices %}
+  <label style="display:block; padding:4px 0; cursor:pointer">
+    <input type="checkbox" name="reports" value="{{ key }}" checked> {{ label }}
+    <span style="color:#888; font-size:0.8rem">(attached as standalone HTML)</span>
+  </label>
+  {% endfor %}
+</div>
+{% endcall %}
+
+{# ---- message ---- #}
+{% call ui.section('Message', 'blue') %}
+<div style="padding:0.8rem 1rem" class="form-stack">
+  <div class="form-field">
+    <label for="f-date">Report date (used in subject and text)</label>
+    <input id="f-date" type="date" name="date" value="{{ today }}" onchange="emailSyncDate(this.value)">
+  </div>
+  <div class="form-field">
+    <label for="f-subject">Subject</label>
+    <input id="f-subject" type="text" name="subject" value="{{ subject }}" style="width:100%">
+  </div>
+  <div class="form-field">
+    <label for="f-body">Text</label>
+    <textarea id="f-body" name="body" rows="9" style="width:100%">{{ body }}</textarea>
+  </div>
+  <p style="color:#888; font-size:0.8rem; margin:0">
+    From: <span class="mono">{{ sender or "— not configured —" }}</span>
+  </p>
+</div>
+{% endcall %}
+
+{# ---- recipients ---- #}
+{% call ui.section('Recipients', 'purple', badge=recipients|selectattr('active')|list|length ~ ' active') %}
+<div style="padding:0.8rem 1rem">
+  {% if recipients %}
+  <table class="ui-table" style="margin-bottom:0.8rem">
+    <thead><tr><th style="width:2.5rem">Send</th><th>Email</th><th>Name</th><th style="width:9rem"></th></tr></thead>
+    <tbody>
+      {% for r in recipients %}
+      <tr>
+        <td style="text-align:center">
+          <input type="checkbox" name="recipients" value="{{ r.id }}" {% if r.active %}checked{% endif %}>
+        </td>
+        <td class="mono" style="font-size:0.85rem">{{ r.email }}</td>
+        <td>{{ r.name or "" }}</td>
+        <td style="text-align:right; white-space:nowrap">
+          <button type="submit" class="btn btn-sm"
+                  formaction="{{ url_for('email_report.recipient_toggle', rid=r.id) }}"
+                  formnovalidate title="active recipients are pre-ticked next time">
+            {{ 'set inactive' if r.active else 'set active' }}</button>
+          <button type="submit" class="btn btn-sm btn-danger"
+                  formaction="{{ url_for('email_report.recipient_delete', rid=r.id) }}"
+                  formnovalidate onclick="return confirm('Remove this recipient?')">✕</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888">No recipients yet — add the first one below.</p>
+  {% endif %}
+
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap">
+    <input type="email" name="email" placeholder="email@example.com"
+           style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
+    <input type="text" name="name" placeholder="name (optional)"
+           style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+    <button type="submit" class="btn"
+            formaction="{{ url_for('email_report.recipient_add') }}">+ Add recipient</button>
+  </div>
+</div>
+{% endcall %}
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <button type="submit" class="btn btn-primary" {% if not configured %}disabled title="configure email first"{% endif %}>
+    &#128231; Send reports</button>
+</div>
+</form>
+
+<script>
+function emailSyncDate(day) {
+  // keep subject/body in sync when the date changes and the user has not
+  // customised the texts (simple heuristic: replace the old date string)
+  const subj = document.getElementById('f-subject');
+  const body = document.getElementById('f-body');
+  const re = /\d{4}-\d{2}-\d{2}/;
+  if (re.test(subj.value)) subj.value = subj.value.replace(re, day);
+  body.value = body.value.replace(re, day);
+}
+</script>
+{% endblock %}

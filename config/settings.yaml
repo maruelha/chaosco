@@ -91,3 +91,10 @@ retail_missing_categories:
 
 # Retail Requirements Tracker — one-time import source (tabs 1-3 + tab 4)
 retail_tracker_excel: 'report_export/TRACKING_Retail ROE UAT Testcases DTC (1).xlsx'
+
+# Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
+# (gitignored) — never here:
+#   email_user: 'you@gmx.de'
+#   email_password: 'app-password'
+#   email_smtp_host: 'mail.gmx.net'   # default
+#   email_smtp_port: 587               # default
