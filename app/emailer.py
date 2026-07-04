@@ -39,7 +39,7 @@ DEFAULT_BODY = """Hi all,
 please find attached the UAT status reports from {date}:
 {report_list}
 
-The reports reflect the live status at the time of sending.
+The reports reflect the status of the day.
 
 Best regards
 Marina
