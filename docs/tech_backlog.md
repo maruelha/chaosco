@@ -7,7 +7,7 @@ not bugs, not forgotten, just not worth blocking today's demo.
 
 ## Refactors
 
-### Notes module — consolidate into shared components
+### Notes module — consolidate into shared components ✅ DONE 2026-07-04 (refactoring step 3)
 **Priority:** Do before adding notes to any further module (ECOM, Omni, etc.)
 
 The database layer is already correct — one central `notes` table, all writes through
@@ -50,7 +50,7 @@ delete, screenshots) by plugging in the shared include — no per-module work.
 
 ---
 
-## Split CLAUDE.md by vertical (trigger: when ECOM or Omni is built)
+## Split CLAUDE.md by vertical ✅ DONE 2026-07-04 (docs/claude/*)
 
 When ECOM/Omni are added, CLAUDE.md will become genuinely bloated. At that point split into:
 
@@ -144,7 +144,7 @@ and the fix adds meaningful JS complexity. Low priority unless the friction beco
 
 ---
 
-## Remove the one-time dep-cleanup block from run_web.bat (after propagation)
+## Remove the one-time dep-cleanup block from run_web.bat ✅ DONE 2026-07-04
 
 `run_web.bat` has a guarded block that uninstalls the abandoned PDF deps
 (`weasyprint`, `playwright`, and their orphans) on launch — it only acts when a package is

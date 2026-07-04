@@ -134,7 +134,7 @@ Last updated: 2026-07-04
 - **Done when:** no file in `app/` exceeds ~600 lines; `from app import
   database` still works everywhere.
 
-### Refactoring step 5 — Docs & CLAUDE.md split
+### Refactoring step 5 — Docs & CLAUDE.md split ✅ DONE 2026-07-04
 
 - Split CLAUDE.md: lean core (rules, stack, key files) + `docs/claude/`
   per-vertical files (defects, retail, tracker, coordination, ecom-when-built)
@@ -158,6 +158,17 @@ Last updated: 2026-07-04
   deleted), starting with the list pages that share the most structure
 - **Done when:** a new module's list+detail UI can be built from macros
   without copying HTML from a sibling template.
+
+### Follow-ups discovered during the refactor
+
+- `docs/architecture.html` and `docs/database_schema.html` describe the
+  pre-refactor layout — regenerate when convenient (CLAUDE.md + docs/claude/
+  are current in the meantime).
+- `app/db/reference.py` (770 lines) and `app/web_reference.py` (652) are the
+  two largest files — both are stacks of small independent CRUD groups;
+  split further only if they keep growing.
+- `config/settings.local.yaml` REPLACES settings.yaml instead of merging —
+  intuitive-merge behavior would be nicer (small config_loader change).
 
 ### Conditional (not scheduled)
 

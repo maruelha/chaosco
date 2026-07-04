@@ -1,4 +1,15 @@
-# Code Review Findings
+# Code Review Findings — ARCHIVED (all findings resolved)
+
+> **Status 2026-07-04:** every finding below is resolved. #1 (connection
+> leaks) — routes use try/finally. #2 (silent empty-note no-op) — the generic
+> note routes re-render with an error. #3 (init_db per request) — init_db runs
+> once at startup, routes use get_connection. #4 (hardcoded URLs) — templates
+> are url_for-based. #5 (inline datetime imports) — module-level. #6 (Excel
+> opened twice) — pd.ExcelFile single open. #7 (archive re-hashing) —
+> archive/hashes.txt manifest. #8 (duplicate note templates) — one
+> note_form.html with mode flag. #9 (repeated 404 guards) — generic notes
+> routes abort(404) centrally. Kept for historical reference only; the
+> current review lives in docs/project_review_2026-07-04.md.
 
 Initial review of the chaosco codebase after Passes A, B, and C.
 Tracked in GitHub issue #10.
