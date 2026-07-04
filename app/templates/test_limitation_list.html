@@ -139,7 +139,7 @@
       notesRow.style.display = '';
       const list = notesRow.querySelector('.js-tl-notes-list');
       list.innerHTML = 'Loading…';
-      renderNotes(list, await (await fetch(`/test_limitations/${id}/notes`)).json());
+      renderNotes(list, await (await fetch(`/n/test_limitation/${id}/list.json`)).json());
     });
   });
 
@@ -153,7 +153,7 @@
       if (!text) return;
       const fd = new FormData();
       fd.append('note', text);
-      const data = await (await fetch(`/test_limitations/${id}/notes/add`, { method: 'POST', body: fd })).json();
+      const data = await (await fetch(`/n/test_limitation/${id}/add.json`, { method: 'POST', body: fd })).json();
       if (data.ok) {
         input.value = '';
         renderNotes(cell.querySelector('.js-tl-notes-list'), data.notes);

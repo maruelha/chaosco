@@ -206,7 +206,7 @@
           <a href="{{ url_for('retail_detail', retail_id=row.retail_id) }}#notes" class="note-count-link">{{ row.note_count }} note{{ 's' if row.note_count != 1 else '' }}</a>
           <span class="notes-sep">·</span>
           {% endif %}
-          <a href="{{ url_for('retail_note_add_form', retail_id=row.retail_id) }}" class="btn btn-sm">+ Note</a>
+          <a href="{{ url_for('notes.note_add', entity_type='retail', entity_id=row.retail_id) }}" class="btn btn-sm">+ Note</a>
         </td>
         <td class="rc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>

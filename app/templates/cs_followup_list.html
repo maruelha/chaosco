@@ -220,7 +220,7 @@
       notesRow.style.display = '';
       const list = notesRow.querySelector('.js-csfu-notes-list');
       list.innerHTML = 'Loading…';
-      const resp  = await fetch(`/cs_followups/${id}/notes`);
+      const resp  = await fetch(`/n/cs_followup/${id}/list.json`);
       renderNotes(list, await resp.json());
     });
   });
@@ -235,7 +235,7 @@
       if (!text) return;
       const fd = new FormData();
       fd.append('note', text);
-      const resp = await fetch(`/cs_followups/${id}/notes/add`, { method: 'POST', body: fd });
+      const resp = await fetch(`/n/cs_followup/${id}/add.json`, { method: 'POST', body: fd });
       const data = await resp.json();
       if (data.ok) {
         input.value = '';

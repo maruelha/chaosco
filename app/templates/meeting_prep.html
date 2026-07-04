@@ -268,7 +268,7 @@
       notesRow.style.display = '';
       const list = notesRow.querySelector('.js-mp-notes-list');
       list.innerHTML = 'Loading…';
-      const resp  = await fetch(`/meeting-prep/${id}/notes`);
+      const resp  = await fetch(`/n/meeting_prep/${id}/list.json`);
       const notes = await resp.json();
       renderMpNotes(list, notes);
     });
@@ -294,7 +294,7 @@
       if (!text) return;
       const fd = new FormData();
       fd.append('note', text);
-      const resp = await fetch(`/meeting-prep/${id}/notes/add`, { method: 'POST', body: fd });
+      const resp = await fetch(`/n/meeting_prep/${id}/add.json`, { method: 'POST', body: fd });
       const data = await resp.json();
       if (data.ok) {
         input.value = '';

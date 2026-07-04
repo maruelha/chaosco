@@ -43,6 +43,10 @@ from app.web_retail_tracker import bp as _retail_tracker_bp
 db_retail_tracker.init_schema(_db_path)
 app.register_blueprint(_retail_tracker_bp)
 
+# Generic notes routes — one add/edit/delete set for all entity types.
+from app.web_notes import bp as _notes_bp
+app.register_blueprint(_notes_bp)
+
 
 def _get_conn():
     return database.get_connection(_db_path)
@@ -57,22 +61,6 @@ def _not_found(defect_id: str):
     return render_template("404.html", defect_id=defect_id), 404
 
 
-def _render_note_add_form(defect_id, solman_name, return_to, *, heading="", error=None):
-    label = defect_id + (f" — {solman_name}" if solman_name else "")
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=label, list_label="Defects",
-        list_url=url_for("defects_list"),
-        detail_url=url_for("defect_detail", defect_id=defect_id),
-        action_url=url_for("note_add", defect_id=defect_id),
-        cancel_url=(url_for("defects_list") if return_to == "list"
-                    else url_for("defect_detail", defect_id=defect_id)),
-        return_to=return_to, heading=heading, error=error,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Routes
 # ---------------------------------------------------------------------------
 
 @app.route("/")
@@ -349,96 +337,6 @@ def spillover_detail(spillover_id: int):
     )
 
 
-@app.route("/spillover/<int:spillover_id>/notes/add", methods=["GET", "POST"])
-def spillover_note_add(spillover_id: int):
-    conn = _get_conn()
-    try:
-        row = database.get_spillover_by_id(conn, spillover_id)
-        if row is None:
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if not note_text:
-                return render_template(
-                    "note_form.html", mode="add",
-                    entity_label=row.get("name") or f"Spillover #{spillover_id}",
-                    list_url=url_for("spillover_list"), list_label="Core South Spillover",
-                    detail_url=url_for("spillover_detail", spillover_id=spillover_id),
-                    action_url=url_for("spillover_note_add", spillover_id=spillover_id),
-                    cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
-                    heading=heading or "", note_text="", error="Note text is required.",
-                )
-            database.add_note(conn, "spillover", str(spillover_id), heading, note_text)
-    finally:
-        conn.close()
-    if request.method == "POST":
-        return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_added="1"))
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=row.get("name") or f"Spillover #{spillover_id}",
-        list_url=url_for("spillover_list"), list_label="Core South Spillover",
-        detail_url=url_for("spillover_detail", spillover_id=spillover_id),
-        action_url=url_for("spillover_note_add", spillover_id=spillover_id),
-        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
-        heading="", note_text="", error=None,
-    )
-
-
-@app.route("/spillover/<int:spillover_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def spillover_note_edit(spillover_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "spillover" or note["entity_id"] != str(spillover_id):
-            return render_template("404.html"), 404
-        row = database.get_spillover_by_id(conn, spillover_id)
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_saved="1"))
-    finally:
-        conn.close()
-    label = (row.get("name") if row else None) or f"Spillover #{spillover_id}"
-    kwargs = dict(
-        mode="edit", entity_label=label,
-        list_url=url_for("spillover_list"), list_label="Core South Spillover",
-        detail_url=url_for("spillover_detail", spillover_id=spillover_id),
-        action_url=url_for("spillover_note_edit", spillover_id=spillover_id, note_id=note_id),
-        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/spillover/<int:spillover_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def spillover_note_delete(spillover_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "spillover" or note["entity_id"] != str(spillover_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("spillover_detail", spillover_id=spillover_id, note_deleted="1"))
-        row = database.get_spillover_by_id(conn, spillover_id)
-    finally:
-        conn.close()
-    label = (row.get("name") if row else None) or f"Spillover #{spillover_id}"
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=label,
-        cancel_url=url_for("spillover_detail", spillover_id=spillover_id),
-        delete_url=url_for("spillover_note_delete", spillover_id=spillover_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Spillover report — selection + view
 # ---------------------------------------------------------------------------
 
 @app.route("/spillover/report")
@@ -667,96 +565,6 @@ def ecom_gatekeeper_detail(row_id: int):
     )
 
 
-@app.route("/ecom-gatekeeper/<int:row_id>/notes/add", methods=["GET", "POST"])
-def ecom_gatekeeper_note_add(row_id: int):
-    conn = _get_conn()
-    try:
-        row = database.get_ecom_gatekeeper_row(conn, row_id)
-        if row is None:
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if not note_text:
-                return render_template(
-                    "note_form.html", mode="add",
-                    entity_label=row.get("testcase_name") or f"GK #{row_id}",
-                    list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
-                    detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-                    action_url=url_for("ecom_gatekeeper_note_add", row_id=row_id),
-                    cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-                    heading=heading or "", note_text="", error="Note text is required.",
-                )
-            database.add_note(conn, "ecom_gatekeeper", str(row_id), heading, note_text)
-    finally:
-        conn.close()
-    if request.method == "POST":
-        return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_added="1"))
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=row.get("testcase_name") or f"GK #{row_id}",
-        list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
-        detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-        action_url=url_for("ecom_gatekeeper_note_add", row_id=row_id),
-        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-        heading="", note_text="", error=None,
-    )
-
-
-@app.route("/ecom-gatekeeper/<int:row_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def ecom_gatekeeper_note_edit(row_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "ecom_gatekeeper" or note["entity_id"] != str(row_id):
-            return render_template("404.html"), 404
-        row = database.get_ecom_gatekeeper_row(conn, row_id)
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_saved="1"))
-    finally:
-        conn.close()
-    label = (row.get("testcase_name") if row else None) or f"GK #{row_id}"
-    kwargs = dict(
-        mode="edit", entity_label=label,
-        list_url=url_for("ecom_gatekeeper_list"), list_label="ECOM Gatekeeper",
-        detail_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-        action_url=url_for("ecom_gatekeeper_note_edit", row_id=row_id, note_id=note_id),
-        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/ecom-gatekeeper/<int:row_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def ecom_gatekeeper_note_delete(row_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "ecom_gatekeeper" or note["entity_id"] != str(row_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("ecom_gatekeeper_detail", row_id=row_id, note_deleted="1"))
-        row = database.get_ecom_gatekeeper_row(conn, row_id)
-    finally:
-        conn.close()
-    label = (row.get("testcase_name") if row else None) or f"GK #{row_id}"
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=label,
-        cancel_url=url_for("ecom_gatekeeper_detail", row_id=row_id),
-        delete_url=url_for("ecom_gatekeeper_note_delete", row_id=row_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Report comments — bullet points shown in the status reports
 # ---------------------------------------------------------------------------
 
 @app.route("/report-comments/<report>/add", methods=["POST"])
@@ -1548,102 +1356,6 @@ def test_learning_delete(learning_id: int):
     return jsonify({"ok": True})
 
 
-@app.route("/test_learnings/<int:learning_id>/notes")
-def test_learning_notes(learning_id: int):
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "test_learning", str(learning_id))
-    finally:
-        conn.close()
-    return jsonify(notes)
-
-
-@app.route("/test_learnings/<int:learning_id>/notes/add", methods=["GET", "POST"])
-def test_learning_note_add(learning_id: int):
-    conn = _get_conn()
-    try:
-        record = database.get_test_learning(conn, learning_id)
-        if record is None:
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if not note_text:
-                return render_template(
-                    "note_form.html", mode="add",
-                    entity_label=f"Learning #{learning_id}",
-                    list_url=url_for("test_learning_list"), list_label="Test Learnings",
-                    detail_url=url_for("test_learning_detail", learning_id=learning_id),
-                    action_url=url_for("test_learning_note_add", learning_id=learning_id),
-                    cancel_url=url_for("test_learning_detail", learning_id=learning_id),
-                    heading=heading or "", note_text="", error="Note text is required.",
-                )
-            database.add_note(conn, "test_learning", str(learning_id), heading, note_text)
-    finally:
-        conn.close()
-    if request.method == "POST":
-        return redirect(url_for("test_learning_detail", learning_id=learning_id, note_added="1"))
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=f"Learning #{learning_id}",
-        list_url=url_for("test_learning_list"), list_label="Test Learnings",
-        detail_url=url_for("test_learning_detail", learning_id=learning_id),
-        action_url=url_for("test_learning_note_add", learning_id=learning_id),
-        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
-        heading="", note_text="", error=None,
-    )
-
-
-@app.route("/test_learnings/<int:learning_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def test_learning_note_edit(learning_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "test_learning" or note["entity_id"] != str(learning_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("test_learning_detail", learning_id=learning_id, note_saved="1"))
-    finally:
-        conn.close()
-    kwargs = dict(
-        mode="edit", entity_label=f"Learning #{learning_id}",
-        list_url=url_for("test_learning_list"), list_label="Test Learnings",
-        detail_url=url_for("test_learning_detail", learning_id=learning_id),
-        action_url=url_for("test_learning_note_edit", learning_id=learning_id, note_id=note_id),
-        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/test_learnings/<int:learning_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def test_learning_note_delete(learning_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "test_learning" or note["entity_id"] != str(learning_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("test_learning_detail", learning_id=learning_id, note_deleted="1"))
-    finally:
-        conn.close()
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=f"Learning #{learning_id}",
-        cancel_url=url_for("test_learning_detail", learning_id=learning_id),
-        delete_url=url_for("test_learning_note_delete", learning_id=learning_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Test Limitations routes
 # ---------------------------------------------------------------------------
 
 @app.route("/test_limitations")
@@ -1695,11 +1407,14 @@ def test_limitation_detail(limitation_id: int):
                 conn, limitation_id, channel=channel, limitation=limitation,
                 scenario=_f("scenario"), comment=_f("comment"),
             )
+        notes = database.list_notes(conn, "test_limitation", str(limitation_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("test_limitation_detail", limitation_id=limitation_id, saved="1"))
-    return render_template("test_limitation_detail.html", record=record, is_new=False, saved=saved)
+    return render_template("test_limitation_detail.html", record=record, is_new=False, saved=saved,
+                           notes=notes, attachments_by_note=attachments_by_note)
 
 
 @app.route("/test_limitations/<int:limitation_id>/delete", methods=["POST"])
@@ -1712,32 +1427,6 @@ def test_limitation_delete(limitation_id: int):
     return jsonify({"ok": True})
 
 
-@app.route("/test_limitations/<int:limitation_id>/notes")
-def test_limitation_notes(limitation_id: int):
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "test_limitation", str(limitation_id))
-    finally:
-        conn.close()
-    return jsonify(notes)
-
-
-@app.route("/test_limitations/<int:limitation_id>/notes/add", methods=["POST"])
-def test_limitation_note_add(limitation_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
-    conn = _get_conn()
-    try:
-        database.add_note(conn, "test_limitation", str(limitation_id), None, note)
-        notes = database.list_notes(conn, "test_limitation", str(limitation_id))
-    finally:
-        conn.close()
-    return jsonify({"ok": True, "notes": notes})
-
-
-# ---------------------------------------------------------------------------
-# Core South Follow-Up Tracker routes
 # ---------------------------------------------------------------------------
 
 @app.route("/cs_followups")
@@ -1796,11 +1485,14 @@ def cs_followup_detail(followup_id: int):
                 description=_f("description"), next_step=_f("next_step"),
                 with_whom=_f("with_whom"),
             )
+        notes = database.list_notes(conn, "cs_followup", str(followup_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("cs_followup_detail", followup_id=followup_id, saved="1"))
-    return render_template("cs_followup_detail.html", record=record, is_new=False, saved=saved)
+    return render_template("cs_followup_detail.html", record=record, is_new=False, saved=saved,
+                           notes=notes, attachments_by_note=attachments_by_note)
 
 
 @app.route("/cs_followups/<int:followup_id>/status", methods=["POST"])
@@ -1826,32 +1518,6 @@ def cs_followup_delete(followup_id: int):
     return jsonify({"ok": True})
 
 
-@app.route("/cs_followups/<int:followup_id>/notes")
-def cs_followup_notes(followup_id: int):
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "cs_followup", str(followup_id))
-    finally:
-        conn.close()
-    return jsonify(notes)
-
-
-@app.route("/cs_followups/<int:followup_id>/notes/add", methods=["POST"])
-def cs_followup_note_add(followup_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
-    conn = _get_conn()
-    try:
-        database.add_note(conn, "cs_followup", str(followup_id), None, note)
-        notes = database.list_notes(conn, "cs_followup", str(followup_id))
-    finally:
-        conn.close()
-    return jsonify({"ok": True, "notes": notes})
-
-
-# ---------------------------------------------------------------------------
-# Note routes
 # ---------------------------------------------------------------------------
 
 @app.route("/defects/<defect_id>/dtco2c", methods=["POST"])
@@ -1876,95 +1542,6 @@ def defect_toggle_daily(defect_id: str):
     return {"ok": True}
 
 
-@app.route("/defects/<defect_id>/notes/add")
-def note_add_form(defect_id: str):
-    conn = _get_conn()
-    try:
-        defect = database.get_defect(conn, defect_id)
-    finally:
-        conn.close()
-    if defect is None:
-        return _not_found(defect_id)
-    return_to = request.args.get("return_to", "detail")
-    return _render_note_add_form(defect_id, defect.get("solman_name"), return_to)
-
-
-@app.route("/defects/<defect_id>/notes", methods=["POST"])
-def note_add(defect_id: str):
-    conn = _get_conn()
-    try:
-        defect = database.get_defect(conn, defect_id)
-        if defect is None:
-            return _not_found(defect_id)
-        heading = request.form.get("heading", "").strip() or None
-        note_text = request.form.get("note", "").strip() or None
-        return_to = request.form.get("return_to", "detail")
-        if not note_text:
-            return _render_note_add_form(
-                defect_id, defect.get("solman_name"), return_to,
-                heading=heading or "", error="Note text is required.",
-            )
-        database.add_note(conn, "defect", defect_id, heading, note_text)
-    finally:
-        conn.close()
-    if return_to == "list":
-        return redirect(url_for("defects_list", note_added="1"))
-    return redirect(url_for("defect_detail", defect_id=defect_id, note_added="1"))
-
-
-@app.route("/defects/<defect_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def note_edit(defect_id: str, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "defect" or note["entity_id"] != defect_id:
-            return _not_found(defect_id)
-        defect = database.get_defect(conn, defect_id)
-        if request.method == "POST":
-            heading = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("defect_detail", defect_id=defect_id, note_saved="1"))
-    finally:
-        conn.close()
-    solman_name  = defect.get("solman_name") if defect else None
-    entity_label = defect_id + (f" — {solman_name}" if solman_name else "")
-    kwargs = dict(
-        mode="edit", entity_label=entity_label,
-        list_url=url_for("defects_list"), list_label="Defects",
-        detail_url=url_for("defect_detail", defect_id=defect_id),
-        action_url=url_for("note_edit", defect_id=defect_id, note_id=note_id),
-        cancel_url=url_for("defect_detail", defect_id=defect_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/defects/<defect_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def note_delete(defect_id: str, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "defect" or note["entity_id"] != defect_id:
-            return _not_found(defect_id)
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("defect_detail", defect_id=defect_id, note_deleted="1"))
-    finally:
-        conn.close()
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=defect_id,
-        cancel_url=url_for("defect_detail", defect_id=defect_id),
-        delete_url=url_for("note_delete", defect_id=defect_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Retail detail + note routes
 # ---------------------------------------------------------------------------
 
 @app.route("/retail/<int:retail_id>", methods=["GET", "POST"])
@@ -2004,112 +1581,6 @@ def retail_detail(retail_id: int):
     )
 
 
-@app.route("/retail/<int:retail_id>/notes/add")
-def retail_note_add_form(retail_id: int):
-    conn = _get_conn()
-    try:
-        row = database.get_retail_by_id(conn, retail_id)
-    finally:
-        conn.close()
-    if row is None:
-        return render_template("404.html", defect_id=str(retail_id)), 404
-    entity_label = f"{row['test_case_id']} / {row['country']}"
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=entity_label,
-        list_url=url_for("retail_list"), list_label="Retail",
-        detail_url=url_for("retail_detail", retail_id=retail_id),
-        action_url=url_for("retail_note_add", retail_id=retail_id),
-        cancel_url=url_for("retail_detail", retail_id=retail_id),
-        heading="", return_to="detail", error=None,
-    )
-
-
-@app.route("/retail/<int:retail_id>/notes", methods=["POST"])
-def retail_note_add(retail_id: int):
-    conn = _get_conn()
-    try:
-        row = database.get_retail_by_id(conn, retail_id)
-        if row is None:
-            conn.close()
-            return render_template("404.html", defect_id=str(retail_id)), 404
-        heading   = request.form.get("heading", "").strip() or None
-        note_text = request.form.get("note", "").strip() or None
-        if not note_text:
-            entity_label = f"{row['test_case_id']} / {row['country']}"
-            conn.close()
-            return render_template(
-                "note_form.html", mode="add",
-                entity_label=entity_label,
-                list_url=url_for("retail_list"), list_label="Retail",
-                detail_url=url_for("retail_detail", retail_id=retail_id),
-                action_url=url_for("retail_note_add", retail_id=retail_id),
-                cancel_url=url_for("retail_detail", retail_id=retail_id),
-                heading=heading or "", return_to="detail",
-                error="Note text is required.",
-            )
-        database.add_note(conn, "retail", retail_id, heading, note_text)
-    finally:
-        conn.close()
-    return redirect(url_for("retail_detail", retail_id=retail_id, note_added="1"))
-
-
-@app.route("/retail/<int:retail_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def retail_note_edit(retail_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "retail" or note["entity_id"] != str(retail_id):
-            conn.close()
-            return render_template("404.html", defect_id=str(retail_id)), 404
-        row = database.get_retail_by_id(conn, retail_id)
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                conn.close()
-                return redirect(url_for("retail_detail", retail_id=retail_id, note_saved="1"))
-    finally:
-        conn.close()
-    entity_label = f"{row['test_case_id']} / {row['country']}" if row else str(retail_id)
-    kwargs = dict(
-        mode="edit", entity_label=entity_label,
-        list_url=url_for("retail_list"), list_label="Retail",
-        detail_url=url_for("retail_detail", retail_id=retail_id),
-        action_url=url_for("retail_note_edit", retail_id=retail_id, note_id=note_id),
-        cancel_url=url_for("retail_detail", retail_id=retail_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/retail/<int:retail_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def retail_note_delete(retail_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "retail" or note["entity_id"] != str(retail_id):
-            conn.close()
-            return render_template("404.html", defect_id=str(retail_id)), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            conn.close()
-            return redirect(url_for("retail_detail", retail_id=retail_id, note_deleted="1"))
-    finally:
-        conn.close()
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        cancel_url=url_for("retail_detail", retail_id=retail_id),
-        delete_url=url_for("retail_note_delete", retail_id=retail_id, note_id=note_id),
-        entity_label=f"retail #{retail_id}",
-    )
-
-
-# ---------------------------------------------------------------------------
-# Meeting prep
 # ---------------------------------------------------------------------------
 
 @app.route("/meeting-prep")
@@ -2222,30 +1693,6 @@ def meeting_prep_note(item_id: int):
     return jsonify({"ok": True, "note": note})
 
 
-@app.route("/meeting-prep/<int:item_id>/notes")
-def meeting_prep_notes(item_id: int):
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "meeting_prep", str(item_id))
-    finally:
-        conn.close()
-    return jsonify(notes)
-
-
-@app.route("/meeting-prep/<int:item_id>/notes/add", methods=["POST"])
-def meeting_prep_note_add(item_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
-    conn = _get_conn()
-    try:
-        database.add_note(conn, "meeting_prep", str(item_id), None, note)
-        notes = database.list_notes(conn, "meeting_prep", str(item_id))
-    finally:
-        conn.close()
-    return jsonify({"ok": True, "notes": notes})
-
-
 @app.route("/meeting-prep/<int:item_id>/topic", methods=["POST"])
 def meeting_prep_topic(item_id: int):
     topic = request.form.get("topic", "").strip()
@@ -2355,32 +1802,6 @@ def todo_status(todo_id: int):
     return jsonify({"ok": True, "status": status})
 
 
-@app.route("/todos/<int:todo_id>/notes")
-def todo_notes(todo_id: int):
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "todo", str(todo_id))
-    finally:
-        conn.close()
-    return jsonify(notes)
-
-
-@app.route("/todos/<int:todo_id>/notes/add", methods=["POST"])
-def todo_note_add(todo_id: int):
-    note = request.form.get("note", "").strip()
-    if not note:
-        return jsonify({"ok": False, "error": "empty"})
-    conn = _get_conn()
-    try:
-        database.add_note(conn, "todo", str(todo_id), None, note)
-        notes = database.list_notes(conn, "todo", str(todo_id))
-    finally:
-        conn.close()
-    return jsonify({"ok": True, "notes": notes})
-
-
-# ---------------------------------------------------------------------------
-# Follow-ups
 # ---------------------------------------------------------------------------
 
 @app.route("/followups")
@@ -2479,85 +1900,6 @@ def followup_detail(followup_id: int):
     )
 
 
-@app.route("/followups/<int:followup_id>/notes/add", methods=["GET", "POST"])
-def followup_note_add(followup_id: int):
-    conn = _get_conn()
-    try:
-        row = database.get_followup_by_id(conn, followup_id)
-        if row is None:
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.add_note(conn, "followup", str(followup_id), heading, note_text)
-                return redirect(url_for("followup_detail", followup_id=followup_id, note_added="1"))
-    finally:
-        conn.close()
-    label = f"{row['with_whom']} — {row['topic']}" if row else str(followup_id)
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=label, list_label="Follow-ups",
-        list_url=url_for("followup_list"),
-        detail_url=url_for("followup_detail", followup_id=followup_id),
-        action_url=url_for("followup_note_add", followup_id=followup_id),
-        cancel_url=url_for("followup_detail", followup_id=followup_id),
-        heading="", note_text="", error=None,
-    )
-
-
-@app.route("/followups/<int:followup_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def followup_note_edit(followup_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "followup" or note["entity_id"] != str(followup_id):
-            return render_template("404.html"), 404
-        row = database.get_followup_by_id(conn, followup_id)
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("followup_detail", followup_id=followup_id, note_saved="1"))
-    finally:
-        conn.close()
-    label = f"{row['with_whom']} — {row['topic']}" if row else str(followup_id)
-    kwargs = dict(
-        mode="edit", entity_label=label, list_label="Follow-ups",
-        list_url=url_for("followup_list"),
-        detail_url=url_for("followup_detail", followup_id=followup_id),
-        action_url=url_for("followup_note_edit", followup_id=followup_id, note_id=note_id),
-        cancel_url=url_for("followup_detail", followup_id=followup_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/followups/<int:followup_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def followup_note_delete(followup_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "followup" or note["entity_id"] != str(followup_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("followup_detail", followup_id=followup_id, note_deleted="1"))
-    finally:
-        conn.close()
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=f"Follow-up #{followup_id}",
-        cancel_url=url_for("followup_detail", followup_id=followup_id),
-        delete_url=url_for("followup_note_delete", followup_id=followup_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Enhancements (floating panel, JSON API)
 # ---------------------------------------------------------------------------
 
 @app.route("/enhancements")
@@ -2876,96 +2218,6 @@ def shelf_delete(shelf_id: int):
     return redirect(url_for("shelf_list", item_deleted="1"))
 
 
-@app.route("/shelf/<int:shelf_id>/notes/add", methods=["GET", "POST"])
-def shelf_note_add(shelf_id: int):
-    conn = _get_conn()
-    try:
-        item = database.get_shelf_item(conn, shelf_id)
-        if item is None:
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if not note_text:
-                return render_template(
-                    "note_form.html", mode="add",
-                    entity_label=item.get("heading") or f"Shelf #{shelf_id}",
-                    list_url=url_for("shelf_list"), list_label="Shelf",
-                    detail_url=url_for("shelf_detail", shelf_id=shelf_id),
-                    action_url=url_for("shelf_note_add", shelf_id=shelf_id),
-                    cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
-                    heading=heading or "", note_text="", error="Note text is required.",
-                )
-            database.add_note(conn, "shelf", str(shelf_id), heading, note_text)
-    finally:
-        conn.close()
-    if request.method == "POST":
-        return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_added="1"))
-    return render_template(
-        "note_form.html", mode="add",
-        entity_label=item.get("heading") or f"Shelf #{shelf_id}",
-        list_url=url_for("shelf_list"), list_label="Shelf",
-        detail_url=url_for("shelf_detail", shelf_id=shelf_id),
-        action_url=url_for("shelf_note_add", shelf_id=shelf_id),
-        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
-        heading="", note_text="", error=None,
-    )
-
-
-@app.route("/shelf/<int:shelf_id>/notes/<int:note_id>/edit", methods=["GET", "POST"])
-def shelf_note_edit(shelf_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "shelf" or note["entity_id"] != str(shelf_id):
-            return render_template("404.html"), 404
-        item = database.get_shelf_item(conn, shelf_id)
-        if request.method == "POST":
-            heading   = request.form.get("heading", "").strip() or None
-            note_text = request.form.get("note", "").strip() or None
-            if note_text:
-                database.update_note(conn, note_id, heading, note_text)
-                return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_saved="1"))
-    finally:
-        conn.close()
-    label = (item.get("heading") if item else None) or f"Shelf #{shelf_id}"
-    kwargs = dict(
-        mode="edit", entity_label=label,
-        list_url=url_for("shelf_list"), list_label="Shelf",
-        detail_url=url_for("shelf_detail", shelf_id=shelf_id),
-        action_url=url_for("shelf_note_edit", shelf_id=shelf_id, note_id=note_id),
-        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
-        created_at=note["created_at"],
-    )
-    if request.method == "POST":
-        return render_template("note_form.html", **kwargs, heading=heading or "", note_text="", error="Note text is required.")
-    return render_template("note_form.html", **kwargs, heading=note["heading"] or "", note_text=note["note"] or "")
-
-
-@app.route("/shelf/<int:shelf_id>/notes/<int:note_id>/delete", methods=["GET", "POST"])
-def shelf_note_delete(shelf_id: int, note_id: int):
-    conn = _get_conn()
-    try:
-        note = database.get_note(conn, note_id)
-        if note is None or note["entity_type"] != "shelf" or note["entity_id"] != str(shelf_id):
-            return render_template("404.html"), 404
-        if request.method == "POST":
-            database.delete_note(conn, note_id)
-            return redirect(url_for("shelf_detail", shelf_id=shelf_id, note_deleted="1"))
-        item = database.get_shelf_item(conn, shelf_id)
-    finally:
-        conn.close()
-    label = (item.get("heading") if item else None) or f"Shelf #{shelf_id}"
-    return render_template(
-        "note_confirm_delete.html", note=note,
-        entity_label=label,
-        cancel_url=url_for("shelf_detail", shelf_id=shelf_id),
-        delete_url=url_for("shelf_note_delete", shelf_id=shelf_id, note_id=note_id),
-    )
-
-
-# ---------------------------------------------------------------------------
-# Attachments (screenshots linked to notes)
 # ---------------------------------------------------------------------------
 
 @app.route("/uploads/<path:filename>")

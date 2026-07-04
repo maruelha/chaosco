@@ -1,0 +1,66 @@
+{# Shared notes module — include on any detail page.
+
+   Required context:
+     entity_type          notes registry key (e.g. 'defect', 'retail', 'shelf')
+     entity_id            the parent row's id (str or int)
+     notes                list of note dicts
+     attachments_by_note  {note_id: [attachment, ...]}  (pass {} to hide attachments)
+
+   Banners read request.args (note_added / note_saved / note_deleted) directly.
+   Attachment upload/delete/Ctrl+V-paste behavior comes from static/notes.js
+   (loaded globally in base.html).
+#}
+{% set _eid = entity_id | string %}
+<div class="notes-card" id="notes">
+  <div class="card-header-row">
+    <h2>Notes</h2>
+    {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
+    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid) }}" class="btn btn-sm">+ Add note</a>
+  </div>
+
+  {% if request.args.get('note_added') %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if request.args.get('note_saved') %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if request.args.get('note_deleted') %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+
+  {% if notes %}
+  <div class="notes-list">
+    {% for n in notes %}
+    <div class="note-item">
+      <div class="note-meta">
+        <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ n.created_at }}</span>
+      </div>
+      <p class="note-text">{{ n.note or '' }}</p>
+      <div class="note-attachments" id="atts-{{ n.id }}">
+        {% for att in attachments_by_note.get(n.id, []) %}
+        <div class="att-thumb" id="att-{{ att.id }}">
+          {% if att.filename | is_image %}
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener">
+            <img src="{{ url_for('serve_upload', filename=att.filename) }}" alt="{{ att.original_name }}">
+          </a>
+          {% else %}
+          <a href="{{ url_for('serve_upload', filename=att.filename) }}" target="_blank" rel="noopener" class="att-doclink">&#128196; {{ att.original_name }}</a>
+          {% endif %}
+          <span class="att-name">{{ att.original_name }}</span>
+          <button class="att-del" data-note="{{ n.id }}" data-att="{{ att.id }}" title="Remove attachment">&#10005;</button>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="att-add">
+        <label class="btn btn-sm att-pick-btn" for="att-{{ n.id }}">&#128247; Add screenshot</label>
+        <input id="att-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept="image/*" style="display:none">
+        <label class="btn btn-sm att-pick-btn" for="att-doc-{{ n.id }}" style="margin-left:0.3rem">&#128206; Attach file</label>
+        <input id="att-doc-{{ n.id }}" type="file" class="att-file" data-note="{{ n.id }}" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.msg,.eml,.zip,.xml,.json" style="display:none">
+      </div>
+      <div class="note-actions">
+        <a href="{{ url_for('notes.note_edit', entity_type=entity_type, entity_id=_eid, note_id=n.id) }}" class="btn btn-sm">Edit</a>
+        <a href="{{ url_for('notes.note_delete', entity_type=entity_type, entity_id=_eid, note_id=n.id) }}" class="btn btn-sm btn-danger">Delete</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="notes-empty">No notes yet.
+    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid) }}">Add the first one.</a></p>
+  {% endif %}
+</div>

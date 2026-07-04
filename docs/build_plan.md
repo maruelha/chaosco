@@ -103,7 +103,7 @@ Last updated: 2026-07-04
     against a temp copy of the DB
 - **Done when:** `python -m pytest` covers importers + routes, all green.
 
-### Refactoring step 3 — Notes consolidation (do BEFORE building ECOM/Omni)
+### Refactoring step 3 — Notes consolidation ✅ DONE 2026-07-04
 
 - One generic note route set in a new file (e.g. `app/web_notes.py`,
   Blueprint): add/edit/delete for ALL entity types, driven by a small
@@ -141,6 +141,20 @@ Last updated: 2026-07-04
   install incl. flask + python-pptx)
 - Mark `docs/code-review-findings.md` findings as resolved / archive it
 - **Done when:** CLAUDE.md under ~150 lines; README matches reality.
+
+### Refactoring step 6 — UI component library
+
+- `app/templates/_macros.html`: shared Jinja macros — page header (title +
+  action buttons), filter bar, data table shell, pills/badges, stat cards,
+  result box — so every module's UI is assembled from the same components
+- Consolidate the repeated inline `<style>` blocks into `style.css`
+  component classes (one visual language; new modules inherit it)
+- Replace hardcoded `href="/..."` in templates with `url_for(...)` wherever
+  a template is touched
+- Migrate templates opportunistically (each template switched = old markup
+  deleted), starting with the list pages that share the most structure
+- **Done when:** a new module's list+detail UI can be built from macros
+  without copying HTML from a sibling template.
 
 ### Conditional (not scheduled)
 
