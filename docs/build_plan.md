@@ -119,11 +119,14 @@ Last updated: 2026-07-04
 - **Done when:** zero per-module note routes left in `web.py`; the paste JS
   exists exactly once.
 
-### Refactoring step 4 — Split the monoliths
+### Refactoring step 4 — Split the monoliths ✅ DONE 2026-07-04
 
-- `web.py` (3,000+ lines) → Flask Blueprints per area in `app/web/` or
-  flat `app/web_*.py` files (defects, retail, spillover, coordination,
-  reports, notes); `web.py` shrinks to app factory + blueprint registration
+- `web.py` → flat `app/web_*.py` feature modules (home, defects, spillover,
+  retail, reports, planning, reference) sharing the app object from
+  `web_core.py` — NOT Blueprints for the old routes, deliberately: Blueprint
+  endpoints are name-prefixed and would have broken every url_for in ~40
+  templates. New verticals (tracker, notes) stay Blueprints. `web.py` is now
+  the assembler (imports route modules + registers blueprints).
 - `database.py` (2,800+ lines) → package `app/db/` (defects.py, retail.py,
   spillover.py, notes.py, coordination.py, schema.py) with `app/database.py`
   re-exporting everything so no caller breaks
