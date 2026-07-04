@@ -1,0 +1,149 @@
+# Build Plan
+
+The single to-do document. Two halves: **feature work by module** (the dashboard
+cards) and **refactoring steps** (numbered — "do refactoring step 1" means exactly
+what is written under that number).
+
+Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
+`retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
+When an item here is done: mark it done here AND update the source doc.
+
+Last updated: 2026-07-04
+
+---
+
+## Part 1 — Feature work by module
+
+### Retail Requirements Tracker (`/retail-tracker/board`)
+
+1. **Override button — "counted as done by decision"** *(= step 5.1 of the
+   tracker plan)*. Per requirement × country: mark as counted WITHOUT a test
+   pass, with a MANDATORY reason. Board shows it visibly as a decision (not a
+   real pass — distinct chip style + reason on hover). Table `tested_overrides`
+   already exists (requirement_id, country, reason NOT NULL); counting service
+   already consumes it (`overrides_by_req`) — only the UI action + a small
+   route are missing. Payment methods need NO overrides (the check-off system
+   is their human layer).
+2. **Historical yes-marks comparison** *(= step 5.2)*. One-time script/page:
+   read the Excel's per-country yes-columns (tabs 1–3), compare against the
+   live board, list differences. For each difference the user decides: already
+   covered by a Passed status (ignore) or import as override with reason
+   "migrated from Excel 2026-07".
+3. **Retire the tracking Excel** *(= step 5.3)*. After 1+2: the board is the
+   single source of truth; stop maintaining the Excel. Remove/repurpose the
+   one-time import button (keep re-import possible but clearly labelled).
+4. Cosmetic backlog: the Excel names the same test twice (Blind Return /
+   OFFLINE Return → GKP2002; Blind Return giftcard / Blind return → GKP1015)
+   → two near-duplicate Return rows. Fix the names in the Excel and re-import,
+   or add an ignore mechanism.
+
+### Inbox (`/inbox`)
+
+1. Screenshot-first capture (attach before saving a note) — "maybe" in
+   `docs/tech_backlog.md`; silent AJAX-create approach sketched there.
+
+### Reports / Export (dashboard "Export Reports" button)
+
+1. **Fix the broken button**: rework `app/report_exporter.py` to write
+   `.html` + `.pptx` (drop the retired WeasyPrint PDF step). Until then the
+   button errors. (Deleting the dead PDF code is refactoring step 1.)
+
+### ECOM vertical (planned, not started)
+
+1. New importer + `ecom` + `ecom_annotations` tables + UI, following the
+   Retail vertical as template (per CLAUDE.md). Excel tab name TBD.
+   **Precondition: refactoring step 3 (notes consolidation) first** — otherwise
+   the note routes get copy-pasted an 11th time.
+
+### Omni vertical (planned, not started)
+
+1. Same as ECOM, after ECOM.
+
+### Cross-module navigation
+
+1. Make `defect_id_ref` on Retail rows a clickable link to the Defect detail.
+2. Clarify or consolidate the two follow-up trackers (`followups` vs
+   `cs_followups`).
+
+---
+
+## Part 2 — Refactoring steps (do in order; each is one instruction)
+
+> From `docs/project_review_2026-07-04.md`. Each step is shippable on its own;
+> the app keeps running throughout. "Do refactoring step N" = do exactly the
+> bullet list under N, nothing more.
+
+### Refactoring step 1 — Hygiene pass (~half a day)
+
+- Untrack committed junk (files stay on disk, leave git):
+  `git rm --cached` for: `archive_db/*.db`, `archive/test_coordination.db`,
+  `archive/test_coordinationSpillOver.db`, `data/Neuer Ordner/` (both .db),
+  `data/spillover_annotations_export_*.json`, `output/~$retail_report_log.xlsx`,
+  `config/settings.local.yaml`
+- Extend `.gitignore`: `archive_db/`, `archive/*.db`, `data/**/*.db`,
+  `~$*`, `config/settings.local.yaml`, `report_export/` (verify present)
+- Move the nine `claude_code_prompt_*.md` root files to `docs/history/`
+- Delete dead PDF code: `app/pdf_utils.py`, the `/spillover/report/pdf` route
+  in `web.py` + its `render_pdf` import; either fix `report_exporter.py`
+  (HTML-only for now) or disable the dashboard Export Reports button with a
+  clear "being reworked" message
+- Pin `requirements.txt` to exact versions (`pip freeze` for the 5 deps)
+- Remove the one-time dep-cleanup block from `run_web.bat`
+- Delete stray temp files: `output/~$…`, `report_export/~$…`, `Download/~$…`
+- **Done when:** `git status` clean-by-intent, app starts, all tests green.
+
+### Refactoring step 2 — Test safety net (~a day)
+
+- `tests/` exists (tracker suite, 33 tests). Add:
+  - Characterization tests for the three existing importers
+    (`read_defects`, `spillover_importer`, `retail_importer`): synthetic
+    Excel fixture in, assert exact DB rows out (incl. skip/dedup edge cases,
+    `first_seen`/`last_seen` idempotency)
+  - Route smoke test: every GET route in `web.py` + tracker returns 200
+    against a temp copy of the DB
+- **Done when:** `python -m pytest` covers importers + routes, all green.
+
+### Refactoring step 3 — Notes consolidation (do BEFORE building ECOM/Omni)
+
+- One generic note route set in a new file (e.g. `app/web_notes.py`,
+  Blueprint): add/edit/delete for ALL entity types, driven by a small
+  registry {entity_type → label, detail-url builder, db-getter}
+- One shared template include `app/templates/_notes_section.html`
+  (note list + form + attachments)
+- One shared `app/static/notes.js` (upload, delete, Ctrl+V paste) replacing
+  the ~9 inlined copies
+- Migrate each module to the shared pieces one at a time (defects → retail →
+  spillover → followups → shelf → test_learnings → ecom_gatekeeper →
+  test_limitations → cs_followups → meeting_prep/todos), deleting the old
+  routes/JS per module as it switches; smoke tests stay green after each
+- **Done when:** zero per-module note routes left in `web.py`; the paste JS
+  exists exactly once.
+
+### Refactoring step 4 — Split the monoliths
+
+- `web.py` (3,000+ lines) → Flask Blueprints per area in `app/web/` or
+  flat `app/web_*.py` files (defects, retail, spillover, coordination,
+  reports, notes); `web.py` shrinks to app factory + blueprint registration
+- `database.py` (2,800+ lines) → package `app/db/` (defects.py, retail.py,
+  spillover.py, notes.py, coordination.py, schema.py) with `app/database.py`
+  re-exporting everything so no caller breaks
+- Mechanical moves only — no logic changes; tests green after every move
+- **Done when:** no file in `app/` exceeds ~600 lines; `from app import
+  database` still works everywhere.
+
+### Refactoring step 5 — Docs & CLAUDE.md split
+
+- Split CLAUDE.md: lean core (rules, stack, key files) + `docs/claude/`
+  per-vertical files (defects, retail, tracker, coordination, ecom-when-built)
+- Fix docs drift: document `solman_sync.py` + `/solman-sync` (key files +
+  screens tables), add `main.py`/`archiver.py` to key files
+- Rewrite `README.md` for what the app is today (web UI first, correct
+  install incl. flask + python-pptx)
+- Mark `docs/code-review-findings.md` findings as resolved / archive it
+- **Done when:** CLAUDE.md under ~150 lines; README matches reality.
+
+### Conditional (not scheduled)
+
+- Generic CRUD repository for the simple entities (links, contacts, todos, …)
+  — only worth it when the NEXT simple entity gets added; don't do it for
+  elegance alone (review recommendation).

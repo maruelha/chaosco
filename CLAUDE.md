@@ -233,6 +233,7 @@ Spec: `retail-tracker-handoff.md`. SQL in `app/db_retail_tracker.py`, routes in 
 | `docs/architecture.html` | Architecture overview — layers, modules, shared patterns, how to add a vertical |
 | `docs/screens_visual.html` | Visual screen reference with real screenshots |
 | `docs/tech_backlog.md` | Technical backlog: known deferrals, refactor plans, future work |
+| `docs/build_plan.md` | THE to-do document: feature work per module + numbered refactoring steps ("do refactoring step N" = exactly that list) |
 
 ---
 
