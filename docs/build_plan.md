@@ -73,7 +73,7 @@ Last updated: 2026-07-05
    named/meeting chats or pre-fill channels — if that is ever needed, the
    Power Automate webhook route (VDI-created, cloud-run) is the upgrade path.
 
-### Jira card (CONCEPT NOT YET CLEAR — do not build)
+### Jira card — concept REFINED 2026-07-05, see docs/build_plan_2026-07-05.md items 2-6 (do not build until templates provided)
 
 Parked 2026-07-04 after a feasibility chat. Known so far:
 - Source: Jira **XML export** (issue search → Export → XML) — unlike CSV it
