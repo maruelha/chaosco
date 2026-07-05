@@ -42,7 +42,8 @@ python -m app.web
 
 `config/settings.yaml` (committed) holds paths, sheet names, hidden statuses.
 Machine-specific overrides go in `config/settings.local.yaml` (gitignored) —
-note it **replaces** the base file when present, so copy the whole file.
+it is **merged over** the base file (local values win), so it only needs the
+keys you want to override.
 
 ## Tests
 

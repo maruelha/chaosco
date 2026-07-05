@@ -91,8 +91,11 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
 ### Cross-module navigation
 
 1. Make `defect_id_ref` on Retail rows a clickable link to the Defect detail.
-2. Clarify or consolidate the two follow-up trackers (`followups` vs
-   `cs_followups`).
+2. ~~Clarify the follow-up trackers~~ ✅ RESOLVED 2026-07-05 [USER]: three
+   deliberately distinct cards — CS Follow-ups = topics needing attention
+   before go-live (topic tracker); Follow-ups = what others promised MARINA;
+   Promises (planned, day plan step 10) = what Marina promised others.
+   No consolidation.
 
 ---
 
@@ -190,14 +193,13 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
 
 ### Follow-ups discovered during the refactor
 
-- `docs/architecture.html` and `docs/database_schema.html` describe the
-  pre-refactor layout — regenerate when convenient (CLAUDE.md + docs/claude/
-  are current in the meantime).
+- Architecture/DB-schema HTML regeneration → moved to the 2026-07-05 day
+  plan (step 11).
 - `app/db/reference.py` (770 lines) and `app/web_reference.py` (652) are the
   two largest files — both are stacks of small independent CRUD groups;
   split further only if they keep growing.
-- `config/settings.local.yaml` REPLACES settings.yaml instead of merging —
-  intuitive-merge behavior would be nicer (small config_loader change).
+- ~~settings.local.yaml replace-instead-of-merge~~ ✅ FIXED 2026-07-05
+  (config_loader merges, local wins; tests added).
 
 ### Conditional (not scheduled)
 

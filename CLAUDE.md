@@ -28,7 +28,7 @@ ECOM, Omni. **Start:** `run_web.bat` (or `python -m app.web`).
    `app/web_notes.py` (registry-driven), shared `_notes_section.html` +
    `static/notes.js`. Never create module-specific notes tables/routes/JS.
 4. **Config-driven:** `config/settings.yaml` (machine overrides in gitignored
-   `settings.local.yaml` — it REPLACES, not merges) and
+   `settings.local.yaml` — MERGED over the base since 2026-07-05, local wins) and
    `config/status_mappings.yaml` (retail report buckets).
 5. **UI from components:** import `_macros.html` (page header, stat cards,
    sections, tables, pills) + the component classes in `style.css`

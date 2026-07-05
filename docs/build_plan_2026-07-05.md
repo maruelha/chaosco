@@ -134,6 +134,13 @@ owe me; promise = I owe them):
   the heading/note) and re-parents the note.
 OPEN: is a due date wanted? Anything else on a promise (e.g. context link)?
 
+## Step 11 — Regenerate the visual docs
+
+`docs/architecture.html` and `docs/database_schema.html` still describe the
+pre-refactor layout. Regenerate both from the current code (app/db package,
+web_* modules, blueprints, components, all new tables incl. topics/jira/
+promises when built). Low risk, documentation only.
+
 ---
 
 ## Before build, Marina provides

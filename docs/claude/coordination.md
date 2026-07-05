@@ -38,6 +38,12 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 
 ## Planning entities (app/db/planning.py + app/web_planning.py)
 
+**Card definitions [USER 2026-07-05]** — three deliberately distinct trackers:
+`cs_followups` = TOPICS needing attention before go-live;
+`followups` = what others promised MARINA (chase list);
+`promises` (planned) = what Marina promised OTHERS. Do not consolidate.
+
+
 - `meeting_prep` — per-meeting agenda topics; overall_topic ordering; agenda
   export `/meeting-prep/agenda`; DTC O2C Daily agenda
   `/meeting-prep/dtco2c-daily` (planned topics + daily-flagged defects +
