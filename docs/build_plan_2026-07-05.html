@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Build Plan 2026-07-05 — ECOM Gatekeeper v2 + ECOM vertical</title>
+<style>
+  :root { --blue:#2b6cb0; --green:#1a7f37; --amber:#b45309; --red:#c1121f; --slate:#334155; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 60rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.5rem; } h2 { font-size: 1.05rem; margin: 0; }
+  .rules { background:#f6f7fb; border:1px solid #e2e2ea; border-radius:10px;
+           padding: 0.9rem 1.2rem; font-size: 0.9rem; margin: 1rem 0 1.6rem; }
+  .step { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+          margin: 1rem 0; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .step-head { display:flex; align-items:center; gap:0.7rem; padding:0.7rem 1.1rem;
+               color:#fff; font-weight:700; }
+  .step-body { padding: 0.8rem 1.2rem 1rem; font-size: 0.92rem; }
+  .step-body ul { margin: 0.4rem 0; padding-left: 1.3rem; }
+  .s1 .step-head { background:var(--slate); } .s2 .step-head { background:var(--blue); }
+  .s3 .step-head, .s4 .step-head { background:#7c3aed; }
+  .s5 .step-head, .s6 .step-head { background:#0e7490; }
+  .s7 .step-head, .s8 .step-head { background:var(--green); }
+  .num { background:rgba(255,255,255,.25); border-radius:50%; width:1.7rem; height:1.7rem;
+         display:flex; align-items:center; justify-content:center; font-size:0.95rem; }
+  .tag { margin-left:auto; background:rgba(255,255,255,.22); border-radius:20px;
+         padding:2px 12px; font-size:0.75rem; font-weight:600; }
+  .verify { border-top:1px dashed #ddd; margin-top:0.7rem; padding-top:0.6rem;
+            font-size:0.88rem; color:var(--green); }
+  .verify::before { content:"✓ You verify: "; font-weight:700; }
+  .needs { color:var(--red); font-weight:600; font-size:0.8rem; }
+  .decided { color:#555; font-size:0.85rem; background:#f2fbf3; border-left:3px solid var(--green);
+             padding:0.15rem 0.6rem; margin:0.3rem 0; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  .provide { border:2px solid var(--red); border-radius:10px; background:#fff5f5;
+             padding:0.8rem 1.2rem; margin:1.4rem 0; }
+  .provide h2 { color:var(--red); }
+</style>
+</head>
+<body>
+
+<h1>Build Plan — 2026-07-05<br><span style="font-weight:400; font-size:1.05rem">ECOM Gatekeeper v2 (Jira-based) + ECOM vertical</span></h1>
+<p>Say <strong>"do step N"</strong> — each step is built, tested, and verified by you before the next.
+Markdown source: <code>docs/build_plan_2026-07-05.md</code>.</p>
+
+<div class="rules">
+  <strong>Clean-build rules for every step</strong> (no new mess — same discipline as the refactor):
+  own storage module + Blueprint per card, so existing files don't grow ·
+  imported data strictly separated from your authored data ·
+  UI assembled from the shared components/macros (notes, order details, Teams, filters) ·
+  tests written with the logic, whole suite green before each commit ·
+  docs updated per step · one commit per step, individually revertible.
+</div>
+
+<div class="step s1">
+  <div class="step-head"><span class="num">1</span> Order-details drop-in component <span class="tag">prerequisite for step 4</span></div>
+  <div class="step-body">
+    Extract the Order-details popup (dialog + JS, currently duplicated <em>with drift</em> in
+    <code>spillover.html</code> and <code>ecom_gatekeeper.html</code>) into <code>_order_details.html</code> —
+    AJAX drop-in like the entity-links component. Backend already generic (<code>order_details</code> table + routes) — untouched.
+    Spillover's richer variant is canonical (order type · number · comment · docs-in-S4 ✓ badge);
+    old Gatekeeper inherits the S4 checkbox. Both pages migrated, the two inline copies <strong>deleted</strong>, roundtrip test added.
+    <div class="verify">order-details popup works unchanged on Spillover and old Gatekeeper.</div>
+  </div>
+</div>
+
+<div class="step s2">
+  <div class="step-head"><span class="num">2</span> Shared Jira store <span class="tag">foundation — no UI</span></div>
+  <div class="step-body">
+    <ul>
+      <li><code>jira_issues</code> (key PK, solman_id = summary before first "_", summary, epic, markets,
+          jira_status, jira_assignee, type, priority, description HTML, link, dates) +
+          <code>jira_comments</code> (no authors — XML only has JIRAUSER keys; replaced per import).</li>
+      <li>Tolerant XML parser (Jira RSS, bare-<code>&amp;</code> pre-pass — verified on your real export);
+          newest-file-by-stem; separate stems for the gatekeeper file ("assigned to Marina") and the ECOM sync file (open issues).</li>
+      <li class="decided">Re-import [decided]: match by jira id; ONLY comments + jira status + jira assignee refresh.</li>
+      <li>Tests first (fixture modeled on the real file). <span class="needs">needs: the two XML filenames/stems</span></li>
+    </ul>
+    <div class="verify">pytest green; trial import of your real XML shows correct rows.</div>
+  </div>
+</div>
+
+<div class="step s3">
+  <div class="step-head"><span class="num">3</span> Gatekeeper v2 — core card <span class="tag">side by side with the old card</span></div>
+  <div class="step-body">
+    <ul>
+      <li><code>gatekeeper_annotations</code> (internal_status, next_step, DTC-O2C flag, pushed markers) —
+          authored; import only creates rows with status <strong>OrderCheck</strong>.</li>
+      <li class="decided">Statuses [decided]: OrderCheck → Issue DTC | Issue Sales | SF requested →
+          <strong>Ready for validation</strong> = handover, hidden by default (like defects' Confirmed).</li>
+      <li>Import button on the card. List like Retail: jira id · solman id · name · epic ·
+          internal status (inline) · next step (inline) · jira status + jira assignee (read-only, own fields) ·
+          notes; filters: search, epic, internal status, show-hidden.</li>
+      <li>Detail: next step, jira description, <strong>read-only comment thread</strong>, open-in-Jira, full notes module.</li>
+    </ul>
+    <div class="verify">import your real file, walk list/detail, set statuses, write a note.</div>
+  </div>
+</div>
+
+<div class="step s4">
+  <div class="step-head"><span class="num">4</span> Gatekeeper v2 — integrations</div>
+  <div class="step-body">
+    Order-details component (step 1) on the detail page · inbox filing target ·
+    Add-to-Meeting-Prep + <strong>DTC O2C checkbox</strong> (flagged tickets appear on the DTC O2C Daily agenda) ·
+    Teams ping (e.g. the Jira assignee) + Teams channel picker.
+    <div class="verify">each integration once by hand.</div>
+  </div>
+</div>
+
+<div class="step s5">
+  <div class="step-head"><span class="num">5</span> Excel push buttons <span class="tag">needs your 2 templates</span></div>
+  <div class="step-body">
+    Staging for copy-paste into the browser-Excel the key users read.
+    <span class="decided">Recommended mode (please confirm): each push writes a fresh DATED file containing only
+    not-yet-pushed rows (pushed markers per ticket); "include already pushed" toggle for re-pushes.</span>
+    <ul>
+      <li>Button 1: all lines, retail-like columns. <span class="needs">needs: template file</span></li>
+      <li>Button 2: only Ready-for-validation lines — pushing is the handover act. <span class="needs">needs: template file</span></li>
+    </ul>
+    <div class="verify">push, open file, paste into the browser Excel once.</div>
+  </div>
+</div>
+
+<div class="step s6">
+  <div class="step-head"><span class="num">6</span> Gatekeeper status report + email</div>
+  <div class="step-body">
+    Spillover-style: select rows → printable standalone HTML. <strong>No PPT, no copy-for-Teams</strong> (decided).
+    Becomes the 4th checkbox on <code>/email-report</code> — existing GMX plumbing, nothing new.
+    <div class="verify">generate + email the report to yourself.</div>
+  </div>
+</div>
+
+<div class="step s7">
+  <div class="step-head"><span class="num">7</span> ECOM vertical — importer <span class="tag">needs newest tracking Excel</span></div>
+  <div class="step-body">
+    Importer like Retail from the ECOM tab + extra columns <code>jira_id</code> and
+    <code>description_change</code> (display; feeds your external coverage tool).
+    Tables <code>ecom</code> + <code>ecom_annotations</code>; <span class="decided">match key = jira id [decided]</span>.
+    Excel fields strictly separate from Jira fields. Characterization tests like the other importers.
+    <div class="verify">import result counts match the tab.</div>
+  </div>
+</div>
+
+<div class="step s8">
+  <div class="step-head"><span class="num">8</span> ECOM pages</div>
+  <div class="step-body">
+    List + detail like Retail, plus Jira details + read-only comment thread from the shared store
+    (joined by jira id) and open-in-Jira. "Upload jira comments" = running the ECOM-stem import (step 2 code).
+    <strong>Handover from gatekeeper = relink, no copy</strong> (the ECOM row's jira id points at the same
+    <code>jira_issues</code> record) + order_details re-point.
+    Optional: auto-flag when a re-import changes the stored description (description_change signal).
+    <div class="verify">open an ECOM testcase with Jira data → details + comments visible; run the sync; check one relink.</div>
+  </div>
+</div>
+
+<div class="provide">
+  <h2>⚠ Before build, from Marina</h2>
+  <ol>
+    <li>Gatekeeper Excel push template (retail-like columns) — step 5</li>
+    <li>Ready-for-validation Excel template — step 5</li>
+    <li>Newest tracking Excel containing the ECOM tab — step 7</li>
+    <li>Filenames/stems of the two Jira XML exports — step 2</li>
+  </ol>
+  <p style="font-size:0.85rem; margin-bottom:0"><strong>Open decisions:</strong> confirm the dated-snapshot Excel push mode (step 5) ·
+  ECOM status report with buckets like Retail — wanted or not (not requested yet).</p>
+</div>
+
+</body>
+</html>
