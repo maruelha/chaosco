@@ -152,6 +152,30 @@ Markdown source: <code>docs/build_plan_2026-07-05.md</code>.</p>
   </div>
 </div>
 
+<div class="step s2">
+  <div class="step-head"><span class="num">9</span> Inbox &rarr; To-Do</div>
+  <div class="step-body">
+    Filing option "To-Do": proposed — CREATES a new todo (topic = inbox heading, quick priority + due
+    fields in the picker, like the shelf flow); the note re-parents onto it (todos already carry notes).
+    Optionally also file into an EXISTING todo via search.
+    <span class="needs">open: new-only or both?</span>
+    <div class="verify">file one inbox item, find it as a todo with the note attached.</div>
+  </div>
+</div>
+
+<div class="step s3">
+  <div class="step-head"><span class="num">10</span> Promises <span class="tag">new mini-card</span></div>
+  <div class="step-body">
+    Mirror image of Follow-ups (follow-up = they owe me; promise = <strong>I owe them</strong>):
+    table <code>promises</code> (to_whom via contacts autocomplete, what, promised_on = today, due optional,
+    status open | kept), dashboard badge = open promises, list filterable by person/status,
+    notes module + Teams ping (deliver/remind directly from the promise).
+    Inbox filing option "Promise" creates one from the captured note.
+    <span class="needs">open: due date wanted? anything else on a promise?</span>
+    <div class="verify">mark an inbox capture as a promise, deliver it, set it to kept.</div>
+  </div>
+</div>
+
 <div class="provide">
   <h2>⚠ Before build, from Marina</h2>
   <ol>

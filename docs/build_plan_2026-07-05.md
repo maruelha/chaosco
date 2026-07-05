@@ -113,6 +113,27 @@ write a note.
 **You verify:** open an ECOM testcase that exists in Jira → details +
 comments visible; run the sync; check a gatekeeper→ECOM relink.
 
+## Step 9 — Inbox → To-Do
+
+Filing option "To-Do" in the inbox picker. Proposed (confirm): CREATES a new
+todo (topic = inbox heading, quick fields priority + due date in the picker,
+like the shelf flow) and re-parents the note onto it — todos already carry
+notes. Optionally ALSO allow filing into an existing todo via search (cheap,
+same picker mechanics). OPEN: new-only or both?
+
+## Step 10 — Promises (track what I promised to people)
+
+New mini-card "Promises" — the mirror image of Follow-ups (follow-up = they
+owe me; promise = I owe them):
+- Table `promises`: to_whom (contacts autocomplete like encouragements),
+  what, promised_on (default today), due (optional), status open | kept.
+- Dashboard badge = open promises. List filterable by person/status.
+- Notes module (registry entry) + Teams ping entry (deliver/remind the
+  person directly from the promise).
+- Inbox: "Promise" filing option — creates a promise (to_whom + what from
+  the heading/note) and re-parents the note.
+OPEN: is a due date wanted? Anything else on a promise (e.g. context link)?
+
 ---
 
 ## Before build, Marina provides
