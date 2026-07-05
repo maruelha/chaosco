@@ -87,6 +87,11 @@ Print → Save as PDF is the manual fallback.
 
 ## Conventions
 
+- **`docs/marina_notes/`** — running check-notes for Marina. Whenever
+  something comes up mid-work that she should check/decide later, APPEND it
+  to `docs/marina_notes/MarinaCheckSoon.html` (dated section, checkbox per
+  item) instead of only mentioning it in chat.
+
 - After every task: update the relevant docs (`docs/claude/*.md`,
   `docs/screens.html`, `docs/build_plan.md`) — ask "which documents would
   you touch?" if unsure.

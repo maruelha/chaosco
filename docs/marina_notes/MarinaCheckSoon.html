@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marina — Check Soon</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 52rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-red .box-head { background:#c1121f; }
+  .b-green .box-head { background:#1a7f37; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  .date { color:#999; font-size:0.75rem; }
+</style>
+</head>
+<body>
+
+<h1>📌 Marina — Check Soon</h1>
+<p class="hint">Running check-notes: things to look at next time you use the tool.
+Ticks are remembered by this browser. New items get appended in dated sections
+as they come up (convention in CLAUDE.md).</p>
+
+<!-- ================= 2026-07-05 ================= -->
+<h2 class="date">Added 2026-07-05</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Retail Tracker — 4 data tasks (5–15 min of clicking)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="t1">
+      <span><strong>Resolve the 8 unresolved test picks</strong>
+      <span class="where">→ Retail Tracker · Import &amp; admin</span><br>
+      · <em>Clearance discount CS</em> → pick <code>GKPMU000085_…Clearance Disc - Cas</code> (DB typo, right test)<br>
+      · <em>suspend</em> + <em>retrieve</em> → no test exists: leave unresolved AND add to the red Tests-missing list on the board<br>
+      · <em>5 cross-store exchange rows</em> → no cross-store tests exist: same treatment (leave + Tests missing)</span></label>
+    <label class="task"><input type="checkbox" data-k="t2">
+      <span><strong>Set the 8 unknown payment-method categories</strong>
+      <span class="where">→ Retail Tracker · Payment methods</span><br>
+      Suggested: RO Visa/MasterCard = card · IE Maestro = card · HR AMEX = card,
+      HR mall cheque + marketing vouchers = voucher · BU Sodexho = voucher ·
+      SE Discover = card — but the Excel says <em>"confirm with Thorsten"</em> first 🙂</span></label>
+    <label class="task"><input type="checkbox" data-k="t3">
+      <span><strong>Judge the 5 passed tests that count toward NO requirement</strong>
+      <span class="where">→ Import &amp; admin · Coverage check box</span><br>
+      Sale MLMQ Discount Reason Code · Return Mixed Basket · RWR to GC ·
+      Partial Return · X Store Vanilla Return.<br>
+      Per test: should it count for sign-off? Yes → it needs a requirement row
+      (tell Claude, we add it). No → ignore, the list is just transparency.</span></label>
+    <label class="task"><input type="checkbox" data-k="t4">
+      <span><strong>(Optional, cosmetic)</strong> two near-duplicate Return rows from
+      inconsistent naming (Blind Return / OFFLINE Return · Blind Return giftcard /
+      Blind return). Harmless — same test, cannot double-count. Fix = align names
+      in the (now retired) Excel + re-import, or just ignore.</span></label>
+  </div>
+</div>
+
+<div class="box b-red">
+  <div class="box-head">⚠ Files &amp; answers Claude needs BEFORE tomorrow's build</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="f1">
+      <span><strong>Gatekeeper Excel push template</strong> (retail-like columns) — for step 5</span></label>
+    <label class="task"><input type="checkbox" data-k="f2">
+      <span><strong>Ready-for-validation Excel template</strong> (key-user handover format) — for step 5</span></label>
+    <label class="task"><input type="checkbox" data-k="f3">
+      <span><strong>Newest tracking Excel containing the ECOM tab</strong> — for step 7</span></label>
+    <label class="task"><input type="checkbox" data-k="f4">
+      <span><strong>Filenames of the two Jira XML exports</strong> (gatekeeper "assigned to Marina" file + ECOM open-issues file) — for step 2</span></label>
+    <label class="task"><input type="checkbox" data-k="f5">
+      <span><strong>Confirm decisions:</strong> Excel push mode (dated snapshot files with only-new rows — recommended) ·
+      step 9: file inbox→To-Do as NEW todo only, or also into existing? ·
+      step 10: due date on promises?</span></label>
+  </div>
+</div>
+
+<div class="box b-green">
+  <div class="box-head">✓ Decided 2026-07-05 (no action — for the record)</div>
+  <div class="box-body" style="font-size:0.85rem; color:#555">
+    Tracking Excel <strong>retired</strong> — the board is the single source of truth ·
+    yes-marks comparison dropped · override button = backlog only ·
+    settings.local.yaml now merges over settings.yaml ·
+    CS Follow-ups (pre-golive topics) / Follow-ups (promised TO me) /
+    Promises (promised BY me) are three deliberate cards, no consolidation.
+  </div>
+</div>
+
+<script>
+// remember ticks in this browser
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'mcs-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

@@ -18,22 +18,14 @@ Last updated: 2026-07-05
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 
-1. **Override button — "counted as done by decision"** *(= step 5.1 of the
-   tracker plan)*. Per requirement × country: mark as counted WITHOUT a test
-   pass, with a MANDATORY reason. Board shows it visibly as a decision (not a
-   real pass — distinct chip style + reason on hover). Table `tested_overrides`
-   already exists (requirement_id, country, reason NOT NULL); counting service
-   already consumes it (`overrides_by_req`) — only the UI action + a small
-   route are missing. Payment methods need NO overrides (the check-off system
-   is their human layer).
-2. **Historical yes-marks comparison** *(= step 5.2)*. One-time script/page:
-   read the Excel's per-country yes-columns (tabs 1–3), compare against the
-   live board, list differences. For each difference the user decides: already
-   covered by a Passed status (ignore) or import as override with reason
-   "migrated from Excel 2026-07".
-3. **Retire the tracking Excel** *(= step 5.3)*. After 1+2: the board is the
-   single source of truth; stop maintaining the Excel. Remove/repurpose the
-   one-time import button (keep re-import possible but clearly labelled).
+1. **Override button** — BACKLOG ONLY [USER 2026-07-05: "I don't think I
+   need it"]. Table + counting support already exist; build the UI action
+   only if the need ever arises.
+2. ~~Historical yes-marks comparison~~ — DROPPED [USER 2026-07-05: no
+   comparison needed].
+3. ~~Retire the tracking Excel~~ ✅ DONE [USER 2026-07-05]: the board is the
+   single source of truth as of now; the import button remains as a
+   re-import tool only.
 4. Cosmetic backlog: the Excel names the same test twice (Blind Return /
    OFFLINE Return → GKP2002; Blind Return giftcard / Blind return → GKP1015)
    → two near-duplicate Return rows. Fix the names in the Excel and re-import,

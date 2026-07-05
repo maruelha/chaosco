@@ -51,7 +51,8 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
 - Import & admin `/retail-tracker/` — re-runnable import, unresolved-test
   manual picks, coverage check (passed tests not linked to any requirement)
 
-## Remaining work (docs/build_plan.md Part 1)
+## Status 2026-07-05
 
-Override button (step 5.1), historical yes-marks comparison (5.2), retire the
-Excel (5.3).
+The tracking Excel is RETIRED — the board is the single source of truth
+(import button = re-import tool only). Yes-marks comparison dropped.
+Override button is backlog-only (table + counting support already exist).

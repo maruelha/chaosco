@@ -304,7 +304,13 @@ where real-world discrepancies surface.
   — names differ, so dedup correctly keeps both; clean up in the Excel or
   ignore.
 
-**Step 5 — Overrides + migration + go-live.**
+**Step 5 — REVISED 2026-07-05 [USER]:** the tracking Excel is RETIRED as of
+now — the board is the single source of truth (the import button stays as a
+re-import tool only). The historical yes-marks comparison is DROPPED (not
+needed). The override button ("counted as done by decision") moves to the
+backlog — build only if the need ever arises.
+
+*(original step for reference)* **Step 5 — Overrides + migration + go-live.**
 Override button with MANDATORY reason (decision #2). Then resolve open question #2
 with the user: historical Excel yes-marks either already visible as passed statuses,
 or imported as overrides with reason "migrated from Excel 2026-07" — decide per tab.
