@@ -8,7 +8,9 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-07-04
+Last updated: 2026-07-05
+
+> Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
 ---
 
