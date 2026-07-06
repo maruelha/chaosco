@@ -18,6 +18,25 @@ def load_status_mappings(path: Path | None = None) -> dict:
         return yaml.safe_load(fh)
 
 
+def passed_family(mappings: dict) -> list[str]:
+    """The report's ONE definition of 'passed' (bucket passed_with_dtc) —
+    reused by the impacted-defects counting so there is no second opinion."""
+    return mappings["buckets"]["passed_with_dtc"]["statuses"]
+
+
+def compute_impacted_totals(defects: list[dict]) -> dict:
+    """Totals over get_retail_defects_impacted rows. MB = the defect's manual
+    DTC O2C flag; a defect nobody decided on counts as Sales (kept
+    deliberately — 'undecided' lists them for the diagnostics note)."""
+    return {
+        "mb":     sum(d["impacted_tc_count"] for d in defects if d["dtco2c"]),
+        "sales":  sum(d["impacted_tc_count"] for d in defects if not d["dtco2c"]),
+        "total":  sum(d["impacted_tc_count"] for d in defects),
+        "passed": sum(d["passed_tc_count"] for d in defects),
+        "undecided": [d for d in defects if d["dtco2c_unset"]],
+    }
+
+
 def compute_retail_report(status_counts: dict[str, int], mappings: dict) -> dict:
     """Apply bucket config to a {status: count} dict. Returns a report dict.
 

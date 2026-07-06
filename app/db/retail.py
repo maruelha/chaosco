@@ -227,25 +227,40 @@ def get_retail_status_counts(conn: sqlite3.Connection) -> dict[str, int]:
     return {r[0]: r[1] for r in rows}
 
 
-def get_retail_defects_blocked(conn: sqlite3.Connection) -> list[dict]:
-    """Return all active (non-confirmed/withdrawn) Retail-channel defects with blocked TC counts.
+def get_retail_defects_impacted(conn: sqlite3.Connection,
+                                passed_statuses: list[str]) -> list[dict]:
+    """Return all active (non-confirmed/withdrawn) Retail-channel defects with
+    IMPACTED test-case counts.
 
-    Each row includes dtco2c flag so the report can split totals into
-    DTC O2C (our follow-up) vs Sales. Sorted by blocked TC count descending.
-    """
-    sql = """
+    "Impacted" [USER 2026-07-06]: the test case references the defect
+    (defect_id_ref) AND has not passed yet — a passed test is no longer
+    impacted even if the reference is still written in the Excel column.
+    passed_statuses is the report's passed family (status_mappings
+    passed_with_dtc — ONE definition of "passed"); passed_tc_count keeps
+    those visible as muted info. dtco2c splits totals into MB (our
+    follow-up) vs Sales; dtco2c_unset marks defects where nobody decided
+    (they count as Sales — diagnostics lists them)."""
+    passed_keys = [s.strip().lower() for s in passed_statuses]
+    ph = ",".join("?" for _ in passed_keys) or "''"
+    sql = f"""
         SELECT d.defect_id, d.solman_name, d.assigned_to, d.date_reported,
                d.solman_status,
                COALESCE(a.dtco2c, 0) AS dtco2c,
+               (a.dtco2c IS NULL) AS dtco2c_unset,
                (SELECT COUNT(*) FROM retail r
                 WHERE r.defect_id_ref IS NOT NULL
-                  AND r.defect_id_ref LIKE '%' || d.defect_id || '%') AS blocked_tc_count
+                  AND r.defect_id_ref LIKE '%' || d.defect_id || '%'
+                  AND LOWER(TRIM(COALESCE(r.status, ''))) NOT IN ({ph})) AS impacted_tc_count,
+               (SELECT COUNT(*) FROM retail r
+                WHERE r.defect_id_ref IS NOT NULL
+                  AND r.defect_id_ref LIKE '%' || d.defect_id || '%'
+                  AND LOWER(TRIM(COALESCE(r.status, ''))) IN ({ph})) AS passed_tc_count
         FROM defects d
         LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
         WHERE LOWER(TRIM(d.channel)) = 'retail'
           AND LOWER(TRIM(COALESCE(d.solman_status, ''))) NOT IN ('confirmed', 'withdrawn')
-        ORDER BY blocked_tc_count DESC, d.defect_id
+        ORDER BY impacted_tc_count DESC, d.defect_id
     """
-    return _rows_to_dicts(conn.execute(sql))
+    return _rows_to_dicts(conn.execute(sql, (*passed_keys, *passed_keys)))
 
 

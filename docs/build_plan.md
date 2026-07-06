@@ -60,6 +60,11 @@ Last updated: 2026-07-05
    per-report checkboxes, DB-managed recipients, date-driven subject/text.
    Future option: `email_transport: n8n_webhook` switch if distribution
    grows (Teams, schedules).
+3. ~~**"Blocked" → "Impacted" defect counting**~~ ✅ DONE 2026-07-06 [USER]:
+   retail report defect section counts test cases that reference the defect
+   AND have not passed (passed family = passed_with_dtc bucket); passed refs
+   muted "(+N passed)". MB vs Sales = manual DTC O2C flag, unset = Sales;
+   diagnostics shows an amber note listing undecided defects.
 
 ### ECOM vertical (planned, not started)
 

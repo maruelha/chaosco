@@ -15,7 +15,9 @@ from flask import render_template
 from app import database
 from app.ppt_retail import build_retail_ppt
 from app.ppt_spillover import build_spillover_ppt
-from app.reporter import compute_retail_report, load_status_mappings
+from app.reporter import (compute_impacted_totals, compute_retail_report,
+                          load_status_mappings,
+                          passed_family as reporter_passed_family)
 
 
 def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
@@ -33,7 +35,9 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
     mappings        = load_status_mappings()
     report          = compute_retail_report(status_counts, mappings)
     report_comments = database.list_report_comments(conn, "retail")
-    blocked_defects = database.get_retail_defects_blocked(conn)
+    impacted_defects = database.get_retail_defects_impacted(
+        conn, reporter_passed_family(mappings))
+    totals = compute_impacted_totals(impacted_defects)
 
     retail_ctx = dict(
         report=report,
@@ -48,16 +52,13 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
         encoding="utf-8")
     saved.append(retail_html_path)
 
-    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
-    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
-    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
     retail_pptx_path = folder / f"retail_report_{today}.pptx"
     retail_pptx_path.write_bytes(build_retail_ppt(
         report=report,
-        blocked_defects=blocked_defects,
-        dtco2c_total=dtco2c_total,
-        sales_total=sales_total,
-        blocked_total=blocked_total,
+        impacted_defects=impacted_defects,
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
+        impacted_total=totals["total"],
         total_test_cases=cfg.get("retail_total_test_cases", 646),
         today=today,
         missing_categories=cfg.get("retail_missing_categories", []),

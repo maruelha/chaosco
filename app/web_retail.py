@@ -17,7 +17,15 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
 from app.ppt_retail import build_retail_ppt
-from app.reporter import compute_retail_report, load_status_mappings
+from app.reporter import (compute_impacted_totals, compute_retail_report,
+                          load_status_mappings, passed_family)
+
+
+def _get_impacted_defects(conn):
+    """Active retail defects with impacted/passed TC counts + MB/Sales totals."""
+    defects = database.get_retail_defects_impacted(
+        conn, passed_family(load_status_mappings()))
+    return defects, compute_impacted_totals(defects)
 
 @app.route("/retail")
 def retail_list():
@@ -113,21 +121,18 @@ def retail_status_report():
     report = _get_retail_report()
     conn = _get_conn()
     try:
-        blocked_defects = database.get_retail_defects_blocked(conn)
+        impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
     finally:
         conn.close()
-    blocked_total   = sum(d["blocked_tc_count"] for d in blocked_defects)
-    dtco2c_total    = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
-    sales_total     = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
     return render_template(
         "retail_report.html",
         report=report,
         today=date.today().isoformat(),
-        blocked_defects=blocked_defects,
-        blocked_defects_total=blocked_total,
-        dtco2c_total=dtco2c_total,
-        sales_total=sales_total,
+        impacted_defects=impacted_defects,
+        impacted_total=totals["total"],
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
         report_comments=report_comments,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         missing_categories=_cfg.get("retail_missing_categories", []),
@@ -207,19 +212,16 @@ def retail_report_download():
     today  = date.today().isoformat()
     conn   = _get_conn()
     try:
-        blocked_defects = database.get_retail_defects_blocked(conn)
+        impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
     finally:
         conn.close()
-    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
-    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
-    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
     html = render_template(
         "retail_report_download.html", report=report, today=today,
-        blocked_defects=blocked_defects,
-        blocked_defects_total=blocked_total,
-        dtco2c_total=dtco2c_total,
-        sales_total=sales_total,
+        impacted_defects=impacted_defects,
+        impacted_total=totals["total"],
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
         report_comments=report_comments,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         missing_categories=_cfg.get("retail_missing_categories", []),
@@ -234,8 +236,8 @@ def retail_report_download():
 def retail_report_diagnostics():
     conn = _get_conn()
     try:
-        status_counts   = database.get_retail_status_counts(conn)
-        blocked_defects = database.get_retail_defects_blocked(conn)
+        status_counts = database.get_retail_status_counts(conn)
+        impacted_defects, totals = _get_impacted_defects(conn)
     finally:
         conn.close()
     mappings = load_status_mappings()
@@ -272,10 +274,6 @@ def retail_report_diagnostics():
         else:
             unknown.append({"status": label, "count": count})
 
-    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
-    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
-    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
-
     return render_template(
         "retail_report_diagnostics.html",
         report=report,
@@ -283,10 +281,11 @@ def retail_report_diagnostics():
         grouped=grouped,
         unmapped_known=unmapped_known,
         unknown=unknown,
-        blocked_defects=blocked_defects,
-        blocked_defects_total=blocked_total,
-        dtco2c_total=dtco2c_total,
-        sales_total=sales_total,
+        impacted_defects=impacted_defects,
+        impacted_total=totals["total"],
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
+        undecided_defects=totals["undecided"],
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
     )
 
@@ -297,18 +296,15 @@ def retail_report_ppt():
     today  = date.today().isoformat()
     conn   = _get_conn()
     try:
-        blocked_defects = database.get_retail_defects_blocked(conn)
+        impacted_defects, totals = _get_impacted_defects(conn)
     finally:
         conn.close()
-    blocked_total = sum(d["blocked_tc_count"] for d in blocked_defects)
-    dtco2c_total  = sum(d["blocked_tc_count"] for d in blocked_defects if d["dtco2c"])
-    sales_total   = sum(d["blocked_tc_count"] for d in blocked_defects if not d["dtco2c"])
     pptx_bytes = build_retail_ppt(
         report=report,
-        blocked_defects=blocked_defects,
-        dtco2c_total=dtco2c_total,
-        sales_total=sales_total,
-        blocked_total=blocked_total,
+        impacted_defects=impacted_defects,
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
+        impacted_total=totals["total"],
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         today=today,
         missing_categories=_cfg.get("retail_missing_categories", []),

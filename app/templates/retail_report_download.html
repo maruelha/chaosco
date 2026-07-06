@@ -149,7 +149,10 @@
 
 {# ---- Defects ---- #}
 <h2>Retail Defects — Active (excl. Confirmed &amp; Withdrawn)</h2>
-{% if blocked_defects %}
+{% if impacted_defects %}
+<p style="font-size:.75rem;color:#6e6e73;margin:-.25rem 0 .6rem">
+  Impacted = test cases referencing the defect and not yet passed · MB = DTC O2C follow-up
+</p>
 <table class="def-table">
   <thead>
     <tr>
@@ -159,13 +162,13 @@
       <th>Assigned To</th>
       <th>Date Reported</th>
       <th>Status</th>
-      <th style="text-align:right">MB Blocked</th>
-      <th style="text-align:right">Sales Blocked</th>
+      <th style="text-align:right">Impacted — MB</th>
+      <th style="text-align:right">Impacted — Sales</th>
     </tr>
   </thead>
   <tbody>
-  {% for d in blocked_defects %}
-    <tr{% if not d.blocked_tc_count %} style="color:#aeaeb2"{% endif %}>
+  {% for d in impacted_defects %}
+    <tr{% if not d.impacted_tc_count %} style="color:#aeaeb2"{% endif %}>
       <td style="text-align:right;color:#aeaeb2">{{ loop.index }}</td>
       <td>{{ d.defect_id }}</td>
       <td>{{ d.solman_name or '—' }}</td>
@@ -173,43 +176,45 @@
       <td>{{ d.date_reported or '—' }}</td>
       <td>{{ d.solman_status or '—' }}</td>
       <td style="text-align:right">
-        {% if d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+        {% if d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if d.dtco2c and d.passed_tc_count %}<span style="color:#aeaeb2;font-size:.72rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
       </td>
       <td style="text-align:right">
-        {% if not d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+        {% if not d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if not d.dtco2c and d.passed_tc_count %}<span style="color:#aeaeb2;font-size:.72rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
       </td>
     </tr>
   {% endfor %}
   </tbody>
   <tfoot>
     <tr style="border-top:2px solid #d2d2d7;font-weight:600">
-      <td colspan="6" style="text-align:right;padding-right:.75rem">Total blocked TCs</td>
-      <td style="text-align:right">{{ dtco2c_total }}</td>
+      <td colspan="6" style="text-align:right;padding-right:.75rem">Total impacted TCs</td>
+      <td style="text-align:right">{{ mb_total }}</td>
       <td style="text-align:right">{{ sales_total }}</td>
     </tr>
     <tr style="font-size:.72rem;color:#6e6e73">
       <td colspan="6" style="text-align:right;padding-right:.75rem">Combined total</td>
-      <td colspan="2" style="text-align:right"><strong>{{ blocked_defects_total }}</strong></td>
+      <td colspan="2" style="text-align:right"><strong>{{ impacted_total }}</strong></td>
     </tr>
   </tfoot>
 </table>
 
 <div class="breakdown-grid" style="margin-bottom:1.5rem">
   <div class="breakdown-card">
-    <div class="breakdown-number">{{ dtco2c_total }}</div>
-    <div class="breakdown-label">Blocked test cases — MB</div>
+    <div class="breakdown-number">{{ mb_total }}</div>
+    <div class="breakdown-label">Impacted test cases — MB</div>
     <div class="breakdown-owner">Our follow-up</div>
   </div>
   <div class="breakdown-card">
     <div class="breakdown-number">{{ sales_total }}</div>
-    <div class="breakdown-label">Blocked test cases — Sales</div>
+    <div class="breakdown-label">Impacted test cases — Sales</div>
     <div class="breakdown-owner">Sales follow-up</div>
   </div>
-  {% set blocking_defect_count = blocked_defects | selectattr('blocked_tc_count') | list | length %}
+  {% set impacting_defect_count = impacted_defects | selectattr('impacted_tc_count') | list | length %}
   <div class="breakdown-card">
-    <div class="breakdown-number">{{ blocked_defects_total }}</div>
-    <div class="breakdown-label">Total blocked test cases</div>
-    <div class="breakdown-owner">from {{ blocking_defect_count }} defect{{ 's' if blocking_defect_count != 1 else '' }}</div>
+    <div class="breakdown-number">{{ impacted_total }}</div>
+    <div class="breakdown-label">Total impacted test cases</div>
+    <div class="breakdown-owner">from {{ impacting_defect_count }} defect{{ 's' if impacting_defect_count != 1 else '' }}</div>
   </div>
 </div>
 {% else %}

@@ -112,10 +112,16 @@
 
 </div>
 
-{# ---- Blocked defects ---- #}
+{# ---- Impacted defects ---- #}
 <h2 class="rr-section-title" style="margin-top:2rem">Retail Defects — Active (excl. Confirmed &amp; Withdrawn)</h2>
+<p style="font-size:.82rem;color:#6e6e73;margin:-.25rem 0 .75rem">
+  <strong>Impacted</strong> = test cases referencing the defect that have not
+  passed yet (passed / conditionally passed / pending-solman no longer count,
+  even if the reference is still in the Excel). MB = defects with the DTC O2C
+  flag; without a decision the defect counts as Sales.
+</p>
 
-{% if blocked_defects %}
+{% if impacted_defects %}
 <table class="rr-diag-table" style="width:100%;margin-bottom:.5rem">
   <thead>
     <tr>
@@ -124,56 +130,58 @@
       <th>Assigned To</th>
       <th>Date Reported</th>
       <th>Status</th>
-      <th style="text-align:right">MB Blocked</th>
-      <th style="text-align:right">Sales Blocked</th>
+      <th style="text-align:right">Impacted — MB</th>
+      <th style="text-align:right">Impacted — Sales</th>
     </tr>
   </thead>
   <tbody>
-  {% for d in blocked_defects %}
-    <tr{% if not d.blocked_tc_count %} style="color:#aaa"{% endif %}>
+  {% for d in impacted_defects %}
+    <tr{% if not d.impacted_tc_count %} style="color:#aaa"{% endif %}>
       <td><a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}">{{ d.defect_id }}</a></td>
       <td>{{ d.solman_name or '—' }}</td>
       <td>{{ d.assigned_to or '—' }}</td>
       <td>{{ d.date_reported or '—' }}</td>
       <td>{{ d.solman_status or '—' }}</td>
       <td style="text-align:right">
-        {% if d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+        {% if d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if d.dtco2c and d.passed_tc_count %}<span style="color:#aaa;font-size:.78rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
       </td>
       <td style="text-align:right">
-        {% if not d.dtco2c and d.blocked_tc_count %}<strong>{{ d.blocked_tc_count }}</strong>{% else %}—{% endif %}
+        {% if not d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if not d.dtco2c and d.passed_tc_count %}<span style="color:#aaa;font-size:.78rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
       </td>
     </tr>
   {% endfor %}
   </tbody>
   <tfoot>
     <tr style="border-top:2px solid #ccc;font-weight:600">
-      <td colspan="5" style="text-align:right;padding-right:.75rem">Total blocked TCs</td>
-      <td style="text-align:right">{{ dtco2c_total }}</td>
+      <td colspan="5" style="text-align:right;padding-right:.75rem">Total impacted TCs</td>
+      <td style="text-align:right">{{ mb_total }}</td>
       <td style="text-align:right">{{ sales_total }}</td>
     </tr>
     <tr style="font-size:.8rem;color:#555">
       <td colspan="5" style="text-align:right;padding-right:.75rem">Combined total</td>
-      <td colspan="2" style="text-align:right"><strong>{{ blocked_defects_total }}</strong></td>
+      <td colspan="2" style="text-align:right"><strong>{{ impacted_total }}</strong></td>
     </tr>
   </tfoot>
 </table>
 
-{# ---- Blocked summary cards ---- #}
+{# ---- Impacted summary cards ---- #}
 <div style="display:flex;gap:1rem;margin-bottom:1.5rem">
   <div class="rr-breakdown-card" style="flex:1">
-    <div class="rr-breakdown-number">{{ dtco2c_total }}</div>
-    <div class="rr-breakdown-label">Blocked — MB</div>
+    <div class="rr-breakdown-number">{{ mb_total }}</div>
+    <div class="rr-breakdown-label">Impacted — MB</div>
     <div class="rr-breakdown-owner">Our follow-up</div>
   </div>
   <div class="rr-breakdown-card" style="flex:1">
     <div class="rr-breakdown-number">{{ sales_total }}</div>
-    <div class="rr-breakdown-label">Blocked — Sales</div>
+    <div class="rr-breakdown-label">Impacted — Sales</div>
     <div class="rr-breakdown-owner">Sales follow-up</div>
   </div>
   <div class="rr-breakdown-card" style="flex:1">
-    <div class="rr-breakdown-number">{{ blocked_defects_total }}</div>
-    <div class="rr-breakdown-label">Total Blocked by Defects</div>
-    <div class="rr-breakdown-owner">vs DTC bucket: {{ report.buckets.blocked }}</div>
+    <div class="rr-breakdown-number">{{ impacted_total }}</div>
+    <div class="rr-breakdown-label">Total Impacted by Defects</div>
+    <div class="rr-breakdown-owner">still open — passed TCs excluded</div>
   </div>
 </div>
 

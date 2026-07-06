@@ -140,7 +140,7 @@ def _slide1_summary(prs, report: dict, today: str, total_test_cases: int,
 # ---------------------------------------------------------------------------
 
 def _slide_defects(prs, defects: list[dict], today: str,
-                   dtco2c_total: int, sales_total: int, blocked_total: int):
+                   mb_total: int, sales_total: int, impacted_total: int):
     col_w = [0.45, 1.25, 2.75, 2.30, 1.30, 1.65, 1.00, 1.40]
     col_x = []
     cx = M
@@ -148,7 +148,7 @@ def _slide_defects(prs, defects: list[dict], today: str,
         col_x.append(cx)
         cx += w
     headers = ["#", "DEFECT ID", "SOLMAN NAME", "ASSIGNED TO",
-               "DATE REPORTED", "STATUS", "MB BLOCKED", "SALES BLOCKED"]
+               "DATE REPORTED", "STATUS", "IMPACTED MB", "IMPACTED SALES"]
 
     chunks = [defects[i:i+ROWS_PER_SLIDE] for i in range(0, max(len(defects), 1), ROWS_PER_SLIDE)]
 
@@ -163,7 +163,7 @@ def _slide_defects(prs, defects: list[dict], today: str,
                     f"Retail Defects — Active (excl. Confirmed & Withdrawn) · {today}")
         _add_text(s, "Retail Defects — Active (excl. Confirmed & Withdrawn)" + title_suffix,
                   M, 1.16, CW, 0.30, font=HEAD, size=15, bold=True, color=INK)
-        _add_text(s, f"{len(defects)} active defects  ·  MB Blocked and Sales Blocked are counts of blocked test cases",
+        _add_text(s, f"{len(defects)} active defects  ·  Impacted = test cases referencing the defect and not yet passed  ·  MB = DTC O2C follow-up",
                   M, 1.48, CW, 0.24, font=BODY, size=9, italic=True, color=SUB)
 
         ty = 1.78; hH = 0.34
@@ -179,7 +179,7 @@ def _slide_defects(prs, defects: list[dict], today: str,
         for ri, d in enumerate(chunk):
             ry = ty + ri * row_h
             row_num = ci * ROWS_PER_SLIDE + ri + 1
-            muted  = d.get("blocked_tc_count", 0) == 0
+            muted  = d.get("impacted_tc_count", 0) == 0
             tcol   = FAINT if muted else INK
             scol   = FAINT if muted else SUB
 
@@ -193,8 +193,8 @@ def _slide_defects(prs, defects: list[dict], today: str,
             _add_text(s, d.get("date_reported") or DASH,  col_x[4], ry, col_w[4], row_h, font=BODY, size=9, color=scol, align=PP_ALIGN.LEFT)
             _add_text(s, d.get("solman_status") or DASH,  col_x[5], ry, col_w[5], row_h, font=BODY, size=9, color=scol, align=PP_ALIGN.LEFT)
 
-            mb    = d.get("blocked_tc_count") if d.get("dtco2c")     else None
-            sales = d.get("blocked_tc_count") if not d.get("dtco2c") else None
+            mb    = d.get("impacted_tc_count") if d.get("dtco2c")     else None
+            sales = d.get("impacted_tc_count") if not d.get("dtco2c") else None
             _add_text(s, str(mb)    if mb    else DASH, col_x[6], ry, col_w[6], row_h, font=BODY, size=9, bold=bool(mb),    color=tcol if mb    else FAINT, align=PP_ALIGN.RIGHT)
             _add_text(s, str(sales) if sales else DASH, col_x[7], ry, col_w[7], row_h, font=BODY, size=9, bold=bool(sales), color=tcol if sales else FAINT, align=PP_ALIGN.RIGHT)
 
@@ -203,25 +203,25 @@ def _slide_defects(prs, defects: list[dict], today: str,
         if is_last:
             _add_rect(s, M, after, CW, 0.01, fill=LINE)
             after += 0.08
-            _add_text(s, "Total blocked test cases", col_x[5], after, col_w[5], 0.30,
+            _add_text(s, "Total impacted test cases", col_x[5], after, col_w[5], 0.30,
                       font=BODY, size=9, bold=True, color=INK, align=PP_ALIGN.LEFT)
-            _add_text(s, str(dtco2c_total), col_x[6], after, col_w[6], 0.30,
+            _add_text(s, str(mb_total), col_x[6], after, col_w[6], 0.30,
                       font=BODY, size=9, bold=True, color=INK, align=PP_ALIGN.RIGHT)
             _add_text(s, str(sales_total),  col_x[7], after, col_w[7], 0.30,
                       font=BODY, size=9, bold=True, color=INK, align=PP_ALIGN.RIGHT)
             after += 0.32
             _add_text(s, "Combined total", col_x[5], after, col_w[5], 0.30,
                       font=BODY, size=9, color=SUB, align=PP_ALIGN.LEFT)
-            _add_text(s, str(blocked_total), col_x[7], after, col_w[7], 0.30,
+            _add_text(s, str(impacted_total), col_x[7], after, col_w[7], 0.30,
                       font=BODY, size=9, bold=True, color=INK, align=PP_ALIGN.RIGHT)
             after += 0.28
 
             sg = 0.30; scw = (CW - sg * 2) / 3; sch = 0.90
-            defect_count = sum(1 for d in defects if d.get("blocked_tc_count", 0) > 0)
+            defect_count = sum(1 for d in defects if d.get("impacted_tc_count", 0) > 0)
             sum_cards = [
-                {"n": dtco2c_total,  "label": "Blocked Test Cases — MB",   "sub": "Our follow-up",       "sub_color": ORANGE},
-                {"n": sales_total,   "label": "Blocked Test Cases — Sales", "sub": "Sales follow-up",     "sub_color": ORANGE},
-                {"n": blocked_total, "label": "Total Blocked Test Cases",   "sub": f"from {defect_count} defects", "sub_color": BLUE},
+                {"n": mb_total,       "label": "Impacted Test Cases — MB",    "sub": "Our follow-up",       "sub_color": ORANGE},
+                {"n": sales_total,    "label": "Impacted Test Cases — Sales", "sub": "Sales follow-up",     "sub_color": ORANGE},
+                {"n": impacted_total, "label": "Total Impacted Test Cases",   "sub": f"from {defect_count} defects", "sub_color": BLUE},
             ]
             for i, c in enumerate(sum_cards):
                 x = M + i * (scw + sg)
@@ -238,8 +238,8 @@ def _slide_defects(prs, defects: list[dict], today: str,
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def build_retail_ppt(report: dict, blocked_defects: list[dict],
-                     dtco2c_total: int, sales_total: int, blocked_total: int,
+def build_retail_ppt(report: dict, impacted_defects: list[dict],
+                     mb_total: int, sales_total: int, impacted_total: int,
                      total_test_cases: int, today: str,
                      missing_categories: list[str]) -> bytes:
     """Build the retail status PPT and return raw bytes."""
@@ -248,7 +248,7 @@ def build_retail_ppt(report: dict, blocked_defects: list[dict],
     prs.slide_height = int(Inches(PAGEH))
 
     _slide1_summary(prs, report, today, total_test_cases, missing_categories)
-    _slide_defects(prs, blocked_defects, today, dtco2c_total, sales_total, blocked_total)
+    _slide_defects(prs, impacted_defects, today, mb_total, sales_total, impacted_total)
 
     buf = BytesIO()
     prs.save(buf)

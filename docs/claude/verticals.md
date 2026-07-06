@@ -55,7 +55,13 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Retail Status Report `/retail/report` (buckets from
   `config/status_mappings.yaml` via `app/reporter.py`; Save to Excel appends
   `output/retail_report_log.xlsx`; Download HTML/PPT), diagnostics
-  `/retail/report/diagnostics`
+  `/retail/report/diagnostics`. Defect section counts IMPACTED test cases
+  [USER 2026-07-06]: TC references the defect AND has not passed yet (passed
+  family = the passed_with_dtc bucket, one definition via
+  `reporter.passed_family`); passed refs stay visible muted "(+N passed)"
+  (`get_retail_defects_impacted` + `compute_impacted_totals`). MB vs Sales =
+  the defect's manual DTC O2C flag; unset counts as Sales — diagnostics
+  shows an amber "no MB/Sales decision" note listing those defects.
 - Sign-off reports `/report/retail`, `/report/ecom`; production defects
   `/prod_defects`
 - PPT builders: `app/ppt_utils.py` (shared primitives), `app/ppt_retail.py`,
