@@ -51,6 +51,16 @@ Last updated: 2026-07-05
 1. Screenshot-first capture (attach before saving a note) — "maybe" in
    `docs/tech_backlog.md`; silent AJAX-create approach sketched there.
 
+### Teams end-of-day review list (planned, placement open)
+
+1. Clickable list of saved Teams chat/channel links with a "check" mark and
+   a checked-only filter for Marina's end-of-day sweep — full concept,
+   decisions, and implementation sketch in `docs/teams_review_concept.md`.
+   OPEN [USER]: placement — separate dashboard card (recommended) vs Inbox
+   section vs both. Reuses the Links storage (tool = "Teams Channel") and
+   the AJAX component pattern; NO walkthrough automation (decided
+   2026-07-06).
+
 ### Reports / Export (dashboard "Export Reports" button)
 
 1. ~~**Fix the broken button**~~ ✅ DONE 2026-07-04 (with refactoring step 1):
