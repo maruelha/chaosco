@@ -135,7 +135,7 @@
 {% endif %}
 
 {# ---- Coverage check: passed tests vs requirements ---- #}
-<h2 style="margin-top:1.5rem">Coverage check — passed tests vs requirements</h2>
+<h2 id="coverage" style="margin-top:1.5rem">Coverage check — passed tests vs requirements</h2>
 <div class="result-box">
   <div class="result-row">
     <span class="result-label">Matched</span>
@@ -145,19 +145,44 @@
       {% if not coverage.unmatched %}<span class="pill pill--green">full coverage</span>{% endif %}
     </span>
   </div>
-  {% if coverage.unmatched %}
-  <div class="result-row">
-    <span class="result-label">Not matched</span>
-    <span class="result-value">
-      <strong>{{ coverage.unmatched|length }} passed test case(s) count toward NO requirement</strong> —
-      either fine (out of tracker scope) or a missing requirement line:<br>
-      {% for t in coverage.unmatched %}
-      <span class="mono" style="font-size:0.78rem">{{ t.testcase_name }}</span><br>
-      {% endfor %}
-    </span>
-  </div>
-  {% endif %}
 </div>
+{% if coverage.unmatched %}
+<p style="color:#666; max-width:60rem; margin-top:.75rem">
+  <strong>{{ coverage.unmatched|length }} passed test case(s) count toward NO requirement</strong> —
+  either fine (out of tracker scope) or a broken name match. Assigning one to a
+  still-unresolved requirement repairs the link from this side (same stored
+  pick as the table above; it survives re-imports).
+</p>
+<table>
+  <thead>
+    <tr><th>Passed dashboard test</th><th>Assign to unresolved requirement</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for t in coverage.unmatched %}
+    <tr>
+      <td class="mono" style="font-size:0.78rem">{{ t.testcase_name }}</td>
+      <td colspan="2">
+        {% if unresolved %}
+        <form method="post" action="{{ url_for('retail_tracker.tracker_coverage_assign') }}"
+              style="display:flex; gap:.5rem">
+          <input type="hidden" name="test_case_id" value="{{ t.test_case_id }}">
+          <select name="req_id" style="max-width:28rem">
+            <option value="">— out of tracker scope (leave) —</option>
+            {% for r in unresolved %}
+            <option value="{{ r.id }}">{{ r.area }} &middot; {{ r.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-sm">Assign</button>
+        </form>
+        {% else %}
+        <span style="color:#999">no unresolved requirements left to assign</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 
 {# ---- Tab 4: country-specific payment methods ---- #}
 <h2 style="margin-top:1.5rem">Country-specific payment methods (tab 4)</h2>

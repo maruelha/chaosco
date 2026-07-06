@@ -65,20 +65,38 @@ as they come up (convention in CLAUDE.md).</p>
 </div>
 
 <div class="box b-red">
-  <div class="box-head">⚠ Files &amp; answers Claude needs BEFORE tomorrow's build</div>
+  <div class="box-head">⚠ Files &amp; answers Claude needs BEFORE the ECOM build</div>
   <div class="box-body">
     <label class="task"><input type="checkbox" data-k="f1">
-      <span><strong>Gatekeeper Excel push template</strong> (retail-like columns) — for step 5</span></label>
-    <label class="task"><input type="checkbox" data-k="f2">
-      <span><strong>Ready-for-validation Excel template</strong> (key-user handover format) — for step 5</span></label>
+      <span><strong>✅ RESOLVED 06.07:</strong> no template files needed — both Excel push formats
+      (step 5) are seeded from the tracking Excel; column details discussed before building</span></label>
     <label class="task"><input type="checkbox" data-k="f3">
-      <span><strong>Newest tracking Excel containing the ECOM tab</strong> — for step 7</span></label>
+      <span><strong>✅ RESOLVED 06.07:</strong> tracking Excel no. 24 provided
+      (<code>DTC_UAT_testtracking_ROE(24).xlsx</code>, copied to <code>Download/</code>; ECOM tab confirmed)</span></label>
     <label class="task"><input type="checkbox" data-k="f4">
-      <span><strong>Filenames of the two Jira XML exports</strong> (gatekeeper "assigned to Marina" file + ECOM open-issues file) — for step 2</span></label>
+      <span><strong>Jira XML — agree the two FOLDER paths</strong> (decision 06.07: no filename
+      stems; one folder for gatekeeper "assigned to Marina" exports, one for ECOM open-issues
+      exports — importer always takes the newest .xml per folder)</span></label>
     <label class="task"><input type="checkbox" data-k="f5">
       <span><strong>Confirm decisions:</strong> Excel push mode (dated snapshot files with only-new rows — recommended) ·
       step 9: file inbox→To-Do as NEW todo only, or also into existing? ·
       step 10: due date on promises?</span></label>
+  </div>
+</div>
+
+<div class="box b-blue">
+  <div class="box-head">Retail Tracker — new on 06.07: assign passed tests from the coverage check</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="t5">
+      <span><strong>Try the new Assign dropdowns</strong>
+      <span class="where">→ Import &amp; admin · Coverage check</span><br>
+      Each passed-but-unmatched test now has a dropdown of the still-unresolved
+      requirements — picking one links them (reverse of the manual pick, survives
+      re-imports, never overwrites an existing link). Good way to work off task t3.</span></label>
+    <label class="task"><input type="checkbox" data-k="t6">
+      <span><strong>Later decision:</strong> one requirement can hold only ONE linked test.
+      If a test ever needs to serve several requirements (or vice versa), tell Claude —
+      rethinking that limit is backlog item 6 under Retail Tracker in the build plan.</span></label>
   </div>
 </div>
 

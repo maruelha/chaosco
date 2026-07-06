@@ -78,6 +78,22 @@ def tracker_resolve(req_id: int):
     return redirect(url_for("retail_tracker.tracker_home"))
 
 
+@bp.route("/coverage/assign", methods=["POST"])
+def tracker_coverage_assign():
+    """Reverse manual pick from the coverage check: attach an unmatched passed
+    dashboard test to a still-unresolved requirement (same stored link as the
+    unresolved-side pick; survives re-imports the same way)."""
+    req_id = request.form.get("req_id", type=int)
+    test_case_id = request.form.get("test_case_id", "").strip()
+    if req_id and test_case_id:
+        conn = _get_conn()
+        try:
+            db.assign_test_to_unresolved(conn, req_id, test_case_id)
+        finally:
+            conn.close()
+    return redirect(url_for("retail_tracker.tracker_home") + "#coverage")
+
+
 @bp.route("/board")
 def tracker_board():
     """The requirements board — mirrors the tracking Excel: rows sorted by

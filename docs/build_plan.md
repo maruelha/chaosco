@@ -30,6 +30,14 @@ Last updated: 2026-07-05
    OFFLINE Return → GKP2002; Blind Return giftcard / Blind return → GKP1015)
    → two near-duplicate Return rows. Fix the names in the Excel and re-import,
    or add an ignore mechanism.
+5. ~~Reverse manual pick on the coverage check~~ ✅ DONE 2026-07-06: each
+   unmatched passed test gets a dropdown of unresolved requirements
+   (`/retail-tracker/coverage/assign`); guards against overwriting a
+   resolved row.
+6. BACKLOG [USER 2026-07-06]: maybe rethink the one-test-per-requirement
+   limit (a requirement can currently link exactly ONE dashboard test).
+   Would need a link table + counting change. Decide only if the easy
+   version (item 5) proves insufficient.
 
 ### Inbox (`/inbox`)
 

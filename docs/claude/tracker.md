@@ -50,6 +50,10 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   unknown, filters
 - Import & admin `/retail-tracker/` — re-runnable import, unresolved-test
   manual picks, coverage check (passed tests not linked to any requirement)
+  with reverse assignment: unmatched passed test → dropdown of unresolved
+  requirements (`POST /coverage/assign`, `assign_test_to_unresolved` —
+  refuses already-resolved rows; one test per requirement, rethink is
+  backlog item 6 in build_plan)
 
 ## Status 2026-07-05
 

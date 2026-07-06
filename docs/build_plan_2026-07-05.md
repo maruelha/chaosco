@@ -34,9 +34,10 @@ Gatekeeper (add/edit/delete an order, S4 checkbox + badge).
   only carries JIRAUSER keys; comments REPLACED per import).
 - `app/jira_importer.py`: tolerant XML parser (Jira RSS; pre-pass escapes
   bare `&` — verified against the real export, Jira DC 10.3);
-  newest-file-by-stem like the Excel importers; separate stems for the
-  gatekeeper file ("assigned to Marina") and the ECOM sync file (open
-  issues).
+  source [USER 2026-07-06]: two configured FOLDERS (gatekeeper exports
+  "assigned to Marina" / ECOM sync exports "open issues") — importer takes
+  the NEWEST .xml in each folder, no filename stems. Folder paths TBD with
+  Marina (settings.yaml keys, local-overridable).
 - Re-import rule [USER]: match by jira id; ONLY comments, jira_status,
   jira_assignee refresh — everything else stays from first import.
 - Tests FIRST: fixture modeled on the real file (ampersand quirk, empty
@@ -52,7 +53,7 @@ rows in the tables (I run it read-back for you).
 - Statuses [USER confirmed]: OrderCheck → Issue DTC | Issue Sales |
   SF requested → **Ready for validation** (= handover, HIDDEN by default
   like defects' Confirmed; show-hidden toggle).
-- Import button on the card (runs the gatekeeper-stem XML import).
+- Import button on the card (runs the gatekeeper-folder XML import).
 - List (structure like Retail): jira id, solman id, name, epic, internal
   status (inline select), next step (inline edit), jira status + jira
   assignee (read-only, separate fields), notes count; filters: search,
@@ -73,15 +74,18 @@ write a note.
   picker on the card.
 **You verify:** each integration once by hand.
 
-## Step 5 — Excel push buttons  *(needs your two template files)*
+## Step 5 — Excel push buttons
 
 - Purpose: staging for copy-paste into the browser-Excel the key users read.
 - Mode (RECOMMENDED, confirm): each push writes a fresh DATED file with only
   not-yet-pushed rows (pushed_at / rfv_pushed_at markers); "include already
   pushed" toggle for re-pushes.
-- Button 1: all lines, retail-like columns (TEMPLATE FROM MARINA).
-- Button 2: only Ready-for-validation lines, own format (TEMPLATE FROM
-  MARINA) — pushing is the handover act.
+- Templates [USER 2026-07-06]: NO separate template files — both formats are
+  seeded from info in the newest tracking Excel (`DTC_UAT_testtracking_ROE(24)`);
+  column details to be discussed with Marina before building.
+- Button 1: all lines, retail-like columns.
+- Button 2: only Ready-for-validation lines, own format — pushing is the
+  handover act.
 **You verify:** push, open the file, paste into the browser Excel once.
 
 ## Step 6 — Gatekeeper status report + email
@@ -91,8 +95,11 @@ write a note.
 - Becomes the 4th checkbox on /email-report (existing GMX plumbing).
 **You verify:** generate + email the report to yourself.
 
-## Step 7 — ECOM vertical: importer  *(needs the newest tracking Excel)*
+## Step 7 — ECOM vertical: importer  *(source Excel PROVIDED 2026-07-06)*
 
+- Source: `Download/DTC_UAT_testtracking_ROE(24).xlsx` — tab name confirmed
+  **ECOM** (workbook also has `ECOM JIRA EPICS`, `ReportECOM`, `Manual Test
+  Cases ECOM`, not in scope here).
 - Importer like Retail from the ECOM tab; extra columns jira_id and
   description_change (display; feeds the external coverage tool).
 - Tables `ecom` + `ecom_annotations`; **match key = jira id** [USER].
@@ -105,7 +112,7 @@ write a note.
 
 - List + detail like Retail, plus: jira details + READ-ONLY comment thread
   from the shared store (joined by jira id), open-in-Jira link.
-- "Upload jira comments" = running the ECOM-stem XML import (step 2 code).
+- "Upload jira comments" = running the ECOM-folder XML import (step 2 code).
 - Handover from gatekeeper = relink (ECOM row's jira id points at the same
   jira_issues record — NO copying) + order_details re-point as planned.
 - Optional add-on: auto-flag when a re-import changes the stored
@@ -143,12 +150,17 @@ promises when built). Low risk, documentation only.
 
 ---
 
-## Before build, Marina provides
+## Before build, Marina provides — RESOLVED 2026-07-06 [USER]
 
-1. Gatekeeper Excel push template (retail-like columns) — for step 5.
-2. Ready-for-validation Excel template — for step 5.
-3. Newest tracking Excel containing the ECOM tab — for step 7.
-4. Filenames/stems of the two Jira XML exports — for step 2.
+1. ~~Gatekeeper Excel push template~~ — no file needed; format seeded from
+   the newest tracking Excel, columns discussed before step 5.
+2. ~~Ready-for-validation Excel template~~ — same as 1.
+3. ✅ Newest tracking Excel: `DTC_UAT_testtracking_ROE(24).xlsx`, copied to
+   the project `Download/` folder; ECOM tab confirmed present.
+4. ~~Filenames/stems of the Jira XML exports~~ — replaced by the
+   folder-based rule (step 2): two folders defined with Marina, importer
+   takes the newest .xml per folder. XML format sample already on hand.
+   OPEN: agree the two folder paths.
 
 ## Open decisions
 

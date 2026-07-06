@@ -256,6 +256,19 @@ def resolve_requirement(conn: sqlite3.Connection, req_id: int, test_case_id: str
                      (test_case_id or None, req_id))
 
 
+def assign_test_to_unresolved(conn: sqlite3.Connection, req_id: int,
+                              test_case_id: str) -> bool:
+    """Reverse manual pick (coverage check): link a passed dashboard test to a
+    still-UNRESOLVED requirement. Refuses resolved rows so an existing link is
+    never silently replaced. Returns True if the row was updated."""
+    with conn:
+        cur = conn.execute(
+            "UPDATE retail_requirements SET test_case_id=?"
+            " WHERE id=? AND test_case_id IS NULL",
+            (test_case_id, req_id))
+    return cur.rowcount == 1
+
+
 def set_requirement_user_comment(conn: sqlite3.Connection, req_id: int,
                                  user_comment: str | None) -> None:
     with conn:
