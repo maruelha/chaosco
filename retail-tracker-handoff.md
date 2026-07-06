@@ -85,6 +85,31 @@ Replaces a 4-tab Excel: `TRACKING_Retail ROE UAT Testcases DTC.xlsx`.
      `Exchange with Neg / with Pos / Exchange Even`
    - `X Store Ex Even Plus 1` — no counterpart (DB has only 3 exchange tests)
    - `Sale MLMQ Clearance Disc - Cash` — DB name has a typo: `…Clearance Disc - Cas`
+11. **Excel retired — the board is the single source of truth** [USER
+    2026-07-05]: the import button remains as a re-import tool only;
+    yes-marks comparison dropped; override button backlog-only.
+12. **Reverse manual pick from the coverage check** [USER 2026-07-06]: each
+    passed-but-unmatched test gets a dropdown of still-unresolved
+    requirements (`POST /coverage/assign`); assigning sets that
+    requirement's `test_case_id` — same stored link as the pick, survives
+    re-imports, never overwrites a resolved row.
+13. **Requirements are manageable in the app** [USER 2026-07-06] — the Excel
+    was only the first seeding:
+    - Add form (Import & admin): manual rows carry `source='manual'` +
+      `excel_row ≥ 5000`; the importer never prunes or upserts them.
+    - Board ✎ edit: name / scenario / required (number or ALL) ONLY —
+      `test_name` and `test_case_id` stay dropdown-matched, never editable.
+    - One requirement links exactly ONE test; rethink = build_plan Retail
+      Tracker backlog item 6.
+14. **Clarify list** [USER 2026-07-06]: "→ Clarify" on an unresolved row =
+    "ask Sales: does this test exist?"; board section; the entry
+    auto-removes when the requirement resolves (both pick paths).
+15. **Parked passed tests** [USER 2026-07-06]: Park on the coverage check =
+    "tested anyway, not part of our requirements" (`tracker_parked_tests`);
+    leaves the coverage unmatched list, shown on the board with live
+    per-country passes + inline comment; un-park restores.
+16. **Board layout** [USER 2026-07-06]: red Tests-missing gap list at the
+    TOP; Clarify and Parked sections at the bottom.
 
 ## 4. OPEN questions — resolve WITH THE USER before coding
 
