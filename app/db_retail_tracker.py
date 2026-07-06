@@ -92,6 +92,21 @@ CREATE TABLE IF NOT EXISTS cpm_checks (
 -- passed run" — a manual human confirmation (the live pass alone cannot know
 -- which methods a run exercised)
 
+CREATE TABLE IF NOT EXISTS tracker_clarify (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    requirement_id INTEGER NOT NULL UNIQUE,   -- FK retail_requirements (unresolved)
+    created_at     TEXT NOT NULL
+);
+-- "ask Sales: does this test case exist (and is just not placed yet)?"
+-- Resolving the requirement auto-removes the entry — the question is answered.
+
+CREATE TABLE IF NOT EXISTS tracker_parked_tests (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    test_case_id TEXT NOT NULL UNIQUE,        -- passed dashboard test, judged:
+    comment      TEXT,                        --   tested anyway, no requirement
+    created_at   TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS tested_overrides (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     requirement_id INTEGER,                  -- FK retail_requirements (tabs 1-3)
@@ -114,6 +129,9 @@ def init_schema(db_path: Path) -> None:
             # user-authored, never touched by the importer (comment = Excel text)
             "ALTER TABLE country_payment_methods ADD COLUMN user_comment TEXT",
             "ALTER TABLE retail_requirements ADD COLUMN user_comment TEXT",
+            # 'excel' rows belong to the importer (pruned on re-import);
+            # 'manual' rows are user-authored and never touched by it
+            "ALTER TABLE retail_requirements ADD COLUMN source TEXT NOT NULL DEFAULT 'excel'",
         ):
             try:
                 conn.execute(ddl)
@@ -204,9 +222,11 @@ def upsert_requirements(conn: sqlite3.Connection, recs: list[dict]) -> dict:
 def delete_requirements_not_in(conn: sqlite3.Connection,
                                keys: set[tuple[str, int]]) -> int:
     """Remove importer-derived rows no longer present in the parse (e.g. after
-    a dedup-priority change). Their country targets go too. Returns # removed."""
+    a dedup-priority change). Their country targets go too. Manual rows are
+    user-authored and never pruned. Returns # removed."""
     stale = [row[0] for row in conn.execute(
-                 "SELECT id, area, excel_row FROM retail_requirements")
+                 "SELECT id, area, excel_row FROM retail_requirements"
+                 " WHERE source != 'manual'")
              if (row[1], row[2]) not in keys]
     with conn:
         for req_id in stale:
@@ -254,6 +274,8 @@ def resolve_requirement(conn: sqlite3.Connection, req_id: int, test_case_id: str
     with conn:
         conn.execute("UPDATE retail_requirements SET test_case_id=? WHERE id=?",
                      (test_case_id or None, req_id))
+        if test_case_id:  # the clarify question is answered
+            conn.execute("DELETE FROM tracker_clarify WHERE requirement_id=?", (req_id,))
 
 
 def assign_test_to_unresolved(conn: sqlite3.Connection, req_id: int,
@@ -266,7 +288,62 @@ def assign_test_to_unresolved(conn: sqlite3.Connection, req_id: int,
             "UPDATE retail_requirements SET test_case_id=?"
             " WHERE id=? AND test_case_id IS NULL",
             (test_case_id, req_id))
+        if cur.rowcount == 1:  # the clarify question is answered
+            conn.execute("DELETE FROM tracker_clarify WHERE requirement_id=?", (req_id,))
     return cur.rowcount == 1
+
+
+def _parse_required_input(raw: str) -> tuple[str | None, int | None, int]:
+    """UI 'Required' input -> (required_raw, required_dtc, all_countries).
+    Accepts an integer or ALL; 18 keeps the Excel's all-countries convention."""
+    raw = " ".join(str(raw or "").split())
+    if raw.upper() == "ALL":
+        return "ALL", None, 1
+    try:
+        n = int(float(raw))
+    except (ValueError, TypeError):
+        return (raw or None), None, 0    # unparseable -> lands on needs-decision
+    if n == 18:
+        return raw, None, 1
+    return raw, n, 0
+
+
+_MANUAL_ROW_BASE = 5000  # excel_row range for manual rows: UNIQUE(area, excel_row)
+                         # can never collide with a real Excel row (or the
+                         # payment-tab fold at +1000)
+
+
+def add_manual_requirement(conn: sqlite3.Connection, area: str, name: str,
+                           scenario_label: str | None, required_raw: str) -> int:
+    """User-authored requirement (the Excel was only the first seeding).
+    Born UNRESOLVED — the test link is made via the pick dropdowns only.
+    source='manual' keeps it out of the importer's prune and upsert."""
+    raw, required_dtc, all_countries = _parse_required_input(required_raw)
+    with conn:
+        next_row = conn.execute(
+            "SELECT COALESCE(MAX(excel_row) + 1, ?) FROM retail_requirements"
+            " WHERE excel_row >= ?", (_MANUAL_ROW_BASE, _MANUAL_ROW_BASE),
+        ).fetchone()[0]
+        cur = conn.execute(
+            "INSERT INTO retail_requirements (area, scenario_label, name,"
+            " required_raw, required_dtc, all_countries, excel_row, source, created_at)"
+            " VALUES (?,?,?,?,?,?,?,'manual',?)",
+            (area, scenario_label or None, name, raw, required_dtc,
+             all_countries, next_row, _now()))
+    return cur.lastrowid
+
+
+def update_requirement_fields(conn: sqlite3.Connection, req_id: int, name: str,
+                              scenario_label: str | None, required_raw: str) -> None:
+    """Edit the user-ownable fields. test_name / test_case_id are deliberately
+    NOT editable here — matching happens via the pick dropdowns only
+    [USER 2026-07-06]."""
+    raw, required_dtc, all_countries = _parse_required_input(required_raw)
+    with conn:
+        conn.execute(
+            "UPDATE retail_requirements SET name=?, scenario_label=?,"
+            " required_raw=?, required_dtc=?, all_countries=? WHERE id=?",
+            (name, scenario_label or None, raw, required_dtc, all_countries, req_id))
 
 
 def set_requirement_user_comment(conn: sqlite3.Connection, req_id: int,
@@ -447,6 +524,90 @@ def delete_missing_test(conn: sqlite3.Connection, item_id: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Clarify list — "ask Sales: does this test case exist?"
+# ---------------------------------------------------------------------------
+
+def add_clarify(conn: sqlite3.Connection, requirement_id: int) -> bool:
+    """Put an UNRESOLVED requirement's test on the clarify list. Resolved
+    requirements have nothing to clarify. Returns True if added."""
+    unresolved = conn.execute(
+        "SELECT 1 FROM retail_requirements WHERE id=? AND test_case_id IS NULL",
+        (requirement_id,)).fetchone()
+    if not unresolved:
+        return False
+    with conn:
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO tracker_clarify (requirement_id, created_at)"
+            " VALUES (?,?)", (requirement_id, _now()))
+    return cur.rowcount == 1
+
+
+def list_clarify(conn: sqlite3.Connection) -> list[dict]:
+    """Clarify entries with their requirement's display fields. The join keeps
+    only unresolved requirements — a resolve auto-answers the question."""
+    return _rows_to_dicts(conn.execute(
+        "SELECT c.id, c.requirement_id, c.created_at, r.area, r.name,"
+        " r.scenario_label, r.excel_test_ref, r.test_name"
+        " FROM tracker_clarify c"
+        " JOIN retail_requirements r ON r.id = c.requirement_id"
+        " WHERE r.test_case_id IS NULL"
+        " ORDER BY c.created_at, c.id"))
+
+
+def clarify_requirement_ids(conn: sqlite3.Connection) -> set[int]:
+    return {row[0] for row in conn.execute(
+        "SELECT requirement_id FROM tracker_clarify")}
+
+
+def delete_clarify(conn: sqlite3.Connection, item_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM tracker_clarify WHERE id=?", (item_id,))
+
+
+# ---------------------------------------------------------------------------
+# Parked passed tests — "tested anyway, not part of our requirements"
+# ---------------------------------------------------------------------------
+
+def park_test(conn: sqlite3.Connection, test_case_id: str) -> bool:
+    """Judge a passed-but-unmatched test as out of requirement scope. It leaves
+    the coverage check's actionable list and shows on the board's parked list."""
+    with conn:
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO tracker_parked_tests (test_case_id, created_at)"
+            " VALUES (?,?)", (test_case_id, _now()))
+    return cur.rowcount == 1
+
+
+def unpark_test(conn: sqlite3.Connection, item_id: int) -> None:
+    with conn:
+        conn.execute("DELETE FROM tracker_parked_tests WHERE id=?", (item_id,))
+
+
+def set_parked_comment(conn: sqlite3.Connection, item_id: int,
+                       comment: str | None) -> None:
+    with conn:
+        conn.execute("UPDATE tracker_parked_tests SET comment=? WHERE id=?",
+                     (comment or None, item_id))
+
+
+def list_parked_tests(conn: sqlite3.Connection) -> list[dict]:
+    """Parked tests with display name + LIVE per-country passed marks from
+    retail (same derive-don't-store rule as the requirements)."""
+    parked = _rows_to_dicts(conn.execute(
+        "SELECT * FROM tracker_parked_tests ORDER BY created_at, id"))
+    for p in parked:
+        row = conn.execute(
+            "SELECT testcase_name FROM retail WHERE test_case_id=?"
+            " AND testcase_name IS NOT NULL LIMIT 1", (p["test_case_id"],)).fetchone()
+        p["testcase_name"] = row[0] if row else p["test_case_id"]
+        p["passed_countries"] = [r[0] for r in conn.execute(
+            "SELECT DISTINCT country FROM retail WHERE test_case_id=?"
+            " AND country IS NOT NULL AND lower(trim(status)) = 'passed'"
+            " ORDER BY country", (p["test_case_id"],))]
+    return parked
+
+
+# ---------------------------------------------------------------------------
 # Counting inputs (see retail_tracker_counting.py)
 # ---------------------------------------------------------------------------
 
@@ -478,13 +639,16 @@ def get_cpm_overrides(conn: sqlite3.Connection) -> dict[int, list[tuple[str, str
 
 def get_passed_test_coverage(conn: sqlite3.Connection) -> dict:
     """Of the distinct test cases with >=1 pass in retail: how many are linked
-    to at least one requirement (or are a tab-4 fixed test)? The unmatched list
-    is the actionable part — green tests the tracker is not counting anywhere."""
+    to at least one requirement (or are a tab-4 fixed test, or parked as
+    judged-out-of-scope)? The unmatched list is the actionable part — green
+    tests nobody has decided on yet."""
     linked = {row[0] for row in conn.execute(
         "SELECT DISTINCT test_case_id FROM retail_requirements"
         " WHERE test_case_id IS NOT NULL")}
     linked |= {row[0] for row in conn.execute(
         "SELECT test_case_id FROM tracker_tab4_tests WHERE test_case_id IS NOT NULL")}
+    linked |= {row[0] for row in conn.execute(
+        "SELECT test_case_id FROM tracker_parked_tests")}
     passed = _rows_to_dicts(conn.execute(
         "SELECT DISTINCT test_case_id, testcase_name FROM retail"
         " WHERE lower(trim(status)) = 'passed' ORDER BY test_case_id"))

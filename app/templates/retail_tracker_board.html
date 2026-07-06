@@ -24,6 +24,31 @@
   {% if missing_tests %}{{ ui.stat_card(missing_tests|length, 'tests missing!', 'alarm') }}{% endif %}
 {% endcall %}
 
+{# ---- missing tests (alarm list — the GAP, deliberately at the top) ---- #}
+<div class="rt-missing" id="missing-tests">
+  <h2>⚠ Tests missing</h2>
+  <p style="color:#a10d19; font-size:0.85rem; margin-top:0">
+    Requirements or scenarios with <strong>no test case in the Retail module at all</strong> —
+    they can never turn green until a test exists. Anything on this list is a gap.
+  </p>
+  {% if missing_tests %}
+  <ul style="list-style:none; padding:0; margin:0.4rem 0 0.8rem">
+    {% for m in missing_tests %}
+    <li>{{ m.text }}
+      <form method="post" action="{{ url_for('retail_tracker.missing_delete', item_id=m.id) }}" style="margin-left:auto">
+        <button type="submit" class="btn btn-sm" title="remove">✕</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <form method="post" action="{{ url_for('retail_tracker.missing_add') }}" style="display:flex; gap:0.6rem">
+    <input type="text" name="text" placeholder="e.g. Exchange Even Plus 1 — no test case exists yet"
+           style="flex:1; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px" required>
+    <button type="submit" class="btn btn-danger">Add missing test</button>
+  </form>
+</div>
+
 {% set colors = {"sales": "rt-sales", "return": "rt-return"} %}
 {% for a in areas %}
 <details class="rt-section {{ colors[a.area] }}" data-area="{{ a.area }}" open>
@@ -92,7 +117,9 @@
         </td>
         <td><input type="text" class="rt-comment" value="{{ i.user_comment or '' }}"
                    placeholder="comment…" onblur="rtComment(this)"></td>
-        <td style="text-align:right">
+        <td style="text-align:right; white-space:nowrap">
+          <button type="button" class="rt-cbtn" title="edit requirement text / scenario / required"
+                  onclick="document.getElementById('rt-edit-{{ i.id }}').showModal()">✎</button>
           <button type="button" class="rt-cbtn" onclick="rtToggle(this)">countries ▸</button>
         </td>
       </tr>
@@ -108,6 +135,28 @@
       {% endfor %}
     </tbody>
   </table>
+
+  {# per-row edit dialogs (✎) — test name/id stay dropdown-only by design #}
+  {% for row in a.rows %}{% set i = row.item %}
+  <dialog id="rt-edit-{{ i.id }}" class="rt-dlg">
+    <strong>Edit requirement</strong>
+    <form method="post" action="{{ url_for('retail_tracker.tracker_req_edit', req_id=i.id) }}"
+          style="display:grid; gap:.5rem; margin-top:.6rem; min-width:24rem">
+      <label>Requirement<br>
+        <input type="text" name="name" value="{{ i.name }}" required style="width:100%"></label>
+      <label>Scenario<br>
+        <input type="text" name="scenario_label" value="{{ i.scenario_label or '' }}" style="width:100%"></label>
+      <label>Required — number or ALL{% if i.targets %} (named targets {{ i.targets|join(', ') }} take precedence){% endif %}<br>
+        <input type="text" name="required" value="{% if i.all_countries %}ALL{% else %}{{ i.required_raw or '' }}{% endif %}"></label>
+      <p style="color:#888; font-size:0.78rem; margin:0">
+        Test name and test id are matched via the pick dropdowns on Import &amp; admin — not editable here.</p>
+      <div class="btn-row">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+  {% endfor %}
 </details>
 {% endfor %}
 
@@ -177,30 +226,84 @@
   </table>
 </details>
 
-{# ---- missing tests (alarm list) ---- #}
-<div class="rt-missing" id="missing-tests">
-  <h2>⚠ Tests missing</h2>
-  <p style="color:#a10d19; font-size:0.85rem; margin-top:0">
-    Requirements or scenarios with <strong>no test case in the Retail module at all</strong> —
-    they can never turn green until a test exists. Anything on this list is a gap.
+{# ---- clarify list — ask Sales ---- #}
+<details class="rt-section" id="clarify" open>
+  <summary>Clarify with Sales — do these test cases exist?
+    <span class="rt-count">{{ clarify_items|length }}</span>
+  </summary>
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Unresolved requirements whose test case might exist and just isn't placed in
+    the Retail component yet. An entry disappears automatically once its
+    requirement is matched (pick dropdowns on Import &amp; admin).
   </p>
-  {% if missing_tests %}
-  <ul style="list-style:none; padding:0; margin:0.4rem 0 0.8rem">
-    {% for m in missing_tests %}
-    <li>{{ m.text }}
-      <form method="post" action="{{ url_for('retail_tracker.missing_delete', item_id=m.id) }}" style="margin-left:auto">
-        <button type="submit" class="btn btn-sm" title="remove">✕</button>
-      </form>
-    </li>
-    {% endfor %}
-  </ul>
+  {% if clarify_items %}
+  <table class="rt-table">
+    <thead>
+      <tr><th style="width:6rem">Area</th><th style="width:14rem">Scenario</th>
+          <th>Excel test</th><th>Requirement</th><th style="width:4rem"></th></tr>
+    </thead>
+    <tbody>
+      {% for c in clarify_items %}
+      <tr>
+        <td>{{ c.area }}</td>
+        <td style="font-weight:700; color:#333; font-size:0.8rem">{{ c.scenario_label or "" }}</td>
+        <td class="mono" style="font-size:0.78rem">{% if c.test_name %}{{ c.excel_test_ref }}_{{ c.test_name }}{% else %}— manual, no Excel test —{% endif %}</td>
+        <td style="font-weight:600">{{ c.name }}</td>
+        <td style="text-align:right">
+          <form method="post" action="{{ url_for('retail_tracker.tracker_clarify_delete', item_id=c.id) }}">
+            <button type="submit" class="btn btn-sm" title="remove from clarify list">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">Empty — add unresolved rows via "→ Clarify" on Import &amp; admin.</p>
   {% endif %}
-  <form method="post" action="{{ url_for('retail_tracker.missing_add') }}" style="display:flex; gap:0.6rem">
-    <input type="text" name="text" placeholder="e.g. Exchange Even Plus 1 — no test case exists yet"
-           style="flex:1; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px" required>
-    <button type="submit" class="btn btn-danger">Add missing test</button>
-  </form>
-</div>
+</details>
+
+{# ---- parked passed tests — tested anyway, no requirement ---- #}
+<details class="rt-section" id="parked" open>
+  <summary>Not part of our requirements — tested anyway
+    <span class="rt-count">{{ parked_tests|length }}</span>
+  </summary>
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Passed tests judged out of requirement scope (parked from the coverage check
+    on Import &amp; admin). Passed countries derive live from Retail statuses.
+  </p>
+  {% if parked_tests %}
+  <table class="rt-table">
+    <thead>
+      <tr><th style="width:8.5rem">Test case</th><th>Test name</th>
+          <th>Passed in</th><th style="width:13rem">Comment</th><th style="width:4rem"></th></tr>
+    </thead>
+    <tbody>
+      {% for p in parked_tests %}
+      <tr data-id="{{ p.id }}">
+        <td class="mono" style="font-size:0.76rem">{{ p.test_case_id }}</td>
+        <td>{{ p.testcase_name }}</td>
+        <td>
+          <strong>{{ p.passed_countries|length }}</strong> —
+          {% for c in p.passed_countries %}
+          <span class="rt-chip rt-chip--pass">{{ c }} ✓</span>
+          {% endfor %}
+        </td>
+        <td><input type="text" class="rt-comment" value="{{ p.comment or '' }}"
+                   placeholder="comment…" onblur="rtParkComment(this)"></td>
+        <td style="text-align:right">
+          <form method="post" action="{{ url_for('retail_tracker.tracker_unpark', item_id=p.id) }}">
+            <button type="submit" class="btn btn-sm" title="un-park — back to the coverage check">✕</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">Empty — park tests via the coverage check on Import &amp; admin.</p>
+  {% endif %}
+</details>
 
 <div class="btn-row" style="margin-top:1.2rem">
   <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
@@ -270,6 +373,16 @@ function rtComment(input) {
   const tr = input.closest("tr");
   const body = new URLSearchParams({user_comment: input.value});
   fetch(`${RT_BASE}/requirements/${tr.dataset.id}/comment`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+
+function rtParkComment(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({comment: input.value});
+  fetch(`${RT_BASE}/parked/${tr.dataset.id}/comment`, {method: "POST", body})
     .then(r => { if (!r.ok) throw new Error();
                  input.style.borderColor = "#1a7f37";
                  setTimeout(() => input.style.borderColor = "", 800); })

@@ -33,7 +33,16 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   area, that tab was duplicative), scenario_label, name, excel_test_ref,
   test_name, test_case_id (resolved; manual picks survive re-import),
   required_dtc / all_countries, user_comment (importer never touches),
-  UNIQUE(area, excel_row); payment-tab folded rows use excel_row + 1000
+  source ('excel' | 'manual' — manual rows are user-added, excel_row ≥ 5000,
+  never pruned/upserted by the importer), UNIQUE(area, excel_row);
+  payment-tab folded rows use excel_row + 1000. Editable via board ✎:
+  name/scenario/required ONLY — test_name + test_case_id are dropdown-only
+  [USER 2026-07-06]
+- `tracker_clarify` — "ask Sales: does this test exist?" per unresolved
+  requirement; auto-removed when the requirement resolves (both pick paths)
+- `tracker_parked_tests` — passed tests judged out of requirement scope
+  ("tested anyway"); excluded from the coverage check's unmatched list,
+  shown on the board with live per-country passes + inline comment
 - `requirement_country_targets` — named specific-country targets
 - `country_payment_methods` — tab-4 matrix + user_comment;
   `tracker_tab4_tests` — the four fixed tests; `cpm_checks` — manual
@@ -41,19 +50,24 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
 
 ## Screens
 
-- Board `/retail-tracker/board` — Excel-order sections with per-section
-  scenario filters + ALL-countries toggle, per-row country chips expand,
-  inline comments, overachieved "✓ X/N ★", Download HTML (dated standalone
-  snapshot), Print, red Tests-missing list
+- Board `/retail-tracker/board` — red Tests-missing gap list AT THE TOP
+  [USER 2026-07-06], then Excel-order sections with per-section scenario
+  filters + ALL-countries toggle, per-row country chips expand, inline
+  comments, ✎ edit dialog (name/scenario/required), overachieved "✓ X/N ★",
+  Download HTML (dated standalone snapshot), Print; at the bottom: Clarify
+  list ("ask Sales — does this test exist?") then parked list ("Not part of
+  our requirements — tested anyway", live per-country passes, inline
+  comment, un-park)
 - Payment methods `/retail-tracker/payment-methods` — per (country × method ×
   kind) AJAX check-off, "● test passed" hints, category editable only while
   unknown, filters
-- Import & admin `/retail-tracker/` — re-runnable import, unresolved-test
-  manual picks, coverage check (passed tests not linked to any requirement)
-  with reverse assignment: unmatched passed test → dropdown of unresolved
-  requirements (`POST /coverage/assign`, `assign_test_to_unresolved` —
-  refuses already-resolved rows; one test per requirement, rethink is
-  backlog item 6 in build_plan)
+- Import & admin `/retail-tracker/` — re-runnable import, add-requirement
+  form (manual rows, born unresolved), unresolved-test manual picks + "→
+  Clarify" per row, coverage check (passed tests not linked to any
+  requirement) with reverse assignment (`POST /coverage/assign`,
+  `assign_test_to_unresolved` — refuses already-resolved rows; one test per
+  requirement, rethink is backlog item 6 in build_plan) and Park button
+  (`POST /coverage/park`)
 
 ## Status 2026-07-05
 

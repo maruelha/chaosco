@@ -38,6 +38,13 @@ Last updated: 2026-07-05
    limit (a requirement can currently link exactly ONE dashboard test).
    Would need a link table + counting change. Decide only if the easy
    version (item 5) proves insufficient.
+7. ~~Requirements manageable in the app~~ ✅ DONE 2026-07-06 [USER]: the DB
+   is the living store, the Excel was only the first seeding. Add form
+   (manual rows: source='manual', excel_row ≥ 5000, importer never
+   prunes/overwrites), board ✎ edit (name/scenario/required only — test
+   name/id stay dropdown-matched), Clarify list ("ask Sales", auto-clears
+   on resolve), parked list ("Not part of our requirements — tested
+   anyway", per-country passes + comment), gap list moved to board top.
 
 ### Inbox (`/inbox`)
 

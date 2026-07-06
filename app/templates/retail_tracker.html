@@ -103,20 +103,42 @@
   </div>
 </div>
 
+{# ---- Add a requirement (manual; Excel was only the first seeding) ---- #}
+<h2 id="unresolved" style="margin-top:1.5rem">Add a requirement</h2>
+<p style="color:#666; max-width:60rem; margin-top:0">
+  For requirements the import missed. Born <strong>unresolved</strong> — link the
+  Retail-component test afterwards via the pick dropdown below. Manual rows are
+  never touched by a re-import.
+</p>
+<form method="post" action="{{ url_for('retail_tracker.tracker_req_add') }}"
+      style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center">
+  <select name="area">
+    <option value="sales">Sales</option>
+    <option value="return">Return</option>
+  </select>
+  <input type="text" name="name" placeholder="Requirement text…" required
+         style="flex:2; min-width:16rem; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+  <input type="text" name="scenario_label" placeholder="Scenario (optional)"
+         style="flex:1; min-width:9rem; padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+  <input type="text" name="required" placeholder="Required: e.g. 3 or ALL" size="16"
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
+  <button type="submit" class="btn btn-primary">Add requirement</button>
+</form>
+
 {# ---- Unresolved: manual pick ---- #}
 {% if unresolved %}
 <h2 style="margin-top:1.5rem">Unresolved — pick the dashboard test</h2>
 <table>
   <thead>
-    <tr><th>Area</th><th>Requirement</th><th>Excel test</th><th>Dashboard test</th><th></th></tr>
+    <tr><th>Area</th><th>Requirement</th><th>Excel test</th><th>Dashboard test</th><th style="width:8rem">Clarify</th></tr>
   </thead>
   <tbody>
     {% for r in unresolved %}
     <tr>
       <td>{{ r.area }}</td>
       <td>{{ r.name }}</td>
-      <td class="mono">{{ r.excel_test_ref }}_{{ r.test_name }}</td>
-      <td colspan="2">
+      <td class="mono">{% if r.test_name %}{{ r.excel_test_ref }}_{{ r.test_name }}{% else %}<span class="pill pill--gray">manual — no Excel test</span>{% endif %}</td>
+      <td>
         <form method="post" action="{{ url_for('retail_tracker.tracker_resolve', req_id=r.id) }}"
               style="display:flex; gap:.5rem">
           <select name="test_case_id" style="max-width:28rem">
@@ -127,6 +149,16 @@
           </select>
           <button type="submit" class="btn btn-sm">Save</button>
         </form>
+      </td>
+      <td>
+        {% if r.id in clarify_ids %}
+        <span class="pill pill--gray" title="on the board's clarify list">asking Sales</span>
+        {% else %}
+        <form method="post" action="{{ url_for('retail_tracker.tracker_clarify_add') }}">
+          <input type="hidden" name="req_id" value="{{ r.id }}">
+          <button type="submit" class="btn btn-sm" title="add to the board's clarify list — ask Sales if this test exists">→ Clarify</button>
+        </form>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
@@ -141,7 +173,7 @@
     <span class="result-label">Matched</span>
     <span class="result-value">
       <strong>{{ coverage.matched }} of {{ coverage.passed_total }}</strong> test cases with at least one
-      pass are linked to a requirement (or a tab-4 fixed test)
+      pass are linked to a requirement, a tab-4 fixed test, or parked as judged
       {% if not coverage.unmatched %}<span class="pill pill--green">full coverage</span>{% endif %}
     </span>
   </div>
@@ -149,25 +181,24 @@
 {% if coverage.unmatched %}
 <p style="color:#666; max-width:60rem; margin-top:.75rem">
   <strong>{{ coverage.unmatched|length }} passed test case(s) count toward NO requirement</strong> —
-  either fine (out of tracker scope) or a broken name match. Assigning one to a
-  still-unresolved requirement repairs the link from this side (same stored
-  pick as the table above; it survives re-imports).
+  a broken name match (→ Assign) or tested-anyway without a requirement
+  (→ Park: moves to the board's "Not part of our requirements" list).
 </p>
 <table>
   <thead>
-    <tr><th>Passed dashboard test</th><th>Assign to unresolved requirement</th><th></th></tr>
+    <tr><th>Passed dashboard test</th><th>Assign to unresolved requirement</th><th style="width:7rem">Park</th></tr>
   </thead>
   <tbody>
     {% for t in coverage.unmatched %}
     <tr>
       <td class="mono" style="font-size:0.78rem">{{ t.testcase_name }}</td>
-      <td colspan="2">
+      <td>
         {% if unresolved %}
         <form method="post" action="{{ url_for('retail_tracker.tracker_coverage_assign') }}"
               style="display:flex; gap:.5rem">
           <input type="hidden" name="test_case_id" value="{{ t.test_case_id }}">
           <select name="req_id" style="max-width:28rem">
-            <option value="">— out of tracker scope (leave) —</option>
+            <option value="">— pick a requirement —</option>
             {% for r in unresolved %}
             <option value="{{ r.id }}">{{ r.area }} &middot; {{ r.name }}</option>
             {% endfor %}
@@ -178,10 +209,22 @@
         <span style="color:#999">no unresolved requirements left to assign</span>
         {% endif %}
       </td>
+      <td>
+        <form method="post" action="{{ url_for('retail_tracker.tracker_park') }}">
+          <input type="hidden" name="test_case_id" value="{{ t.test_case_id }}">
+          <button type="submit" class="btn btn-sm" title="tested anyway, no requirement — park on the board list">Park</button>
+        </form>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+{% endif %}
+{% if parked_count %}
+<p style="color:#888; font-size:0.85rem">
+  {{ parked_count }} parked test(s) live on the board's
+  <a href="{{ url_for('retail_tracker.tracker_board') }}#parked">"Not part of our requirements"</a> list.
+</p>
 {% endif %}
 
 {# ---- Tab 4: country-specific payment methods ---- #}

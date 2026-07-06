@@ -43,6 +43,8 @@ def _render_home(result=None):
         cpm_unknown = db.list_cpm(conn, unknown_category_only=True)
         tab4_tests = db.list_tab4_tests(conn)
         coverage = db.get_passed_test_coverage(conn)
+        clarify_ids = db.clarify_requirement_ids(conn)
+        parked_count = len(db.list_parked_tests(conn))
     finally:
         conn.close()
     default_path = "report_export/TRACKING_Retail ROE UAT Testcases DTC (1).xlsx"
@@ -51,7 +53,7 @@ def _render_home(result=None):
         counts=counts, unresolved=unresolved, needs_decision=needs_decision,
         test_options=test_options, countries=countries, result=result,
         cpm_counts=cpm_counts, cpm_unknown=cpm_unknown, tab4_tests=tab4_tests,
-        coverage=coverage,
+        coverage=coverage, clarify_ids=clarify_ids, parked_count=parked_count,
         excel_path=_cfg.get("retail_tracker_excel", default_path),
     )
 
@@ -76,6 +78,97 @@ def tracker_resolve(req_id: int):
     finally:
         conn.close()
     return redirect(url_for("retail_tracker.tracker_home"))
+
+
+@bp.route("/requirements/add", methods=["POST"])
+def tracker_req_add():
+    """Manual requirement (the Excel was only the first seeding). Born
+    unresolved; the test link is made via the pick dropdowns afterwards."""
+    area = request.form.get("area", "").strip()
+    name = request.form.get("name", "").strip()
+    required_raw = request.form.get("required", "").strip()
+    if area in ("sales", "return") and name:
+        conn = _get_conn()
+        try:
+            db.add_manual_requirement(
+                conn, area, name,
+                request.form.get("scenario_label", "").strip() or None,
+                required_raw)
+        finally:
+            conn.close()
+    return redirect(url_for("retail_tracker.tracker_home") + "#unresolved")
+
+
+@bp.route("/requirements/<int:req_id>/edit", methods=["POST"])
+def tracker_req_edit(req_id: int):
+    """Edit the user-ownable fields (board pencil). test_name / test_case_id
+    stay dropdown-only by design [USER 2026-07-06]."""
+    name = request.form.get("name", "").strip()
+    if name:
+        conn = _get_conn()
+        try:
+            db.update_requirement_fields(
+                conn, req_id, name,
+                request.form.get("scenario_label", "").strip() or None,
+                request.form.get("required", "").strip())
+        finally:
+            conn.close()
+    return redirect(url_for("retail_tracker.tracker_board"))
+
+
+@bp.route("/clarify/add", methods=["POST"])
+def tracker_clarify_add():
+    req_id = request.form.get("req_id", type=int)
+    if req_id:
+        conn = _get_conn()
+        try:
+            db.add_clarify(conn, req_id)
+        finally:
+            conn.close()
+    return redirect(url_for("retail_tracker.tracker_home") + "#unresolved")
+
+
+@bp.route("/clarify/<int:item_id>/delete", methods=["POST"])
+def tracker_clarify_delete(item_id: int):
+    conn = _get_conn()
+    try:
+        db.delete_clarify(conn, item_id)
+    finally:
+        conn.close()
+    return redirect(url_for("retail_tracker.tracker_board") + "#clarify")
+
+
+@bp.route("/coverage/park", methods=["POST"])
+def tracker_park():
+    test_case_id = request.form.get("test_case_id", "").strip()
+    if test_case_id:
+        conn = _get_conn()
+        try:
+            db.park_test(conn, test_case_id)
+        finally:
+            conn.close()
+    return redirect(url_for("retail_tracker.tracker_home") + "#coverage")
+
+
+@bp.route("/parked/<int:item_id>/unpark", methods=["POST"])
+def tracker_unpark(item_id: int):
+    conn = _get_conn()
+    try:
+        db.unpark_test(conn, item_id)
+    finally:
+        conn.close()
+    return redirect(url_for("retail_tracker.tracker_board") + "#parked")
+
+
+@bp.route("/parked/<int:item_id>/comment", methods=["POST"])
+def tracker_parked_comment(item_id: int):
+    conn = _get_conn()
+    try:
+        db.set_parked_comment(conn, item_id,
+                              request.form.get("comment", "").strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/coverage/assign", methods=["POST"])
@@ -105,6 +198,8 @@ def tracker_board():
         status_map = {(t, c.strip().casefold()): s
                       for t, c, s in db.get_passed_status_rows(conn)}
         missing_tests = db.list_missing_tests(conn)
+        clarify_items = db.list_clarify(conn)
+        parked_tests = db.list_parked_tests(conn)
         # display names with original casing (test_name on the row is normalized)
         display_names = {}
         for t in db.get_retail_test_options(conn):
@@ -161,6 +256,7 @@ def tracker_board():
         cpm_items=cpm_items, cpm_summary=result["cpm"]["summary"],
         cpm_countries=sorted({r["country"] for r in cpm_items}),
         missing_tests=missing_tests,
+        clarify_items=clarify_items, parked_tests=parked_tests,
         as_of=datetime.now().strftime("%Y-%m-%d %H:%M"),
         today=datetime.now().strftime("%Y-%m-%d"),
     )
