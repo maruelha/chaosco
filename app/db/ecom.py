@@ -187,6 +187,44 @@ def get_ecom_by_id(conn: sqlite3.Connection, ecom_id: int) -> dict | None:
     return rows[0] if rows else None
 
 
+def get_ecom_status_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    """{status: count} over the ecom table — input for the status report
+    (same bucket definitions as Retail [USER 2026-07-09])."""
+    rows = conn.execute(
+        "SELECT COALESCE(status, '') AS status, COUNT(*) AS cnt FROM ecom GROUP BY status"
+    ).fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
+def get_ecom_defects_impacted(conn: sqlite3.Connection,
+                              passed_statuses: list[str]) -> list[dict]:
+    """ECOM-channel twin of get_retail_defects_impacted: active defects with
+    counts of ECOM test cases that reference them AND have not passed yet
+    (same passed family + same MB/Sales dtco2c rule)."""
+    passed_keys = [s.strip().lower() for s in passed_statuses]
+    ph = ",".join("?" for _ in passed_keys) or "''"
+    sql = f"""
+        SELECT d.defect_id, d.solman_name, d.assigned_to, d.date_reported,
+               d.solman_status,
+               COALESCE(a.dtco2c, 0) AS dtco2c,
+               (a.dtco2c IS NULL) AS dtco2c_unset,
+               (SELECT COUNT(*) FROM ecom e
+                WHERE e.defect_id_ref IS NOT NULL
+                  AND e.defect_id_ref LIKE '%' || d.defect_id || '%'
+                  AND LOWER(TRIM(COALESCE(e.status, ''))) NOT IN ({ph})) AS impacted_tc_count,
+               (SELECT COUNT(*) FROM ecom e
+                WHERE e.defect_id_ref IS NOT NULL
+                  AND e.defect_id_ref LIKE '%' || d.defect_id || '%'
+                  AND LOWER(TRIM(COALESCE(e.status, ''))) IN ({ph})) AS passed_tc_count
+        FROM defects d
+        LEFT JOIN defect_annotations a ON a.defect_id = d.defect_id
+        WHERE LOWER(TRIM(d.channel)) = 'ecom'
+          AND LOWER(TRIM(COALESCE(d.solman_status, ''))) NOT IN ('confirmed', 'withdrawn')
+        ORDER BY impacted_tc_count DESC, d.defect_id
+    """
+    return _rows_to_dicts(conn.execute(sql, (*passed_keys, *passed_keys)))
+
+
 def relink_gatekeeper_orders(conn: sqlite3.Connection, jira_id: str,
                              ecom_id: int) -> int:
     """Gatekeeper → ECOM handover (day plan step 8): re-point order_details

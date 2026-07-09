@@ -169,4 +169,6 @@ promises when built). Low risk, documentation only.
 ## Open decisions
 
 - Excel push mode: confirm the dated-snapshot recommendation (step 5).
-- ECOM status report / buckets like Retail: wanted or not (not requested).
+- ~~ECOM status report / buckets like Retail~~ — RESOLVED 2026-07-09
+  [USER: yes] and built: `/ecom/report`, same buckets as Retail, HTML
+  download + Save-to-Excel + email checkbox, no PPT.

@@ -721,6 +721,25 @@
     </div>
   </div>
 
+  <!-- ECOM Status Report -->
+  <div class="screen-card" id="ecom-report">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM Status Report</span>
+      <span class="screen-url">GET /ecom/report</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Live status report over the <code>ecom</code> table using the <strong>same bucket definitions as the Retail report</strong> (one shared <code>config/status_mappings.yaml</code> — deliberate [USER 2026-07-09]). Built 2026-07-09; no PPT (not requested).</p>
+      <div class="features">
+        <span class="feat-label">Sections</span>
+        <span class="feat-value">Overview buckets (Back with Sales · With DTC · In Progress with DTC · Passed with DTC) · In-Progress Breakdown (5 owner cards) · <strong>ECOM Defects — impacted</strong> (channel='ecom', same impacted/passed/MB-Sales rules as Retail, via <code>get_ecom_defects_impacted</code>) · inline diagnostics (known exclusions like "Not Ready" as grey pills, unknown statuses as red pills — no separate diagnostics page) · Additional (report_comments, key <code>ecom</code>).</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Copy to clipboard</span> TSV headers+values · <span class="pill pill-action">Download HTML</span> <code>GET /ecom/report/download</code> — the page rendered server-side and made standalone via <code>emailer.standalone_html</code> (no separate download template) · <span class="pill pill-action">Save to Excel</span> <code>POST /ecom/report/save-excel</code> — appends a dated row to the <strong>ECOM sheet</strong> of the shared report log workbook (<code>retail_report_xlsx</code>).</span>
+        <span class="feat-label">Email</span>
+        <span class="feat-value">4th checkbox on /email-report ("ECOM Status Report"), attached as standalone HTML.</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ECOM Detail -->
   <div class="screen-card" id="ecom-detail">
     <div class="screen-card-header">
@@ -1579,7 +1598,7 @@
       <p class="screen-desc">Send the status reports as standalone-HTML attachments via GMX SMTP. Linked from the dashboard Export card. Credentials (<code>email_user</code>/<code>email_password</code>) live ONLY in gitignored <code>settings.local.yaml</code> — the page shows setup instructions and disables Send until configured.</p>
       <div class="features">
         <span class="feat-label">Reports to attach</span>
-        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board (board rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
+        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09; board and ECOM rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
         <span class="feat-label">Message</span>
         <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.").</span>
         <span class="feat-label">Recipients</span>

@@ -51,6 +51,15 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   `relink_gatekeeper_orders` by same jira id · notes via registry entry
   `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
   Dashboard card. Tests: `tests/test_ecom_pages.py`.
+- Status report `/ecom/report` [USER 2026-07-09]: SAME bucket definitions
+  as Retail (one config — status_mappings.yaml; "Not Ready" = known
+  exclusion, visible in the inline diagnostics section, no separate
+  diagnostics page). Impacted ECOM-channel defects
+  (`get_ecom_defects_impacted`, same rules as Retail). Outputs: page +
+  Copy-TSV + standalone HTML download (via `emailer.standalone_html` — no
+  separate download template) + Save-to-Excel (ECOM sheet in the shared
+  report log workbook) + 4th email checkbox. NO PPT (not requested).
+  Tests: `tests/test_ecom_report.py`.
 
 - `app/ecom_importer.py` (`parse_ecom`) + `app/db/ecom.py`: tables `ecom` +
   `ecom_annotations`. **Match key = JIRA ID** [USER 2026-07-05] — rows

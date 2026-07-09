@@ -103,6 +103,10 @@ Last updated: 2026-07-05
    annotations, gatekeeper-orders takeover, notes registry entry `ecom`.
    OPEN: description-change auto-flag on re-import (optional add-on);
    Jira sections stay empty until the first real XML lands.
+2. ~~ECOM status report~~ ✅ DONE 2026-07-09 [USER: wanted after all]:
+   `/ecom/report` — same buckets as Retail (one config), impacted
+   ECOM-channel defects, inline diagnostics, HTML download, Save-to-Excel
+   (ECOM sheet), 4th email checkbox. No PPT.
 
 ### Omni vertical (planned, not started)
 

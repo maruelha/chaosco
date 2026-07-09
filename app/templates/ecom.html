@@ -6,6 +6,7 @@
   <div class="page-header-row">
     <h1>ECOM Test Cases</h1>
     <div class="page-header-actions">
+      <a href="{{ url_for('ecom.ecom_report') }}" class="btn btn-primary">Status Report</a>
       <form method="post" action="{{ url_for('ecom.ecom_import_jira') }}">
         <button type="submit" class="btn"
                 title="import the newest .xml from the ECOM Jira folder — refreshes status, assignee and comments">

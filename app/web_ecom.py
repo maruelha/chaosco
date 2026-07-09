@@ -7,15 +7,19 @@ stay strictly separate on the pages too.
 """
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
-from flask import Blueprint, redirect, render_template, request, url_for
+import openpyxl
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from app import database
 from app.config_loader import load_config
 from app.db import ecom as db_ecom
 from app.db import jira as db_jira
 from app.jira_importer import run_jira_import
+from app.reporter import (compute_impacted_totals, compute_retail_report,
+                          load_status_mappings, passed_family)
 
 bp = Blueprint("ecom", __name__, url_prefix="/ecom")
 
@@ -62,6 +66,93 @@ def ecom_import_jira():
                f"{result['comments']} comments")
         return redirect(url_for("ecom.ecom_list", jira_ok="1", jira_msg=msg))
     return redirect(url_for("ecom.ecom_list", jira_ok="0", jira_msg=result["error"]))
+
+
+def _report_context(conn) -> dict:
+    """Shared context for the report page/download: buckets (same definitions
+    as Retail [USER 2026-07-09]) + impacted ECOM-channel defects."""
+    mappings = load_status_mappings()
+    report = compute_retail_report(db_ecom.get_ecom_status_counts(conn), mappings)
+    defects = db_ecom.get_ecom_defects_impacted(conn, passed_family(mappings))
+    totals = compute_impacted_totals(defects)
+    return {
+        "report": report,
+        "impacted_defects": defects,
+        "impacted_total": totals["total"],
+        "mb_total": totals["mb"],
+        "sales_total": totals["sales"],
+        "report_comments": database.list_report_comments(conn, "ecom"),
+        "today": date.today().isoformat(),
+    }
+
+
+@bp.route("/report")
+def ecom_report():
+    conn = _get_conn()
+    try:
+        ctx = _report_context(conn)
+    finally:
+        conn.close()
+    return render_template("ecom_report.html", **ctx)
+
+
+@bp.route("/report/download")
+def ecom_report_download():
+    """Dated standalone snapshot — the page itself made self-contained
+    (CSS inlined, buttons/scripts stripped), same as the email attachment."""
+    from app.emailer import standalone_html
+    from app.web_core import app as flask_app
+    resp = flask_app.test_client().get(url_for("ecom.ecom_report"))
+    today = date.today().isoformat()
+    return standalone_html(resp.get_data(as_text=True)), 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": f'attachment; filename="ecom_report_{today}.html"',
+    }
+
+
+_ECOM_REPORT_HEADERS = [
+    "Date", "Back with Sales", "With DTC", "In Progress with DTC",
+    "Passed with DTC", "Incoming (Gatekeeper)", "Ready for validation",
+    "In Progress", "In Clarification", "Blocked",
+]
+
+
+@bp.route("/report/save-excel", methods=["POST"])
+def ecom_report_save_excel():
+    """Append one dated row to the ECOM sheet of the report log workbook
+    (same file as the Retail log, own sheet)."""
+    try:
+        conn = _get_conn()
+        try:
+            report = compute_retail_report(
+                db_ecom.get_ecom_status_counts(conn), load_status_mappings())
+        finally:
+            conn.close()
+        save_date = request.form.get("date") or date.today().isoformat()
+
+        xlsx_path = Path(_cfg.get("retail_report_xlsx", "output/retail_report_log.xlsx"))
+        xlsx_path.parent.mkdir(parents=True, exist_ok=True)
+        wb = (openpyxl.load_workbook(xlsx_path) if xlsx_path.exists()
+              else openpyxl.Workbook())
+        if not xlsx_path.exists() and "Sheet" in wb.sheetnames:
+            del wb["Sheet"]
+        ws = wb["ECOM"] if "ECOM" in wb.sheetnames else wb.create_sheet("ECOM")
+        if ws.cell(1, 1).value is None:
+            for col, header in enumerate(_ECOM_REPORT_HEADERS, 1):
+                ws.cell(row=1, column=col).value = header
+        b = report["buckets"]
+        next_row = ws.max_row + 1
+        for col, val in enumerate([
+            save_date, b["back_with_sales"], b["with_dtc"],
+            b["in_progress_with_dtc"], b["passed_with_dtc"],
+            b["incoming_gatekeeper"], b["ready_for_validation"],
+            b["in_progress"], b["in_clarification"], b["blocked"],
+        ], 1):
+            ws.cell(row=next_row, column=col).value = val
+        wb.save(xlsx_path)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)})
+    return jsonify({"ok": True, "path": str(xlsx_path), "date": save_date})
 
 
 @bp.route("/<int:ecom_id>", methods=["GET", "POST"])

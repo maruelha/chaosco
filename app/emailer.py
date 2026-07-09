@@ -31,6 +31,7 @@ REPORT_CHOICES = [
     ("spillover", "Spillover Status Report"),
     ("retail", "Retail Status Report"),
     ("board", "Retail Requirements Board"),
+    ("ecom", "ECOM Status Report"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -116,6 +117,10 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         # render the live board through the app itself, then make it standalone
         resp = flask_app.test_client().get("/retail-tracker/board")
         out.append((f"retail_requirements_board_{day}.html",
+                    standalone_html(resp.get_data(as_text=True))))
+    if "ecom" in reports:
+        resp = flask_app.test_client().get("/ecom/report")
+        out.append((f"ecom_report_{day}.html",
                     standalone_html(resp.get_data(as_text=True))))
     return out
 
