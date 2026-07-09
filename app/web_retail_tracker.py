@@ -113,7 +113,8 @@ def tracker_req_edit(req_id: int):
                 request.form.get("required", "").strip())
         finally:
             conn.close()
-    return redirect(url_for("retail_tracker.tracker_board"))
+    # back to the edited row, not the top of the board
+    return redirect(url_for("retail_tracker.tracker_board") + f"#req-{req_id}")
 
 
 @bp.route("/clarify/add", methods=["POST"])

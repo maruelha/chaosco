@@ -12,7 +12,6 @@
 
 <div class="rt-topbar">
   <button type="button" class="btn btn-primary" onclick="rtDownload()">⬇ Download HTML</button>
-  <button type="button" class="btn" onclick="rtPrint()">🖨 Print</button>
   <span style="color:#888; font-size:0.82rem">the download is a dated standalone snapshot of the current view (filters included)</span>
 </div>
 
@@ -93,7 +92,7 @@
     <tbody>
       {% for row in a.rows %}
       {% set i = row.item %}
-      <tr class="rt-req{% if i.done %} rt-done{% endif %}"
+      <tr class="rt-req{% if i.done %} rt-done{% endif %}" id="req-{{ i.id }}"
           data-id="{{ i.id }}" data-scenario="{{ i.scenario_label or '' }}" data-all="{{ i.all_countries }}">
         <td class="mono" style="font-size:0.76rem">
           {% if i.test_case_id %}{{ i.test_case_id }}{% else %}<span class="pill pill--red">unresolved</span>{% endif %}
@@ -227,7 +226,7 @@
 </details>
 
 {# ---- clarify list — ask Sales ---- #}
-<details class="rt-section" id="clarify" open>
+<details class="rt-section" id="clarify">
   <summary>Clarify with Sales — do these test cases exist?
     <span class="rt-count">{{ clarify_items|length }}</span>
   </summary>
@@ -264,7 +263,7 @@
 </details>
 
 {# ---- parked passed tests — tested anyway, no requirement ---- #}
-<details class="rt-section" id="parked" open>
+<details class="rt-section" id="parked">
   <summary>Not part of our requirements — tested anyway
     <span class="rt-count">{{ parked_tests|length }}</span>
   </summary>
@@ -283,11 +282,9 @@
       <tr data-id="{{ p.id }}">
         <td class="mono" style="font-size:0.76rem">{{ p.test_case_id }}</td>
         <td>{{ p.testcase_name }}</td>
-        <td>
-          <strong>{{ p.passed_countries|length }}</strong> —
-          {% for c in p.passed_countries %}
-          <span class="rt-chip rt-chip--pass">{{ c }} ✓</span>
-          {% endfor %}
+        <td style="white-space:nowrap">
+          <strong>{{ p.passed_countries|length }}</strong>
+          <button type="button" class="rt-cbtn" onclick="rtToggle(this)">countries ▸</button>
         </td>
         <td><input type="text" class="rt-comment" value="{{ p.comment or '' }}"
                    placeholder="comment…" onblur="rtParkComment(this)"></td>
@@ -295,6 +292,15 @@
           <form method="post" action="{{ url_for('retail_tracker.tracker_unpark', item_id=p.id) }}">
             <button type="submit" class="btn btn-sm" title="un-park — back to the coverage check">✕</button>
           </form>
+        </td>
+      </tr>
+      <tr class="rt-countries" style="display:none">
+        <td colspan="5">
+          {% for c in p.passed_countries %}
+          <span class="rt-chip rt-chip--pass">{{ c }} ✓</span>
+          {% else %}
+          <span style="color:#999">no passed countries (was the test reopened?)</span>
+          {% endfor %}
         </td>
       </tr>
       {% endfor %}
@@ -312,6 +318,19 @@
 <script>
 const RT_BASE = "{{ url_for('retail_tracker.tracker_board') }}".replace(/\/board$/, "");
 const rtAllOnly = {};
+
+// After a POST-redirect with an anchor (#req-<id>, #clarify, #parked,
+// #missing-tests): open any collapsed <details> around the target and jump
+// there — instead of landing at the top of the board.
+(function () {
+  if (!location.hash) return;
+  let el;
+  try { el = document.querySelector(location.hash); } catch (e) { return; }
+  if (!el) return;
+  let d = el.closest("details");
+  while (d) { d.open = true; d = d.parentElement && d.parentElement.closest("details"); }
+  requestAnimationFrame(() => el.scrollIntoView({ block: "center" }));
+}());
 
 function rtToggle(btn) {
   const detail = btn.closest("tr").nextElementSibling;
@@ -397,11 +416,6 @@ function rt4Comment(input) {
                  input.style.borderColor = "#1a7f37";
                  setTimeout(() => input.style.borderColor = "", 800); })
     .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
-}
-
-function rtPrint() {
-  document.querySelectorAll("details.rt-section").forEach(d => d.open = true);
-  window.print();
 }
 
 function rtDownload() {

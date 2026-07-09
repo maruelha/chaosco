@@ -53,11 +53,14 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
 - Board `/retail-tracker/board` — red Tests-missing gap list AT THE TOP
   [USER 2026-07-06], then Excel-order sections with per-section scenario
   filters + ALL-countries toggle, per-row country chips expand, inline
-  comments, ✎ edit dialog (name/scenario/required), overachieved "✓ X/N ★",
-  Download HTML (dated standalone snapshot), Print; at the bottom: Clarify
-  list ("ask Sales — does this test exist?") then parked list ("Not part of
-  our requirements — tested anyway", live per-country passes, inline
-  comment, un-park)
+  comments, ✎ edit dialog (name/scenario/required; redirect returns to the
+  row anchor `#req-<id>`, not the top), overachieved "✓ X/N ★", Download
+  HTML (dated standalone snapshot; Print REMOVED [USER 2026-07-09]); at
+  the bottom, both COLLAPSED by default [USER 2026-07-09]: Clarify list
+  ("ask Sales — does this test exist?") then parked list ("Not part of our
+  requirements — tested anyway", count + "countries ▸" expand like normal
+  rows, inline comment, un-park). Hash helper opens collapsed sections on
+  anchor navigation.
 - Payment methods `/retail-tracker/payment-methods` — per (country × method ×
   kind) AJAX check-off, "● test passed" hints, category editable only while
   unknown, filters
