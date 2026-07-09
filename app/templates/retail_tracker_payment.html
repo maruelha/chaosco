@@ -35,6 +35,7 @@
     <span class="result-value"><strong>{{ summary.done }} of {{ summary.total }} done</strong>
       &middot; <span class="pill pill--ready">{{ summary.ready }} ready to check</span>
       {% if summary.unknown_category %} &middot; <span class="pill pill--red">{{ summary.unknown_category }} category unknown</span>{% endif %}
+      {% if inactive_items %} &middot; <span class="pill pill--gray">{{ inactive_items|length }} kicked out (below)</span>{% endif %}
     </span>
   </div>
 </div>
@@ -73,6 +74,7 @@
       <th style="text-align:center">Status</th>
       <th style="min-width:14rem">Comment (e.g. what was NOT tested)</th>
       <th>Excel note</th>
+      <th style="width:2.5rem"></th>
     </tr>
   </thead>
   <tbody>
@@ -118,10 +120,46 @@
       <td><input type="text" class="pm-comment" value="{{ r.user_comment or '' }}"
                  placeholder="comment…" onblur="pmComment(this)"></td>
       <td style="color:#999; font-size:0.76rem">{{ r.comment or "" }}</td>
+      <td style="text-align:center">
+        <button type="button" class="btn btn-sm" title="kick out — not applicable, with a reason why"
+                onclick="pmKickOut(this)">🚫</button>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+
+{# ---- kicked-out methods (inactive; excluded from all counting) ---- #}
+{% if inactive_items %}
+<details class="rt-section" id="kicked-out" style="margin-top:1.2rem">
+  <summary>Kicked out — not applicable
+    <span class="rt-count">{{ inactive_items|length }}</span>
+  </summary>
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Excluded from the matrix and all counting. Take one back in and it counts
+    again (the reason is cleared).
+  </p>
+  <table class="pm-table">
+    <thead>
+      <tr><th>Country</th><th>Payment method</th><th>Category</th>
+          <th>Why kicked out</th><th style="width:8rem"></th></tr>
+    </thead>
+    <tbody>
+      {% for r in inactive_items %}
+      <tr data-id="{{ r.id }}" style="color:#8e8e93">
+        <td style="font-weight:600">{{ r.country }}</td>
+        <td>{{ r.method_name }}</td>
+        <td>{{ r.category or "unknown" }}</td>
+        <td>{{ r.inactive_reason or "—" }}</td>
+        <td style="text-align:right">
+          <button type="button" class="btn btn-sm" onclick="pmReactivate(this)">↩ Take back in</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endif %}
 
 <div class="btn-row" style="margin-top:1.2rem">
   <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
@@ -164,6 +202,26 @@ function pmRefreshRow(tr) {
   const st = tr.querySelector(".pm-status");
   if (done) st.innerHTML = '<span class="pill pill--green">done</span>';
   else if (st.querySelector(".pill--green")) st.innerHTML = "";
+}
+
+function pmKickOut(btn) {
+  const tr = btn.closest("tr");
+  const name = tr.children[1].textContent.trim();
+  const reason = window.prompt(`Kick out "${name}" (${tr.dataset.country})?\nWhy is it not applicable? (required)`);
+  if (reason === null) return;                       // cancelled
+  if (!reason.trim()) { alert("A reason is required."); return; }
+  const body = new URLSearchParams({active: "0", reason: reason.trim()});
+  fetch(`${PM_BASE}/${tr.dataset.id}/active`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error(); location.reload(); })
+    .catch(() => alert("Kick-out failed — try again."));
+}
+
+function pmReactivate(btn) {
+  const tr = btn.closest("tr");
+  const body = new URLSearchParams({active: "1"});
+  fetch(`${PM_BASE}/${tr.dataset.id}/active`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error(); location.reload(); })
+    .catch(() => alert("Reactivating failed — try again."));
 }
 
 function pmComment(input) {

@@ -52,7 +52,10 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
 
 - Board `/retail-tracker/board` — red Tests-missing gap list AT THE TOP
   [USER 2026-07-06], then Excel-order sections with per-section scenario
-  filters + ALL-countries toggle, per-row country chips expand, inline
+  GROUP filters [USER 2026-07-09: Till transactions · Different articles
+  (first batch) · Discounts · General payment methods · B2B · PROMAT/FOC ·
+  Other — substring mapping in settings.yaml `tracker_scenario_groups`,
+  first hit wins] + ALL-countries toggle, per-row country chips expand, inline
   comments, ✎ edit dialog (name/scenario/required; redirect returns to the
   row anchor `#req-<id>`, not the top), overachieved "✓ X/N ★", Download
   HTML (dated standalone snapshot; Print REMOVED [USER 2026-07-09]); at
@@ -63,7 +66,11 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   anchor navigation.
 - Payment methods `/retail-tracker/payment-methods` — per (country × method ×
   kind) AJAX check-off, "● test passed" hints, category editable only while
-  unknown, filters
+  unknown, filters. 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY
+  (`POST /payment-methods/<id>/active`, `set_cpm_active`; `inactive_reason`
+  column) — inactive rows leave ALL counting (compute_cpm skips them,
+  cpm_counts counts active only) and live in a collapsed "Kicked out"
+  section with the reason + "↩ Take back in" (clears the reason)
 - Import & admin `/retail-tracker/` — re-runnable import, add-requirement
   form (manual rows, born unresolved), unresolved-test manual picks + "→
   Clarify" per row, coverage check (passed tests not linked to any

@@ -64,10 +64,10 @@
     <span class="rt-info" style="color:#888; font-size:0.82rem"></span>
   </div>
   <dialog id="rt-dlg-{{ a.area }}" class="rt-dlg">
-    <strong>Filter {{ a.label }} by scenario</strong>
+    <strong>Filter {{ a.label }} by scenario group</strong>
     <div style="margin:0.6rem 0">
-      {% for s in a.scenarios %}
-      <label><input type="checkbox" class="rt-scen-cb" value="{{ s }}"> {{ s }}</label>
+      {% for g in a.groups %}
+      <label><input type="checkbox" class="rt-scen-cb" value="{{ g }}"> {{ g }}</label>
       {% endfor %}
     </div>
     <div class="btn-row">
@@ -93,7 +93,7 @@
       {% for row in a.rows %}
       {% set i = row.item %}
       <tr class="rt-req{% if i.done %} rt-done{% endif %}" id="req-{{ i.id }}"
-          data-id="{{ i.id }}" data-scenario="{{ i.scenario_label or '' }}" data-all="{{ i.all_countries }}">
+          data-id="{{ i.id }}" data-scenario="{{ i.scenario_group }}" data-all="{{ i.all_countries }}">
         <td class="mono" style="font-size:0.76rem">
           {% if i.test_case_id %}{{ i.test_case_id }}{% else %}<span class="pill pill--red">unresolved</span>{% endif %}
         </td>
@@ -364,7 +364,7 @@ function rtApply(area) {
   });
   const btn = sec.querySelector(".rt-scen-btn");
   btn.classList.toggle("rt-fbtn--active", picked.length > 0);
-  btn.textContent = picked.length ? `Scenario (${picked.length}) ▾` : "Scenario ▾";
+  btn.textContent = picked.length ? `Scenario group (${picked.length}) ▾` : "Scenario ▾";
   sec.querySelector(".rt-info").textContent =
     hidden ? `${shown} shown · ${hidden} hidden by filter` : "";
 }

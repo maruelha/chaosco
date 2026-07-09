@@ -132,6 +132,8 @@ def init_schema(db_path: Path) -> None:
             # 'excel' rows belong to the importer (pruned on re-import);
             # 'manual' rows are user-authored and never touched by it
             "ALTER TABLE retail_requirements ADD COLUMN source TEXT NOT NULL DEFAULT 'excel'",
+            # why a payment method was kicked out (active=0) [USER 2026-07-09]
+            "ALTER TABLE country_payment_methods ADD COLUMN inactive_reason TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -411,18 +413,35 @@ def upsert_cpm_rows(conn: sqlite3.Connection, rows: list[dict]) -> dict:
     return {"inserted": inserted, "updated": updated}
 
 
-def list_cpm(conn: sqlite3.Connection, unknown_category_only: bool = False) -> list[dict]:
-    sql = "SELECT * FROM country_payment_methods"
+def list_cpm(conn: sqlite3.Connection, unknown_category_only: bool = False,
+             inactive_only: bool = False) -> list[dict]:
+    sql = "SELECT * FROM country_payment_methods WHERE 1=1"
     if unknown_category_only:
-        sql += " WHERE category IS NULL"
+        sql += " AND category IS NULL"
+    if inactive_only:
+        sql += " AND active = 0"
     sql += " ORDER BY country, method_name"
     return _rows_to_dicts(conn.execute(sql))
 
 
+def set_cpm_active(conn: sqlite3.Connection, cpm_id: int, active: bool,
+                   reason: str | None = None) -> None:
+    """Kick a payment method out (active=0, with the WHY [USER 2026-07-09])
+    or take it back in. Inactive rows leave the counting entirely
+    (compute_cpm skips them); reactivating clears the reason."""
+    with conn:
+        conn.execute(
+            "UPDATE country_payment_methods SET active=?, inactive_reason=? WHERE id=?",
+            (1 if active else 0, None if active else (reason or None), cpm_id))
+
+
 def cpm_counts(conn: sqlite3.Connection) -> dict:
-    out = {"total": 0, "card": 0, "voucher": 0, "unknown": 0, "countries": 0}
+    """Counts over ACTIVE rows only; kicked-out rows are reported separately."""
+    out = {"total": 0, "card": 0, "voucher": 0, "unknown": 0, "countries": 0,
+           "inactive": 0}
     for cat, n in conn.execute(
-            "SELECT category, COUNT(*) FROM country_payment_methods GROUP BY category"):
+            "SELECT category, COUNT(*) FROM country_payment_methods"
+            " WHERE active = 1 GROUP BY category"):
         out["total"] += n
         if cat == "card":
             out["card"] = n
@@ -430,8 +449,11 @@ def cpm_counts(conn: sqlite3.Connection) -> dict:
             out["voucher"] = n
         else:
             out["unknown"] += n
+    out["inactive"] = conn.execute(
+        "SELECT COUNT(*) FROM country_payment_methods WHERE active = 0").fetchone()[0]
     out["countries"] = conn.execute(
-        "SELECT COUNT(DISTINCT country) FROM country_payment_methods").fetchone()[0]
+        "SELECT COUNT(DISTINCT country) FROM country_payment_methods"
+        " WHERE active = 1").fetchone()[0]
     return out
 
 

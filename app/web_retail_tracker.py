@@ -21,6 +21,28 @@ from app.retail_tracker_importer import run_tracker_import
 # duplicative; its two unique rows are folded into Return by the importer.
 _AREA_ORDER = [("sales", "Tracking Sales"), ("return", "Tracking Return")]
 
+# Scenario filter groups [USER 2026-07-09] — the Excel's verbose scenario
+# headings roll up into these; matched by substring, FIRST hit wins (till
+# transactions before the "1. Retail Sale" batch that contains them).
+# Override in settings.yaml via tracker_scenario_groups.
+_DEFAULT_SCENARIO_GROUPS: dict[str, list[str]] = {
+    "Till transactions":                ["suspend", "retrieve", "cancellation"],
+    "Different articles (first batch)": ["retail sale"],
+    "Discounts":                        ["discount"],
+    "General payment methods":          ["payment method"],
+    "B2B":                              ["b2b"],
+    "PROMAT/FOC":                       ["promat", "foc"],
+}
+
+
+def _scenario_group(label: str | None) -> str:
+    key = (label or "").lower()
+    groups = _cfg.get("tracker_scenario_groups") or _DEFAULT_SCENARIO_GROUPS
+    for group, substrings in groups.items():
+        if any(s in key for s in substrings):
+            return group
+    return "Other"
+
 bp = Blueprint("retail_tracker", __name__, url_prefix="/retail-tracker")
 
 _cfg = load_config()
@@ -218,6 +240,7 @@ def tracker_board():
         items.sort(key=lambda i: i["excel_row"])
         rows = []
         for i in items:
+            i["scenario_group"] = _scenario_group(i["scenario_label"])
             i["display_test_name"] = (display_names.get(i["test_case_id"])
                                       or i["test_name"] or "")
             targets_keyed = {t.strip().casefold() for t in (i["targets"] or [])}
@@ -236,8 +259,7 @@ def tracker_board():
                               "target": ckey in targets_keyed})
             rows.append({"item": i, "cells": cells})
         areas.append({"area": area, "label": label, "rows": rows,
-                      "scenarios": sorted({i["scenario_label"] for i in items
-                                           if i["scenario_label"]}),
+                      "groups": sorted({i["scenario_group"] for i in items}),
                       "summary": result["by_area"].get(area,
                                  {"total": 0, "done": 0, "open": 0, "unresolved": 0})})
 
@@ -294,6 +316,7 @@ def tracker_payment_methods():
     try:
         result = compute_from_db(conn)
         tab4_tests = db.list_tab4_tests(conn)
+        inactive_items = db.list_cpm(conn, inactive_only=True)
     finally:
         conn.close()
     items = sorted(result["cpm"]["items"],
@@ -303,6 +326,7 @@ def tracker_payment_methods():
         "retail_tracker_payment.html",
         items=items, summary=result["cpm"]["summary"],
         tab4_tests=tab4_tests, fcountries=fcountries,
+        inactive_items=inactive_items,
         as_of=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 
@@ -318,6 +342,23 @@ def tracker_cpm_category(cpm_id: int):
     finally:
         conn.close()
     return redirect(url_for("retail_tracker.tracker_payment_methods"))
+
+
+@bp.route("/payment-methods/<int:cpm_id>/active", methods=["POST"])
+def tracker_cpm_active(cpm_id: int):
+    """Kick a payment method out (reason MANDATORY) or take it back in.
+    Inactive rows leave the counting; they stay visible in the kicked-out
+    section of the payment page."""
+    active = request.form.get("active") == "1"
+    reason = request.form.get("reason", "").strip()
+    if not active and not reason:
+        return jsonify({"ok": False, "error": "a reason is required to kick out"}), 400
+    conn = _get_conn()
+    try:
+        db.set_cpm_active(conn, cpm_id, active, reason or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/payment-methods/<int:cpm_id>/check", methods=["POST"])

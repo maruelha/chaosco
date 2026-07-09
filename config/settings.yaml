@@ -95,6 +95,18 @@ retail_missing_categories:
 # Retail Requirements Tracker — one-time import source (tabs 1-3 + tab 4)
 retail_tracker_excel: 'report_export/TRACKING_Retail ROE UAT Testcases DTC (1).xlsx'
 
+# Board scenario filter groups [USER 2026-07-09]: Excel scenario headings
+# roll up into these; matched by substring, FIRST hit wins (till
+# transactions before the "1. Retail Sale" batch that contains them).
+# Unmatched headings land in "Other".
+tracker_scenario_groups:
+  "Till transactions": ["suspend", "retrieve", "cancellation"]
+  "Different articles (first batch)": ["retail sale"]
+  "Discounts": ["discount"]
+  "General payment methods": ["payment method"]
+  "B2B": ["b2b"]
+  "PROMAT/FOC": ["promat", "foc"]
+
 # ---------------------------------------------------------------------------
 # Jira XML exports (ECOM Gatekeeper v2, day plan 05.07 step 2).
 # Drop Jira XML exports here — the importer always takes the NEWEST .xml in
