@@ -41,6 +41,20 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   match_key (UNIQUE), first_seen, last_seen
 - `retail_annotations` — next_step, comment_history, action_needed
 
+## Shared Jira store (no UI yet — Gatekeeper v2 + ECOM consume it)
+
+- `app/db/jira.py`: `jira_issues` (jira_key PK; solman_id = summary before
+  first "_"; epic/markets from custom fields by NAME; description HTML) +
+  `jira_comments` (HTML bodies, NO authors — export only has JIRAUSER keys).
+- `app/jira_importer.py`: Jira RSS parser (DC 10.3; pre-pass escapes bare
+  `&`), `run_jira_import(cfg, 'gatekeeper'|'ecom')` — takes the NEWEST .xml
+  in `jira_gatekeeper_folder` / `jira_ecom_folder` (settings.yaml),
+  filenames irrelevant.
+- Re-import rule [USER 2026-07-05]: match by jira key; ONLY jira_status,
+  jira_assignee, comments refresh (comments REPLACED wholesale) — all other
+  fields keep their first-import value.
+- Never merged into Excel-sourced tables. Tests: `tests/test_jira_importer.py`.
+
 ## Screens & reports
 
 - Defects list `/defects` (filters, inline DTC O2C + Daily toggles, sortable),

@@ -25,7 +25,8 @@ copies, component roundtrip test.
 **You verify:** order-details popup works unchanged on Spillover and old
 Gatekeeper (add/edit/delete an order, S4 checkbox + badge).
 
-## Step 2 — Shared Jira store  *(foundation; no UI yet)*
+## Step 2 — Shared Jira store  ✅ BUILT 2026-07-09 (trial import with the
+real XML still pending — the two folders are empty; drop one export in each)
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK, solman_id = summary before
   first "_", summary, epic, markets, jira_status, jira_assignee, type,

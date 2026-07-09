@@ -59,10 +59,12 @@ app/
   web_notes.py      generic notes Blueprint (/n/...)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   database.py       facade over app/db/
-  db/               core(schema) defects spillover retail notes planning reference
+  db/               core(schema) defects spillover retail notes planning
+                    reference topics entity_links email jira
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py / importer.py
   retail_tracker_importer.py / retail_tracker_counting.py
+  jira_importer.py  Jira XML → shared jira store (newest .xml per folder)
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export

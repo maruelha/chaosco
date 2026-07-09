@@ -42,6 +42,11 @@ from app.web_entity_links import bp as _entity_links_bp
 _db_entity_links.init_schema(_db_path)
 app.register_blueprint(_entity_links_bp)
 
+# Shared Jira store (day plan 05.07 step 2) — no routes yet, the Gatekeeper
+# v2 card (step 3) and the ECOM vertical (steps 7-8) consume it.
+from app.db import jira as _db_jira
+_db_jira.init_schema(_db_path)
+
 
 if __name__ == "__main__":
     import threading
