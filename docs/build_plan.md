@@ -31,6 +31,12 @@ Last updated: 2026-07-05
 (`jira_gatekeeper_folder` / `jira_ecom_folder`); importer takes the newest
 `.xml` per folder.
 
+4. **First real Jira XML exports** — the one input gating everything
+   Jira-shaped: one export into `Download/jira_ecom/` (ECOM trial run,
+   ECOM vertical task 3) and one into `Download/jira_gatekeeper/`
+   ("assigned to Marina" search — unlocks Gatekeeper v2, day plan steps
+   3–6). In Jira: issue search → Export → XML; any filename.
+
 ---
 
 ## Part 1 — Feature work by module
@@ -101,12 +107,22 @@ Last updated: 2026-07-05
    2026-07-09 (day plan steps 7+8): importer from the ECOM tab (match key =
    jira id), list + detail with read-only Jira card from the shared store,
    annotations, gatekeeper-orders takeover, notes registry entry `ecom`.
-   OPEN: description-change auto-flag on re-import (optional add-on);
-   Jira sections stay empty until the first real XML lands.
 2. ~~ECOM status report~~ ✅ DONE 2026-07-09 [USER: wanted after all]:
    `/ecom/report` — same buckets as Retail (one config), impacted
    ECOM-channel defects, inline diagnostics, HTML download, Save-to-Excel
    (ECOM sheet), 4th email checkbox. No PPT.
+3. **Jira trial run** — the card's only remaining gate. [MARINA] drop one
+   real export into `Download/jira_ecom/`, then: press "↻ Update from
+   Jira", verify the parse read-back together, and tune the Epic/Markets
+   custom-field NAME matching in `app/jira_importer.py` to whatever the
+   instance actually calls those fields.
+4. **Description-change auto-flag** (optional add-on, after task 3): flag
+   an ECOM row when a Jira re-import changes the stored description —
+   signal for the description_change workflow (today only the Excel's Δ
+   column shows).
+5. New workflow statuses will surface as red pills on the report's
+   diagnostics box — extend `config/status_mappings.yaml` as they appear
+   (30-second config edit, no build task).
 
 ### Omni vertical (planned, not started)
 

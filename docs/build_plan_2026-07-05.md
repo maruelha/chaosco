@@ -25,8 +25,17 @@ copies, component roundtrip test.
 **You verify:** order-details popup works unchanged on Spillover and old
 Gatekeeper (add/edit/delete an order, S4 checkbox + badge).
 
-## Step 2 — Shared Jira store  ✅ BUILT 2026-07-09 (trial import with the
-real XML still pending — the two folders are empty; drop one export in each)
+## Step 2 — Shared Jira store  ✅ BUILT 2026-07-09 — trial import PENDING
+
+Remaining Jira tasks (in order, once the real exports exist):
+1. [MARINA] one XML export into `Download/jira_ecom/` + one into
+   `Download/jira_gatekeeper/` (Jira issue search → Export → XML).
+2. Trial import + read-back verify against the real file (this step's
+   verify); tune Epic/Markets custom-field NAME matching in
+   `app/jira_importer.py` to the instance's labels.
+3. ECOM description-change auto-flag (step 8 optional add-on).
+4. Then steps 3–6 (Gatekeeper v2 card → integrations → Excel push →
+   report/email) become buildable.
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK, solman_id = summary before
   first "_", summary, epic, markets, jira_status, jira_assignee, type,
