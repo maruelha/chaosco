@@ -12,6 +12,25 @@ Last updated: 2026-07-05
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
+## Open decisions & tasks waiting on Marina (parked 2026-07-09)
+
+1. **Teams review list placement** — dashboard card (Claude's
+   recommendation) vs Inbox section vs both; the only blocker for that
+   build (`docs/teams_review_concept.md`).
+2. **Day-plan confirmations**: Excel push mode (dated snapshot files with
+   only-new rows — recommended) · step 9: file inbox→To-Do as NEW todo
+   only, or also into existing? · step 10: due date on promises?
+3. **Tracker data tasks** (5–15 min of clicking, list in
+   `docs/marina_notes/MarinaCheckSoon.html`): work the unresolved picks,
+   judge/park the passed tests that match no requirement (Assign / Park /
+   → Clarify buttons on Import & admin), set the unknown payment-method
+   categories.
+
+✅ Jira XML folders RESOLVED 2026-07-09: `Download/jira_gatekeeper/` and
+`Download/jira_ecom/` created; paths in `settings.yaml`
+(`jira_gatekeeper_folder` / `jira_ecom_folder`); importer takes the newest
+`.xml` per folder.
+
 ---
 
 ## Part 1 — Feature work by module

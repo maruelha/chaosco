@@ -158,9 +158,10 @@ promises when built). Low risk, documentation only.
 3. ✅ Newest tracking Excel: `DTC_UAT_testtracking_ROE(24).xlsx`, copied to
    the project `Download/` folder; ECOM tab confirmed present.
 4. ~~Filenames/stems of the Jira XML exports~~ — replaced by the
-   folder-based rule (step 2): two folders defined with Marina, importer
-   takes the newest .xml per folder. XML format sample already on hand.
-   OPEN: agree the two folder paths.
+   folder-based rule (step 2): importer takes the newest .xml per folder.
+   XML format sample already on hand. ✅ Folders created 2026-07-09:
+   `Download/jira_gatekeeper/` + `Download/jira_ecom/`, paths in
+   `settings.yaml` (`jira_gatekeeper_folder` / `jira_ecom_folder`).
 
 ## Open decisions
 
