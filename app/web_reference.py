@@ -21,9 +21,11 @@ def ecom_gatekeeper_list():
     conn = _get_conn()
     try:
         rows = database.list_ecom_gatekeeper_rows(conn)
+        docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
     finally:
         conn.close()
-    return render_template("ecom_gatekeeper.html", rows=rows)
+    return render_template("ecom_gatekeeper.html", rows=rows,
+                           docs_s4_ids=docs_s4_ids)
 
 
 @app.route("/ecom-gatekeeper/add", methods=["POST"])

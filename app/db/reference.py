@@ -700,12 +700,18 @@ def update_order_detail(
     conn.commit()
 
 
-def get_docs_s4_spillover_ids(conn: sqlite3.Connection) -> set:
+def get_docs_s4_entity_ids(conn: sqlite3.Connection, entity_type: str) -> set:
+    """Entity ids (of one type) that have at least one order row with docs-in-S4
+    — drives the green ✓ on the Order-details button at page load."""
     cur = conn.execute(
         "SELECT DISTINCT entity_id FROM order_details"
-        " WHERE entity_type = 'spillover' AND docs_in_s4 = 1"
+        " WHERE entity_type = ? AND docs_in_s4 = 1", (entity_type,)
     )
     return {int(row[0]) for row in cur.fetchall()}
+
+
+def get_docs_s4_spillover_ids(conn: sqlite3.Connection) -> set:
+    return get_docs_s4_entity_ids(conn, "spillover")
 
 
 def delete_order_detail(conn: sqlite3.Connection, detail_id: int) -> None:

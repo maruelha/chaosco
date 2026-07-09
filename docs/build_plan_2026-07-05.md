@@ -12,7 +12,7 @@ step, one commit per step — all tests green before it.
 
 ---
 
-## Step 1 — Order-details drop-in component  *(prerequisite for step 4)*
+## Step 1 — Order-details drop-in component  ✅ DONE 2026-07-09
 
 Extract the Order-details popup (dialog + JS, currently duplicated WITH
 DRIFT in `spillover.html` and `ecom_gatekeeper.html`) into `_order_details.html`,

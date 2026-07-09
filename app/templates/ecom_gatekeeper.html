@@ -47,7 +47,7 @@
     <td class="gk-btns">
       <a href="{{ url_for('ecom_gatekeeper_detail', row_id=row.id) }}" class="btn btn-sm">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
       <button type="button" class="btn btn-sm js-open-orders"
-              data-entity-type="ecom_gatekeeper" data-entity-id="{{ row.id }}">Orders</button>
+              data-entity-type="ecom_gatekeeper" data-entity-id="{{ row.id }}">Orders{% if row.id in docs_s4_ids %}<span class="s4-tick"> ✓</span>{% endif %}</button>
       <button type="button" class="btn btn-sm btn-danger js-gk-delete" title="Delete row">✕</button>
     </td>
   </tr>
@@ -57,38 +57,11 @@
   </tbody>
 </table>
 
-{# ---- Order details popup (same as spillover) ---- #}
-<dialog id="dlg-orders">
-  <div class="dlg-header">
-    <div class="dlg-title">Order Details</div>
-    <div class="dlg-subtitle" id="orders-row-name"></div>
-  </div>
-  <div class="dlg-body">
-    <table class="orders-table" style="width:100%;border-collapse:collapse">
-      <thead>
-        <tr>
-          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:20%">Type</th>
-          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc;width:28%">Order number</th>
-          <th style="text-align:left;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc">Comment</th>
-          <th style="width:4.5rem;text-align:center;padding:0.3rem 0.5rem;border-bottom:1px solid #ccc">S4 docs</th>
-          <th style="width:2rem"></th>
-        </tr>
-      </thead>
-      <tbody id="orders-tbody"></tbody>
-    </table>
-    <button type="button" class="btn btn-sm" id="btn-add-order" style="margin-top:0.8rem">+ Add row</button>
-  </div>
-  <div class="dlg-footer">
-    <button type="button" class="btn" onclick="document.getElementById('dlg-orders').close()">Close</button>
-  </div>
-</dialog>
+{# ---- Order details popup (shared component) ---- #}
+{% include '_order_details.html' %}
 
 <script>
 (function () {
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;');
-  }
-
   // ---- Row save ----
   function saveRow(tr) {
     const id = tr.dataset.id;
@@ -120,8 +93,8 @@
         }
       }
     });
-    const ordBtn = tr.querySelector('.js-open-orders');
-    if (ordBtn) ordBtn.addEventListener('click', () => openOrdersDialog(ordBtn, tr));
+    // .js-open-orders is handled by the shared _order_details.html component
+    // (delegated listener — JS-added rows included)
   }
 
   // Attach handlers to all server-rendered rows
@@ -171,101 +144,7 @@
     tr.querySelector('.gk-input').focus();
   });
 
-  // ---- Order details dialog ----
-  const ordersDlg   = document.getElementById('dlg-orders');
-  const ordersTbody = document.getElementById('orders-tbody');
-  let odEntityType = null;
-  let odEntityId   = null;
-  let odListBtn    = null;
-
-  function updateS4Badge() {
-    if (!odListBtn) return;
-    const hasS4 = [...ordersTbody.querySelectorAll('[data-field="docs_in_s4"]')].some(cb => cb.checked);
-    let badge = odListBtn.querySelector('.s4-tick');
-    if (hasS4 && !badge) {
-      badge = document.createElement('span');
-      badge.className = 's4-tick';
-      badge.textContent = ' ✓';
-      odListBtn.appendChild(badge);
-    } else if (!hasS4 && badge) {
-      badge.remove();
-    }
-  }
-
-  function saveOrderRow(tr) {
-    const id           = tr.dataset.detailId;
-    const order_type   = tr.querySelector('[data-field="order_type"]').value;
-    const order_number = tr.querySelector('[data-field="order_number"]').value;
-    const comment      = tr.querySelector('[data-field="comment"]').value;
-    const docs_in_s4   = tr.querySelector('[data-field="docs_in_s4"]').checked ? '1' : '0';
-    const fd = new FormData();
-    fd.append('order_type',   order_type);
-    fd.append('order_number', order_number);
-    fd.append('comment',      comment);
-    fd.append('docs_in_s4',   docs_in_s4);
-    fetch(`/order-details/${id}/update`, { method: 'POST', body: fd });
-    updateS4Badge();
-  }
-
-  function buildOrderRow(detail) {
-    const tr = document.createElement('tr');
-    tr.dataset.detailId = detail.id;
-    tr.style.cssText = 'border-bottom:1px solid #eee';
-    tr.innerHTML =
-      `<td style="padding:0.25rem 0.4rem">` +
-        `<input type="text" class="ord-text" data-field="order_type" value="${escHtml(detail.order_type||'')}" placeholder="Type"` +
-        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
-      `</td>` +
-      `<td style="padding:0.25rem 0.4rem">` +
-        `<input type="text" class="ord-text" data-field="order_number" value="${escHtml(detail.order_number||'')}" placeholder="Order number"` +
-        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
-      `</td>` +
-      `<td style="padding:0.25rem 0.4rem">` +
-        `<input type="text" class="ord-text" data-field="comment" value="${escHtml(detail.comment||'')}" placeholder="Comment"` +
-        ` style="width:100%;box-sizing:border-box;padding:0.25rem;border:1px solid #ccc;border-radius:3px">` +
-      `</td>` +
-      `<td style="padding:0.25rem 0.4rem;text-align:center">` +
-        `<input type="checkbox" data-field="docs_in_s4" title="Docs in S4"` +
-        ` ${detail.docs_in_s4 ? 'checked' : ''} style="width:1.1rem;height:1.1rem;cursor:pointer;accent-color:#16a34a">` +
-      `</td>` +
-      `<td style="padding:0.25rem 0.2rem;text-align:center">` +
-        `<button type="button" class="btn btn-sm js-del-order" title="Delete row">✕</button>` +
-      `</td>`;
-    tr.querySelectorAll('.ord-text').forEach(inp => inp.addEventListener('blur', () => saveOrderRow(tr)));
-    tr.querySelector('[data-field="docs_in_s4"]').addEventListener('change', () => saveOrderRow(tr));
-    tr.querySelector('.js-del-order').addEventListener('click', async () => {
-      const resp = await fetch(`/order-details/${tr.dataset.detailId}/delete`, { method: 'POST' });
-      const d = await resp.json();
-      if (d.ok) { tr.remove(); updateS4Badge(); }
-    });
-    return tr;
-  }
-
-  function openOrdersDialog(btn, listTr) {
-    odEntityType = btn.dataset.entityType;
-    odEntityId   = btn.dataset.entityId;
-    odListBtn    = btn;
-    const name = listTr.querySelector('[data-field="testcase_name"]').value || `Row #${odEntityId}`;
-    document.getElementById('orders-row-name').textContent = name;
-    ordersTbody.innerHTML = '';
-    fetch(`/order-details/${odEntityType}/${odEntityId}`)
-      .then(r => r.json())
-      .then(rows => {
-        rows.forEach(r => ordersTbody.appendChild(buildOrderRow(r)));
-        ordersDlg.showModal();
-      });
-  }
-
-  document.getElementById('btn-add-order').addEventListener('click', async () => {
-    const resp = await fetch(`/order-details/${odEntityType}/${odEntityId}/add`, { method: 'POST' });
-    const d = await resp.json();
-    if (!d.ok) return;
-    const newRow = buildOrderRow({ id: d.id, order_type: '', order_number: '', comment: '', docs_in_s4: 0 });
-    ordersTbody.appendChild(newRow);
-    newRow.querySelector('.ord-text').focus();
-  });
-
-  ordersDlg.addEventListener('click', e => { if (e.target === ordersDlg) ordersDlg.close(); });
+  // Order-details dialog lives in _order_details.html (shared component).
 }());
 </script>
 {% endblock %}

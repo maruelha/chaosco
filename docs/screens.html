@@ -533,7 +533,7 @@
         <span class="feat-value">
           Opens a popup table for this item's order-number lines. Columns: <strong>Type</strong> · <strong>Order Number</strong> · <strong>Comment</strong> · <strong>S4 docs</strong> (checkbox — green when ticked). Each text field saves on blur; checkbox saves immediately on change. Both call <code>POST /order-details/&lt;detail_id&gt;/update</code>.<br>
           When any order line has <strong>S4 docs</strong> checked, the button shows a green <strong>✓</strong> badge in the list so the status is visible without opening the popup. Badge updates live as the checkbox is toggled.<br>
-          Uses the generic <code>order_details</code> table (entity_type=<code>'spillover'</code>).
+          Uses the generic <code>order_details</code> table (entity_type=<code>'spillover'</code>). Since 2026-07-09 the popup is the shared <code>_order_details.html</code> component (dialog + delegated JS, one include per page) — the former inline copy was deleted.
         </span>
         <span class="feat-label">Comments button</span>
         <span class="feat-value">Opens the Comment History popup: shows imported <code>comment</code> read-only, plus editable comment history textarea. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
@@ -682,7 +682,7 @@
         <span class="feat-label">Notes button</span>
         <span class="feat-value">Links to <code>/ecom-gatekeeper/&lt;id&gt;</code> (detail/notes page). Shows note count badge when notes exist.</span>
         <span class="feat-label">Orders button</span>
-        <span class="feat-value">Opens the generic Order details popup (same as Spillover). Columns: Type · Order number · Comment · S4 docs (checkbox). Uses <code>order_details</code> table with <code>entity_type='ecom_gatekeeper'</code>. Green ✓ badge appears on the button when any linked order has <code>docs_in_s4=1</code>. Future: orders can be re-pointed to an ECOM test case by updating <code>entity_type</code> + <code>entity_id</code> — no data is copied or lost.</span>
+        <span class="feat-value">Opens the shared <code>_order_details.html</code> component (identical to Spillover since 2026-07-09 — the former inline copy was deleted). Columns: Type · Order number · Comment · S4 docs (checkbox). Uses <code>order_details</code> table with <code>entity_type='ecom_gatekeeper'</code>. Green ✓ badge appears on the button when any linked order has <code>docs_in_s4=1</code> — now also on initial page load (<code>get_docs_s4_entity_ids</code>), not just after toggling. Future: orders can be re-pointed to an ECOM test case by updating <code>entity_type</code> + <code>entity_id</code> — no data is copied or lost.</span>
         <span class="feat-label">Delete (✕)</span>
         <span class="feat-value">Confirm dialog → <code>POST /ecom-gatekeeper/&lt;id&gt;/delete</code> → removes the row, all linked notes, and all linked order_details in one transaction. Row removed from DOM without page reload.</span>
         <span class="feat-label">Table source</span>

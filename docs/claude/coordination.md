@@ -135,3 +135,22 @@ order_details. Drop-in include (AJAX, zero route/context changes):
 Routes: /elinks/<etype>/<eid>/list.json|add, /elinks/<id>/delete (http(s)
 URLs only; label defaults from the URL). Storage app/db/entity_links.py,
 routes app/web_entity_links.py. Currently on: Topic detail.
+
+## Order details (component)
+
+`{% include '_order_details.html' %}` once per page + open buttons
+anywhere:
+
+    <button class="btn btn-sm js-open-orders"
+            data-entity-type="<type>" data-entity-id="<id>">Order details</button>
+
+Popup rows: order type · number · comment · docs-in-S4 checkbox; a green ✓
+(`s4-tick`) is kept on the opening button while any row has S4 docs. Click
+handling is DELEGATED on document — JS-added buttons work without wiring.
+Dialog-header name: button `data-od-name` → row `data-name` → row
+`[data-field="testcase_name"]` input. Backend was already generic:
+`order_details` table (db/reference.py, `get_docs_s4_entity_ids(type)` for
+the initial badge) + `/order-details/...` routes (web_spillover.py).
+Currently on: Spillover list, ECOM Gatekeeper (extracted from their inline
+copies 2026-07-09, day plan step 1). Tests:
+tests/test_order_details_component.py.
