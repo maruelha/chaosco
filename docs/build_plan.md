@@ -51,10 +51,14 @@ Last updated: 2026-07-05
 3. ~~Retire the tracking Excel~~ ✅ DONE [USER 2026-07-05]: the board is the
    single source of truth as of now; the import button remains as a
    re-import tool only.
-4. Cosmetic backlog: the Excel names the same test twice (Blind Return /
-   OFFLINE Return → GKP2002; Blind Return giftcard / Blind return → GKP1015)
-   → two near-duplicate Return rows. Fix the names in the Excel and re-import,
-   or add an ignore mechanism.
+4. Cosmetic backlog: the Excel names the same test twice → near-duplicate
+   Return rows. HALF FIXED 2026-07-09 [USER]: the GKP2002/GKPMU000062 dup
+   ("Blind Return" under 8. Payment Methods) was deleted from the DB —
+   "OFFLINE Return" remains. Still open: the GKP1015/GKPMU000048 pair
+   ("Blind Return giftcard" row 82 vs "Blind return" folded row) — same
+   treatment if Marina wants. CAVEAT: a tracker re-import would resurrect
+   deleted rows (upsert by area+excel_row; Excel is retired, so low risk —
+   the ignore mechanism stays backlog).
 5. ~~Reverse manual pick on the coverage check~~ ✅ DONE 2026-07-06: each
    unmatched passed test gets a dropdown of unresolved requirements
    (`/retail-tracker/coverage/assign`); guards against overwriting a
