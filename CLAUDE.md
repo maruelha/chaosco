@@ -2,7 +2,7 @@
 
 Marina's personal UAT coordination toolkit for a retail SAP S/4 migration.
 Reads a shared Excel workbook (`DTC_UAT_testtracking_ROE.xlsx`), serves a local
-Flask UI at `http://127.0.0.1:5000`. Four workstreams: Retail, Core South,
+Flask UI at `http://127.0.0.1:8010`. Four workstreams: Retail, Core South,
 ECOM, Omni. **Start:** `run_web.bat` (or `python -m app.web`).
 
 ## Deep-dive docs (read the one relevant to the task)

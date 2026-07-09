@@ -9,11 +9,11 @@ if errorlevel 1 (
     exit /b 1
 )
 echo.
-echo Checking for existing process on port 5000...
-PowerShell -Command "Get-Process -Id (Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
+echo Checking for existing process on port 8010...
+PowerShell -Command "Get-Process -Id (Get-NetTCPConnection -LocalPort 8010 -State Listen -ErrorAction SilentlyContinue).OwningProcess -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue"
 echo.
 echo Starting Test Coordination web server...
-echo The browser will open automatically at http://127.0.0.1:5000
+echo The browser will open automatically at http://127.0.0.1:8010
 echo Press Ctrl+C to stop the server.
 echo.
 python -m app.web

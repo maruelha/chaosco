@@ -11,8 +11,8 @@ back to the Excel.
 
 ## Quick start
 
-Double-click **`run_web.bat`** — it installs dependencies, frees port 5000,
-and opens `http://127.0.0.1:5000`.
+Double-click **`run_web.bat`** — it installs dependencies, frees port 8010,
+and opens `http://127.0.0.1:8010`.
 
 Manually:
 

@@ -184,7 +184,7 @@
 <div class="section">
   <h2>Purpose in one paragraph</h2>
   <div class="card">
-    <p>chaosco is Marina's personal UAT coordination toolkit for an SAP S/4 retail migration go-live. The team tracks defects in SolMan, test-case execution in a shared Excel workbook, and sign-off decisions in various lists. chaosco reads that shared Excel file (read-only), imports it into a local SQLite database, and serves a private Flask browser UI at <code>http://127.0.0.1:5000</code>. The UI adds annotation layers (next steps, comments, flags, notes) on top of the imported data without ever writing back to Excel. It also stores personal coordination data (to-dos, follow-ups, meeting prep, encouragements) that lives entirely in the local database.</p>
+    <p>chaosco is Marina's personal UAT coordination toolkit for an SAP S/4 retail migration go-live. The team tracks defects in SolMan, test-case execution in a shared Excel workbook, and sign-off decisions in various lists. chaosco reads that shared Excel file (read-only), imports it into a local SQLite database, and serves a private Flask browser UI at <code>http://127.0.0.1:8010</code>. The UI adds annotation layers (next steps, comments, flags, notes) on top of the imported data without ever writing back to Excel. It also stores personal coordination data (to-dos, follow-ups, meeting prep, encouragements) that lives entirely in the local database.</p>
   </div>
 </div>
 
@@ -562,9 +562,9 @@
   <h2>How to start the app</h2>
   <div class="card">
     <ul>
-      <li><strong>Windows (normal use):</strong> double-click <code>run_web.bat</code> — kills any existing process on port 5000, then starts Flask</li>
+      <li><strong>Windows (normal use):</strong> double-click <code>run_web.bat</code> — kills any existing process on port 8010, then starts Flask</li>
       <li><strong>Command line:</strong> <code>python -m app.web</code> from the project root</li>
-      <li><strong>URL:</strong> <code>http://127.0.0.1:5000</code></li>
+      <li><strong>URL:</strong> <code>http://127.0.0.1:8010</code></li>
       <li><strong>Database:</strong> auto-created at <code>data/test_coordination.db</code> on first start via <code>database.init_db()</code></li>
     </ul>
   </div>
@@ -602,7 +602,7 @@
         <tr><td>docs/screens.html</td><td>Screen-by-screen UI reference</td></tr>
         <tr><td>docs/tech_backlog.md</td><td>Known deferrals, refactor plans, future work</td></tr>
         <tr><td>docs/ppt_template_prompts.txt</td><td>Prompts for designing the branded PowerPoint report template in Claude chat</td></tr>
-        <tr><td>run_web.bat</td><td>Windows launcher — one-time dep cleanup, kills port 5000, starts Flask</td></tr>
+        <tr><td>run_web.bat</td><td>Windows launcher — one-time dep cleanup, kills port 8010, starts Flask</td></tr>
       </tbody>
     </table>
   </div>

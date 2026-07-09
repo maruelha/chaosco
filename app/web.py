@@ -58,5 +58,5 @@ if __name__ == "__main__":
     import threading
     import webbrowser
 
-    threading.Timer(1.2, lambda: webbrowser.open("http://127.0.0.1:5000")).start()
-    app.run(debug=False, host="127.0.0.1", port=5000)
+    threading.Timer(1.2, lambda: webbrowser.open("http://127.0.0.1:8010")).start()
+    app.run(debug=False, host="127.0.0.1", port=8010)
