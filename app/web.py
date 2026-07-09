@@ -47,9 +47,11 @@ app.register_blueprint(_entity_links_bp)
 from app.db import jira as _db_jira
 _db_jira.init_schema(_db_path)
 
-# ECOM vertical (day plan 05.07 step 7) — importer + tables; pages = step 8.
+# ECOM vertical (day plan 05.07 steps 7+8) — importer + tables + pages.
 from app.db import ecom as _db_ecom
+from app.web_ecom import bp as _ecom_bp
 _db_ecom.init_schema(_db_path)
+app.register_blueprint(_ecom_bp)
 
 
 if __name__ == "__main__":

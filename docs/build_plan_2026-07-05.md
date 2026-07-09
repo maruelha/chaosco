@@ -110,7 +110,8 @@ steps 3-6 wait for the Jira XML; verified: 20/20 tab rows imported, 0 skipped)
 - Characterization tests like the other importers.
 **You verify:** import result counts match the tab.
 
-## Step 8 — ECOM pages
+## Step 8 — ECOM pages  ✅ DONE 2026-07-09 (Jira sections show a "no data
+yet" hint until the real XML lands; description-change auto-flag = still open)
 
 - List + detail like Retail, plus: jira details + READ-ONLY comment thread
   from the shared store (joined by jira id), open-in-Jira link.

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}ECOM — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>ECOM Test Cases</h1>
+    <div class="page-header-actions">
+      <form method="post" action="{{ url_for('ecom.ecom_import_jira') }}">
+        <button type="submit" class="btn"
+                title="import the newest .xml from the ECOM Jira folder — refreshes status, assignee and comments">
+          &#8635; Update from Jira</button>
+      </form>
+    </div>
+  </div>
+  <p class="page-subtitle">Imported from the ECOM tab (match key = JIRA ID).
+    Jira details and comments come read-only from the shared Jira store.</p>
+</div>
+
+{% if jira_msg %}
+<div class="result-box{% if jira_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Jira import</span>
+    <span class="result-value">{{ jira_msg }}</span>
+  </div>
+</div>
+{% endif %}
+
+{# ---- Filters ---- #}
+<form method="get" action="{{ url_for('ecom.ecom_list') }}"
+      style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem">
+  <select name="status">
+    <option value="">All statuses</option>
+    {% for s in distincts.statuses %}
+    <option value="{{ s }}" {% if s in sel_statuses %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="country">
+    <option value="">All countries</option>
+    {% for c in distincts.countries %}
+    <option value="{{ c }}" {% if c in sel_countries %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="scenario">
+    <option value="">All scenarios</option>
+    {% for s in distincts.scenarios %}
+    <option value="{{ s }}" {% if s in sel_scenarios %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Search jira id / test case / name…"
+         style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
+  <button type="submit" class="btn btn-sm">Filter</button>
+  <a href="{{ url_for('ecom.ecom_list') }}" class="btn btn-sm">Clear</a>
+  <span style="color:#888; font-size:0.82rem">{{ rows|length }} rows</span>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Jira ID</th>
+      <th>Test case</th>
+      <th>Name</th>
+      <th>Scenario</th>
+      <th>Country</th>
+      <th>Status</th>
+      <th>Assigned to</th>
+      <th title="row exists in the shared Jira store">Jira</th>
+      <th title="description changed marker from the Excel">Δ Desc</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td class="mono" style="font-size:0.78rem">{{ r.jira_id }}</td>
+      <td class="mono" style="font-size:0.78rem">{{ r.test_case_id or "—" }}</td>
+      <td><a href="{{ url_for('ecom.ecom_detail', ecom_id=r.ecom_id) }}">{{ r.testcase_name or "—" }}</a></td>
+      <td style="font-size:0.8rem">{{ r.testcase_scenario or "" }}</td>
+      <td>{{ r.country or "" }}</td>
+      <td>{{ r.status or "" }}</td>
+      <td>{{ r.assigned_to or "" }}</td>
+      <td>{% if r.jira_id in jira_keys %}<span class="pill pill--green" title="Jira details + comments available">&#10003;</span>
+          {% else %}<span style="color:#c5c5cc" title="not in the Jira store yet">·</span>{% endif %}</td>
+      <td>{% if r.description_change %}<span class="pill pill--gray" title="{{ r.description_change }}">Δ</span>{% endif %}</td>
+      <td style="white-space:nowrap">
+        <a href="{{ url_for('ecom.ecom_detail', ecom_id=r.ecom_id) }}" class="btn btn-sm">Detail{% if r.note_count %} ({{ r.note_count }}){% endif %}</a>
+        <button type="button" class="btn btn-sm js-open-orders"
+                data-entity-type="ecom" data-entity-id="{{ r.ecom_id }}"
+                data-od-name="{{ r.test_case_id }} / {{ r.country }}">Orders</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="10" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% include '_order_details.html' %}
+
+<div class="btn-row" style="margin-top:1.2rem">
+  <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>
+</div>
+{% endblock %}

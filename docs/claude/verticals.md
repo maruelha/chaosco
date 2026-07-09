@@ -41,7 +41,16 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   match_key (UNIQUE), first_seen, last_seen
 - `retail_annotations` — next_step, comment_history, action_needed
 
-## ECOM vertical (importer built 2026-07-09; pages = day plan step 8)
+## ECOM vertical (importer + pages built 2026-07-09, day plan steps 7+8)
+
+- Blueprint `app/web_ecom.py` (`/ecom`): list (filters status/country/
+  scenario + search, Jira-✓ chip, Δ-Desc pill, Orders via the shared
+  order-details component) + detail (Excel fields read-only · Jira card
+  read-only from the shared store or "no data yet" hint · annotations ·
+  Orders incl. "Take over orders from Gatekeeper" =
+  `relink_gatekeeper_orders` by same jira id · notes via registry entry
+  `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
+  Dashboard card. Tests: `tests/test_ecom_pages.py`.
 
 - `app/ecom_importer.py` (`parse_ecom`) + `app/db/ecom.py`: tables `ecom` +
   `ecom_annotations`. **Match key = JIRA ID** [USER 2026-07-05] — rows

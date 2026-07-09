@@ -62,6 +62,11 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_spillover_by_id(c, int(i)),
         lambda r: r.get("name") or f"Spillover #{r['spillover_id']}", int,
     ),
+    "ecom": NoteEntity(
+        "ECOM", "ecom.ecom_list", "ecom.ecom_detail", "ecom_id",
+        lambda c, i: database.get_ecom_by_id(c, int(i)),
+        lambda r: f"{r['test_case_id']} — {r['country']}", int,
+    ),
     "followup": NoteEntity(
         "Follow-ups", "followup_list", "followup_detail", "followup_id",
         lambda c, i: database.get_followup_by_id(c, int(i)),

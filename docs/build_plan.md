@@ -95,12 +95,14 @@ Last updated: 2026-07-05
    muted "(+N passed)". MB vs Sales = manual DTC O2C flag, unset = Sales;
    diagnostics shows an amber note listing undecided defects.
 
-### ECOM vertical (planned, not started)
+### ECOM vertical
 
-1. New importer + `ecom` + `ecom_annotations` tables + UI, following the
-   Retail vertical as template (per CLAUDE.md). Excel tab name TBD.
-   **Precondition: refactoring step 3 (notes consolidation) first** — otherwise
-   the note routes get copy-pasted an 11th time.
+1. ~~New importer + `ecom` + `ecom_annotations` tables + UI~~ ✅ DONE
+   2026-07-09 (day plan steps 7+8): importer from the ECOM tab (match key =
+   jira id), list + detail with read-only Jira card from the shared store,
+   annotations, gatekeeper-orders takeover, notes registry entry `ecom`.
+   OPEN: description-change auto-flag on re-import (optional add-on);
+   Jira sections stay empty until the first real XML lands.
 
 ### Omni vertical (planned, not started)
 

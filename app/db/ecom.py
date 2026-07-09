@@ -135,16 +135,44 @@ def upsert_ecom_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> 
     }
 
 
-def get_ecom_rows(conn: sqlite3.Connection) -> list[dict]:
-    """All ECOM rows LEFT JOINed with annotations (list UI comes in step 8)."""
-    return _rows_to_dicts(conn.execute("""
+def get_ecom_rows(conn: sqlite3.Connection,
+                  statuses: list[str] | None = None,
+                  countries: list[str] | None = None,
+                  scenarios: list[str] | None = None,
+                  q: str | None = None) -> list[dict]:
+    """ECOM rows LEFT JOINed with annotations + note count. All filters
+    optional and ANDed; q searches jira id / test case id / name."""
+    sql = """
         SELECT e.*, a.next_step, a.comment_history,
                COALESCE(a.action_needed, 0) AS action_needed,
-               a.updated_at AS annotation_updated_at
+               a.updated_at AS annotation_updated_at,
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'ecom'
+                  AND n.entity_id = CAST(e.ecom_id AS TEXT)) AS note_count
         FROM ecom e
         LEFT JOIN ecom_annotations a ON a.jira_id = e.jira_id
-        ORDER BY e.excel_row
-    """))
+        WHERE 1=1
+    """
+    params: list = []
+    for col, values in (("e.status", statuses), ("e.country", countries),
+                        ("e.testcase_scenario", scenarios)):
+        if values:
+            sql += f" AND {col} IN ({','.join('?' for _ in values)})"
+            params.extend(values)
+    if q:
+        sql += (" AND (e.jira_id LIKE ? OR e.test_case_id LIKE ?"
+                " OR e.testcase_name LIKE ?)")
+        params.extend([f"%{q}%"] * 3)
+    sql += " ORDER BY e.excel_row"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def get_ecom_distincts(conn: sqlite3.Connection) -> dict:
+    """Filter options for the list page."""
+    def _vals(col):
+        return [r[0] for r in conn.execute(
+            f"SELECT DISTINCT {col} FROM ecom WHERE {col} IS NOT NULL ORDER BY {col}")]
+    return {"statuses": _vals("status"), "countries": _vals("country"),
+            "scenarios": _vals("testcase_scenario")}
 
 
 def get_ecom_by_id(conn: sqlite3.Connection, ecom_id: int) -> dict | None:
@@ -157,6 +185,23 @@ def get_ecom_by_id(conn: sqlite3.Connection, ecom_id: int) -> dict | None:
         WHERE e.ecom_id = ?
     """, (ecom_id,)))
     return rows[0] if rows else None
+
+
+def relink_gatekeeper_orders(conn: sqlite3.Connection, jira_id: str,
+                             ecom_id: int) -> int:
+    """Gatekeeper → ECOM handover (day plan step 8): re-point order_details
+    rows of old-gatekeeper rows with the SAME jira id at this ECOM row.
+    Nothing is copied — the rows just change address. The shared jira store
+    needs no relink at all (both sides read it by jira_key). Returns # moved."""
+    with conn:
+        cur = conn.execute("""
+            UPDATE order_details
+            SET entity_type = 'ecom', entity_id = ?
+            WHERE entity_type = 'ecom_gatekeeper'
+              AND entity_id IN (SELECT CAST(id AS TEXT) FROM ecom_gatekeeper
+                                WHERE TRIM(jira_id) = TRIM(?))
+        """, (str(ecom_id), jira_id))
+    return cur.rowcount
 
 
 def upsert_ecom_annotation(conn: sqlite3.Connection, jira_id: str,

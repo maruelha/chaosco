@@ -698,6 +698,50 @@
     </div>
   </div>
 
+  <!-- ECOM List -->
+  <div class="screen-card" id="ecom-list">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM — List</span>
+      <span class="screen-url">GET /ecom/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">ECOM test cases imported from the tracking Excel's ECOM tab (match key = <strong>JIRA ID</strong>). Blueprint <code>app/web_ecom.py</code>, storage <code>app/db/ecom.py</code>. Built 2026-07-09 (day plan steps 7+8). Jira context is read-only from the shared jira store.</p>
+      <div class="features">
+        <span class="feat-label">Columns</span>
+        <span class="feat-value">Jira ID · Test case · Name (→ detail) · Scenario · Country · Status · Assigned to · <strong>Jira ✓</strong> chip (row exists in the jira store) · <strong>Δ Desc</strong> pill (description-change text from the Excel, tooltip) · Detail (with note count) + Orders buttons</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">Status · Country · Scenario selects + free-text search (jira id / test case id / name), GET params, Clear link, row count</span>
+        <span class="feat-label">↻ Update from Jira</span>
+        <span class="feat-value"><code>POST /ecom/import-jira</code> — runs the ECOM-folder XML import (newest .xml in <code>jira_ecom_folder</code>); result or error shown in a banner. Refreshes jira_status/jira_assignee/comments only (re-import rule).</span>
+        <span class="feat-label">Orders button</span>
+        <span class="feat-value">Shared <code>_order_details.html</code> component with <code>entity_type='ecom'</code>.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>ecom</code> LEFT JOIN <code>ecom_annotations</code> (by jira_id) + note-count subquery + <code>jira_issues</code> keys for the chip</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECOM Detail -->
+  <div class="screen-card" id="ecom-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">ECOM — Detail</span>
+      <span class="screen-url">GET/POST /ecom/&lt;id&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Five sections, Excel and Jira strictly separated: read-only imported Excel fields; read-only <strong>Jira</strong> card (status, assignee, type, priority, epic, markets, open-in-Jira link, description HTML, full comment thread — or a "no Jira data yet" hint until the XML import runs); editable annotations; Orders; notes.</p>
+      <div class="features">
+        <span class="feat-label">Annotations</span>
+        <span class="feat-value">Next step · Comment history · Action needed — <code>ecom_annotations</code> keyed by <strong>jira_id</strong>, survives re-imports; importer never touches it.</span>
+        <span class="feat-label">Jira card</span>
+        <span class="feat-value">Joined live by jira id from <code>jira_issues</code>/<code>jira_comments</code>; comments are read-only HTML without authors (the export only carries JIRAUSER keys).</span>
+        <span class="feat-label">⇗ Take over orders from Gatekeeper</span>
+        <span class="feat-value"><code>POST /ecom/&lt;id&gt;/pull-orders</code> — the gatekeeper→ECOM handover: re-points <code>order_details</code> rows of old-gatekeeper rows with the SAME jira id at this test case (<code>relink_gatekeeper_orders</code>; nothing is copied, the jira store needs no relink at all). Banner shows the moved count.</span>
+        <span class="feat-label">Notes</span>
+        <span class="feat-value">Full notes module via registry entry <code>ecom</code> (generic <code>/n/ecom/&lt;id&gt;/…</code> routes); ECOM rows are note-able and appear in note breadcrumbs.</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ECOM Gatekeeper Detail -->
   <div class="screen-card" id="ecom-gk-detail">
     <div class="screen-card-header">

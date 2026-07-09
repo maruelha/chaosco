@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}{{ row.test_case_id }} / {{ row.country }} — ECOM — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('ecom.ecom_list') }}">ECOM</a>
+  <span>›</span>
+  <span>{{ row.test_case_id }} / {{ row.country }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ row.test_case_id }} / {{ row.country }}</h1>
+  {% if row.testcase_name %}<p class="page-subtitle">{{ row.testcase_name }}</p>{% endif %}
+</div>
+
+{# ---- Section 1: Imported fields (Excel) ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Imported fields (Excel)</h2>
+    <span class="readonly-badge">&#128274; From import — read only</span>
+  </div>
+  <dl class="field-list">
+    {% set imported = [
+      ("Jira ID",                row.jira_id),
+      ("Scenario",               row.testcase_scenario),
+      ("Status (Excel)",         row.status),
+      ("Assigned to (Excel)",    row.assigned_to),
+      ("Description Change",     row.description_change),
+      ("Execution Started",      row.execution_started),
+      ("Order Number",           row.order_number),
+      ("Old Order Numbers",      row.old_order_numbers),
+      ("Defect ID",              row.defect_id_ref),
+      ("S4 Sales Order",         row.s4_sales_order),
+      ("S4 Billing Documents",   row.s4_billing_documents),
+      ("S4 Journal/Invoice",     row.s4_journal_invoice_entry),
+      ("Delivery Note",          row.delivery_note),
+      ("Reason for Pass w/ Res.", row.reason_for_pass_with_reservation),
+      ("Imported Comment",       row.comment),
+      ("Excel Row",              row.excel_row),
+      ("First Seen",             row.first_seen),
+      ("Last Seen",              row.last_seen),
+    ] %}
+    {% for label, value in imported %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
+</div>
+
+{# ---- Section 2: Jira (read-only, shared store) ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Jira</h2>
+    <span class="readonly-badge">&#128274; From the Jira store — read only</span>
+  </div>
+  {% if jira %}
+  <dl class="field-list">
+    {% set jira_fields = [
+      ("Jira status",   jira.jira_status),
+      ("Jira assignee", jira.jira_assignee),
+      ("Type",          jira.type),
+      ("Priority",      jira.priority),
+      ("Epic",          jira.epic),
+      ("Markets",       jira.markets),
+      ("Created",       jira.created),
+      ("Updated",       jira.updated),
+      ("Last import",   jira.last_seen),
+    ] %}
+    {% for label, value in jira_fields %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
+  {% if jira.link %}
+  <p style="margin:0.6rem 0"><a href="{{ jira.link }}" target="_blank" rel="noopener" class="btn btn-sm">Open in Jira &#8599;</a></p>
+  {% endif %}
+  {% if jira.description %}
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Description</h3>
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.6rem 0.9rem; font-size:0.85rem; overflow-x:auto">
+    {{ jira.description | safe }}
+  </div>
+  {% endif %}
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Comments ({{ jira_comments|length }})</h3>
+  {% if jira_comments %}
+  <div style="display:flex; flex-direction:column; gap:0.5rem">
+    {% for c in jira_comments %}
+    <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem">
+      {% if c.created %}<div style="color:#888; font-size:0.75rem; margin-bottom:0.2rem">{{ c.created }}</div>{% endif %}
+      <div style="overflow-x:auto">{{ c.body | safe }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:#888; font-size:0.85rem">No comments in the store.</p>
+  {% endif %}
+  {% else %}
+  <p style="color:#888; font-size:0.9rem; margin:0.4rem 0">
+    No Jira data for <span class="mono">{{ row.jira_id }}</span> yet — drop an
+    XML export into the ECOM Jira folder and press
+    <strong>&#8635; Update from Jira</strong> on the list page.
+  </p>
+  {% endif %}
+</div>
+
+{# ---- Section 3: Annotation ---- #}
+<div class="annotation-card">
+  <div class="card-header-row">
+    <h2>My annotations</h2>
+    <span class="editable-badge">&#9998; Editable — saved by you (keyed by Jira ID, survives re-imports)</span>
+  </div>
+
+  {% if saved %}
+  <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
+  {% endif %}
+
+  <form method="post" action="{{ url_for('ecom.ecom_detail', ecom_id=row.ecom_id) }}">
+    <div class="form-stack">
+      <div class="checkbox-row">
+        <input id="f-action_needed" type="checkbox" name="action_needed" value="1"
+               {% if row.action_needed %}checked{% endif %}>
+        <label for="f-action_needed">Action needed</label>
+      </div>
+      <div class="form-field">
+        <label for="f-nextstep">Next step</label>
+        <textarea id="f-nextstep" name="next_step" rows="3">{{ row.next_step or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="f-commenthistory">Comment history</label>
+        <textarea id="f-commenthistory" name="comment_history" rows="5"
+                  placeholder="Your maintained comment history (not linked to imported comment)…">{{ row.comment_history or '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-footer">
+      <span class="last-edited">
+        {% if row.annotation_updated_at %}Last edited: {{ row.annotation_updated_at }}{% endif %}
+      </span>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div>
+
+{# ---- Section 4: Orders ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Orders</h2>
+  </div>
+  {% if orders_moved is not none %}
+  <div class="saved-banner">&#10003;&nbsp; {{ orders_moved }} order line(s) taken over from the Gatekeeper.</div>
+  {% endif %}
+  <div class="btn-row">
+    <button type="button" class="btn js-open-orders"
+            data-entity-type="ecom" data-entity-id="{{ row.ecom_id }}"
+            data-od-name="{{ row.test_case_id }} / {{ row.country }}">Order details</button>
+    <form method="post" action="{{ url_for('ecom.ecom_pull_orders', ecom_id=row.ecom_id) }}">
+      <button type="submit" class="btn"
+              title="re-point order lines of old Gatekeeper rows with the same Jira ID at this test case (nothing is copied)">
+        &#8631; Take over orders from Gatekeeper</button>
+    </form>
+  </div>
+</div>
+
+{# ---- Section 5: Notes ---- #}
+{% with entity_type='ecom', entity_id=row.ecom_id %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+{% include '_order_details.html' %}
+
+<div class="btn-row">
+  <a href="{{ url_for('ecom.ecom_list') }}" class="btn">&#8592; Back to ECOM</a>
+</div>
+{% endblock %}
