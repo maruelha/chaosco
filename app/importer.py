@@ -11,6 +11,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 from app import archiver, database
+from app.db import ecom as db_ecom
+from app.ecom_importer import parse_ecom
 from app.read_defects import ParseError, _find_latest_xlsx, parse_defects
 from app.retail_importer import parse_retail
 from app.spillover_importer import parse_spillover
@@ -71,9 +73,11 @@ def run_import(cfg: dict) -> dict:
     def_cfg  = imports.get("defects",  {})
     spl_cfg  = imports.get("spillover", {})
     ret_cfg  = imports.get("retail",   {})
+    eco_cfg  = imports.get("ecom",     {})
     defects_enabled   = def_cfg.get("enabled", True)
     spillover_enabled = spl_cfg.get("enabled", False)
     retail_enabled    = ret_cfg.get("enabled", False)
+    ecom_enabled      = eco_cfg.get("enabled", False)
 
     result: dict = {
         "ok": False,
@@ -105,6 +109,14 @@ def run_import(cfg: dict) -> dict:
             "error": None,
             "inserted": 0, "updated": 0,
             "skipped_blank_key": 0,
+            "skiplog_path": None,
+        },
+        "ecom": {
+            "enabled": ecom_enabled,
+            "ok": not ecom_enabled,       # disabled counts as ok
+            "error": None,
+            "inserted": 0, "updated": 0,
+            "skipped_missing_jira_id": 0,
             "skiplog_path": None,
         },
     }
@@ -167,9 +179,20 @@ def run_import(cfg: dict) -> dict:
             result["retail"]["error"] = str(exc)
             result["retail"]["ok"] = False
 
+    ecom_rows = None
+    if ecom_enabled:
+        eco_parse_cfg = {**cfg, "ecom_sheet_name": eco_cfg.get("sheet_name", "ECOM")}
+        try:
+            ecom_rows = parse_ecom(eco_parse_cfg, xlsx_path=xlsx_path)["rows"]
+        except ParseError as exc:
+            result["ecom"]["error"] = str(exc)
+            result["ecom"]["ok"] = False
+
     # 4. DB writes — single connection for all importers
     skiplog_folder = Path(cfg["skiplog_folder"])
     db_path = Path(cfg["database_path"])
+    if ecom_enabled:
+        db_ecom.init_schema(db_path)   # own vertical schema (not in core init_db)
     conn = database.init_db(db_path)
     try:
         if defects_rows is not None:
@@ -227,6 +250,24 @@ def run_import(cfg: dict) -> dict:
                     "skipped_blank_key": upsert["skipped_blank_key"],
                     "skiplog_path":     str(skiplog_path) if skiplog_path else None,
                 })
+
+        if ecom_rows is not None:
+            try:
+                upsert = db_ecom.upsert_ecom_rows(conn, ecom_rows, today)
+            except Exception as exc:
+                result["ecom"]["error"] = f"Database write failed: {exc}"
+                result["ecom"]["ok"] = False
+            else:
+                skiplog_path = None
+                if upsert["skipped_rows"]:
+                    skiplog_path = _write_skiplog(upsert["skipped_rows"], skiplog_folder, "ecom")
+                result["ecom"].update({
+                    "ok": True,
+                    "inserted":                upsert["inserted"],
+                    "updated":                 upsert["updated"],
+                    "skipped_missing_jira_id": upsert["skipped_missing_jira_id"],
+                    "skiplog_path":            str(skiplog_path) if skiplog_path else None,
+                })
     finally:
         conn.close()
 
@@ -234,5 +275,6 @@ def run_import(cfg: dict) -> dict:
         result["defects"]["ok"]
         and result["spillover"]["ok"]
         and result["retail"]["ok"]
+        and result["ecom"]["ok"]
     )
     return result

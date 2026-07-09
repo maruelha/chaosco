@@ -26,6 +26,9 @@ imports:
   retail:
     enabled: true
     sheet_name: "Retail"
+  ecom:
+    enabled: true
+    sheet_name: "ECOM"
 
 # Defect statuses hidden from the default list view.
 defects_hidden_statuses:

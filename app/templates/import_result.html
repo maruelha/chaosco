@@ -150,6 +150,41 @@
   </div>
   {% endif %}
 </div>
+
+{# --- ECOM --- #}
+<h2 style="margin-top:1.5rem">ECOM</h2>
+<div class="result-box{% if r.ecom.error %} result-box--error{% endif %}">
+  {% if not r.ecom.enabled %}
+  <div class="result-row">
+    <span class="result-label">Status</span>
+    <span class="result-value"><span class="pill pill--gray">Disabled</span> in config</span>
+  </div>
+  {% elif r.ecom.error %}
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ r.ecom.error }}</span>
+  </div>
+  {% else %}
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ r.ecom.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ r.ecom.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">{{ r.ecom.skipped_missing_jira_id }} missing JIRA ID (the match key)</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if r.ecom.skiplog_path %}{{ r.ecom.skiplog_path }}{% else %}none{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</div>
 {% endif %}
 
 <div class="btn-row">

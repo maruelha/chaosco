@@ -41,6 +41,21 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   match_key (UNIQUE), first_seen, last_seen
 - `retail_annotations` — next_step, comment_history, action_needed
 
+## ECOM vertical (importer built 2026-07-09; pages = day plan step 8)
+
+- `app/ecom_importer.py` (`parse_ecom`) + `app/db/ecom.py`: tables `ecom` +
+  `ecom_annotations`. **Match key = JIRA ID** [USER 2026-07-05] — rows
+  without one go to the skiplog, never inserted; annotations keyed by
+  jira_id survive re-imports.
+- Excel fields vs Jira fields strictly separate: `ecom.status`/`assigned_to`
+  come from the tab; jira_status/jira_assignee live in the shared jira
+  store (join by jira id, step 8).
+- Runs in the normal import pipeline (`imports.ecom` in settings.yaml,
+  sheet "ECOM"). NOTE: the config merge is per top-level key — the local
+  file's `imports:` block replaces the base one, so new tabs go in BOTH.
+- Extra columns vs Retail: `jira_id`, `description_change` (display; feeds
+  the external coverage tool). Tests: `tests/test_ecom_importer.py`.
+
 ## Shared Jira store (no UI yet — Gatekeeper v2 + ECOM consume it)
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK; solman_id = summary before

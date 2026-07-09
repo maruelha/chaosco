@@ -1,0 +1,178 @@
+"""ECOM vertical — imported test-case rows + authored annotations
+(day plan 05.07 step 7).
+
+Own tab = own importer + own table (CLAUDE.md rule 1). Match key = the
+JIRA ID [USER 2026-07-05] — the ECOM tab carries one per row and the
+Gatekeeper v2 handover later relinks by the same key. Excel fields and
+Jira fields stay strictly separate: excel `status`/`assigned_to` here are
+NOT the same thing as jira_status/jira_assignee in the shared jira store
+(joined read-only by jira id in step 8).
+"""
+from __future__ import annotations
+
+import re
+import sqlite3
+from datetime import datetime
+from pathlib import Path
+
+from app import database
+from app.db.core import _rows_to_dicts
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS ecom (
+    ecom_id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_key          TEXT NOT NULL UNIQUE,   -- normalised jira_id
+    jira_id            TEXT NOT NULL,
+    status             TEXT,                   -- Excel status (NOT jira_status)
+    assigned_to        TEXT,                   -- Excel assignee (NOT jira_assignee)
+    country            TEXT,
+    testcase_scenario  TEXT,
+    test_case_id       TEXT,
+    testcase_name      TEXT,
+    description_change TEXT,                   -- display; feeds the coverage tool
+    execution_started  TEXT,
+    order_number       TEXT,
+    old_order_numbers  TEXT,
+    defect_id_ref      TEXT,
+    s4_sales_order     TEXT,
+    s4_billing_documents TEXT,
+    s4_journal_invoice_entry TEXT,
+    delivery_note      TEXT,
+    reason_for_pass_with_reservation TEXT,
+    comment            TEXT,
+    excel_row          INTEGER,
+    first_seen         TEXT NOT NULL,
+    last_seen          TEXT NOT NULL
+);
+
+-- Authored working fields — NEVER written by the importer.
+CREATE TABLE IF NOT EXISTS ecom_annotations (
+    jira_id         TEXT PRIMARY KEY,          -- match key, survives re-imports
+    next_step       TEXT,
+    comment_history TEXT,
+    action_needed   INTEGER DEFAULT 0,
+    updated_at      TEXT
+);
+"""
+
+
+def init_schema(db_path: Path) -> None:
+    conn = database.get_connection(db_path)
+    try:
+        conn.executescript(_SCHEMA)
+        conn.commit()
+    finally:
+        conn.close()
+
+
+_ECOM_MUTABLE = [
+    "jira_id", "status", "assigned_to", "country", "testcase_scenario",
+    "test_case_id", "testcase_name", "description_change",
+    "execution_started", "order_number", "old_order_numbers",
+    "defect_id_ref", "s4_sales_order", "s4_billing_documents",
+    "s4_journal_invoice_entry", "delivery_note",
+    "reason_for_pass_with_reservation", "comment", "excel_row",
+]
+_ECOM_INSERT_COLS = _ECOM_MUTABLE + ["match_key", "first_seen", "last_seen"]
+
+_ECOM_UPSERT_SQL = """
+    INSERT INTO ecom ({cols})
+    VALUES ({placeholders})
+    ON CONFLICT(match_key) DO UPDATE SET
+        {updates}
+""".format(
+    cols=", ".join(_ECOM_INSERT_COLS),
+    placeholders=", ".join(f":{c}" for c in _ECOM_INSERT_COLS),
+    updates=",\n        ".join(
+        f"{c} = excluded.{c}" for c in _ECOM_MUTABLE + ["last_seen"]
+    ),
+)
+
+
+def _ecom_match_key(jira_id: str) -> str:
+    return re.sub(r"\s+", "", str(jira_id or "")).lower()
+
+
+def upsert_ecom_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> dict:
+    """Match-key (jira id) upsert. Never deletes. Returns counts + skipped rows."""
+    n_inserted = n_updated = n_skipped = 0
+    skipped_rows: list[dict] = []
+
+    with conn:
+        existing_keys = {r[0] for r in conn.execute("SELECT match_key FROM ecom")}
+
+        for row in rows:
+            if row.get("_skip_reason"):
+                n_skipped += 1
+                skipped_rows.append({**row, "reason": row["_skip_reason"]})
+                continue
+
+            mk = _ecom_match_key(row.get("jira_id", "") or "")
+            is_new = mk not in existing_keys
+
+            def _s(field: str):
+                v = str(row.get(field, "") or "").strip()
+                return v if v else None
+
+            rec = {col: _s(col) for col in _ECOM_MUTABLE if col != "excel_row"}
+            rec["excel_row"] = row.get("excel_row")
+            rec["match_key"] = mk
+            rec["first_seen"] = today
+            rec["last_seen"] = today
+
+            conn.execute(_ECOM_UPSERT_SQL, rec)
+            if is_new:
+                n_inserted += 1
+                existing_keys.add(mk)
+            else:
+                n_updated += 1
+
+    return {
+        "inserted": n_inserted,
+        "updated": n_updated,
+        "skipped_missing_jira_id": n_skipped,
+        "skipped_rows": skipped_rows,
+    }
+
+
+def get_ecom_rows(conn: sqlite3.Connection) -> list[dict]:
+    """All ECOM rows LEFT JOINed with annotations (list UI comes in step 8)."""
+    return _rows_to_dicts(conn.execute("""
+        SELECT e.*, a.next_step, a.comment_history,
+               COALESCE(a.action_needed, 0) AS action_needed,
+               a.updated_at AS annotation_updated_at
+        FROM ecom e
+        LEFT JOIN ecom_annotations a ON a.jira_id = e.jira_id
+        ORDER BY e.excel_row
+    """))
+
+
+def get_ecom_by_id(conn: sqlite3.Connection, ecom_id: int) -> dict | None:
+    rows = _rows_to_dicts(conn.execute("""
+        SELECT e.*, a.next_step, a.comment_history,
+               COALESCE(a.action_needed, 0) AS action_needed,
+               a.updated_at AS annotation_updated_at
+        FROM ecom e
+        LEFT JOIN ecom_annotations a ON a.jira_id = e.jira_id
+        WHERE e.ecom_id = ?
+    """, (ecom_id,)))
+    return rows[0] if rows else None
+
+
+def upsert_ecom_annotation(conn: sqlite3.Connection, jira_id: str,
+                           next_step: str | None = None,
+                           comment_history: str | None = None,
+                           action_needed: bool = False) -> None:
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO ecom_annotations (jira_id, next_step, comment_history,
+                                          action_needed, updated_at)
+            VALUES (?,?,?,?,?)
+            ON CONFLICT(jira_id) DO UPDATE SET
+                next_step       = excluded.next_step,
+                comment_history = excluded.comment_history,
+                action_needed   = excluded.action_needed,
+                updated_at      = excluded.updated_at
+        """, (jira_id, next_step or None, comment_history or None,
+              1 if action_needed else 0, now))

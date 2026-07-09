@@ -96,7 +96,8 @@ write a note.
 - Becomes the 4th checkbox on /email-report (existing GMX plumbing).
 **You verify:** generate + email the report to yourself.
 
-## Step 7 — ECOM vertical: importer  *(source Excel PROVIDED 2026-07-06)*
+## Step 7 — ECOM vertical: importer  ✅ DONE 2026-07-09 (pulled forward —
+steps 3-6 wait for the Jira XML; verified: 20/20 tab rows imported, 0 skipped)
 
 - Source: `Download/DTC_UAT_testtracking_ROE(24).xlsx` — tab name confirmed
   **ECOM** (workbook also has `ECOM JIRA EPICS`, `ReportECOM`, `Manual Test

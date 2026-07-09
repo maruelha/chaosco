@@ -19,8 +19,8 @@ ECOM, Omni. **Start:** `run_web.bat` (or `python -m app.web`).
 ## Architecture — non-negotiable rules
 
 1. **Each Excel tab = its own importer + its own SQLite table.** Importers
-   write only to imported tables (`defects`, `spillover`, `retail`), NEVER to
-   `*_annotations` (user-authored). Never modify the source Excel.
+   write only to imported tables (`defects`, `spillover`, `retail`, `ecom`),
+   NEVER to `*_annotations` (user-authored). Never modify the source Excel.
 2. **All SQL lives in the storage layer** — the `app/db/` package
    (`app/database.py` is a facade re-exporting it; `from app import database`
    works everywhere). The web layer never writes SQL.
@@ -62,7 +62,8 @@ app/
   db/               core(schema) defects spillover retail notes planning
                     reference topics entity_links email jira
   db_retail_tracker.py    tracker storage
-  read_defects.py / spillover_importer.py / retail_importer.py / importer.py
+  read_defects.py / spillover_importer.py / retail_importer.py /
+  ecom_importer.py / importer.py
   retail_tracker_importer.py / retail_tracker_counting.py
   jira_importer.py  Jira XML → shared jira store (newest .xml per folder)
   solman_sync.py    SolMan status sync (POST /solman-sync)
