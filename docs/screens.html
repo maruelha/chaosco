@@ -1603,6 +1603,8 @@
         <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.").</span>
         <span class="feat-label">Recipients</span>
         <span class="feat-value">Managed in table <code>report_recipients</code>: add / set active-inactive / delete; active ones pre-ticked per send.</span>
+        <span class="feat-label">Quick select &amp; mailing lists</span>
+        <span class="feat-value">Added 2026-07-09: <strong>All / None</strong> buttons (send-to-one = None + tick one) and <strong>mailing lists</strong> = named recipient selections (tables <code>email_lists</code> + <code>email_list_members</code>). Clicking a list chip ticks EXACTLY its members; ✕ on the chip deletes the list (recipients stay). Create/update: tick recipients, type a name, <span class="pill pill-action">Save current selection as list</span> (<code>POST /email-report/lists/save</code> — same name replaces the members). Deleting a recipient removes it from every list.</span>
       </div>
     </div>
   </div>

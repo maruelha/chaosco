@@ -30,12 +30,13 @@ def email_page():
     conn = _get_conn()
     try:
         recipients = db_email.list_recipients(conn)
+        mailing_lists = db_email.list_email_lists(conn)
     finally:
         conn.close()
     texts = emailer.default_texts()
     return render_template(
         "email_report.html",
-        recipients=recipients,
+        recipients=recipients, mailing_lists=mailing_lists,
         report_choices=emailer.REPORT_CHOICES,
         configured=emailer.smtp_settings(_cfg) is not None,
         sender=_cfg.get("email_user", ""),
@@ -73,6 +74,36 @@ def recipient_delete(rid: int):
     conn = _get_conn()
     try:
         db_email.delete_recipient(conn, rid)
+    finally:
+        conn.close()
+    return redirect(url_for("email_report.email_page"))
+
+
+@bp.route("/lists/save", methods=["POST"])
+def list_save():
+    """Save the CURRENT selection as a mailing list (same name = replace)."""
+    name = request.form.get("list_name", "").strip()
+    ids = [int(x) for x in request.form.getlist("recipients")]
+    if not name:
+        return redirect(url_for("email_report.email_page",
+                                error="Give the mailing list a name."))
+    if not ids:
+        return redirect(url_for("email_report.email_page",
+                                error="Tick at least one recipient to save as a list."))
+    conn = _get_conn()
+    try:
+        db_email.save_email_list(conn, name, ids)
+    finally:
+        conn.close()
+    return redirect(url_for("email_report.email_page",
+                            result=f'Mailing list "{name}" saved ({len(ids)} member(s)).'))
+
+
+@bp.route("/lists/<int:list_id>/delete", methods=["POST"])
+def list_delete(list_id: int):
+    conn = _get_conn()
+    try:
+        db_email.delete_email_list(conn, list_id)
     finally:
         conn.close()
     return redirect(url_for("email_report.email_page"))

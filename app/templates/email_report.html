@@ -64,6 +64,25 @@ email_password: 'your-app-password'
 {% call ui.section('Recipients', 'purple', badge=recipients|selectattr('active')|list|length ~ ' active') %}
 <div style="padding:0.8rem 1rem">
   {% if recipients %}
+  <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center; margin-bottom:0.8rem">
+    <span style="color:#888; font-size:0.82rem">Quick select:</span>
+    <button type="button" class="btn btn-sm" onclick="emailSelect('all')">All</button>
+    <button type="button" class="btn btn-sm" onclick="emailSelect('none')">None</button>
+    {% if mailing_lists %}
+    <span style="color:#888; font-size:0.82rem; margin-left:0.6rem">Mailing lists:</span>
+    {% for l in mailing_lists %}
+    <span style="display:inline-flex; align-items:center; border:1px solid #c9c9d4; border-radius:14px; overflow:hidden">
+      <button type="button" class="btn btn-sm" style="border:none; border-radius:0"
+              title="select exactly these {{ l.member_ids|length }} recipient(s)"
+              onclick='emailSelect({{ l.member_ids | tojson }})'>&#128231; {{ l.name }} ({{ l.member_ids|length }})</button>
+      <button type="submit" class="btn btn-sm" style="border:none; border-radius:0; color:#c00"
+              formaction="{{ url_for('email_report.list_delete', list_id=l.id) }}" formnovalidate
+              onclick="return confirm('Delete mailing list &quot;{{ l.name }}&quot;? (Recipients themselves stay.)')"
+              title="delete this list">✕</button>
+    </span>
+    {% endfor %}
+    {% endif %}
+  </div>
   <table class="ui-table" style="margin-bottom:0.8rem">
     <thead><tr><th style="width:2.5rem">Send</th><th>Email</th><th>Name</th><th style="width:9rem"></th></tr></thead>
     <tbody>
@@ -99,6 +118,17 @@ email_password: 'your-app-password'
     <button type="submit" class="btn"
             formaction="{{ url_for('email_report.recipient_add') }}">+ Add recipient</button>
   </div>
+
+  {% if recipients %}
+  <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #eee">
+    <input type="text" name="list_name" placeholder="list name (e.g. Key users ROE)"
+           style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
+    <button type="submit" class="btn"
+            formaction="{{ url_for('email_report.list_save') }}" formnovalidate
+            title="saves whoever is TICKED above as a mailing list — same name updates the list">
+      &#128190; Save current selection as list</button>
+  </div>
+  {% endif %}
 </div>
 {% endcall %}
 
@@ -109,6 +139,15 @@ email_password: 'your-app-password'
 </form>
 
 <script>
+function emailSelect(which) {
+  // 'all' | 'none' | [recipient ids] — sets the Send checkboxes to exactly that
+  document.querySelectorAll('input[name="recipients"]').forEach(cb => {
+    if (which === 'all') cb.checked = true;
+    else if (which === 'none') cb.checked = false;
+    else cb.checked = which.includes(parseInt(cb.value, 10));
+  });
+}
+
 function emailSyncDate(day) {
   // keep subject/body in sync when the date changes and the user has not
   // customised the texts (simple heuristic: replace the old date string)
