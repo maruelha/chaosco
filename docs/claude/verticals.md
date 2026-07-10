@@ -102,8 +102,10 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   `spillover_report_selection`), view `/spillover/report/view` (printable;
   since 2026-07-10 a compact TABLE grouped by with_whom Sales → MB →
   Unassigned, critical-first inside sections, inline-editable
-  comment_for_signoff column, wins section), PPT `/spillover/report/ppt`
-  (unchanged card slides)
+  comment_for_signoff column, 📣 Call-outs box at the top = report_comments
+  edited directly on the report (replaces the bottom Additional section;
+  the /report-comments add route now also accepts the 'ecom' key), wins
+  section), PPT `/spillover/report/ppt` (unchanged card slides)
 - Retail list `/retail`, detail `/retail/<id>`
 - Retail Status Report `/retail/report` (buckets from
   `config/status_mappings.yaml` via `app/reporter.py`; Save to Excel appends

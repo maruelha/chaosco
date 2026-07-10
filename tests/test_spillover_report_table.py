@@ -9,6 +9,7 @@ What must hold:
 import pytest
 
 from app import database
+import app.web_reports as web_reports
 import app.web_spillover as web_spillover
 from app.web import app
 
@@ -17,8 +18,9 @@ from app.web import app
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "rpt.db"
     database.init_db(db_path).close()
-    monkeypatch.setattr(web_spillover, "_get_conn",
-                        lambda: database.get_connection(db_path))
+    for mod in (web_spillover, web_reports):   # report-comment routes live in web_reports
+        monkeypatch.setattr(mod, "_get_conn",
+                            lambda: database.get_connection(db_path))
     conn = database.get_connection(db_path)
     try:
         with conn:
@@ -67,6 +69,32 @@ def test_empty_sections_do_not_render(client):
     assert "Sales — follow-up with Sales" in html
     assert "MB — our follow-up" not in html
     assert "Unassigned" not in html
+
+
+def test_callout_box_renders_and_add_route_roundtrip(client):
+    # empty -> box rendered but marked co-empty (hidden in print/email)
+    html = client.get("/spillover/report/view").get_data(as_text=True)
+    assert "Call-outs" in html and "co-empty" in html
+
+    d = client.post("/report-comments/spillover/add",
+                    data={"comment": "cutover risk: SF backlog"}).get_json()
+    assert d["ok"]
+    html = client.get("/spillover/report/view").get_data(as_text=True)
+    assert 'value="cutover risk: SF backlog"' in html
+    assert 'class="callout-section"' in html          # no longer co-empty
+
+    # update + delete via the generic routes
+    client.post(f"/report-comments/{d['row']['id']}/update",
+                data={"comment": "updated call-out"})
+    html = client.get("/spillover/report/view").get_data(as_text=True)
+    assert 'value="updated call-out"' in html
+    client.post(f"/report-comments/{d['row']['id']}/delete")
+    html = client.get("/spillover/report/view").get_data(as_text=True)
+    assert "updated call-out" not in html
+
+    # ecom report key is accepted now too
+    assert client.post("/report-comments/ecom/add",
+                       data={"comment": "x"}).get_json()["ok"]
 
 
 def test_comment_signoff_route_touches_only_that_field(client):

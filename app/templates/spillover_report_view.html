@@ -103,14 +103,26 @@
     }
     .empty-state a { color: #64748b; }
 
-    /* ---- Additional / Wins ---- */
-    .additional-section { margin-top: 2rem; border-top: 2px solid #e2e8f0; padding-top: 1.1rem; }
-    .additional-title {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.09em; color: #64748b; margin-bottom: 0.6rem;
+    /* ---- Call-outs (general report-level notes, editable on screen) ---- */
+    .callout-section {
+      border: 1px solid #fcd34d; background: #fffbeb; border-radius: 7px;
+      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+      page-break-inside: avoid; break-inside: avoid;
     }
-    .additional-list { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .additional-list li { font-size: 0.85rem; color: #334155; line-height: 1.5; }
+    .callout-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.09em; color: #92400e; margin-bottom: 0.5rem;
+    }
+    .callout-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .callout-list li { display: flex; align-items: center; gap: 0.4rem; }
+    .callout-list li::before { content: "•"; color: #b45309; font-weight: 700; }
+    .co-input {
+      flex: 1; border: none; background: transparent; font: inherit;
+      font-size: 0.85rem; color: #334155; padding: 0.15rem 0.3rem;
+      border-bottom: 1px dashed transparent;
+    }
+    .co-input:hover, .co-input:focus { border-bottom-color: #d6a256; outline: none; }
+    .co-x { padding: 0 0.4rem; font-size: 0.72rem; color: #b91c1c; }
 
     .wins-section { margin-top: 2rem; border-top: 3px solid #15803d; padding-top: 1.1rem; }
     .wins-title { font-size: 0.9rem; font-weight: 800; color: #15803d; margin-bottom: 0.75rem; }
@@ -139,6 +151,10 @@
                       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .rpt-row--passed, .wins-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .rpt-cmt { border: none; background: transparent; padding: 0; }
+      .co-x, #co-add { display: none !important; }
+      .co-empty { display: none !important; }
+      .callout-section { background: #fffbeb !important;
+                     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .wins-section { page-break-inside: avoid; break-inside: avoid; }
     }
   </style>
@@ -194,6 +210,22 @@
     </div>
     {% endif %}
   </div>
+</div>
+
+{# ---- Call-outs — general report-level space, editable right here ---- #}
+<div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
+     id="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list" id="callout-list">
+    {% for c in report_comments %}
+    <li data-id="{{ c.id }}">
+      <input type="text" class="co-input" value="{{ c.comment or '' }}"
+             placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
 </div>
 
 {% if not items %}
@@ -294,19 +326,54 @@
 </div>
 {% endif %}
 
-{% set visible_comments = report_comments | selectattr('comment') | list %}
-{% if visible_comments %}
-<div class="additional-section">
-  <div class="additional-title">Additional</div>
-  <ul class="additional-list" id="additional-list">
-    {% for c in visible_comments %}
-    <li>{{ c.comment }}</li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
 <script>
+function coSave(input) {
+  const li = input.closest('li');
+  const body = new URLSearchParams({ comment: input.value });
+  fetch('/report-comments/' + li.dataset.id + '/update', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 document.getElementById('callout-section').classList.remove('co-empty');
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+function coDel(btn) {
+  const li = btn.closest('li');
+  if (!confirm('Delete this call-out?')) return;
+  fetch('/report-comments/' + li.dataset.id + '/delete', { method: 'POST' })
+    .then(() => li.remove());
+}
+
+function coAdd() {
+  const body = new URLSearchParams({ comment: '' });
+  fetch('/report-comments/spillover/add', { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      const li = document.createElement('li');
+      li.dataset.id = d.row.id;
+      li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
+      document.getElementById('callout-list').appendChild(li);
+      li.querySelector('input').focus();
+    });
+}
+
+// print: hide blank call-out lines (and the whole box when nothing is filled)
+window.addEventListener('beforeprint', () => {
+  let any = false;
+  document.querySelectorAll('#callout-list li').forEach(li => {
+    const filled = li.querySelector('.co-input').value.trim() !== '';
+    li.style.display = filled ? '' : 'none';
+    any = any || filled;
+  });
+  document.getElementById('callout-section').style.display = any ? '' : 'none';
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
+  document.getElementById('callout-section').style.display = '';
+});
+
 function rptComment(input) {
   const body = new URLSearchParams({ comment_for_signoff: input.value });
   fetch('/spillover/' + input.dataset.id + '/comment-signoff', { method: 'POST', body })
@@ -317,8 +384,8 @@ function rptComment(input) {
 }
 
 function downloadHtml() {
-  // persist typed comment values into attributes so the snapshot keeps them
-  document.querySelectorAll('.rpt-cmt').forEach(i => i.setAttribute('value', i.value));
+  // persist typed values into attributes so the snapshot keeps them
+  document.querySelectorAll('.rpt-cmt, .co-input').forEach(i => i.setAttribute('value', i.value));
   const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -331,6 +398,14 @@ function copyForTeams() {
   const lines = [];
   lines.push(`📋 **Spillover Status Report — from DTC Perspective** | ${date}`);
   lines.push('');
+
+  const callouts = [...document.querySelectorAll('.co-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (callouts.length) {
+    lines.push('**📣 Call-outs**');
+    callouts.forEach(c => lines.push(`• ${c}`));
+    lines.push('');
+  }
 
   document.querySelectorAll('.rpt-section').forEach(section => {
     const secTitle = section.querySelector('.rpt-section-title')?.textContent?.trim() || '';
@@ -355,16 +430,6 @@ function copyForTeams() {
     });
     lines.push('');
   });
-
-  const addlList = document.getElementById('additional-list');
-  if (addlList) {
-    const bullets = [...addlList.querySelectorAll('li')].map(li => li.textContent.trim()).filter(Boolean);
-    if (bullets.length) {
-      lines.push('**Additional**');
-      bullets.forEach(b => lines.push(`• ${b}`));
-      lines.push('');
-    }
-  }
 
   const text = lines.join('\n').trimEnd();
   navigator.clipboard.writeText(text).then(showToast).catch(() => {

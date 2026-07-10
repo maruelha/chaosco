@@ -76,7 +76,8 @@ def standalone_html(html: str) -> str:
             ".rt-topbar,.rt-filterbar,.ui-filterbar,.pm-filterbar,dialog,"
             "#enh-widget,.btn,.btn-row,form,.rt-cbtn{display:none!important}"
             ".comment-input,.rt-comment,.pm-comment{border:none}"
-            ".rpt-cmt{border:none;background:transparent;padding:0}</style>")
+            ".rpt-cmt,.co-input{border:none;background:transparent;padding:0}"
+            ".co-empty{display:none!important}</style>")
     return html.replace("</head>", hide + "</head>", 1)
 
 
