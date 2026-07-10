@@ -94,7 +94,10 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   detail `/defects/<id>` (annotation form → notes → meeting-prep add →
   imported fields read-only)
 - Spillover list `/spillover` (frozen-pane table, per-row Details / Order
-  details / Comments / Notes), detail `/spillover/<id>`
+  details / Comments / Notes), detail `/spillover/<id>`. 2026-07-09:
+  "With whom" column (Sales | MB, `spillover_annotations.with_whom`,
+  inline AJAX select + multi filter) and "Status report" filter/column
+  (in/not-in `spillover_report_selection`, green ✓)
 - Spillover Status Report: select `/spillover/report` (persists selection in
   `spillover_report_selection`), view `/spillover/report/view` (printable,
   critical-first, wins section), PPT `/spillover/report/ppt`

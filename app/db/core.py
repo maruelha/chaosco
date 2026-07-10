@@ -343,7 +343,8 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
-    for col in ("critical_for_signoff TEXT", "comment_for_signoff TEXT", "signoff_group TEXT"):
+    for col in ("critical_for_signoff TEXT", "comment_for_signoff TEXT", "signoff_group TEXT",
+                "with_whom TEXT"):  # Sales | MB — who follows up [USER 2026-07-09]
         try:
             conn.execute(f"ALTER TABLE spillover_annotations ADD COLUMN {col}")
             conn.commit()

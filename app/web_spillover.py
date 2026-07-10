@@ -25,6 +25,8 @@ def spillover_list():
     status      = request.args.getlist("status")
     assigned_to = request.args.getlist("assigned_to")
     critical    = request.args.getlist("critical")
+    with_whom   = request.args.getlist("with_whom")
+    in_report   = request.args.get("in_report", "")
     show_all    = request.args.get("show_all") == "1"
 
     hidden = _cfg.get("spillover_hidden_statuses", [])
@@ -39,6 +41,8 @@ def spillover_list():
             types=type_ or None,
             assignees=assigned_to or None,
             critical=critical or None,
+            with_whom=with_whom or None,
+            in_report=in_report or None,
             exclude_statuses=exclude or None,
         )
         options          = database.get_spillover_filter_options(conn)
@@ -56,6 +60,8 @@ def spillover_list():
         status=status,
         assigned_to=assigned_to,
         critical=critical,
+        with_whom=with_whom,
+        in_report=in_report,
         show_all=show_all,
         hidden_statuses=hidden,
         docs_s4_ids=docs_s4_ids,
@@ -108,6 +114,20 @@ def spillover_comment_save(spillover_id: int):
         "ok": True,
         "comment_history": ann["comment_history"] or "",
     })
+
+
+@app.route("/spillover/<int:spillover_id>/with-whom", methods=["POST"])
+def spillover_with_whom_save(spillover_id: int):
+    """Who follows up: Sales | MB | blank — inline select on the list."""
+    value = request.form.get("with_whom", "").strip()
+    if value not in ("", "Sales", "MB"):
+        return jsonify({"ok": False, "error": "with_whom must be Sales or MB"}), 400
+    conn = _get_conn()
+    try:
+        database.set_spillover_with_whom(conn, spillover_id, value or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "with_whom": value})
 
 
 @app.route("/spillover/<int:spillover_id>/critical", methods=["POST"])

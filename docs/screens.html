@@ -507,7 +507,7 @@
         <span class="feat-label">Column order</span>
         <span class="feat-value">
           <strong>Frozen:</strong> # (Excel row) · Name (220 px, full text in tooltip)<br>
-          <strong>Scrollable:</strong> Buttons → Status → Next Step (≤3 lines, clamp-3) → Area → Order Numbers (≤3 lines, clamp-3, tooltip) → Country → Assigned To → Ext. ID → Critical for Sign-Off
+          <strong>Scrollable:</strong> Buttons → Status → Next Step (≤3 lines, clamp-3) → Area → Order Numbers (≤3 lines, clamp-3, tooltip) → Country → Assigned To → Ext. ID → Critical for Sign-Off → <strong>With whom</strong> (Sales/MB inline select, 2026-07-09) → <strong>Report</strong> (green ✓ when the line is picked for the status report)
         </span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
@@ -516,6 +516,8 @@
           <span class="pill pill-filter">Status (multi)</span>
           <span class="pill pill-filter">Assigned To (multi)</span>
           <span class="pill pill-filter">Critical for sign-off (multi)</span>
+          <span class="pill pill-filter">With whom (Sales/MB, multi — 2026-07-09)</span>
+          <span class="pill pill-filter">Status report (All / In report / Not in report — 2026-07-09, follows <code>spillover_report_selection</code>)</span>
           <span class="pill pill-filter">Show passed &amp; dropped toggle</span>
         </span>
         <span class="feat-label">Hidden by default</span>
@@ -523,6 +525,7 @@
         <span class="feat-label">Inline edits (AJAX)</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Critical for sign-off</span> — inline <code>&lt;select&gt;</code>; saves on change → <code>POST /spillover/&lt;id&gt;/critical</code><br>
+          <span class="pill pill-ajax">With whom</span> — inline <code>&lt;select&gt;</code> Sales | MB | — (who follows up); saves on change → <code>POST /spillover/&lt;id&gt;/with-whom</code> (<code>spillover_annotations.with_whom</code>, only-this-field upsert)<br>
           <span class="pill pill-ajax">Next step</span> — click cell opens the Details popup
         </span>
         <span class="feat-label">Status Report button</span>

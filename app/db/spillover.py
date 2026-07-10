@@ -122,6 +122,8 @@ def get_spillover(
     types: list[str] | None = None,
     assignees: list[str] | None = None,
     critical: list[str] | None = None,
+    with_whom: list[str] | None = None,
+    in_report: str | None = None,
     search: str | None = None,
     exclude_statuses: list[str] | None = None,
 ) -> list[dict]:
@@ -129,12 +131,16 @@ def get_spillover(
 
     Each filter accepts a list; multiple values are combined with IN (...).
     exclude_statuses: hidden when no explicit status filter is active.
+    in_report: 'yes' = only lines picked for the status report, 'no' = the rest.
     """
     sql = """
         SELECT s.*,
                a.importance_for_signoff, a.next_step, a.comment_history,
                a.critical_for_signoff, a.comment_for_signoff, a.signoff_group,
+               a.with_whom,
                a.updated_at AS annotation_updated_at,
+               EXISTS(SELECT 1 FROM spillover_report_selection sel
+                      WHERE sel.spillover_id = s.spillover_id) AS in_report,
                (SELECT COUNT(*) FROM notes n
                 WHERE n.entity_type = 'spillover' AND n.entity_id = CAST(s.spillover_id AS TEXT)
                ) AS note_count
@@ -160,7 +166,16 @@ def get_spillover(
         _in("s.assigned_to", assignees)
     if critical:
         _in("a.critical_for_signoff", critical)
+    if with_whom:
+        _in("a.with_whom", with_whom)
     sql += "".join(sql_parts)
+
+    if in_report == "yes":
+        sql += (" AND s.spillover_id IN"
+                " (SELECT spillover_id FROM spillover_report_selection)")
+    elif in_report == "no":
+        sql += (" AND s.spillover_id NOT IN"
+                " (SELECT spillover_id FROM spillover_report_selection)")
 
     if search:
         sql += " AND (s.name LIKE ? OR s.external_id LIKE ?)"
@@ -200,6 +215,22 @@ def get_spillover_by_id(conn: sqlite3.Connection, spillover_id: int) -> dict | N
     """
     rows = _rows_to_dicts(conn.execute(sql, (spillover_id,)))
     return rows[0] if rows else None
+
+
+def set_spillover_with_whom(conn: sqlite3.Connection, spillover_id: int,
+                            with_whom: str | None) -> None:
+    """Who follows up: 'Sales' | 'MB' | None [USER 2026-07-09]. Touches ONLY
+    this field — the other annotation fields stay as they are."""
+    from datetime import datetime
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO spillover_annotations (spillover_id, with_whom, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(spillover_id) DO UPDATE SET
+                with_whom  = excluded.with_whom,
+                updated_at = excluded.updated_at
+        """, (spillover_id, with_whom or None, now))
 
 
 def get_spillover_annotation(conn: sqlite3.Connection, spillover_id: int) -> dict | None:

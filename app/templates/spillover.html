@@ -47,11 +47,26 @@
       <span>{% if critical %}{{ critical|length }} selected{% else %}All{% endif %}</span> ▾
     </button>
   </div>
+  <div class="filter-group">
+    <label>With whom</label>
+    <button type="button" class="filter-btn js-filter-btn {% if with_whom %}filter-btn--active{% endif %}" data-filter="with_whom">
+      <span>{% if with_whom %}{{ with_whom|length }} selected{% else %}All{% endif %}</span> ▾
+    </button>
+  </div>
+  <div class="filter-group">
+    <label>Status report</label>
+    <select name="in_report" onchange="this.form.submit()"
+            class="filter-btn{% if in_report %} filter-btn--active{% endif %}">
+      <option value="" {% if not in_report %}selected{% endif %}>All</option>
+      <option value="yes" {% if in_report == 'yes' %}selected{% endif %}>In report</option>
+      <option value="no" {% if in_report == 'no' %}selected{% endif %}>Not in report</option>
+    </select>
+  </div>
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if area or type_ or status or assigned_to or critical or show_all %}
+  {% if area or type_ or status or assigned_to or critical or with_whom or in_report or show_all %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('spillover_list') }}" class="btn">Clear</a>
@@ -124,6 +139,22 @@
   </div>
 </dialog>
 
+<dialog id="dlg-filter-with_whom" class="filter-dlg">
+  <div class="dlg-header"><div class="dlg-title">Filter by With whom (follow-up)</div></div>
+  <div class="dlg-body">
+    {% for v in ['Sales', 'MB'] %}
+    <label class="cb-row">
+      <input type="checkbox" name="with_whom" value="{{ v }}" form="filters-form"
+             {% if v in with_whom %}checked{% endif %}> {{ v }}
+    </label>
+    {% endfor %}
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn js-filter-clear" data-filter="with_whom">Clear</button>
+    <button type="button" class="btn btn-primary js-filter-apply" data-filter="with_whom">Apply</button>
+  </div>
+</dialog>
+
 <dialog id="dlg-filter-critical" class="filter-dlg">
   <div class="dlg-header"><div class="dlg-title">Filter by Critical for sign-off</div></div>
   <div class="dlg-body">
@@ -172,6 +203,8 @@
         <th class="sc-assignee">Assigned to</th>
         <th class="sc-extid">Ext. ID</th>
         <th class="sc-critical">Critical for sign-off</th>
+        <th class="sc-whom" title="who needs to follow up">With whom</th>
+        <th class="sc-inreport" title="picked for the status report">Report</th>
       </tr>
     </thead>
     <tbody>
@@ -224,6 +257,17 @@
             <option value="no"       {% if row.critical_for_signoff == 'no'       %}selected{% endif %}>No</option>
             <option value="slightly" {% if row.critical_for_signoff == 'slightly' %}selected{% endif %}>Slightly</option>
           </select>
+        </td>
+        <td class="sc-whom">
+          <select class="inline-select js-whom">
+            <option value=""      {% if not row.with_whom %}selected{% endif %}>—</option>
+            <option value="Sales" {% if row.with_whom == 'Sales' %}selected{% endif %}>Sales</option>
+            <option value="MB"    {% if row.with_whom == 'MB'    %}selected{% endif %}>MB</option>
+          </select>
+        </td>
+        <td class="sc-inreport" style="text-align:center">
+          {% if row.in_report %}<span class="pill pill--green" title="picked for the status report">&#10003;</span>
+          {% else %}<span style="color:#c5c5cc">·</span>{% endif %}
         </td>
       </tr>
     {% else %}
@@ -315,6 +359,17 @@
     });
   });
 
+  document.querySelectorAll('.js-whom').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const tr = sel.closest('tr');
+      const fd = new FormData();
+      fd.append('with_whom', sel.value);
+      const resp = await fetch(`/spillover/${tr.dataset.id}/with-whom`, { method: 'POST', body: fd });
+      const d = await resp.json();
+      if (!d.ok) alert('Saving failed — try again.');
+    });
+  });
+
   const annDlg = document.getElementById('dlg-ann');
   const annForm = document.getElementById('frm-ann');
   const annId   = document.getElementById('ann-id');
@@ -386,7 +441,7 @@
   });
 
   // ---- Filter dialogs ----
-  const FILTER_NAMES = ['area', 'type', 'status', 'assigned_to', 'critical'];
+  const FILTER_NAMES = ['area', 'type', 'status', 'assigned_to', 'critical', 'with_whom'];
 
   function updateFilterBtn(filter) {
     const checked = document.querySelectorAll(
