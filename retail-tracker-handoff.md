@@ -110,6 +110,19 @@ Replaces a 4-tab Excel: `TRACKING_Retail ROE UAT Testcases DTC.xlsx`.
     per-country passes + inline comment; un-park restores.
 16. **Board layout** [USER 2026-07-06]: red Tests-missing gap list at the
     TOP; Clarify and Parked sections at the bottom.
+17. **Board polish** [USER 2026-07-09]: Print button removed (Download HTML
+    is the only snapshot); Clarify + Parked collapsed by default; Parked
+    shows a passed COUNT + "countries ▸" expand like normal rows; actions
+    return to a row anchor (`#req-<id>`) — never to the top of the board.
+18. **Scenario GROUP filter** [USER 2026-07-09]: the verbose Excel scenario
+    headings roll up into Till transactions · Different articles (first
+    batch) · Discounts · General payment methods · B2B · PROMAT/FOC · Other
+    (substring map `tracker_scenario_groups` in settings.yaml, first hit
+    wins — till transactions before the "1. Retail Sale" batch).
+19. **Payment-method kick-out** [USER 2026-07-09]: 🚫 per row with MANDATORY
+    reason (`inactive_reason`); inactive rows leave ALL counting and live in
+    a collapsed "Kicked out" section with "↩ Take back in" (clears the
+    reason).
 
 ## 4. OPEN questions — resolve WITH THE USER before coding
 

@@ -137,6 +137,29 @@ def test_pull_orders_relinks_gatekeeper_rows_with_same_jira_id(client):
         conn.close()
 
 
+def test_inbox_filing_into_ecom(client):
+    conn = database.get_connection(client.db_path)
+    try:
+        # unfiled inbox note
+        with conn:
+            conn.execute("INSERT INTO notes (entity_type, entity_id, heading, note,"
+                         " created_at) VALUES ('input', 'inbox', 'H', 'file me', 'now')")
+        note_id = conn.execute("SELECT id FROM notes").fetchone()[0]
+
+        # picker search finds the row by jira id
+        hits = database.search_targets(conn, "ecom", "S4ECOM-11")
+        assert hits and hits[0]["value"] == str(client.row_id)
+        assert "S4ECOM-1153" in hits[0]["label"]
+
+        # filing re-parents the note onto the ECOM row
+        assert database.file_inbox_item(conn, note_id, "ecom", str(client.row_id))
+        assert database.list_notes(conn, "ecom", client.row_id)
+        # nonexistent target refused
+        assert not database.file_inbox_item(conn, note_id, "ecom", "99999")
+    finally:
+        conn.close()
+
+
 def test_notes_registry_entry_roundtrip(client):
     resp = client.post(f"/n/ecom/{client.row_id}/add",
                        data={"note": "ecom note works"})

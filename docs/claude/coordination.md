@@ -28,6 +28,10 @@ entries + detail-page includes), so inbox items can be filed to them.
 **Inbox special case**: unfiled items are notes with entity_type='input',
 entity_id='inbox'. Filing = one UPDATE re-parenting the row (attachments
 follow automatically). Inbox keeps its own routes/UI (capture pad + filing).
+Filing targets (`_INBOX_TARGET_TYPES` in db/notes.py + picker options in
+inbox.html + a search/exists branch each): defect, retail, spillover,
+ecom (added 2026-07-10, search by jira id / test case / name),
+test_learning, followup, shelf, topic, contact, link.
 
 ## Attachments
 

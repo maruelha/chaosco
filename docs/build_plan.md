@@ -79,6 +79,24 @@ Last updated: 2026-07-05
 
 1. Screenshot-first capture (attach before saving a note) — "maybe" in
    `docs/tech_backlog.md`; silent AJAX-create approach sketched there.
+2. ~~ECOM filing target~~ ✅ DONE 2026-07-10: picker option "ECOM", search
+   by jira id / test case / name.
+
+### Core South Spillover — done ad-hoc
+
+1. ~~"With whom" column~~ ✅ DONE 2026-07-09: Sales | MB inline select +
+   filter (`spillover_annotations.with_whom`).
+2. ~~Status-report filter~~ ✅ DONE 2026-07-09: All / In report / Not in
+   report + green-✓ Report column (follows `spillover_report_selection`).
+
+### Cross-vertical components — done ad-hoc
+
+1. ~~Next-step archive~~ ✅ DONE 2026-07-10: "↻ New next step" archives +
+   clears, History dialog; component `_next_step_history.html` +
+   `/next-steps/...` registry Blueprint; on Spillover popup, Retail, ECOM,
+   Defect detail (see `docs/claude/coordination.md`).
+2. ~~Email mailing lists~~ ✅ DONE 2026-07-09: named recipient selections +
+   All/None quick select on /email-report.
 
 ### Teams end-of-day review list (planned, placement open)
 
@@ -102,8 +120,12 @@ Last updated: 2026-07-05
 3. ~~**"Blocked" → "Impacted" defect counting**~~ ✅ DONE 2026-07-06 [USER]:
    retail report defect section counts test cases that reference the defect
    AND have not passed (passed family = passed_with_dtc bucket); passed refs
-   muted "(+N passed)". MB vs Sales = manual DTC O2C flag, unset = Sales;
-   diagnostics shows an amber note listing undecided defects.
+   muted "(+N passed)".
+4. ~~**MB/Sales split from the Excel**~~ ✅ FIXED 2026-07-10 [USER bug
+   report]: the Defects tab's "Sales or DTC" column is now imported
+   (`defects.sales_or_dtc`) and DRIVES the split (DTC → MB); the manual
+   DTC O2C flag is only the blank-cell fallback; neither → Sales + amber
+   diagnostics note.
 
 ### ECOM vertical
 
