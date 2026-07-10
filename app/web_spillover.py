@@ -275,6 +275,33 @@ def spillover_report_view():
     )
 
 
+@app.route("/spillover/report/table")
+def spillover_report_table():
+    """Compact TABLE variant of the status report [USER 2026-07-10] —
+    ADDITIONAL to the detailed card view, not a replacement: grouped by
+    with_whom (Sales → MB → Unassigned), inline comments, call-outs box."""
+    conn = _get_conn()
+    try:
+        items           = database.get_spillover_report_items(conn)
+        order_details   = {}
+        for item in items:
+            od = database.list_order_details(conn, "spillover", str(item["spillover_id"]))
+            if od:
+                order_details[item["spillover_id"]] = od
+        report_comments = database.list_report_comments(conn, "spillover")
+    finally:
+        conn.close()
+    _crit_order = {"yes": 0, "slightly": 1, "no": 2}
+    items = sorted(items, key=lambda r: _crit_order.get(r.get("critical_for_signoff") or "", 3))
+    from datetime import date
+    return render_template(
+        "spillover_report_table.html",
+        items=items, order_details=order_details,
+        report_comments=report_comments,
+        today=date.today().strftime("%Y-%m-%d"),
+    )
+
+
 @app.route("/spillover/report/ppt")
 def spillover_report_ppt():
     conn = _get_conn()

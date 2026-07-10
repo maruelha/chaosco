@@ -598,7 +598,7 @@
       <span class="screen-url">GET /spillover/report/view</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Standalone print-ready report titled <strong>Spillover Status Report — from DTC Perspective</strong>. Since 2026-07-10 a <strong>compact table layout</strong> (same content, more concentrated [USER]): items grouped into sections by <strong>With whom</strong> — Sales (rust header) → MB (blue) → Unassigned — each a table with # · Name · Area · Status · Critical · Next step · Orders (one line per order incl. ✓S4) · <strong>Comment</strong> (inline-editable input → <code>POST /spillover/&lt;id&gt;/comment-signoff</code>, only-this-field upsert of <code>comment_for_signoff</code>; static in print/email). Critical-first order inside each section; empty sections don't render; passed rows tinted green + 🎉. <strong>📣 Call-outs box at the top</strong> (2026-07-10): the general report-level space — add/edit/delete bullets directly on the report (amber box, storage = <code>report_comments</code> where <code>report='spillover'</code>, same data as the list page's Report Comments table; the bottom "Additional" section is replaced by it). Blank lines and the empty box are hidden in print/email. Wins section unchanged; Copy-for-Teams leads with the call-outs, then the grouped sections. Summary stats in header. Opens in a new tab; print is A4 landscape.</p>
+      <p class="screen-desc">Standalone print-ready report titled <strong>Spillover Status Report — from DTC Perspective</strong>. Professional document layout — dark header bar per item, metadata strip (Area · Status · Critical for sign-off), next step with left-border accent, and an order details table when entries exist. Items are sorted: Critical → Slightly critical → Not critical → unset. Summary stats in header. Opens in a new tab. Toolbar links to the <strong>compact table variant</strong> (below) — the two views coexist [USER 2026-07-10: additional, NOT a replacement].</p>
       <div class="features">
         <span class="feat-label">Per-item sections</span>
         <span class="feat-value">Numbered header (dark navy) · Metadata strip (3 cells: Area · Status · Critical) · Next Step (pre-wrap, left-border accent) · Order Details table (Type · Order Number · Comment · S4 docs ✓)</span>
@@ -620,6 +620,23 @@
         <span class="feat-value">Toolbar hidden in print; item cards have <code>break-inside: avoid</code>; background colours forced via <code>print-color-adjust</code>. PDF uses A4 with 2 cm margins (<code>@page</code> rule).</span>
         <span class="feat-label">Data source</span>
         <span class="feat-value"><code>spillover_report_selection</code> JOIN <code>spillover</code> JOIN <code>spillover_annotations</code>; order details loaded per item from <code>order_details</code> (entity_type=<code>'spillover'</code>).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spillover Status Report — Compact Table -->
+  <div class="screen-card" id="spillover-report-table">
+    <div class="screen-card-header">
+      <span class="screen-title">Spillover — Status Report, Compact Table</span>
+      <span class="screen-url">GET /spillover/report/table</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">ADDITIONAL compact variant of the status report (2026-07-10 [USER]) — same selection, same content, table form: items grouped into sections by <strong>With whom</strong> — Sales (rust header) → MB (blue) → Unassigned — each a table with # · Name · Area · Status · Critical · Next step · Orders (one line per order incl. ✓S4) · <strong>Comment</strong> (inline-editable → <code>POST /spillover/&lt;id&gt;/comment-signoff</code>, only-this-field upsert of <code>comment_for_signoff</code>; static in print/email). Critical-first inside sections; empty sections don't render; passed rows tinted green + 🎉.</p>
+      <div class="features">
+        <span class="feat-label">📣 Call-outs box</span>
+        <span class="feat-value">At the top: the general report-level space — add / edit (blur-save) / delete bullets directly on the report. Storage = <code>report_comments</code> (<code>report='spillover'</code>) — the SAME data as the detailed view's "Additional" section and the list page's Report Comments table. Blank lines and the empty box are hidden in print/email.</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value">Print (A4 landscape) · Download HTML (persists typed comments) · Download PPT · Copy for Teams (call-outs first, then the grouped sections) · 🗇 Detailed view / ☰ Compact table cross-links in both toolbars; both reachable from the selection screen.</span>
       </div>
     </div>
   </div>

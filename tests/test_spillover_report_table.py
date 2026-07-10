@@ -44,7 +44,7 @@ def client(tmp_path, monkeypatch):
 
 
 def test_view_groups_by_with_whom_in_order(client):
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert "Sales — follow-up with Sales" in html
     assert "MB — our follow-up" in html
     assert "Unassigned" in html
@@ -65,7 +65,7 @@ def test_empty_sections_do_not_render(client):
             database.set_spillover_with_whom(conn, sid, "Sales")
     finally:
         conn.close()
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert "Sales — follow-up with Sales" in html
     assert "MB — our follow-up" not in html
     assert "Unassigned" not in html
@@ -73,23 +73,23 @@ def test_empty_sections_do_not_render(client):
 
 def test_callout_box_renders_and_add_route_roundtrip(client):
     # empty -> box rendered but marked co-empty (hidden in print/email)
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert "Call-outs" in html and "co-empty" in html
 
     d = client.post("/report-comments/spillover/add",
                     data={"comment": "cutover risk: SF backlog"}).get_json()
     assert d["ok"]
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert 'value="cutover risk: SF backlog"' in html
     assert 'class="callout-section"' in html          # no longer co-empty
 
     # update + delete via the generic routes
     client.post(f"/report-comments/{d['row']['id']}/update",
                 data={"comment": "updated call-out"})
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert 'value="updated call-out"' in html
     client.post(f"/report-comments/{d['row']['id']}/delete")
-    html = client.get("/spillover/report/view").get_data(as_text=True)
+    html = client.get("/spillover/report/table").get_data(as_text=True)
     assert "updated call-out" not in html
 
     # ecom report key is accepted now too

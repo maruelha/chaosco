@@ -98,14 +98,17 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   "With whom" column (Sales | MB, `spillover_annotations.with_whom`,
   inline AJAX select + multi filter) and "Status report" filter/column
   (in/not-in `spillover_report_selection`, green ✓)
-- Spillover Status Report: select `/spillover/report` (persists selection in
-  `spillover_report_selection`), view `/spillover/report/view` (printable;
-  since 2026-07-10 a compact TABLE grouped by with_whom Sales → MB →
-  Unassigned, critical-first inside sections, inline-editable
-  comment_for_signoff column, 📣 Call-outs box at the top = report_comments
-  edited directly on the report (replaces the bottom Additional section;
-  the /report-comments add route now also accepts the 'ecom' key), wins
-  section), PPT `/spillover/report/ppt` (unchanged card slides)
+- Spillover Status Report: select `/spillover/report` (persists selection
+  in `spillover_report_selection`), TWO coexisting views [USER 2026-07-10:
+  the table is ADDITIONAL, not a replacement]: detailed card view
+  `/spillover/report/view` (printable, critical-first, wins + Additional
+  sections — the original) and compact table `/spillover/report/table`
+  (grouped by with_whom Sales → MB → Unassigned, critical-first inside
+  sections, inline-editable comment_for_signoff column, 📣 Call-outs box =
+  report_comments edited directly on the report; the /report-comments add
+  route also accepts 'ecom'); cross-links in both toolbars + both on the
+  selection screen. PPT `/spillover/report/ppt` (unchanged card slides).
+  Email/export attach the detailed view.
 - Retail list `/retail`, detail `/retail/<id>`
 - Retail Status Report `/retail/report` (buckets from
   `config/status_mappings.yaml` via `app/reporter.py`; Save to Excel appends

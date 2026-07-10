@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spillover Status Report — Compact Table — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5;
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    /* ---- Toolbar (screen only) ---- */
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155;
+      font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+    .btn-primary { background: #1e293b; border-color: #1e293b; color: #fff; }
+    .btn-primary:hover { background: #334155; }
+
+    /* ---- Report header ---- */
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem;
+      margin-bottom: 1.5rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem;
+    }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; line-height: 1.15; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+
+    .rh-stats { display: flex; gap: 2rem; text-align: right; flex-shrink: 0; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; }
+    .rh-stat-val.c-red    { color: #b91c1c; }
+    .rh-stat-val.c-amber  { color: #b45309; }
+
+    /* ---- Sections + table ---- */
+    .rpt-section { margin-bottom: 1.75rem; page-break-inside: avoid; break-inside: avoid; }
+    .rpt-section-head {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      background: #1e293b; color: #f1f5f9; border-radius: 6px 6px 0 0;
+      padding: 0.45rem 0.9rem;
+    }
+    .rpt-section-head.sec-sales { background: #7c2d12; }
+    .rpt-section-head.sec-mb    { background: #1e3a8a; }
+    .rpt-section-title { font-size: 0.88rem; font-weight: 700; flex: 1; }
+    .rpt-section-count { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
+
+    .rpt-table {
+      width: 100%; border-collapse: collapse; font-size: 0.8rem;
+      border: 1px solid #e2e8f0;
+    }
+    .rpt-table th {
+      background: #f1f5f9; color: #64748b; font-weight: 600;
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.35rem 0.6rem; text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .rpt-table td {
+      padding: 0.4rem 0.6rem; border-bottom: 1px solid #f1f5f9;
+      vertical-align: top; color: #334155;
+    }
+    .rpt-table tr:last-child td { border-bottom: none; }
+    .rpt-name { font-weight: 600; color: #0f172a; }
+    .rpt-row--passed { background: #f0faf4; }
+
+    .critical-yes      { color: #b91c1c; font-weight: 700; white-space: nowrap; }
+    .critical-slightly { color: #b45309; font-weight: 600; white-space: nowrap; }
+    .critical-no       { color: #15803d; font-weight: 600; white-space: nowrap; }
+    .critical-none     { color: #94a3b8; }
+
+    .rpt-next { white-space: pre-wrap; }
+    .rpt-orders { font-size: 0.74rem; color: #475569; }
+    .rpt-orders div { padding: 0.05rem 0; }
+    .s4-check { color: #16a34a; font-weight: 700; }
+
+    .rpt-cmt {
+      width: 100%; border: 1px dashed #cbd5e1; border-radius: 4px;
+      padding: 0.25rem 0.4rem; font: inherit; font-size: 0.78rem; color: #334155;
+      background: #fffdf5;
+    }
+    .rpt-cmt:focus { outline: none; border-color: #64748b; background: #fff; }
+
+    .empty-state {
+      text-align: center; padding: 3rem 1rem; color: #94a3b8; font-size: 0.9rem;
+    }
+    .empty-state a { color: #64748b; }
+
+    /* ---- Call-outs (general report-level notes, editable on screen) ---- */
+    .callout-section {
+      border: 1px solid #fcd34d; background: #fffbeb; border-radius: 7px;
+      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+      page-break-inside: avoid; break-inside: avoid;
+    }
+    .callout-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.09em; color: #92400e; margin-bottom: 0.5rem;
+    }
+    .callout-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .callout-list li { display: flex; align-items: center; gap: 0.4rem; }
+    .callout-list li::before { content: "•"; color: #b45309; font-weight: 700; }
+    .co-input {
+      flex: 1; border: none; background: transparent; font: inherit;
+      font-size: 0.85rem; color: #334155; padding: 0.15rem 0.3rem;
+      border-bottom: 1px dashed transparent;
+    }
+    .co-input:hover, .co-input:focus { border-bottom-color: #d6a256; outline: none; }
+    .co-x { padding: 0 0.4rem; font-size: 0.72rem; color: #b91c1c; }
+
+    .wins-section { margin-top: 2rem; border-top: 3px solid #15803d; padding-top: 1.1rem; }
+    .wins-title { font-size: 0.9rem; font-weight: 800; color: #15803d; margin-bottom: 0.75rem; }
+    .wins-grid { display: flex; flex-direction: column; gap: 0.35rem; }
+    .wins-row {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      font-size: 0.84rem; padding: 0.4rem 0.75rem;
+      background: #f0faf4; border-radius: 5px; border-left: 3px solid #15803d;
+    }
+    .wins-name   { font-weight: 600; color: #1e293b; flex: 1; }
+    .wins-area   { font-size: 0.76rem; color: #64748b; }
+    .wins-status { font-size: 0.73rem; color: #15803d; font-weight: 600; white-space: nowrap; }
+
+    /* ---- Print / PDF ---- */
+    @page { size: A4 landscape; margin: 1.5cm; }
+    .print-header { display: none; }
+
+    @media print {
+      body { padding: 0; max-width: none; font-size: 11px; }
+      .toolbar { display: none !important; }
+      .print-header { display: block; margin-bottom: 1.5rem; }
+      .print-header h1 { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+      .print-header p  { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+      .rpt-section-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .rpt-table th { background: #f1f5f9 !important;
+                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .rpt-row--passed, .wins-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .rpt-cmt { border: none; background: transparent; padding: 0; }
+      .co-x, #co-add { display: none !important; }
+      .co-empty { display: none !important; }
+      .callout-section { background: #fffbeb !important;
+                     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .wins-section { page-break-inside: avoid; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+{# ---- Toolbar ---- #}
+<div class="toolbar">
+  <span class="toolbar-title">Spillover Status Report — Compact Table</span>
+  <a href="{{ url_for('spillover_report_select') }}" class="btn">← Edit selection</a>
+  <a href="{{ url_for('spillover_report_view') }}" class="btn">🗇 Detailed view</a>
+  <button class="btn" onclick="window.print()">Print</button>
+  <a href="{{ url_for('spillover_report_ppt') }}" class="btn btn-primary">Download PPT</a>
+  <button class="btn" onclick="downloadHtml()">Download HTML</button>
+  <button class="btn" id="btn-copy-teams" onclick="copyForTeams()">📋 Copy for Teams</button>
+</div>
+<div id="teams-toast" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;
+     background:#1e293b;color:#f1f5f9;padding:0.55rem 1rem;border-radius:6px;
+     font-size:0.82rem;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2)">
+  ✓ Copied — paste into Teams
+</div>
+
+{# ---- Print-only header ---- #}
+<div class="print-header">
+  <h1>Spillover Status Report — from DTC Perspective</h1>
+  <p>{{ today }} &nbsp;·&nbsp; {{ items | length }} item{{ 's' if items | length != 1 else '' }}</p>
+</div>
+
+{# ---- Report header ---- #}
+{% set critical_count  = items | selectattr('critical_for_signoff', 'equalto', 'yes') | list | length %}
+{% set slightly_count  = items | selectattr('critical_for_signoff', 'equalto', 'slightly') | list | length %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Core South</div>
+    <div class="rh-title">Spillover Status Report — from DTC Perspective</div>
+    <div class="rh-date">{{ today }}</div>
+  </div>
+  <div class="rh-stats">
+    <div class="rh-stat">
+      <div class="rh-stat-val">{{ items | length }}</div>
+      <div class="rh-stat-lbl">Items</div>
+    </div>
+    {% if critical_count %}
+    <div class="rh-stat">
+      <div class="rh-stat-val c-red">{{ critical_count }}</div>
+      <div class="rh-stat-lbl">Critical</div>
+    </div>
+    {% endif %}
+    {% if slightly_count %}
+    <div class="rh-stat">
+      <div class="rh-stat-val c-amber">{{ slightly_count }}</div>
+      <div class="rh-stat-lbl">Slightly critical</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---- Call-outs — general report-level space, editable right here ---- #}
+<div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
+     id="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list" id="callout-list">
+    {% for c in report_comments %}
+    <li data-id="{{ c.id }}">
+      <input type="text" class="co-input" value="{{ c.comment or '' }}"
+             placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
+</div>
+
+{% if not items %}
+  <div class="empty-state">
+    No items selected. <a href="{{ url_for('spillover_report_select') }}">Go back and select items.</a>
+  </div>
+{% endif %}
+
+{# ---- Sections grouped by who follows up (Sales · MB · Unassigned) ---- #}
+{% set sections = [
+    ('Sales', 'sec-sales', 'Sales — follow-up with Sales'),
+    ('MB',    'sec-mb',    'MB — our follow-up'),
+    (None,    '',          'Unassigned'),
+] %}
+{% for who, sec_class, sec_title in sections %}
+{% set sec_items = items | selectattr('with_whom', 'equalto', who) | list %}
+{% if sec_items %}
+<div class="rpt-section">
+  <div class="rpt-section-head {{ sec_class }}">
+    <span class="rpt-section-title">{{ sec_title }}</span>
+    <span class="rpt-section-count">{{ sec_items | length }} item{{ 's' if sec_items | length != 1 else '' }}</span>
+  </div>
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th style="width:1.6rem">#</th>
+        <th style="width:20%">Name</th>
+        <th style="width:7rem">Area</th>
+        <th style="width:8rem">Status</th>
+        <th style="width:5.5rem">Critical</th>
+        <th>Next step</th>
+        <th style="width:18%">Orders</th>
+        <th style="width:16%">Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in sec_items %}
+      {% set is_passed = item.status and item.status.startswith('Passed') %}
+      {% set od = order_details.get(item.spillover_id) %}
+      <tr class="rpt-row{% if is_passed %} rpt-row--passed{% endif %}">
+        <td style="color:#94a3b8">{{ loop.index }}</td>
+        <td class="rpt-name">{% if is_passed %}🎉 {% endif %}{{ item.name or '(no name)' }}</td>
+        <td>{{ item.area or '—' }}</td>
+        <td>{{ item.status or '—' }}</td>
+        <td>
+          <span class="
+            {%- if item.critical_for_signoff == 'yes' %}critical-yes
+            {%- elif item.critical_for_signoff == 'slightly' %}critical-slightly
+            {%- elif item.critical_for_signoff == 'no' %}critical-no
+            {%- else %}critical-none{% endif %}">
+            {%- if item.critical_for_signoff == 'yes' %}⚠ Yes
+            {%- elif item.critical_for_signoff == 'slightly' %}~ Slightly
+            {%- elif item.critical_for_signoff == 'no' %}✓ No
+            {%- else %}—{% endif %}
+          </span>
+        </td>
+        <td class="rpt-next">{{ item.next_step or '' }}</td>
+        <td class="rpt-orders">
+          {% for line in od or [] %}
+          <div>{% if line.order_type %}[{{ line.order_type }}] {% endif -%}
+            {{ line.order_number or '—' }}
+            {%- if line.docs_in_s4 %} <span class="s4-check">✓S4</span>{% endif -%}
+            {%- if line.comment %} — {{ line.comment }}{% endif %}</div>
+          {% endfor %}
+        </td>
+        <td>
+          <input type="text" class="rpt-cmt" data-id="{{ item.spillover_id }}"
+                 value="{{ item.comment_for_signoff or '' }}"
+                 placeholder="comment…" onblur="rptComment(this)">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+{# ---- Wins summary ---- #}
+{% set ns = namespace(passed=[]) %}
+{% for item in items %}
+  {% if item.status and item.status.startswith('Passed') %}
+    {% set ns.passed = ns.passed + [item] %}
+  {% endif %}
+{% endfor %}
+{% if ns.passed %}
+<div class="wins-section">
+  <div class="wins-title">🎉 Closed this round — {{ ns.passed | length }} item{{ 's' if ns.passed | length != 1 else '' }}</div>
+  <div class="wins-grid">
+    {% for item in ns.passed %}
+    <div class="wins-row">
+      <span class="wins-name">{{ item.name or '(no name)' }}</span>
+      {% if item.area %}<span class="wins-area">{{ item.area }}</span>{% endif %}
+      <span class="wins-status">✓ {{ item.status }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+function coSave(input) {
+  const li = input.closest('li');
+  const body = new URLSearchParams({ comment: input.value });
+  fetch('/report-comments/' + li.dataset.id + '/update', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 document.getElementById('callout-section').classList.remove('co-empty');
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+function coDel(btn) {
+  const li = btn.closest('li');
+  if (!confirm('Delete this call-out?')) return;
+  fetch('/report-comments/' + li.dataset.id + '/delete', { method: 'POST' })
+    .then(() => li.remove());
+}
+
+function coAdd() {
+  const body = new URLSearchParams({ comment: '' });
+  fetch('/report-comments/spillover/add', { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      const li = document.createElement('li');
+      li.dataset.id = d.row.id;
+      li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
+      document.getElementById('callout-list').appendChild(li);
+      li.querySelector('input').focus();
+    });
+}
+
+// print: hide blank call-out lines (and the whole box when nothing is filled)
+window.addEventListener('beforeprint', () => {
+  let any = false;
+  document.querySelectorAll('#callout-list li').forEach(li => {
+    const filled = li.querySelector('.co-input').value.trim() !== '';
+    li.style.display = filled ? '' : 'none';
+    any = any || filled;
+  });
+  document.getElementById('callout-section').style.display = any ? '' : 'none';
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
+  document.getElementById('callout-section').style.display = '';
+});
+
+function rptComment(input) {
+  const body = new URLSearchParams({ comment_for_signoff: input.value });
+  fetch('/spillover/' + input.dataset.id + '/comment-signoff', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#16a34a';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#b91c1c'; alert('Saving failed — try again.'); });
+}
+
+function downloadHtml() {
+  // persist typed values into attributes so the snapshot keeps them
+  document.querySelectorAll('.rpt-cmt, .co-input').forEach(i => i.setAttribute('value', i.value));
+  const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'spillover_report_table_{{ today }}.html';
+  a.click();
+}
+
+function copyForTeams() {
+  const date = document.querySelector('.rh-date')?.textContent?.trim() || '{{ today }}';
+  const lines = [];
+  lines.push(`📋 **Spillover Status Report — from DTC Perspective** | ${date}`);
+  lines.push('');
+
+  const callouts = [...document.querySelectorAll('.co-input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  if (callouts.length) {
+    lines.push('**📣 Call-outs**');
+    callouts.forEach(c => lines.push(`• ${c}`));
+    lines.push('');
+  }
+
+  document.querySelectorAll('.rpt-section').forEach(section => {
+    const secTitle = section.querySelector('.rpt-section-title')?.textContent?.trim() || '';
+    lines.push(`**${secTitle}**`);
+    section.querySelectorAll('tbody tr').forEach((row, idx) => {
+      const cells    = row.querySelectorAll('td');
+      const name     = cells[1]?.textContent?.trim() || '';
+      const status   = cells[3]?.textContent?.trim() || '';
+      const critical = cells[4]?.textContent?.trim().replace('—', '').trim();
+      const nextStep = cells[5]?.textContent?.trim() || '';
+      const orders   = [...(cells[6]?.querySelectorAll('div') || [])]
+        .map(d => d.textContent.trim()).filter(Boolean);
+      const comment  = cells[7]?.querySelector('.rpt-cmt')?.value?.trim() || '';
+
+      let head = `${idx + 1}. ${name} — ${status}`;
+      if (critical) head += ` (${critical})`;
+      lines.push(head);
+      if (nextStep) nextStep.split('\n').forEach(
+        (ln, i) => lines.push(i === 0 ? `   Next step: ${ln}` : `              ${ln}`));
+      orders.forEach(o => lines.push(`   • ${o}`));
+      if (comment) lines.push(`   Comment: ${comment}`);
+    });
+    lines.push('');
+  });
+
+  const text = lines.join('\n').trimEnd();
+  navigator.clipboard.writeText(text).then(showToast).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast();
+  });
+}
+
+function showToast() {
+  const toast = document.getElementById('teams-toast');
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+</script>
+</body>
+</html>
