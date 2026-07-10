@@ -597,7 +597,7 @@
       <span class="screen-url">GET /spillover/report/view</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Standalone print-ready report titled <strong>Spillover Status Report — from DTC Perspective</strong>. Professional document layout — dark header bar per item, metadata strip (Area · Status · Critical for sign-off), next step with left-border accent, and an order details table when entries exist. Items are sorted: Critical → Slightly critical → Not critical → unset. Summary stats in header. Opens in a new tab.</p>
+      <p class="screen-desc">Standalone print-ready report titled <strong>Spillover Status Report — from DTC Perspective</strong>. Since 2026-07-10 a <strong>compact table layout</strong> (same content, more concentrated [USER]): items grouped into sections by <strong>With whom</strong> — Sales (rust header) → MB (blue) → Unassigned — each a table with # · Name · Area · Status · Critical · Next step · Orders (one line per order incl. ✓S4) · <strong>Comment</strong> (inline-editable input → <code>POST /spillover/&lt;id&gt;/comment-signoff</code>, only-this-field upsert of <code>comment_for_signoff</code>; static in print/email). Critical-first order inside each section; empty sections don't render; passed rows tinted green + 🎉. Wins and Additional sections unchanged; Copy-for-Teams produces the grouped text. Summary stats in header. Opens in a new tab; print is A4 landscape.</p>
       <div class="features">
         <span class="feat-label">Per-item sections</span>
         <span class="feat-value">Numbered header (dark navy) · Metadata strip (3 cells: Area · Status · Critical) · Next Step (pre-wrap, left-border accent) · Order Details table (Type · Order Number · Comment · S4 docs ✓)</span>

@@ -99,8 +99,11 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   inline AJAX select + multi filter) and "Status report" filter/column
   (in/not-in `spillover_report_selection`, green ✓)
 - Spillover Status Report: select `/spillover/report` (persists selection in
-  `spillover_report_selection`), view `/spillover/report/view` (printable,
-  critical-first, wins section), PPT `/spillover/report/ppt`
+  `spillover_report_selection`), view `/spillover/report/view` (printable;
+  since 2026-07-10 a compact TABLE grouped by with_whom Sales → MB →
+  Unassigned, critical-first inside sections, inline-editable
+  comment_for_signoff column, wins section), PPT `/spillover/report/ppt`
+  (unchanged card slides)
 - Retail list `/retail`, detail `/retail/<id>`
 - Retail Status Report `/retail/report` (buckets from
   `config/status_mappings.yaml` via `app/reporter.py`; Save to Excel appends

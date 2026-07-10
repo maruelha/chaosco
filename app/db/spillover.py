@@ -329,13 +329,28 @@ def get_spillover_report_items(conn: sqlite3.Connection) -> list[dict]:
     cur = conn.execute("""
         SELECT s.spillover_id, s.name, s.area, s.status, s.order_numbers,
                a.next_step, a.critical_for_signoff, a.comment_for_signoff,
-               a.importance_for_signoff, a.signoff_group
+               a.importance_for_signoff, a.signoff_group, a.with_whom
         FROM spillover s
         JOIN spillover_report_selection sel ON sel.spillover_id = s.spillover_id
         LEFT JOIN spillover_annotations a ON a.spillover_id = s.spillover_id
         ORDER BY s.area NULLS LAST, s.name
     """)
     return _rows_to_dicts(cur)
+
+
+def set_spillover_comment_for_signoff(conn: sqlite3.Connection, spillover_id: int,
+                                      comment: str | None) -> None:
+    """Only-this-field upsert (inline comment on the report table)."""
+    from datetime import datetime
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO spillover_annotations (spillover_id, comment_for_signoff, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(spillover_id) DO UPDATE SET
+                comment_for_signoff = excluded.comment_for_signoff,
+                updated_at          = excluded.updated_at
+        """, (spillover_id, comment or None, now))
 
 
 # ---------------------------------------------------------------------------

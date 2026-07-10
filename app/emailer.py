@@ -75,7 +75,8 @@ def standalone_html(html: str) -> str:
     hide = ("<style>" + css + "\n"
             ".rt-topbar,.rt-filterbar,.ui-filterbar,.pm-filterbar,dialog,"
             "#enh-widget,.btn,.btn-row,form,.rt-cbtn{display:none!important}"
-            ".comment-input,.rt-comment,.pm-comment{border:none}</style>")
+            ".comment-input,.rt-comment,.pm-comment{border:none}"
+            ".rpt-cmt{border:none;background:transparent;padding:0}</style>")
     return html.replace("</head>", hide + "</head>", 1)
 
 

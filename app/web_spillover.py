@@ -116,6 +116,18 @@ def spillover_comment_save(spillover_id: int):
     })
 
 
+@app.route("/spillover/<int:spillover_id>/comment-signoff", methods=["POST"])
+def spillover_comment_signoff_save(spillover_id: int):
+    """Inline comment column on the report table view."""
+    comment = request.form.get("comment_for_signoff", "").strip() or None
+    conn = _get_conn()
+    try:
+        database.set_spillover_comment_for_signoff(conn, spillover_id, comment)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/spillover/<int:spillover_id>/with-whom", methods=["POST"])
 def spillover_with_whom_save(spillover_id: int):
     """Who follows up: Sales | MB | blank — inline select on the list."""
