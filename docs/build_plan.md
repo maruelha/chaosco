@@ -97,6 +97,13 @@ Last updated: 2026-07-05
    Defect detail (see `docs/claude/coordination.md`).
 2. ~~Email mailing lists~~ ✅ DONE 2026-07-09: named recipient selections +
    All/None quick select on /email-report.
+3. ~~Order-number search~~ ✅ DONE 2026-07-10: global floating 🔍 widget
+   (base.html, hovers over every page incl. the board) searching
+   order_details + the imported order cells of Spillover/Retail/ECOM/
+   Defects, grouped hits linking to the detail pages. Source-registry
+   design (`app/db/search.py`) — FUTURE: topic search = add SQLite FTS5
+   sources there; vectorize ONLY if FTS proves insufficient [discussion
+   2026-07-10].
 
 ### Teams end-of-day review list (planned, placement open)
 

@@ -59,6 +59,8 @@ app/
   web_notes.py      generic notes Blueprint (/n/...)
   web_next_steps.py next-step archive Blueprint (/next-steps/..., registry;
                     storage db/next_steps.py; include _next_step_history.html)
+  web_search.py     global 🔍 widget Blueprint (/search; source registry in
+                    db/search.py — order numbers now, topics via FTS later)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   database.py       facade over app/db/
   db/               core(schema) defects spillover retail notes planning

@@ -15,6 +15,73 @@
   {% block content %}{% endblock %}
 </main>
 
+{# ---- Global search floating panel (order numbers; sources extensible) ---- #}
+<div id="search-widget">
+  <div id="search-panel" class="enh-panel" style="display:none">
+    <div class="enh-panel-header">
+      <strong>🔍 Search</strong>
+      <button class="enh-close-btn" id="search-close">✕</button>
+    </div>
+    <div class="enh-add-form">
+      <input id="search-q" type="text" class="enh-input enh-text-input"
+             placeholder="Order number… (min. 3 characters)" autocomplete="off">
+      <div id="search-hint" style="font-size:0.72rem; color:#888">
+        Searches order details + the imported order-number columns of
+        Spillover, Retail, ECOM and Defects.
+      </div>
+    </div>
+    <div id="search-results" class="enh-list"></div>
+  </div>
+  <button id="search-toggle" class="enh-toggle-btn" title="Search order numbers">🔍 Search</button>
+</div>
+
+<script>
+(function () {
+  const toggle  = document.getElementById('search-toggle');
+  const panel   = document.getElementById('search-panel');
+  const input   = document.getElementById('search-q');
+  const results = document.getElementById('search-results');
+  let open = false, timer = null;
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function setOpen(v) {
+    open = v;
+    panel.style.display = v ? 'flex' : 'none';
+    if (v) input.focus();
+  }
+  toggle.addEventListener('click', () => setOpen(!open));
+  document.getElementById('search-close').addEventListener('click', () => setOpen(false));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+
+  function run() {
+    const q = input.value.trim();
+    if (q.length < 3) { results.innerHTML = ''; return; }
+    fetch('/search/orders.json?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { results.innerHTML = '<em style="color:#999;font-size:0.8rem">' + esc(d.error) + '</em>'; return; }
+        if (!d.groups.length) {
+          results.innerHTML = '<em style="color:#999;font-size:0.8rem">No hits for “' + esc(d.q) + '”.</em>';
+          return;
+        }
+        results.innerHTML = d.groups.map(g =>
+          '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-top:0.3rem">' + esc(g.group) + '</div>' +
+          g.hits.map(h =>
+            '<a class="enh-item" style="display:block;text-decoration:none;color:inherit;cursor:pointer" href="' + h.url + '">' +
+            '<div style="font-weight:600">' + esc(h.label) + '</div>' +
+            '<div style="color:#666;font-size:0.76rem">' + esc(h.match || '') + '</div></a>'
+          ).join('')
+        ).join('');
+      });
+  }
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 300); });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(timer); run(); } });
+}());
+</script>
+
 {# ---- Future Enhancements floating panel ---- #}
 <div id="enh-widget">
   <button id="enh-toggle" class="enh-toggle-btn" title="Future Enhancements">

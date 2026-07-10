@@ -235,6 +235,7 @@
     <li><a href="#test-limitation-detail">Test Limitations — Detail / New</a></li>
 
     <li class="group-label">Global Widget</li>
+    <li><a href="#search-widget-card">Search Widget (order numbers)</a></li>
     <li><a href="#enhancements-panel">Enhancements Panel</a></li>
   </ul>
 </div>
@@ -1655,6 +1656,23 @@
 
 <div class="section s-global">
   <div class="section-heading">Global Widget</div>
+
+  <!-- Search Widget -->
+  <div class="screen-card" id="search-widget-card">
+    <div class="screen-card-header">
+      <span class="screen-title">🔍 Search Widget (order numbers)</span>
+      <span class="screen-url">Available on every page (in base.html) · GET /search/orders.json</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Floating "🔍 Search" button directly above the Enhancements button — hovers over every page incl. the Requirements Board (added 2026-07-10). Type an order number (min. 3 characters, contains-match, debounced) and get grouped hits, each linking straight to the object's detail page.</p>
+      <div class="features">
+        <span class="feat-label">Sources (registry in <code>app/db/search.py</code>)</span>
+        <span class="feat-value">Order-details lines (pinned entity resolved: Spillover / old Gatekeeper / ECOM) · Spillover "Order numbers" cell · Retail order + old-order cells · ECOM order + old-order cells · Defects order cell. One block per source — new sources (e.g. topics via SQLite FTS5, deliberately NOT embeddings until FTS proves insufficient) are one block + one URL mapping in <code>app/web_search.py</code>.</span>
+        <span class="feat-label">Results</span>
+        <span class="feat-value">Grouped by source, max 20/source: entity label + matched text; click navigates. Orphaned order-details lines are skipped. Hidden in print and board snapshots.</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Enhancements Panel -->
   <div class="screen-card" id="enhancements-panel">

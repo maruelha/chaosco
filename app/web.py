@@ -59,6 +59,11 @@ from app.web_next_steps import bp as _ns_bp
 _db_ns.init_schema(_db_path)
 app.register_blueprint(_ns_bp)
 
+# Global search (2026-07-10) — floating 🔍 widget in base.html; source
+# registry in app/db/search.py (order numbers now, topics via FTS later).
+from app.web_search import bp as _search_bp
+app.register_blueprint(_search_bp)
+
 
 if __name__ == "__main__":
     import threading

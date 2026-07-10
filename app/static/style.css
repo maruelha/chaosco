@@ -1013,6 +1013,9 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 
 /* --------------------------------------------------------------- enhancements widget */
 #enh-widget { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }
+/* search widget sits directly above the enhancements button, same look */
+#search-widget { position: fixed; bottom: 3.6rem; right: 1.25rem; z-index: 1001; display: flex; flex-direction: column; align-items: flex-end; }
+#search-results a.enh-item:hover { border-color: #94a3b8; background: #f8fafc; }
 .enh-toggle-btn { background: #1a1a2e; color: #fff; border: none; border-radius: 20px; padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
 .enh-toggle-btn:hover { background: #2d2d50; }
 .enh-panel { flex-direction: column; width: 380px; max-height: 75vh; background: #fff; border: 1px solid #d0d0d0; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,.18); margin-bottom: 0.5rem; overflow: hidden; }
@@ -1297,7 +1300,7 @@ tr.rt-countries td { background:#fafafd; padding:8px 12px 10px; }
 /* ---- print (reports/boards print clean) ---- */
 @media print {
   .rt-topbar, .ui-filterbar, .rt-filterbar, .pm-filterbar, .rt-cbtn, .btn, .btn-row,
-  dialog, form, #enh-widget, header a.site-title { display:none !important; }
+  dialog, form, #enh-widget, #search-widget, header a.site-title { display:none !important; }
   details.ui-section, details.rt-section { box-shadow:none; border-color:#999; break-inside:avoid-page; }
   .stat-card, .rt-stat { box-shadow:none; }
   .comment-input, .rt-comment, .pm-comment { border:none; }
