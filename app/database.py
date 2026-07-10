@@ -28,3 +28,4 @@ from app.db.topics import *        # noqa: F401,F403
 from app.db.entity_links import *  # noqa: F401,F403
 from app.db.jira import *          # noqa: F401,F403
 from app.db.ecom import *          # noqa: F401,F403
+from app.db.next_steps import *    # noqa: F401,F403

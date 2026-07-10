@@ -123,7 +123,15 @@
         <label for="f-action_needed">Action needed</label>
       </div>
       <div class="form-field">
-        <label for="f-nextstep">Next step</label>
+        <label for="f-nextstep">Next step
+          <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"
+                  data-entity-type="ecom" data-entity-id="{{ row.ecom_id }}"
+                  data-ns-target="#f-nextstep"
+                  title="archive the current next step and start fresh">↻ New next step</button>
+          <button type="button" class="btn btn-sm js-ns-history"
+                  data-entity-type="ecom" data-entity-id="{{ row.ecom_id }}"
+                  data-ns-label="{{ row.test_case_id }} / {{ row.country }}">History</button>
+        </label>
         <textarea id="f-nextstep" name="next_step" rows="3">{{ row.next_step or '' }}</textarea>
       </div>
       <div class="form-field">
@@ -167,6 +175,7 @@
 {% endwith %}
 
 {% include '_order_details.html' %}
+{% include '_next_step_history.html' %}
 
 <div class="btn-row">
   <a href="{{ url_for('ecom.ecom_list') }}" class="btn">&#8592; Back to ECOM</a>

@@ -242,6 +242,20 @@ def relink_gatekeeper_orders(conn: sqlite3.Connection, jira_id: str,
     return cur.rowcount
 
 
+def set_ecom_next_step(conn: sqlite3.Connection, jira_id: str,
+                       next_step: str | None) -> None:
+    """Only-this-field upsert (used by the next-step archive component)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO ecom_annotations (jira_id, next_step, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(jira_id) DO UPDATE SET
+                next_step  = excluded.next_step,
+                updated_at = excluded.updated_at
+        """, (jira_id, next_step or None, now))
+
+
 def upsert_ecom_annotation(conn: sqlite3.Connection, jira_id: str,
                            next_step: str | None = None,
                            comment_history: str | None = None,

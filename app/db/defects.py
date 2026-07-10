@@ -197,6 +197,29 @@ def upsert_defect_annotation(
         )
 
 
+def set_defect_next_step(conn: sqlite3.Connection, defect_id: str,
+                         next_step: str | None) -> None:
+    """Only-this-field upsert (used by the next-step archive component)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """
+            INSERT INTO defect_annotations (defect_id, next_step, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(defect_id) DO UPDATE SET
+                next_step  = excluded.next_step,
+                updated_at = excluded.updated_at
+            """,
+            (defect_id, next_step or None, now),
+        )
+
+
+def get_defect_next_step(conn: sqlite3.Connection, defect_id: str) -> str | None:
+    row = conn.execute("SELECT next_step FROM defect_annotations WHERE defect_id=?",
+                       (defect_id,)).fetchone()
+    return row[0] if row else None
+
+
 def set_defect_dtco2c(conn: sqlite3.Connection, defect_id: str, value: bool) -> None:
     """Set the dtco2c flag for a defect annotation. Creates the annotation row if absent."""
     now = datetime.now().isoformat(timespec="seconds")

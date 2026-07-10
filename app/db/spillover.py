@@ -217,6 +217,21 @@ def get_spillover_by_id(conn: sqlite3.Connection, spillover_id: int) -> dict | N
     return rows[0] if rows else None
 
 
+def set_spillover_next_step(conn: sqlite3.Connection, spillover_id: int,
+                            next_step: str | None) -> None:
+    """Only-this-field upsert (used by the next-step archive component)."""
+    from datetime import datetime
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO spillover_annotations (spillover_id, next_step, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(spillover_id) DO UPDATE SET
+                next_step  = excluded.next_step,
+                updated_at = excluded.updated_at
+        """, (spillover_id, next_step or None, now))
+
+
 def set_spillover_with_whom(conn: sqlite3.Connection, spillover_id: int,
                             with_whom: str | None) -> None:
     """Who follows up: 'Sales' | 'MB' | None [USER 2026-07-09]. Touches ONLY

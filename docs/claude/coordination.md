@@ -136,6 +136,29 @@ Routes: /elinks/<etype>/<eid>/list.json|add, /elinks/<id>/delete (http(s)
 URLs only; label defaults from the URL). Storage app/db/entity_links.py,
 routes app/web_entity_links.py. Currently on: Topic detail.
 
+## Next-step archive (component)
+
+"↻ New next step" [USER 2026-07-10]: archives the CURRENT stored next step
+(table `next_step_history`, generic entity_type/entity_id address) with a
+timestamp and clears the live field — the field stays one line, the past
+stays visible via the History dialog (entries deletable).
+
+    {% include '_next_step_history.html' %}   (once per page)
+    <button class="js-ns-archive" data-entity-type="<type>"
+            data-entity-id="<id>" data-ns-target="#field-selector">…</button>
+    <button class="js-ns-history" data-entity-type=... data-entity-id=...
+            data-ns-label="heading">History</button>
+
+Registry-driven Blueprint `app/web_next_steps.py` (`/next-steps/...`): one
+NSEntity per type says how to READ and CLEAR its field (only-this-field
+upserts: set_spillover_next_step / set_retail_next_step /
+set_defect_next_step / set_ecom_next_step — ecom resolves ecom_id→jira_id).
+Storage `app/db/next_steps.py`. Delegated clicks; `data-ns-target` elements
+are blanked client-side (no target = page reload); CustomEvent
+'ns-archived' for page extras (spillover list blanks the row cell).
+Currently on: Spillover Details popup, Retail detail, ECOM detail, Defect
+detail. Tests: tests/test_next_step_archive.py.
+
 ## Order details (component)
 
 `{% include '_order_details.html' %}` once per page + open buttons

@@ -185,6 +185,20 @@ def get_retail_by_id(conn: sqlite3.Connection, retail_id: int) -> dict | None:
     return rows[0] if rows else None
 
 
+def set_retail_next_step(conn: sqlite3.Connection, retail_id: int,
+                         next_step: str | None) -> None:
+    """Only-this-field upsert (used by the next-step archive component)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO retail_annotations (retail_id, next_step, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(retail_id) DO UPDATE SET
+                next_step  = excluded.next_step,
+                updated_at = excluded.updated_at
+        """, (retail_id, next_step or None, now))
+
+
 def get_retail_annotation(conn: sqlite3.Connection, retail_id: int) -> dict | None:
     rows = _rows_to_dicts(conn.execute(
         "SELECT * FROM retail_annotations WHERE retail_id = ?", (retail_id,)

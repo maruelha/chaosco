@@ -298,7 +298,14 @@
         <textarea id="ann-importance" name="importance_for_signoff" rows="3"></textarea>
       </div>
       <div class="form-field">
-        <label for="ann-nextstep">Next step</label>
+        <label for="ann-nextstep">Next step
+          <button type="button" class="btn btn-sm js-ns-archive" id="ann-ns-archive" style="margin-left:0.5rem"
+                  data-entity-type="spillover" data-entity-id=""
+                  data-ns-target="#ann-nextstep"
+                  title="archive the current next step and start fresh">↻ New next step</button>
+          <button type="button" class="btn btn-sm js-ns-history" id="ann-ns-history"
+                  data-entity-type="spillover" data-entity-id="">History</button>
+        </label>
         <textarea id="ann-nextstep" name="next_step" rows="3"></textarea>
       </div>
     </div>
@@ -381,6 +388,12 @@
     document.getElementById('ann-nextstep').value          = tr.dataset.nextstep;
     document.getElementById('ann-commentsignoff').value    = tr.dataset.commentsignoff;
     document.getElementById('ann-signoffgroup').value      = tr.dataset.signoffgroup || '';
+    // point the next-step archive buttons at THIS row
+    ['ann-ns-archive', 'ann-ns-history'].forEach(id => {
+      const b = document.getElementById(id);
+      b.dataset.entityId = tr.dataset.id;
+      b.dataset.nsLabel = tr.dataset.name;
+    });
     annDlg.showModal();
   }
 
@@ -566,5 +579,17 @@
 <div class="btn-row" style="margin-top:1.2rem">
   <a href="{{ url_for('teams_ping.ping', entity_type='chat', entity_id=0) }}" class="btn" title="open a Teams chat with anyone">&#128172; Teams chat</a>
   {% include '_teams_channels.html' %}
+  {% include '_next_step_history.html' %}
+  <script>
+    // next-step archived from the Details popup → blank the row's cell too
+    document.addEventListener('ns-archived', function (e) {
+      if (e.detail.entityType !== 'spillover') return;
+      const tr = document.querySelector('tr[data-id="' + e.detail.entityId + '"]');
+      if (!tr) return;
+      tr.dataset.nextstep = '';
+      const cell = tr.querySelector('.cell-nextstep .cell-edit');
+      if (cell) cell.innerHTML = '<span class="cell-placeholder">— click to edit</span>';
+    });
+  </script>
 </div>
 {% endblock %}

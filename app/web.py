@@ -53,6 +53,12 @@ from app.web_ecom import bp as _ecom_bp
 _db_ecom.init_schema(_db_path)
 app.register_blueprint(_ecom_bp)
 
+# Next-step archive (generic component, 2026-07-10) — registry-driven.
+from app.db import next_steps as _db_ns
+from app.web_next_steps import bp as _ns_bp
+_db_ns.init_schema(_db_path)
+app.register_blueprint(_ns_bp)
+
 
 if __name__ == "__main__":
     import threading

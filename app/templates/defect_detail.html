@@ -51,7 +51,15 @@
       </div>
 
       <div class="form-field">
-        <label for="f-next_step">Next step</label>
+        <label for="f-next_step">Next step
+          <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"
+                  data-entity-type="defect" data-entity-id="{{ defect.defect_id }}"
+                  data-ns-target="#f-next_step"
+                  title="archive the current next step and start fresh">↻ New next step</button>
+          <button type="button" class="btn btn-sm js-ns-history"
+                  data-entity-type="defect" data-entity-id="{{ defect.defect_id }}"
+                  data-ns-label="{{ defect.defect_id }}">History</button>
+        </label>
         <input id="f-next_step" type="text" name="next_step" value="{{ defect.next_step or '' }}"
                placeholder="What needs to happen next?">
       </div>
@@ -169,5 +177,7 @@
   });
   {% if added_to_meeting %}document.getElementById('mp-form-wrap').style.display = '';{% endif %}
 </script>
+
+{% include '_next_step_history.html' %}
 
 {% endblock %}

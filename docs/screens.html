@@ -1643,6 +1643,8 @@
         <span class="feat-value"><code>_teams_channels.html</code> include — button + dialog: saved channels open in the Teams client; add via "Get link to channel" (validated) / remove inline. Stored as Links with tool = "Teams Channel" (also on /links). Fully AJAX. Currently at the bottom of Defects and Spillover.</span>
         <span class="feat-label">Entity links</span>
         <span class="feat-value"><code>_entity_links.html</code> include (with el_entity_type / el_entity_id) — per-entity URL list (table <code>entity_links</code>), add/delete, http(s)-only. Currently on the Topic working page.</span>
+        <span class="feat-label">Next-step archive (2026-07-10)</span>
+        <span class="feat-value"><code>_next_step_history.html</code> include (once per page) + buttons with class <code>js-ns-archive</code> / <code>js-ns-history</code> and <code>data-entity-type/-id</code>. "↻ New next step" archives the current STORED next step into <code>next_step_history</code> (timestamped) and clears the live field (<code>POST /next-steps/&lt;type&gt;/&lt;id&gt;/archive</code>, registry-driven Blueprint <code>web_next_steps.py</code> — only-this-field upserts per vertical); "History" opens the shared dialog (newest first, entries deletable). Delegated clicks; <code>data-ns-target</code> selectors are blanked client-side. Currently on: Spillover Details popup (also blanks the row cell via the <code>ns-archived</code> event), Retail detail, ECOM detail, Defect detail.</span>
         <span class="feat-label">Notes coverage update</span>
         <span class="feat-value">Contacts and Links now carry the FULL notes module and are inbox filing targets (picker options Contact / Link).</span>
       </div>
