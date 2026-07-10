@@ -163,7 +163,7 @@ def _slide_defects(prs, defects: list[dict], today: str,
                     f"Retail Defects — Active (excl. Confirmed & Withdrawn) · {today}")
         _add_text(s, "Retail Defects — Active (excl. Confirmed & Withdrawn)" + title_suffix,
                   M, 1.16, CW, 0.30, font=HEAD, size=15, bold=True, color=INK)
-        _add_text(s, f"{len(defects)} active defects  ·  Impacted = test cases referencing the defect and not yet passed  ·  MB = DTC O2C follow-up",
+        _add_text(s, f"{len(defects)} active defects  ·  Impacted = test cases referencing the defect and not yet passed  ·  MB = marked DTC in the Excel's Sales-or-DTC column",
                   M, 1.48, CW, 0.24, font=BODY, size=9, italic=True, color=SUB)
 
         ty = 1.78; hH = 0.34

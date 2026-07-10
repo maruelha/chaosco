@@ -25,6 +25,7 @@ from app.config_loader import load_config
 _HEADER_MAP: dict[str, str] = {
     "ecom/retail":                                               "channel",
     "channel":                                                   "channel",
+    "sales or dtc":                                              "sales_or_dtc",
     "solman status":                                             "solman_status",
     "defect id":                                                 "defect_id",
     "solman name":                                               "solman_name",

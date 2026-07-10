@@ -22,11 +22,12 @@ def conn(tmp_path):
     c.close()
 
 
-def _defect(conn, defect_id, dtco2c=None, status="In Progress"):
+def _defect(conn, defect_id, dtco2c=None, status="In Progress", sales_or_dtc=None):
     with conn:
         conn.execute(
-            "INSERT INTO defects (defect_id, channel, solman_status) VALUES (?, 'Retail', ?)",
-            (defect_id, status))
+            "INSERT INTO defects (defect_id, channel, solman_status, sales_or_dtc)"
+            " VALUES (?, 'Retail', ?, ?)",
+            (defect_id, status, sales_or_dtc))
         if dtco2c is not None:
             conn.execute(
                 "INSERT INTO defect_annotations (defect_id, dtco2c) VALUES (?,?)",
@@ -71,6 +72,26 @@ def test_mb_sales_split_and_undecided(conn):
     assert totals["sales"] == 2                       # decided-Sales + undecided
     assert totals["total"] == 3
     assert [d["defect_id"] for d in totals["undecided"]] == ["D-UNSET"]
+
+
+def test_excel_sales_or_dtc_drives_split_flag_is_fallback(conn):
+    """USER 2026-07-10: the Excel 'Sales or DTC' column is authoritative;
+    the manual DTC O2C flag only fills in when the cell is blank."""
+    _defect(conn, "D-XLDTC", sales_or_dtc="DTC")               # excel DTC, no flag
+    _defect(conn, "D-XLSALES", dtco2c=1, sales_or_dtc="Sales") # excel beats flag
+    _defect(conn, "D-BLANK-FLAG", dtco2c=1)                    # blank -> flag
+    _defect(conn, "D-BLANK-NONE")                              # neither -> Sales + note
+    for d in ("D-XLDTC", "D-XLSALES", "D-BLANK-FLAG", "D-BLANK-NONE"):
+        _tc(conn, f"t-{d}", d, "Blocked DTC")
+
+    rows = {r["defect_id"]: r for r in get_retail_defects_impacted(conn, PASSED)}
+    assert rows["D-XLDTC"]["dtco2c"] == 1        # MB via Excel
+    assert rows["D-XLSALES"]["dtco2c"] == 0      # Sales via Excel, flag overruled
+    assert rows["D-BLANK-FLAG"]["dtco2c"] == 1   # MB via fallback flag
+    assert rows["D-BLANK-NONE"]["dtco2c"] == 0   # Sales by default
+    # only the truly undecided one lands in the diagnostics note
+    assert [d["defect_id"] for d in
+            compute_impacted_totals(list(rows.values()))["undecided"]] == ["D-BLANK-NONE"]
 
 
 def test_confirmed_and_withdrawn_defects_excluded(conn):

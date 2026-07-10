@@ -17,7 +17,7 @@ _DATE_FIELDS = frozenset({"date_reported", "date_closed"})
 
 # All columns that are refreshed on every import (everything except defect_id and first_seen).
 _UPSERT_COLS = [
-    "channel", "solman_name", "raised_by", "order_number",
+    "channel", "sales_or_dtc", "solman_name", "raised_by", "order_number",
     "date_reported", "country", "scenario", "exists_in_production",
     "affected_testcases_raw", "retest_dependency", "blocks_execution",
     "defect_reason", "solman_status", "priority", "assigned_to",

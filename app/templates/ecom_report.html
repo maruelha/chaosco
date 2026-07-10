@@ -85,8 +85,8 @@
 <h2 class="rr-section-title" style="margin-top:2rem">ECOM Defects — Active (excl. Confirmed &amp; Withdrawn)</h2>
 <p style="font-size:.82rem;color:#6e6e73;margin:-.25rem 0 .75rem">
   <strong>Impacted</strong> = ECOM test cases referencing the defect that have not
-  passed yet. MB = defects with the DTC O2C flag; without a decision the defect
-  counts as Sales — same rules as the Retail report.
+  passed yet. MB = the Excel's "Sales or DTC" column says DTC (manual DTC O2C
+  flag as blank-cell fallback; neither → Sales) — same rules as the Retail report.
 </p>
 
 {% if impacted_defects %}

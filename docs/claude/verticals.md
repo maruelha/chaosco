@@ -109,9 +109,11 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   [USER 2026-07-06]: TC references the defect AND has not passed yet (passed
   family = the passed_with_dtc bucket, one definition via
   `reporter.passed_family`); passed refs stay visible muted "(+N passed)"
-  (`get_retail_defects_impacted` + `compute_impacted_totals`). MB vs Sales =
-  the defect's manual DTC O2C flag; unset counts as Sales — diagnostics
-  shows an amber "no MB/Sales decision" note listing those defects.
+  (`get_retail_defects_impacted` + `compute_impacted_totals`). MB vs Sales
+  [USER 2026-07-10]: the Excel's "Sales or DTC" column (imported as
+  `defects.sales_or_dtc`) DRIVES the split — DTC → MB, Sales → Sales; the
+  manual DTC O2C flag only fills in when the cell is blank; neither →
+  Sales + amber "no MB/Sales decision" note on diagnostics.
 - Sign-off reports `/report/retail`, `/report/ecom`; production defects
   `/prod_defects`
 - PPT builders: `app/ppt_utils.py` (shared primitives), `app/ppt_retail.py`,

@@ -40,9 +40,10 @@
 <div style="background:#fff8e6;border:1px solid #e6c66e;border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem">
   <strong style="font-size:.85rem">⚠ {{ undecided_defects|length }} active defect(s) without an MB/Sales decision</strong>
   <p style="font-size:.8rem;color:#6e6e73;margin:.3rem 0 .4rem">
-    The DTC O2C checkbox was never set on these defects, so their impacted test
-    cases silently count as <strong>Sales</strong>. Set the checkbox on the defect
-    if they are actually our (MB) follow-up.
+    Neither the Excel's <strong>"Sales or DTC"</strong> column nor the manual
+    DTC O2C checkbox says anything for these defects, so their impacted test
+    cases silently count as <strong>Sales</strong>. Fill the Excel column (and
+    re-import) or set the checkbox on the defect.
   </p>
   <span style="font-size:.82rem">
     {% for d in undecided_defects %}

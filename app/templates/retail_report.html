@@ -117,8 +117,9 @@
 <p style="font-size:.82rem;color:#6e6e73;margin:-.25rem 0 .75rem">
   <strong>Impacted</strong> = test cases referencing the defect that have not
   passed yet (passed / conditionally passed / pending-solman no longer count,
-  even if the reference is still in the Excel). MB = defects with the DTC O2C
-  flag; without a decision the defect counts as Sales.
+  even if the reference is still in the Excel). MB = the Excel's
+  <strong>"Sales or DTC"</strong> column says DTC (the manual DTC O2C flag only
+  fills in when the cell is blank; neither → Sales).
 </p>
 
 {% if impacted_defects %}

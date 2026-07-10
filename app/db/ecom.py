@@ -200,14 +200,20 @@ def get_ecom_defects_impacted(conn: sqlite3.Connection,
                               passed_statuses: list[str]) -> list[dict]:
     """ECOM-channel twin of get_retail_defects_impacted: active defects with
     counts of ECOM test cases that reference them AND have not passed yet
-    (same passed family + same MB/Sales dtco2c rule)."""
+    (same passed family; same split rule — the Excel "Sales or DTC" column
+    drives MB vs Sales, the manual dtco2c flag is the blank-cell fallback)."""
     passed_keys = [s.strip().lower() for s in passed_statuses]
     ph = ",".join("?" for _ in passed_keys) or "''"
     sql = f"""
         SELECT d.defect_id, d.solman_name, d.assigned_to, d.date_reported,
-               d.solman_status,
-               COALESCE(a.dtco2c, 0) AS dtco2c,
-               (a.dtco2c IS NULL) AS dtco2c_unset,
+               d.solman_status, d.sales_or_dtc,
+               CASE
+                   WHEN LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) = 'dtc'   THEN 1
+                   WHEN LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) = 'sales' THEN 0
+                   ELSE COALESCE(a.dtco2c, 0)
+               END AS dtco2c,
+               (LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) NOT IN ('dtc', 'sales')
+                AND a.dtco2c IS NULL) AS dtco2c_unset,
                (SELECT COUNT(*) FROM ecom e
                 WHERE e.defect_id_ref IS NOT NULL
                   AND e.defect_id_ref LIKE '%' || d.defect_id || '%'

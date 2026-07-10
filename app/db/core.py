@@ -343,6 +343,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     """)
     conn.commit()
     # Additive migrations — safe to run on existing DBs
+    for col in ("sales_or_dtc TEXT",):  # Excel "Sales or DTC" column [USER 2026-07-10]
+        try:
+            conn.execute(f"ALTER TABLE defects ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     for col in ("critical_for_signoff TEXT", "comment_for_signoff TEXT", "signoff_group TEXT",
                 "with_whom TEXT"):  # Sales | MB — who follows up [USER 2026-07-09]
         try:

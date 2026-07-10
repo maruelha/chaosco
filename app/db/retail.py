@@ -251,16 +251,24 @@ def get_retail_defects_impacted(conn: sqlite3.Connection,
     impacted even if the reference is still written in the Excel column.
     passed_statuses is the report's passed family (status_mappings
     passed_with_dtc — ONE definition of "passed"); passed_tc_count keeps
-    those visible as muted info. dtco2c splits totals into MB (our
-    follow-up) vs Sales; dtco2c_unset marks defects where nobody decided
-    (they count as Sales — diagnostics lists them)."""
+    those visible as muted info.
+
+    MB vs Sales split [USER 2026-07-10]: the Excel's "Sales or DTC" column
+    DRIVES it (DTC → MB, Sales → Sales); the manual DTC O2C flag is only
+    the fallback when the cell is blank. dtco2c_unset (diagnostics note) =
+    neither the Excel nor the flag says anything — counts as Sales."""
     passed_keys = [s.strip().lower() for s in passed_statuses]
     ph = ",".join("?" for _ in passed_keys) or "''"
     sql = f"""
         SELECT d.defect_id, d.solman_name, d.assigned_to, d.date_reported,
-               d.solman_status,
-               COALESCE(a.dtco2c, 0) AS dtco2c,
-               (a.dtco2c IS NULL) AS dtco2c_unset,
+               d.solman_status, d.sales_or_dtc,
+               CASE
+                   WHEN LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) = 'dtc'   THEN 1
+                   WHEN LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) = 'sales' THEN 0
+                   ELSE COALESCE(a.dtco2c, 0)
+               END AS dtco2c,
+               (LOWER(TRIM(COALESCE(d.sales_or_dtc, ''))) NOT IN ('dtc', 'sales')
+                AND a.dtco2c IS NULL) AS dtco2c_unset,
                (SELECT COUNT(*) FROM retail r
                 WHERE r.defect_id_ref IS NOT NULL
                   AND r.defect_id_ref LIKE '%' || d.defect_id || '%'
