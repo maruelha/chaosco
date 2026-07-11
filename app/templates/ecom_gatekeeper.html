@@ -157,6 +157,7 @@
       <tr>
         <th style="width:8rem">Jira ID</th>
         <th style="width:9rem">Solman ID</th>
+        <th>Summary</th>
         <th>Order numbers</th>
         <th style="width:10rem">Source</th>
       </tr>
@@ -167,6 +168,7 @@
       <tr{% if not o.orders %} style="color:#999"{% endif %}>
         <td class="mono" style="font-size:0.78rem">{{ i.jira_key }}</td>
         <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
+        <td style="font-size:0.82rem">{{ i.summary or "—" }}</td>
         <td style="font-size:0.82rem">
           {% for line in o.orders %}<div>{{ line }}</div>{% else %}—{% endfor %}
         </td>
@@ -187,13 +189,14 @@
 
 <script>
 function gkOrdersCopy() {
-  const lines = [["Jira ID", "Solman ID", "Order numbers", "Source"].join("\t")];
+  const lines = [["Jira ID", "Solman ID", "Summary", "Order numbers", "Source"].join("\t")];
   document.querySelectorAll("#gk-orders-table tbody tr").forEach(tr => {
     const c = tr.querySelectorAll("td");
-    const orders = [...c[2].querySelectorAll("div")].map(d => d.textContent.trim()).join("; ")
-                   || c[2].textContent.trim();
+    const orders = [...c[3].querySelectorAll("div")].map(d => d.textContent.trim()).join("; ")
+                   || c[3].textContent.trim();
     lines.push([c[0].textContent.trim(), c[1].textContent.trim(),
-                orders.replace("—", ""), c[3].textContent.trim().replace("—", "")].join("\t"));
+                c[2].textContent.trim().replace("—", ""),
+                orders.replace("—", ""), c[4].textContent.trim().replace("—", "")].join("\t"));
   });
   navigator.clipboard.writeText(lines.join("\n")).then(() => {
     const btn = document.getElementById("gk-orders-copy");

@@ -126,6 +126,9 @@ def test_order_report_renders_on_page(client):
     client.post("/ecom-gatekeeper/import-jira")
     html = client.get("/ecom-gatekeeper").get_data(as_text=True)
     assert "Order numbers report" in html
+    # summary column present in the report table [USER 2026-07-11]
+    report = html.split("Order numbers report")[1].split("</details>")[0]
+    assert "PCS0001MU01_DE_Sportscheck ShipfromDC and Return" in report
     assert "Omni Order: TBY_DC_ANLA1O8PUR" in html
     assert "Return Order: 6000084253" in html
     assert "XXXXXXXXXXX" not in html.split("Order numbers report")[1].split("</details>")[0]
