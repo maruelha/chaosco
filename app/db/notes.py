@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "test_learning", "followup", "shelf", "topic", "contact", "link"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "test_learning", "followup", "shelf", "topic", "contact", "link"}
 
 
 def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
@@ -132,6 +132,10 @@ def file_inbox_item(
     elif target_type == "ecom":
         target_exists = conn.execute(
             "SELECT 1 FROM ecom WHERE ecom_id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "ecom_gatekeeper":
+        target_exists = conn.execute(
+            "SELECT 1 FROM ecom_gatekeeper WHERE id = ?", (target_id,)
         ).fetchone() is not None
     elif target_type == "topic":
         target_exists = conn.execute(
@@ -224,6 +228,18 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
         ))
         return [{"value": str(r["ecom_id"]),
                  "label": f"{r['jira_id']} — {r['test_case_id'] or ''} ({r['country'] or ''})".strip(" —()")}
+                for r in rows]
+    elif target_type == "ecom_gatekeeper":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, jira_id, solman_id, testcase_name FROM ecom_gatekeeper"
+            " WHERE jira_id LIKE ? OR solman_id LIKE ? OR testcase_name LIKE ?"
+            " ORDER BY id LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": " — ".join(x for x in (r["jira_id"], r["solman_id"],
+                                                 r["testcase_name"]) if x)
+                          or f"Gatekeeper row #{r['id']}"}
                 for r in rows]
     elif target_type == "topic":
         rows = _rows_to_dicts(conn.execute(

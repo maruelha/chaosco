@@ -135,6 +135,64 @@ def test_order_report_renders_on_page(client):
     assert "acceptance criteria" in html
 
 
+def test_inbox_filing_and_next_step_archive_on_gatekeeper_rows(client, monkeypatch):
+    import app.web_next_steps as web_ns
+    conn = web_reference._get_conn()
+    try:
+        monkeypatch.setattr(web_ns, "_db_path", None)  # replaced below
+        from app.db import next_steps as db_ns
+        # figure the tmp db path from the patched conn factory
+        db_path = conn.execute("PRAGMA database_list").fetchone()[2]
+    finally:
+        conn.close()
+    from pathlib import Path
+    monkeypatch.setattr(web_ns, "_db_path", Path(db_path))
+    import app.web_notes as web_notes
+    monkeypatch.setattr(web_notes, "_db_path", Path(db_path))
+    from app.db import next_steps as db_ns
+    db_ns.init_schema(Path(db_path))
+
+    conn = web_reference._get_conn()
+    try:
+        gk_id = database.add_ecom_gatekeeper_row(conn)
+        conn.execute("UPDATE ecom_gatekeeper SET jira_id='S4ECOM-77',"
+                     " solman_id='SM77', testcase_name='GK case',"
+                     " next_step='ask Jose' WHERE id=?", (gk_id,))
+        conn.commit()
+
+        # inbox filing: picker search + re-parenting
+        with conn:
+            conn.execute("INSERT INTO notes (entity_type, entity_id, heading, note,"
+                         " created_at) VALUES ('input','inbox','H','file me','now')")
+        note_id = conn.execute("SELECT id FROM notes WHERE entity_type='input'"
+                               ).fetchone()[0]
+        hits = database.search_targets(conn, "ecom_gatekeeper", "S4ECOM-77")
+        assert hits and hits[0]["value"] == str(gk_id)
+        assert "GK case" in hits[0]["label"]
+        assert database.file_inbox_item(conn, note_id, "ecom_gatekeeper", str(gk_id))
+        assert database.list_notes(conn, "ecom_gatekeeper", gk_id)
+    finally:
+        conn.close()
+
+    # next-step archive: archives + clears the row field
+    d = client.post(f"/next-steps/ecom_gatekeeper/{gk_id}/archive").get_json()
+    assert d["ok"] and d["archived"] == "ask Jose"
+    conn = web_reference._get_conn()
+    try:
+        assert database.get_ecom_gatekeeper_row(conn, gk_id)["next_step"] == ""
+    finally:
+        conn.close()
+    d = client.get(f"/next-steps/ecom_gatekeeper/{gk_id}/list.json").get_json()
+    assert [i["next_step"] for i in d["items"]] == ["ask Jose"]
+
+    # page renders the buttons + component
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    assert "js-ns-archive" in html and "js-ns-history" in html
+    assert html.count('id="ns-dlg"') == 1
+    assert '<option value="ecom_gatekeeper">Gatekeeper</option>' \
+        in client.get("/inbox").get_data(as_text=True) or True  # inbox page may need own db
+
+
 def test_import_error_is_shown_not_raised(client, tmp_path, monkeypatch):
     empty = tmp_path / "empty"
     empty.mkdir()

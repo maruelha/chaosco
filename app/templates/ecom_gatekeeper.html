@@ -62,6 +62,12 @@
       <a href="{{ url_for('ecom_gatekeeper_detail', row_id=row.id) }}" class="btn btn-sm">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
       <button type="button" class="btn btn-sm js-open-orders"
               data-entity-type="ecom_gatekeeper" data-entity-id="{{ row.id }}">Orders{% if row.id in docs_s4_ids %}<span class="s4-tick"> ✓</span>{% endif %}</button>
+      <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+              data-entity-type="ecom_gatekeeper" data-entity-id="{{ row.id }}"
+              data-ns-target='tr[data-id="{{ row.id }}"] [data-field="next_step"]'>↻</button>
+      <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+              data-entity-type="ecom_gatekeeper" data-entity-id="{{ row.id }}"
+              data-ns-label="{{ row.testcase_name or row.jira_id or 'Row #' ~ row.id }}">🕘</button>
       <button type="button" class="btn btn-sm btn-danger js-gk-delete" title="Delete row">✕</button>
     </td>
   </tr>
@@ -186,6 +192,7 @@
 
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
+{% include '_next_step_history.html' %}
 
 <script>
 function gkOrdersCopy() {
@@ -279,6 +286,11 @@ function gkJira(btn) {
         `<a href="/ecom-gatekeeper/${id}" class="btn btn-sm">Notes</a>` +
         `<button type="button" class="btn btn-sm js-open-orders"` +
           ` data-entity-type="ecom_gatekeeper" data-entity-id="${id}">Orders</button>` +
+        `<button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"` +
+          ` data-entity-type="ecom_gatekeeper" data-entity-id="${id}"` +
+          ` data-ns-target='tr[data-id="${id}"] [data-field="next_step"]'>↻</button>` +
+        `<button type="button" class="btn btn-sm js-ns-history" title="next-step history"` +
+          ` data-entity-type="ecom_gatekeeper" data-entity-id="${id}">🕘</button>` +
         `<button type="button" class="btn btn-sm btn-danger js-gk-delete" title="Delete row">✕</button>` +
       `</td>`;
     return tr;

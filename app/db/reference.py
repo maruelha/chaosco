@@ -753,6 +753,14 @@ def add_ecom_gatekeeper_row(conn: sqlite3.Connection) -> int:
     return cur.lastrowid
 
 
+def set_ecom_gatekeeper_next_step(conn: sqlite3.Connection, row_id: int,
+                                  next_step: str | None) -> None:
+    """Only-this-field update (used by the next-step archive component)."""
+    conn.execute("UPDATE ecom_gatekeeper SET next_step=? WHERE id=?",
+                 (next_step or "", row_id))
+    conn.commit()
+
+
 def update_ecom_gatekeeper_row(
     conn: sqlite3.Connection, row_id: int,
     jira_id: str, solman_id: str, testcase_name: str, status: str, next_step: str

@@ -66,6 +66,10 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.set_defect_next_step(c, str(i), None),
     ),
     "ecom": NSEntity(_ecom_get, _ecom_clear),
+    "ecom_gatekeeper": NSEntity(
+        lambda c, i: (database.get_ecom_gatekeeper_row(c, int(i)) or {}).get("next_step"),
+        lambda c, i: database.set_ecom_gatekeeper_next_step(c, int(i), None),
+    ),
 }
 
 
