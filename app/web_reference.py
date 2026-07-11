@@ -23,9 +23,13 @@ def ecom_gatekeeper_list():
         rows = database.list_ecom_gatekeeper_rows(conn)
         docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
         from app.db import jira as db_jira   # direct import (facade-order safe)
+        from app.db import gatekeeper as db_gk
         jira_issues = db_jira.list_jira_issues(conn)
         jira_comments = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                          for i in jira_issues}
+        gk_next_steps = db_gk.get_gatekeeper_next_steps(conn)
+        jira_note_counts = {i["jira_key"]: len(database.list_notes(conn, "jira", i["jira_key"]))
+                            for i in jira_issues}
     finally:
         conn.close()
     # order-number report [USER 2026-07-11]: acceptance criteria first,
@@ -38,8 +42,62 @@ def ecom_gatekeeper_list():
                            docs_s4_ids=docs_s4_ids,
                            jira_issues=jira_issues, jira_comments=jira_comments,
                            jira_orders=jira_orders,
+                           gk_next_steps=gk_next_steps,
+                           jira_note_counts=jira_note_counts,
                            jira_ok=request.args.get("jira_ok"),
                            jira_msg=request.args.get("jira_msg"))
+
+
+@app.route("/ecom-gatekeeper/ticket/<jira_key>/next-step", methods=["POST"])
+def gatekeeper_ticket_next_step(jira_key: str):
+    """Inline blur-save of the authored next step on the tickets table."""
+    database_conn = _get_conn()
+    try:
+        database.set_gatekeeper_next_step(
+            database_conn, jira_key,
+            request.form.get("next_step", "").strip() or None)
+    finally:
+        database_conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/ecom-gatekeeper/ticket/<jira_key>", methods=["GET", "POST"])
+def gatekeeper_ticket_detail(jira_key: str):
+    """Detail page per gatekeeper JIRA ticket [USER 2026-07-11] — the current
+    gatekeeper working object: read-only Jira data + authored next step
+    (gatekeeper_annotations, archive component) + notes (entity 'jira')."""
+    from app.db import jira as db_jira
+    from app.jira_importer import extract_order_numbers
+    conn = _get_conn()
+    try:
+        issue = db_jira.get_jira_issue(conn, jira_key)
+        if issue is None:
+            conn.close()
+            return _not_found(jira_key)
+        if request.method == "POST":
+            database.set_gatekeeper_next_step(
+                conn, jira_key, request.form.get("next_step", "").strip() or None)
+            conn.close()
+            return redirect(url_for("gatekeeper_ticket_detail",
+                                    jira_key=jira_key, saved="1"))
+        comments = db_jira.list_jira_comments(conn, jira_key)
+        next_step = database.get_gatekeeper_next_step(conn, jira_key)
+        notes = database.list_notes(conn, "jira", jira_key)
+        attachments_by_note = database.get_attachments_for_notes(
+            conn, [n["id"] for n in notes])
+    finally:
+        conn.close()
+    return render_template(
+        "gatekeeper_ticket.html",
+        issue=issue, comments=comments,
+        orders=extract_order_numbers(issue.get("acceptance_criteria"), comments),
+        next_step=next_step,
+        notes=notes, attachments_by_note=attachments_by_note,
+        saved=request.args.get("saved") == "1",
+        note_added=request.args.get("note_added") == "1",
+        note_saved=request.args.get("note_saved") == "1",
+        note_deleted=request.args.get("note_deleted") == "1",
+    )
 
 
 @app.route("/ecom-gatekeeper/import-jira", methods=["POST"])

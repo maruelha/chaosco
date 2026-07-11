@@ -40,6 +40,8 @@ def client(tmp_path, monkeypatch):
     db_path = tmp_path / "gk.db"
     database.init_db(db_path).close()
     db_jira.init_schema(db_path)
+    from app.db import gatekeeper as db_gk
+    db_gk.init_schema(db_path)
     folder = tmp_path / "jira_gk"
     folder.mkdir()
     (folder / "export.xml").write_text(XML, encoding="utf-8")
@@ -191,6 +193,67 @@ def test_inbox_filing_and_next_step_archive_on_gatekeeper_rows(client, monkeypat
     assert html.count('id="ns-dlg"') == 1
     assert '<option value="ecom_gatekeeper">Gatekeeper</option>' \
         in client.get("/inbox").get_data(as_text=True) or True  # inbox page may need own db
+
+
+def test_jira_ticket_detail_next_step_and_notes(client, monkeypatch):
+    """The Jira ticket is the CURRENT gatekeeper object [USER 2026-07-11]:
+    detail page, authored next step (archive-able), notes, inbox filing."""
+    client.post("/ecom-gatekeeper/import-jira")
+
+    conn = web_reference._get_conn()
+    try:
+        db_path = conn.execute("PRAGMA database_list").fetchone()[2]
+    finally:
+        conn.close()
+    from pathlib import Path
+    import app.web_next_steps as web_ns
+    import app.web_notes as web_notes
+    from app.db import gatekeeper as db_gk
+    from app.db import next_steps as db_ns
+    monkeypatch.setattr(web_ns, "_db_path", Path(db_path))
+    monkeypatch.setattr(web_notes, "_db_path", Path(db_path))
+    db_gk.init_schema(Path(db_path))
+    db_ns.init_schema(Path(db_path))
+
+    # list: next-step input + two buttons per ticket, deprecated section below
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    assert "gk-jns" in html and 'data-entity-type="jira"' in html
+    assert "Deprecated — manual gatekeeper table" in html
+    assert html.index("the gatekeeper working list") < html.index("Deprecated")
+
+    # inline next-step save
+    d = client.post("/ecom-gatekeeper/ticket/S4ECOM-1492/next-step",
+                    data={"next_step": "check delivery in S4"}).get_json()
+    assert d["ok"]
+
+    # detail page renders jira data + the saved next step
+    html = client.get("/ecom-gatekeeper/ticket/S4ECOM-1492").get_data(as_text=True)
+    assert "PCS0001MU01" in html and "Blocked" in html
+    assert "check delivery in S4" in html
+    assert "My next step" in html and "Notes" in html
+
+    # archive via the component -> history, field cleared
+    d = client.post("/next-steps/jira/S4ECOM-1492/archive").get_json()
+    assert d["ok"] and d["archived"] == "check delivery in S4"
+    conn = web_reference._get_conn()
+    try:
+        assert database.get_gatekeeper_next_step(conn, "S4ECOM-1492") is None
+        # notes via the generic module, keyed by the jira key
+        with conn:
+            conn.execute("INSERT INTO notes (entity_type, entity_id, heading, note,"
+                         " created_at) VALUES ('input','inbox','H','file me','now')")
+        note_id = conn.execute("SELECT id FROM notes WHERE entity_type='input'"
+                               ).fetchone()[0]
+        hits = database.search_targets(conn, "jira", "S4ECOM-1492")
+        assert hits and hits[0]["value"] == "S4ECOM-1492"
+        assert database.file_inbox_item(conn, note_id, "jira", "S4ECOM-1492")
+    finally:
+        conn.close()
+    html = client.get("/ecom-gatekeeper/ticket/S4ECOM-1492").get_data(as_text=True)
+    assert "file me" in html                      # filed note on the detail page
+
+    # missing ticket -> 404
+    assert client.get("/ecom-gatekeeper/ticket/NOPE-1").status_code == 404
 
 
 def test_import_error_is_shown_not_raised(client, tmp_path, monkeypatch):

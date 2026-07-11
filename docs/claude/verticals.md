@@ -79,12 +79,25 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Real-file trial (gatekeeper search, 8 tickets, 27 comments): parser OK
   first try; the instance's custom-field names ARE "Epic Link"/"Markets".
   Jira has NO order-number field — order numbers live in comment texts.
-- First UI slice on the OLD gatekeeper page `/ecom-gatekeeper`
-  (2026-07-11): "↻ Update from Jira" button (`POST
-  /ecom-gatekeeper/import-jira`, newest .xml from
-  `jira_gatekeeper_folder`) + collapsible read-only tickets table (Jira ID
-  → open-in-Jira, Solman ID, summary, status, assignee, expandable
-  description + comment thread). Tests: `tests/test_gatekeeper_jira.py`.
+- `/ecom-gatekeeper` [USER 2026-07-11]: the JIRA TICKETS table is THE
+  current gatekeeper; the manual `ecom_gatekeeper` table is DEPRECATED
+  (kept, collapsed at the bottom, still fully functional). "↻ Update from
+  Jira" (`POST /ecom-gatekeeper/import-jira`, newest .xml from
+  `jira_gatekeeper_folder`). Per ticket row: read-only Jira fields +
+  AUTHORED inline next step (blur-save,
+  `POST /ecom-gatekeeper/ticket/<key>/next-step`) with ↻/🕘 archive
+  buttons, Details link (with note count), inline comments expander.
+- Ticket detail page `/ecom-gatekeeper/ticket/<jira_key>`
+  (`gatekeeper_ticket.html`): Jira card (status/assignee/epic/markets,
+  open-in-Jira, extracted order numbers + source, acceptance criteria,
+  description HTML, comment thread) + "My next step" (archive component) +
+  full notes module. Authored data in `app/db/gatekeeper.py`
+  (`gatekeeper_annotations`, jira_key PK — start of Gatekeeper v2 storage,
+  survives the ECOM handover). Notes/next-step entity type = `jira`
+  (registry entries in web_notes + web_next_steps); inbox filing option
+  "Gatekeeper ticket" (search by key / solman id / summary; the old
+  `ecom_gatekeeper` type stays supported for legacy notes). Tests:
+  `tests/test_gatekeeper_jira.py`.
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK; solman_id = summary before
   first "_"; epic/markets from custom fields by NAME; description HTML) +

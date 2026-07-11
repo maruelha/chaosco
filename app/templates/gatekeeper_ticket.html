@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.jira_key }} — Gatekeeper — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('ecom_gatekeeper_list') }}">ECOM Gatekeeper</a>
+  <span>›</span>
+  <span>{{ issue.jira_key }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ issue.jira_key }}</h1>
+  {% if issue.summary %}<p class="page-subtitle">{{ issue.summary }}</p>{% endif %}
+</div>
+
+{# ---- Section 1: Jira (read-only, shared store) ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Jira</h2>
+    <span class="readonly-badge">&#128274; From the Jira store — read only</span>
+  </div>
+  <dl class="field-list">
+    {% set jira_fields = [
+      ("Solman ID",     issue.solman_id),
+      ("Jira status",   issue.jira_status),
+      ("Jira assignee", issue.jira_assignee),
+      ("Type",          issue.type),
+      ("Priority",      issue.priority),
+      ("Epic",          issue.epic),
+      ("Markets",       issue.markets),
+      ("Created",       issue.created),
+      ("Updated",       issue.updated),
+      ("Last import",   issue.last_seen),
+    ] %}
+    {% for label, value in jira_fields %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+    {% endfor %}
+  </dl>
+  {% if issue.link %}
+  <p style="margin:0.6rem 0"><a href="{{ issue.link }}" target="_blank" rel="noopener" class="btn btn-sm">Open in Jira &#8599;</a></p>
+  {% endif %}
+
+  {% if orders.orders %}
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Order numbers
+    <span style="font-weight:400; color:#888">({{ orders.source }})</span></h3>
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem">
+    {% for line in orders.orders %}<div class="mono" style="font-size:0.8rem">{{ line }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if issue.acceptance_criteria %}
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Acceptance criteria</h3>
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.82rem; white-space:pre-wrap">{{ issue.acceptance_criteria }}</div>
+  {% endif %}
+
+  {% if issue.description %}
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Description</h3>
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.6rem 0.9rem; font-size:0.85rem; overflow-x:auto">
+    {{ issue.description | safe }}
+  </div>
+  {% endif %}
+
+  <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Comments ({{ comments|length }})</h3>
+  {% if comments %}
+  <div style="display:flex; flex-direction:column; gap:0.5rem">
+    {% for c in comments %}
+    <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem">
+      {% if c.created %}<div style="color:#888; font-size:0.75rem; margin-bottom:0.2rem">{{ c.created }}</div>{% endif %}
+      <div style="overflow-x:auto">{{ c.body | safe }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:#888; font-size:0.85rem">No comments in the store.</p>
+  {% endif %}
+</div>
+
+{# ---- Section 2: My next step (authored, archive component) ---- #}
+<div class="annotation-card">
+  <div class="card-header-row">
+    <h2>My next step</h2>
+    <span class="editable-badge">&#9998; Editable — keyed by the Jira ticket, survives the ECOM handover</span>
+  </div>
+  {% if saved %}
+  <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
+  {% endif %}
+  <form method="post" action="{{ url_for('gatekeeper_ticket_detail', jira_key=issue.jira_key) }}">
+    <div class="form-stack">
+      <div class="form-field">
+        <label for="f-nextstep">Next step
+          <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"
+                  data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+                  data-ns-target="#f-nextstep"
+                  title="archive the current next step and start fresh">↻ New next step</button>
+          <button type="button" class="btn btn-sm js-ns-history"
+                  data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+                  data-ns-label="{{ issue.jira_key }} — {{ issue.summary or '' }}">History</button>
+        </label>
+        <textarea id="f-nextstep" name="next_step" rows="3">{{ next_step or '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-footer">
+      <span class="last-edited"></span>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div>
+
+{% include '_next_step_history.html' %}
+
+{# ---- Section 3: Notes ---- #}
+{% with entity_type='jira', entity_id=issue.jira_key %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<div class="btn-row">
+  <a href="{{ url_for('ecom_gatekeeper_list') }}" class="btn">&#8592; Back to Gatekeeper</a>
+</div>
+{% endblock %}

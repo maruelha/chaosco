@@ -7,14 +7,15 @@
     <h1>ECOM Gatekeeper Check</h1>
     <div class="page-header-actions">
       <form method="post" action="{{ url_for('ecom_gatekeeper_import_jira') }}" style="display:inline">
-        <button type="submit" class="btn"
-                title="import the newest .xml from the gatekeeper Jira folder — refreshes status, assignee and comments">
+        <button type="submit" class="btn btn-primary"
+                title="import the newest .xml from the gatekeeper Jira folder — refreshes status, assignee, acceptance criteria and comments">
           &#8635; Update from Jira</button>
       </form>
-      <button type="button" class="btn btn-primary" id="btn-add-gk">+ Add row</button>
     </div>
   </div>
-  <p class="page-subtitle">Pre-handoff sense check. Add test cases, work through statuses, then hand orders over to the ECOM test case once passed.</p>
+  <p class="page-subtitle">Pre-handoff sense check on the <strong>Jira tickets</strong> below
+    (↻ Update from Jira refreshes status, assignee, acceptance criteria and comments).
+    The manual table is deprecated and parked at the bottom.</p>
 </div>
 
 {% if jira_msg %}
@@ -26,6 +27,8 @@
 </div>
 {% endif %}
 
+{# ---- DEPRECATED manual table — moved below the Jira sections ---- #}
+{% set deprecated_table %}
 <table class="gk-table">
   <thead>
     <tr>
@@ -76,17 +79,19 @@
   {% endfor %}
   </tbody>
 </table>
+{% endset %}
 
-{# ---- Jira tickets from the shared store ---- #}
-<details class="rt-section" style="margin-top:1.5rem" {% if jira_issues %}open{% endif %}>
-  <summary>Jira tickets (assigned-to-me search)
+{# ---- Jira tickets from the shared store — THE current gatekeeper ---- #}
+<details class="rt-section" open>
+  <summary>Jira tickets — the gatekeeper working list
     <span class="rt-count">{{ jira_issues|length }}</span>
   </summary>
   {% if jira_issues %}
   <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
-    Read-only from the shared Jira store — <strong>↻ Update from Jira</strong>
-    refreshes status, assignee and comments (everything else keeps its
-    first-import value). Order numbers usually live in the comments — expand ▸.
+    Jira fields are read-only from the shared store. <strong>Next step</strong> is
+    yours (saved on blur, keyed by the jira ticket — survives the handover to
+    ECOM); ↻ archives it, 🕘 shows the history. Details = description, comments,
+    orders and notes.
   </p>
   <table class="rt-table">
     <thead>
@@ -94,9 +99,10 @@
         <th style="width:7.5rem">Jira ID</th>
         <th style="width:8.5rem">Solman ID</th>
         <th>Summary</th>
-        <th style="width:8rem">Status</th>
-        <th style="width:11rem">Assignee</th>
-        <th style="width:4.5rem">Comments</th>
+        <th style="width:7.5rem">Status</th>
+        <th style="width:9rem">Assignee</th>
+        <th style="width:15rem">Next step</th>
+        <th style="width:11rem"></th>
       </tr>
     </thead>
     <tbody>
@@ -107,15 +113,28 @@
           {% else %}{{ i.jira_key }}{% endif %}
         </td>
         <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
-        <td>{{ i.summary or "—" }}</td>
+        <td><a href="{{ url_for('gatekeeper_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a></td>
         <td>{{ i.jira_status or "—" }}</td>
         <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
-        <td style="text-align:center; white-space:nowrap">
-          <button type="button" class="rt-cbtn" onclick="gkJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
+        <td>
+          <input type="text" class="rt-comment gk-jns" data-key="{{ i.jira_key }}"
+                 value="{{ gk_next_steps.get(i.jira_key, '') }}"
+                 placeholder="next step…" onblur="gkJnsSave(this)">
+        </td>
+        <td style="white-space:nowrap; text-align:right">
+          <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
+                  data-ns-target='input.gk-jns[data-key="{{ i.jira_key }}"]'>↻</button>
+          <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
+                  data-ns-label="{{ i.jira_key }} — {{ i.summary or '' }}">🕘</button>
+          <a href="{{ url_for('gatekeeper_ticket_detail', jira_key=i.jira_key) }}"
+             class="btn btn-sm">Details{% if jira_note_counts.get(i.jira_key) %} ({{ jira_note_counts[i.jira_key] }}){% endif %}</a>
+          <button type="button" class="rt-cbtn" title="description + comments inline" onclick="gkJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
         </td>
       </tr>
       <tr class="gk-jira-detail" style="display:none">
-        <td colspan="6" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="7" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -190,6 +209,22 @@
 </details>
 {% endif %}
 
+{# ---- DEPRECATED: the old manual gatekeeper table (kept, collapsed) ---- #}
+<details class="rt-section" style="margin-top:1.5rem">
+  <summary>⚠ Deprecated — manual gatekeeper table
+    <span class="rt-count">{{ rows|length }}</span>
+  </summary>
+  <p style="color:#888; font-size:0.85rem; margin:0.6rem 1rem">
+    Replaced by the Jira tickets list above (2026-07-11) — kept for reference
+    until you are sure it can go. Fully functional: inline edits, notes,
+    orders, next-step archive.
+  </p>
+  <div style="margin:0 1rem 0.6rem">
+    <button type="button" class="btn btn-sm" id="btn-add-gk">+ Add row</button>
+  </div>
+  {{ deprecated_table }}
+</details>
+
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
 {% include '_next_step_history.html' %}
@@ -218,6 +253,16 @@ function gkJira(btn) {
   const open = detail.style.display !== "none";
   detail.style.display = open ? "none" : "";
   btn.textContent = btn.textContent.replace(open ? "▾" : "▸", open ? "▸" : "▾");
+}
+
+function gkJnsSave(input) {
+  const body = new URLSearchParams({ next_step: input.value });
+  fetch('/ecom-gatekeeper/ticket/' + encodeURIComponent(input.dataset.key) + '/next-step',
+        { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#1a7f37';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
 }
 
 (function () {

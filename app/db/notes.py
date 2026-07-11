@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "test_learning", "followup", "shelf", "topic", "contact", "link"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link"}
 
 
 def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
@@ -136,6 +136,10 @@ def file_inbox_item(
     elif target_type == "ecom_gatekeeper":
         target_exists = conn.execute(
             "SELECT 1 FROM ecom_gatekeeper WHERE id = ?", (target_id,)
+        ).fetchone() is not None
+    elif target_type == "jira":
+        target_exists = conn.execute(
+            "SELECT 1 FROM jira_issues WHERE jira_key = ?", (target_id,)
         ).fetchone() is not None
     elif target_type == "topic":
         target_exists = conn.execute(
@@ -240,6 +244,16 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
                  "label": " — ".join(x for x in (r["jira_id"], r["solman_id"],
                                                  r["testcase_name"]) if x)
                           or f"Gatekeeper row #{r['id']}"}
+                for r in rows]
+    elif target_type == "jira":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT jira_key, solman_id, summary FROM jira_issues"
+            " WHERE jira_key LIKE ? OR solman_id LIKE ? OR summary LIKE ?"
+            " ORDER BY jira_key LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": r["jira_key"],
+                 "label": f"{r['jira_key']} — {r['summary'] or r['solman_id'] or ''}".rstrip(" —")}
                 for r in rows]
     elif target_type == "topic":
         rows = _rows_to_dicts(conn.execute(

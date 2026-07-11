@@ -31,8 +31,10 @@ follow automatically). Inbox keeps its own routes/UI (capture pad + filing).
 Filing targets (`_INBOX_TARGET_TYPES` in db/notes.py + picker options in
 inbox.html + a search/exists branch each): defect, retail, spillover,
 ecom (added 2026-07-10, search by jira id / test case / name),
-ecom_gatekeeper (added 2026-07-11, search by jira id / solman id / name),
-test_learning, followup, shelf, topic, contact, link.
+ecom_gatekeeper (2026-07-11, legacy — no picker option anymore),
+jira = "Gatekeeper ticket" (2026-07-11, the current gatekeeper; search by
+jira key / solman id / summary), test_learning, followup, shelf, topic,
+contact, link.
 
 ## Attachments
 
@@ -162,10 +164,10 @@ Storage `app/db/next_steps.py`. Delegated clicks; `data-ns-target` elements
 are blanked client-side (no target = page reload); CustomEvent
 'ns-archived' for page extras (spillover list blanks the row cell).
 Currently on: Spillover Details popup, Retail detail, ECOM detail, Defect
-detail, ECOM Gatekeeper list rows (↻/🕘 per row, 2026-07-11 — per-row
-`data-ns-target` selector blanks the inline input, works for JS-added rows
-via delegation). Tests: tests/test_next_step_archive.py,
-tests/test_gatekeeper_jira.py.
+detail, ECOM Gatekeeper list rows (deprecated manual table AND the current
+Jira tickets table — entity `jira`, ↻/🕘 per row, per-row `data-ns-target`
+selector blanks the inline input), Gatekeeper ticket detail. Tests:
+tests/test_next_step_archive.py, tests/test_gatekeeper_jira.py.
 
 ## Order details (component)
 

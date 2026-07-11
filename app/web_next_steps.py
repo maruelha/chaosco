@@ -70,6 +70,11 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: (database.get_ecom_gatekeeper_row(c, int(i)) or {}).get("next_step"),
         lambda c, i: database.set_ecom_gatekeeper_next_step(c, int(i), None),
     ),
+    # gatekeeper JIRA tickets — authored next step in gatekeeper_annotations
+    "jira": NSEntity(
+        lambda c, i: database.get_gatekeeper_next_step(c, str(i)),
+        lambda c, i: database.set_gatekeeper_next_step(c, str(i), None),
+    ),
 }
 
 

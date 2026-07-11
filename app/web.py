@@ -47,6 +47,10 @@ app.register_blueprint(_entity_links_bp)
 from app.db import jira as _db_jira
 _db_jira.init_schema(_db_path)
 
+# Gatekeeper v2 authored data (per jira ticket) — start, 2026-07-11.
+from app.db import gatekeeper as _db_gatekeeper
+_db_gatekeeper.init_schema(_db_path)
+
 # ECOM vertical (day plan 05.07 steps 7+8) — importer + tables + pages.
 from app.db import ecom as _db_ecom
 from app.web_ecom import bp as _ecom_bp

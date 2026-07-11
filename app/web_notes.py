@@ -92,6 +92,13 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_ecom_gatekeeper_row(c, int(i)),
         lambda r: r.get("testcase_name") or r.get("jira_id") or f"Row #{r['id']}", int,
     ),
+    # gatekeeper JIRA tickets (the CURRENT gatekeeper, 2026-07-11) — notes hang
+    # off the jira key, so they survive the gatekeeper -> ECOM handover
+    "jira": NoteEntity(
+        "Gatekeeper (Jira)", "ecom_gatekeeper_list", "gatekeeper_ticket_detail", "jira_key",
+        lambda c, i: database.get_jira_issue(c, str(i)),
+        lambda r: f"{r['jira_key']} — {r.get('summary') or ''}".rstrip(" —"), str,
+    ),
     "cs_followup": NoteEntity(
         "CS Follow-Up Tracker", "cs_followup_list", "cs_followup_detail", "followup_id",
         lambda c, i: database.get_cs_followup(c, int(i)),
