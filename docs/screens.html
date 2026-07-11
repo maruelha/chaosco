@@ -706,8 +706,10 @@
         <span class="feat-value">Opens the shared <code>_order_details.html</code> component (identical to Spillover since 2026-07-09 — the former inline copy was deleted). Columns: Type · Order number · Comment · S4 docs (checkbox). Uses <code>order_details</code> table with <code>entity_type='ecom_gatekeeper'</code>. Green ✓ badge appears on the button when any linked order has <code>docs_in_s4=1</code> — now also on initial page load (<code>get_docs_s4_entity_ids</code>), not just after toggling. Future: orders can be re-pointed to an ECOM test case by updating <code>entity_type</code> + <code>entity_id</code> — no data is copied or lost.</span>
         <span class="feat-label">Delete (✕)</span>
         <span class="feat-value">Confirm dialog → <code>POST /ecom-gatekeeper/&lt;id&gt;/delete</code> → removes the row, all linked notes, and all linked order_details in one transaction. Row removed from DOM without page reload.</span>
+        <span class="feat-label">↻ Update from Jira + tickets table (2026-07-11)</span>
+        <span class="feat-value">Header button <code>POST /ecom-gatekeeper/import-jira</code> — imports the newest .xml from <code>jira_gatekeeper_folder</code> into the shared jira store (re-import refreshes status/assignee/comments only); result banner. Below the gatekeeper table a collapsible <strong>"Jira tickets (assigned-to-me search)"</strong> section: Jira ID (open-in-Jira link) · Solman ID (from the summary before "_") · Summary · Status · Assignee · Comments count with ▸ expander revealing the HTML description + full read-only comment thread. NOTE: Jira has no order-number field — order numbers live in the comments.</span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>ecom_gatekeeper</code> LEFT JOIN <code>notes</code> (for note_count subquery)</span>
+        <span class="feat-value"><code>ecom_gatekeeper</code> LEFT JOIN <code>notes</code> (for note_count subquery); Jira section from <code>jira_issues</code>/<code>jira_comments</code></span>
         <span class="feat-label">API routes</span>
         <span class="feat-value">
           <code>GET  /ecom-gatekeeper</code> — list page<br>

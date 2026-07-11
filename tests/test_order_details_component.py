@@ -18,6 +18,8 @@ from app.web import app
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "orders.db"
     database.init_db(db_path).close()
+    from app.db import jira as db_jira
+    db_jira.init_schema(db_path)   # gatekeeper page reads the jira store
     for mod in (web_spillover, web_reference):
         monkeypatch.setattr(mod, "_get_conn",
                             lambda p=db_path: database.get_connection(p))

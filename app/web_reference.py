@@ -22,10 +22,32 @@ def ecom_gatekeeper_list():
     try:
         rows = database.list_ecom_gatekeeper_rows(conn)
         docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
+        jira_issues = database.list_jira_issues(conn)
+        jira_comments = {i["jira_key"]: database.list_jira_comments(conn, i["jira_key"])
+                         for i in jira_issues}
     finally:
         conn.close()
     return render_template("ecom_gatekeeper.html", rows=rows,
-                           docs_s4_ids=docs_s4_ids)
+                           docs_s4_ids=docs_s4_ids,
+                           jira_issues=jira_issues, jira_comments=jira_comments,
+                           jira_ok=request.args.get("jira_ok"),
+                           jira_msg=request.args.get("jira_msg"))
+
+
+@app.route("/ecom-gatekeeper/import-jira", methods=["POST"])
+def ecom_gatekeeper_import_jira():
+    """'Update from Jira' — newest .xml from jira_gatekeeper_folder into the
+    shared jira store (step 2 code; re-import refreshes status/assignee/
+    comments only)."""
+    from pathlib import Path as _Path
+    from app.jira_importer import run_jira_import
+    result = run_jira_import(_cfg, "gatekeeper")
+    if result["ok"]:
+        msg = (f"{_Path(result['xml_path']).name}: {result['parsed']} tickets — "
+               f"{result['inserted']} new · {result['updated']} refreshed · "
+               f"{result['comments']} comments")
+        return redirect(url_for("ecom_gatekeeper_list", jira_ok="1", jira_msg=msg))
+    return redirect(url_for("ecom_gatekeeper_list", jira_ok="0", jira_msg=result["error"]))
 
 
 @app.route("/ecom-gatekeeper/add", methods=["POST"])

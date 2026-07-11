@@ -74,7 +74,17 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Extra columns vs Retail: `jira_id`, `description_change` (display; feeds
   the external coverage tool). Tests: `tests/test_ecom_importer.py`.
 
-## Shared Jira store (no UI yet — Gatekeeper v2 + ECOM consume it)
+## Shared Jira store (trial-verified 2026-07-11 against the real export)
+
+- Real-file trial (gatekeeper search, 8 tickets, 27 comments): parser OK
+  first try; the instance's custom-field names ARE "Epic Link"/"Markets".
+  Jira has NO order-number field — order numbers live in comment texts.
+- First UI slice on the OLD gatekeeper page `/ecom-gatekeeper`
+  (2026-07-11): "↻ Update from Jira" button (`POST
+  /ecom-gatekeeper/import-jira`, newest .xml from
+  `jira_gatekeeper_folder`) + collapsible read-only tickets table (Jira ID
+  → open-in-Jira, Solman ID, summary, status, assignee, expandable
+  description + comment thread). Tests: `tests/test_gatekeeper_jira.py`.
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK; solman_id = summary before
   first "_"; epic/markets from custom fields by NAME; description HTML) +

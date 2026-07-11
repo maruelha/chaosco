@@ -25,17 +25,21 @@ copies, component roundtrip test.
 **You verify:** order-details popup works unchanged on Spillover and old
 Gatekeeper (add/edit/delete an order, S4 checkbox + badge).
 
-## Step 2 — Shared Jira store  ✅ BUILT 2026-07-09 — trial import PENDING
+## Step 2 — Shared Jira store  ✅ BUILT 2026-07-09 · TRIAL VERIFIED 2026-07-11
 
-Remaining Jira tasks (in order, once the real exports exist):
-1. [MARINA] one XML export into `Download/jira_ecom/` + one into
-   `Download/jira_gatekeeper/` (Jira issue search → Export → XML).
-2. Trial import + read-back verify against the real file (this step's
-   verify); tune Epic/Markets custom-field NAME matching in
-   `app/jira_importer.py` to the instance's labels.
-3. ECOM description-change auto-flag (step 8 optional add-on).
-4. Then steps 3–6 (Gatekeeper v2 card → integrations → Excel push →
-   report/email) become buildable.
+Trial against the real gatekeeper export (`jjira1107.xml`, Jira DC): 8
+tickets, 27 comments — parser worked first try, custom-field names matched
+as-is (instance labels ARE "Epic Link" and "Markets"; no tuning needed).
+Solman-id split verified (PCS0001MU01_…). FINDING: Jira carries NO
+order-number field — order numbers live in the COMMENT texts.
+
+Remaining Jira tasks:
+1. [MARINA] one XML export into `Download/jira_ecom/` (the ECOM open-issues
+   search) — unlocks the ECOM Jira card content + description-change
+   auto-flag (step 8 optional add-on).
+2. Steps 3–6 (Gatekeeper v2 card → integrations → Excel push →
+   report/email) are now buildable; a first slice exists on the OLD
+   gatekeeper page (import button + read-only tickets table, 2026-07-11).
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK, solman_id = summary before
   first "_", summary, epic, markets, jira_status, jira_assignee, type,

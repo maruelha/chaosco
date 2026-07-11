@@ -31,11 +31,11 @@ Last updated: 2026-07-05
 (`jira_gatekeeper_folder` / `jira_ecom_folder`); importer takes the newest
 `.xml` per folder.
 
-4. **First real Jira XML exports** — the one input gating everything
-   Jira-shaped: one export into `Download/jira_ecom/` (ECOM trial run,
-   ECOM vertical task 3) and one into `Download/jira_gatekeeper/`
-   ("assigned to Marina" search — unlocks Gatekeeper v2, day plan steps
-   3–6). In Jira: issue search → Export → XML; any filename.
+4. **First real Jira XML exports** — gatekeeper export ✅ RECEIVED
+   2026-07-11 (`jjira1107.xml`, trial verified, importer works as-is).
+   STILL OPEN: one export into `Download/jira_ecom/` (the ECOM open-issues
+   search) for the ECOM Jira card + description-change auto-flag. In Jira:
+   issue search → Export → XML; any filename.
 
 ---
 

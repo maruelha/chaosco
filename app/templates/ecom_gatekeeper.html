@@ -6,11 +6,25 @@
   <div class="page-header-row">
     <h1>ECOM Gatekeeper Check</h1>
     <div class="page-header-actions">
+      <form method="post" action="{{ url_for('ecom_gatekeeper_import_jira') }}" style="display:inline">
+        <button type="submit" class="btn"
+                title="import the newest .xml from the gatekeeper Jira folder — refreshes status, assignee and comments">
+          &#8635; Update from Jira</button>
+      </form>
       <button type="button" class="btn btn-primary" id="btn-add-gk">+ Add row</button>
     </div>
   </div>
   <p class="page-subtitle">Pre-handoff sense check. Add test cases, work through statuses, then hand orders over to the ECOM test case once passed.</p>
 </div>
+
+{% if jira_msg %}
+<div class="result-box{% if jira_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Jira import</span>
+    <span class="result-value">{{ jira_msg }}</span>
+  </div>
+</div>
+{% endif %}
 
 <table class="gk-table">
   <thead>
@@ -57,10 +71,84 @@
   </tbody>
 </table>
 
+{# ---- Jira tickets from the shared store ---- #}
+<details class="rt-section" style="margin-top:1.5rem" {% if jira_issues %}open{% endif %}>
+  <summary>Jira tickets (assigned-to-me search)
+    <span class="rt-count">{{ jira_issues|length }}</span>
+  </summary>
+  {% if jira_issues %}
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Read-only from the shared Jira store — <strong>↻ Update from Jira</strong>
+    refreshes status, assignee and comments (everything else keeps its
+    first-import value). Order numbers usually live in the comments — expand ▸.
+  </p>
+  <table class="rt-table">
+    <thead>
+      <tr>
+        <th style="width:7.5rem">Jira ID</th>
+        <th style="width:8.5rem">Solman ID</th>
+        <th>Summary</th>
+        <th style="width:8rem">Status</th>
+        <th style="width:11rem">Assignee</th>
+        <th style="width:4.5rem">Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in jira_issues %}
+      <tr>
+        <td class="mono" style="font-size:0.78rem">
+          {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
+          {% else %}{{ i.jira_key }}{% endif %}
+        </td>
+        <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
+        <td>{{ i.summary or "—" }}</td>
+        <td>{{ i.jira_status or "—" }}</td>
+        <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
+        <td style="text-align:center; white-space:nowrap">
+          <button type="button" class="rt-cbtn" onclick="gkJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
+        </td>
+      </tr>
+      <tr class="gk-jira-detail" style="display:none">
+        <td colspan="6" style="background:#fafafa; padding:0.6rem 1rem">
+          {% if i.description %}
+          <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
+          <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
+            {{ i.description | safe }}
+          </div>
+          {% endif %}
+          <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Comments ({{ jira_comments[i.jira_key]|length }})</div>
+          {% for c in jira_comments[i.jira_key] %}
+          <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
+            {% if c.created %}<div style="color:#999; font-size:0.72rem">{{ c.created }}</div>{% endif %}
+            <div style="overflow-x:auto">{{ c.body | safe }}</div>
+          </div>
+          {% else %}
+          <p style="color:#999; font-size:0.82rem; margin:0.3rem 0 0">No comments.</p>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">
+    No Jira data yet — drop an XML export into the gatekeeper Jira folder and
+    press <strong>&#8635; Update from Jira</strong>.
+  </p>
+  {% endif %}
+</details>
+
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
 
 <script>
+function gkJira(btn) {
+  const detail = btn.closest("tr").nextElementSibling;
+  const open = detail.style.display !== "none";
+  detail.style.display = open ? "none" : "";
+  btn.textContent = btn.textContent.replace(open ? "▾" : "▸", open ? "▸" : "▾");
+}
+
 (function () {
   // ---- Row save ----
   function saveRow(tr) {
