@@ -93,6 +93,13 @@
     <span class="result-label">Unresolved</span>
     <span class="result-value">{{ counts.unresolved }}</span>
   </div>
+  {% if counts.expected %}
+  <div class="result-row">
+    <span class="result-label">⏳ Expected</span>
+    <span class="result-value">{{ counts.expected }} linked to a test the dashboard does not carry yet
+      (heals automatically on import)</span>
+  </div>
+  {% endif %}
   <div class="result-row">
     <span class="result-label">Required needs decision</span>
     <span class="result-value">{{ counts.needs_decision }} (non-numeric "DTC required", e.g. "1 or 5")</span>
@@ -148,6 +155,13 @@
             {% endfor %}
           </select>
           <button type="submit" class="btn btn-sm">Save</button>
+        </form>
+        <form method="post" action="{{ url_for('retail_tracker.tracker_resolve', req_id=r.id) }}"
+              style="display:flex; gap:.5rem; margin-top:.3rem">
+          <input type="text" name="test_case_id" placeholder="⏳ expected future test id (e.g. GKPMU000057)"
+                 style="flex:1; max-width:28rem; padding:4px 8px; border:1px solid #e6c66e; border-radius:6px; background:#fffbeb; font-size:.8rem"
+                 title="for tests that are not in the dashboard YET — links now, shows an amber ⏳ pill on the board, heals itself when the Excel import brings the test">
+          <button type="submit" class="btn btn-sm">Expect</button>
         </form>
       </td>
       <td>

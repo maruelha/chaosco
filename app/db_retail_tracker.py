@@ -266,6 +266,13 @@ def requirement_counts(conn: sqlite3.Connection) -> dict:
         out["total"] += n
     out["unresolved"] = conn.execute(
         "SELECT COUNT(*) FROM retail_requirements WHERE test_case_id IS NULL").fetchone()[0]
+    # "expected": resolved to a test id the dashboard does not carry YET
+    # (pre-resolved future tests [USER 2026-07-11]) — self-heals on import
+    out["expected"] = conn.execute(
+        "SELECT COUNT(*) FROM retail_requirements"
+        " WHERE test_case_id IS NOT NULL AND test_case_id NOT IN"
+        " (SELECT DISTINCT test_case_id FROM retail WHERE test_case_id IS NOT NULL)"
+    ).fetchone()[0]
     out["needs_decision"] = conn.execute(
         "SELECT COUNT(*) FROM retail_requirements"
         " WHERE all_countries = 0 AND required_dtc IS NULL").fetchone()[0]

@@ -67,7 +67,12 @@ Last updated: 2026-07-05
    limit (a requirement can currently link exactly ONE dashboard test).
    Would need a link table + counting change. Decide only if the easy
    version (item 5) proves insufficient.
-7. ~~Requirements manageable in the app~~ ✅ DONE 2026-07-06 [USER]: the DB
+7. ~~"Expected" pre-resolution~~ ✅ DONE 2026-07-11 [USER]: free-text
+   "⏳ Expect" input links announced-but-not-yet-imported test ids; amber
+   board pill derived live, self-heals on import. Cross-store rows set to
+   GKPMU000057-60 (058 feeds two requirements). Truly unresolved left:
+   suspend, retrieve, Clearance discount CS.
+8. ~~Requirements manageable in the app~~ ✅ DONE 2026-07-06 [USER]: the DB
    is the living store, the Excel was only the first seeding. Add form
    (manual rows: source='manual', excel_row ≥ 5000, importer never
    prunes/overwrites), board ✎ edit (name/scenario/required only — test

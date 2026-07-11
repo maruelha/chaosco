@@ -123,6 +123,15 @@ Replaces a 4-tab Excel: `TRACKING_Retail ROE UAT Testcases DTC.xlsx`.
     reason (`inactive_reason`); inactive rows leave ALL counting and live in
     a collapsed "Kicked out" section with "↩ Take back in" (clears the
     reason).
+20. **"Expected" pre-resolution** [USER 2026-07-11]: announced-but-not-yet-
+    imported tests are NOT unresolved and NOT missing — link the known
+    future id via the free-text "⏳ Expect" input; the board shows an amber
+    "⏳ expected" pill derived LIVE (id absent from the retail table), which
+    self-heals on import. Applied to the cross-store exchange rows:
+    GKPMU000057 (uneven higher), GKPMU000058 (cross-store return AND uneven
+    lower — one test, two requirements), GKPMU000059 (even), GKPMU000060
+    (even plus 1). Remaining truly unresolved: suspend, retrieve,
+    Clearance discount CS.
 
 ## 4. OPEN questions — resolve WITH THE USER before coding
 

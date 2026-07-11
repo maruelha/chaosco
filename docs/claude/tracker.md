@@ -73,7 +73,12 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   section with the reason + "↩ Take back in" (clears the reason)
 - Import & admin `/retail-tracker/` — re-runnable import, add-requirement
   form (manual rows, born unresolved), unresolved-test manual picks + "→
-  Clarify" per row, coverage check (passed tests not linked to any
+  Clarify" per row + free-text "⏳ Expect" input [USER 2026-07-11]: link a
+  FUTURE dashboard test id that the retail table doesn't carry yet (counts
+  as resolved, amber "⏳ expected" pill on the board, `counts.expected`
+  line; NO stored state — derived live, self-heals when the import brings
+  the test; used for the 4 cross-store exchange tests GKPMU000057-60,
+  where GKPMU000058 deliberately feeds TWO requirements), coverage check (passed tests not linked to any
   requirement) with reverse assignment (`POST /coverage/assign`,
   `assign_test_to_unresolved` — refuses already-resolved rows; one test per
   requirement, rethink is backlog item 6 in build_plan) and Park button

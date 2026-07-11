@@ -241,6 +241,9 @@ def tracker_board():
         rows = []
         for i in items:
             i["scenario_group"] = _scenario_group(i["scenario_label"])
+            # resolved to a future test id the dashboard does not carry yet
+            # -> amber "expected" pill, self-heals when the import brings it
+            i["expected"] = bool(i["test_case_id"]) and i["test_case_id"] not in display_names
             i["display_test_name"] = (display_names.get(i["test_case_id"])
                                       or i["test_name"] or "")
             targets_keyed = {t.strip().casefold() for t in (i["targets"] or [])}
