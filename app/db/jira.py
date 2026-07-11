@@ -6,9 +6,11 @@ app/jira_importer.py from Jira XML exports — never merged into
 Excel-sourced tables (future-integration rule).
 
 Re-import rule [USER 2026-07-05]: match by jira key; ONLY jira_status,
-jira_assignee and the comments refresh — every other field keeps its
-first-import value. Comments are REPLACED per import (the export always
-carries the full thread; no authors — the XML only has JIRAUSER keys).
+jira_assignee, the comments and — since 2026-07-11 — the ACCEPTANCE
+CRITERIA refresh (it is living test data: testers fill order numbers into
+it over time); every other field keeps its first-import value. Comments
+are REPLACED per import (the export always carries the full thread; no
+authors — the XML only has JIRAUSER keys).
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ CREATE TABLE IF NOT EXISTS jira_issues (
     type          TEXT,
     priority      TEXT,
     description   TEXT,              -- HTML as exported
+    acceptance_criteria TEXT,        -- checklist text; refreshed on re-import
     link          TEXT,
     created       TEXT,
     updated       TEXT,
@@ -52,6 +55,11 @@ def init_schema(db_path: Path) -> None:
     conn = database.get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # migrations (safe to re-run)
+        try:
+            conn.execute("ALTER TABLE jira_issues ADD COLUMN acceptance_criteria TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -68,8 +76,9 @@ def _rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
 
 def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict]) -> dict:
     """Upsert parsed issues by jira_key. New keys: full insert. Existing keys:
-    ONLY jira_status, jira_assignee, last_seen refresh. Comments of every
-    imported issue are REPLACED wholesale. Returns counts."""
+    ONLY jira_status, jira_assignee, acceptance_criteria (living test data),
+    last_seen refresh. Comments of every imported issue are REPLACED
+    wholesale. Returns counts."""
     inserted = updated = comments = 0
     now = _now()
     with conn:
@@ -79,21 +88,23 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict]) -> dict:
                 (iss["jira_key"],)).fetchone()
             if exists:
                 conn.execute(
-                    "UPDATE jira_issues SET jira_status=?, jira_assignee=?, last_seen=?"
-                    " WHERE jira_key=?",
-                    (iss.get("jira_status"), iss.get("jira_assignee"), now,
-                     iss["jira_key"]))
+                    "UPDATE jira_issues SET jira_status=?, jira_assignee=?,"
+                    " acceptance_criteria=?, last_seen=? WHERE jira_key=?",
+                    (iss.get("jira_status"), iss.get("jira_assignee"),
+                     iss.get("acceptance_criteria"), now, iss["jira_key"]))
                 updated += 1
             else:
                 conn.execute(
                     "INSERT INTO jira_issues (jira_key, solman_id, summary, epic,"
                     " markets, jira_status, jira_assignee, type, priority,"
-                    " description, link, created, updated, first_seen, last_seen)"
-                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    " description, acceptance_criteria, link, created, updated,"
+                    " first_seen, last_seen)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (iss["jira_key"], iss.get("solman_id"), iss.get("summary"),
                      iss.get("epic"), iss.get("markets"), iss.get("jira_status"),
                      iss.get("jira_assignee"), iss.get("type"), iss.get("priority"),
-                     iss.get("description"), iss.get("link"), iss.get("created"),
+                     iss.get("description"), iss.get("acceptance_criteria"),
+                     iss.get("link"), iss.get("created"),
                      iss.get("updated"), now, now))
                 inserted += 1
             conn.execute("DELETE FROM jira_comments WHERE jira_key=?",

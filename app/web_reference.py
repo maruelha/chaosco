@@ -22,14 +22,22 @@ def ecom_gatekeeper_list():
     try:
         rows = database.list_ecom_gatekeeper_rows(conn)
         docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
-        jira_issues = database.list_jira_issues(conn)
-        jira_comments = {i["jira_key"]: database.list_jira_comments(conn, i["jira_key"])
+        from app.db import jira as db_jira   # direct import (facade-order safe)
+        jira_issues = db_jira.list_jira_issues(conn)
+        jira_comments = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                          for i in jira_issues}
     finally:
         conn.close()
+    # order-number report [USER 2026-07-11]: acceptance criteria first,
+    # newest order-carrying comment as fallback
+    from app.jira_importer import extract_order_numbers
+    jira_orders = {i["jira_key"]: extract_order_numbers(
+                       i.get("acceptance_criteria"), jira_comments[i["jira_key"]])
+                   for i in jira_issues}
     return render_template("ecom_gatekeeper.html", rows=rows,
                            docs_s4_ids=docs_s4_ids,
                            jira_issues=jira_issues, jira_comments=jira_comments,
+                           jira_orders=jira_orders,
                            jira_ok=request.args.get("jira_ok"),
                            jira_msg=request.args.get("jira_msg"))
 

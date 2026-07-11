@@ -94,8 +94,18 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   in `jira_gatekeeper_folder` / `jira_ecom_folder` (settings.yaml),
   filenames irrelevant.
 - Re-import rule [USER 2026-07-05]: match by jira key; ONLY jira_status,
-  jira_assignee, comments refresh (comments REPLACED wholesale) — all other
-  fields keep their first-import value.
+  jira_assignee, comments (REPLACED wholesale) and — since 2026-07-11 —
+  `acceptance_criteria` refresh (living test data: testers fill order
+  numbers into the AC checklist over time); all other fields keep their
+  first-import value.
+- Acceptance Criteria = okapya checklist custom field; parsed as
+  whitespace-normalized text lines. Order-number extraction
+  (`jira_importer.extract_order_numbers` [USER 2026-07-11]): 1. ALL
+  labeled orders from the AC ("… Order[ Number] : value", XXXX
+  placeholders skipped) → 2. else the LATEST comment carrying a labeled
+  order or an order token (`AA_BB_XXXXXX` pattern). Feeds the
+  "Order numbers report" on the gatekeeper page (Jira ID · Solman ID ·
+  orders · source pill, copy-as-TSV).
 - Never merged into Excel-sourced tables. Tests: `tests/test_jira_importer.py`.
 
 ## Screens & reports

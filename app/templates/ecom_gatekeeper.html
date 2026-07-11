@@ -138,10 +138,71 @@
   {% endif %}
 </details>
 
+{# ---- Order-numbers report (from Jira: acceptance criteria, comment fallback) ---- #}
+{% if jira_issues %}
+<details class="rt-section" style="margin-top:1.2rem" open>
+  <summary>Order numbers report
+    <span class="rt-count">{{ jira_issues|length }}</span>
+  </summary>
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Per ticket: ALL labeled orders from the <strong>acceptance criteria</strong>
+    (XXXX placeholders skipped); if the criteria carry none, the order number
+    from the <strong>latest comment</strong> that has one.
+  </p>
+  <div style="margin:0 1rem 0.6rem">
+    <button type="button" class="btn btn-sm" id="gk-orders-copy" onclick="gkOrdersCopy()">📋 Copy table</button>
+  </div>
+  <table class="rt-table" id="gk-orders-table">
+    <thead>
+      <tr>
+        <th style="width:8rem">Jira ID</th>
+        <th style="width:9rem">Solman ID</th>
+        <th>Order numbers</th>
+        <th style="width:10rem">Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in jira_issues %}
+      {% set o = jira_orders[i.jira_key] %}
+      <tr{% if not o.orders %} style="color:#999"{% endif %}>
+        <td class="mono" style="font-size:0.78rem">{{ i.jira_key }}</td>
+        <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
+        <td style="font-size:0.82rem">
+          {% for line in o.orders %}<div>{{ line }}</div>{% else %}—{% endfor %}
+        </td>
+        <td style="font-size:0.78rem; color:#888">
+          {% if o.source == 'acceptance criteria' %}<span class="pill pill--green">acceptance criteria</span>
+          {% elif o.source == 'latest comment' %}<span class="pill pill--gray">latest comment</span>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+{% endif %}
+
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
 
 <script>
+function gkOrdersCopy() {
+  const lines = [["Jira ID", "Solman ID", "Order numbers", "Source"].join("\t")];
+  document.querySelectorAll("#gk-orders-table tbody tr").forEach(tr => {
+    const c = tr.querySelectorAll("td");
+    const orders = [...c[2].querySelectorAll("div")].map(d => d.textContent.trim()).join("; ")
+                   || c[2].textContent.trim();
+    lines.push([c[0].textContent.trim(), c[1].textContent.trim(),
+                orders.replace("—", ""), c[3].textContent.trim().replace("—", "")].join("\t"));
+  });
+  navigator.clipboard.writeText(lines.join("\n")).then(() => {
+    const btn = document.getElementById("gk-orders-copy");
+    const orig = btn.textContent;
+    btn.textContent = "✓ Copied!";
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
 function gkJira(btn) {
   const detail = btn.closest("tr").nextElementSibling;
   const open = detail.style.display !== "none";

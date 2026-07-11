@@ -48,20 +48,70 @@ def _split_solman_id(summary: str) -> str | None:
 
 
 def _customfields(item) -> dict:
-    """{'epic': ..., 'markets': ...} from the customfields block, matched by
-    field NAME (ids differ per Jira instance; names are stable enough)."""
-    out = {"epic": None, "markets": None}
+    """{'epic': ..., 'markets': ..., 'acceptance_criteria': ...} from the
+    customfields block, matched by field NAME (ids differ per Jira instance;
+    names are stable enough). Acceptance Criteria is a checklist-plugin
+    field (okapya) whose content sits as HTML inside <customfieldvalues> —
+    itertext catches it regardless of nesting."""
+    out = {"epic": None, "markets": None, "acceptance_criteria": None}
     for cf in item.findall(".//customfield"):
         name = (cf.findtext("customfieldname") or "").strip().lower()
+        if name == "acceptance criteria":
+            vals = cf.find("customfieldvalues")
+            raw = "".join(vals.itertext()) if vals is not None else ""
+            lines = [" ".join(l.split()) for l in raw.splitlines()]
+            text = "\n".join(l for l in lines if l)
+            out["acceptance_criteria"] = text or None
+            continue
         values = [_text(v) for v in cf.findall(".//customfieldvalue")]
         values = [v for v in values if v]
         if not values:
             continue
-        if "epic" in name and not out["epic"]:
+        if name == "epic link" or (name.startswith("epic") and not out["epic"]):
             out["epic"] = values[0]
         elif "market" in name and not out["markets"]:
             out["markets"] = ", ".join(values)
     return out
+
+
+# --- order-number extraction (report on the gatekeeper page) ---------------
+# labeled entries like "Omni Order: ANT_ZL_ANLA1O8PUY" / "Return Order :
+# 6000084252" / "Order Number - TBY_SS_ADE0006955"; XXXX… = placeholder
+_ORDER_LABEL_RE = re.compile(
+    r"((?:[A-Za-z][A-Za-z ]* )?Order(?: Number)?)\s*[:\-–]\s*([A-Za-z0-9_/-]+)")
+# bare order tokens in free comment text, e.g. TBY_SS_ADE0006955
+_ORDER_TOKEN_RE = re.compile(r"\b[A-Z]{2,5}_[A-Z]{2,5}_[A-Z0-9]{5,}\b")
+
+
+def _is_placeholder(value: str) -> bool:
+    return not value or set(value.upper()) <= {"X"}
+
+
+def _labeled_orders(text: str) -> list[str]:
+    out = []
+    for label, value in _ORDER_LABEL_RE.findall(text or ""):
+        if not _is_placeholder(value):
+            out.append(f"{label.strip()}: {value}")
+    return out
+
+
+def extract_order_numbers(acceptance_criteria: str | None,
+                          comments: list[dict]) -> dict:
+    """[USER 2026-07-11] 1. ALL labeled orders from the acceptance criteria
+    (skipping XXXX placeholders); 2. if none there, the LATEST comment that
+    carries an order number. Returns {"orders": [...], "source": str|None}."""
+    orders = _labeled_orders(acceptance_criteria or "")
+    if orders:
+        return {"orders": orders, "source": "acceptance criteria"}
+
+    for c in reversed(comments or []):          # newest last in store order
+        body = c.get("body") or ""
+        found = _labeled_orders(body)
+        if not found:
+            found = _ORDER_TOKEN_RE.findall(body)
+        if found:
+            return {"orders": found, "source": "latest comment"}
+    return {"orders": [], "source": None}
 
 
 def parse_jira_xml(path: Path) -> list[dict]:
@@ -89,6 +139,7 @@ def parse_jira_xml(path: Path) -> list[dict]:
             "summary": summary,
             "epic": cf["epic"],
             "markets": cf["markets"],
+            "acceptance_criteria": cf["acceptance_criteria"],
             "jira_status": (item.findtext("status") or "").strip() or None,
             "jira_assignee": assignee.strip() or None,
             "type": (item.findtext("type") or "").strip() or None,
