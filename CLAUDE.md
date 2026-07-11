@@ -64,7 +64,8 @@ app/
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   database.py       facade over app/db/
   db/               core(schema) defects spillover retail notes planning
-                    reference topics entity_links email jira
+                    reference topics entity_links email jira gatekeeper
+                    ecom next_steps search
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

@@ -59,7 +59,17 @@ Remaining Jira tasks:
 **You verify:** pytest green; a trial import of your real XML shows correct
 rows in the tables (I run it read-back for you).
 
-## Step 3 — Gatekeeper v2 card: core  *(side by side with the old card)*
+## Step 3 — Gatekeeper v2 card: core  — FIRST SLICE DELIVERED 2026-07-11
+
+Delivered ahead of plan on `/ecom-gatekeeper` [USER course-correction: the
+Jira tickets ARE the gatekeeper; the manual table is deprecated, parked
+collapsed at the bottom]: `gatekeeper_annotations` (jira_key PK, next_step
+only so far), tickets table with authored inline next step (↻/🕘 archive),
+ticket DETAIL page (Jira card + extracted order numbers + acceptance
+criteria + comments + notes via entity `jira`), inbox filing target
+"Gatekeeper ticket", order-numbers report. STILL OPEN from this step:
+internal_status workflow (OrderCheck → Issue DTC | Issue Sales |
+SF requested → Ready for validation + hidden-toggle), epic/status filters.
 
 - `gatekeeper_annotations` (jira_key PK, internal_status, next_step,
   dtco2c flag, pushed_at, rfv_pushed_at) — authored data, importer never
