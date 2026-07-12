@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Windows Terminal — Claude Code project tabs</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 54rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.55; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 2px solid #e2e2ea; padding-bottom: 0.3rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  pre { background:#1e1e28; color:#e8e8f0; border-radius:10px; padding:1rem 1.2rem;
+        overflow-x:auto; font-size:0.82rem; line-height:1.45; }
+  pre code { background:none; padding:0; color:inherit; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.55rem 1.1rem; color:#fff; font-weight:700; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-amber .box-head { background:#b45309; }
+  .b-green .box-head { background:#1a7f37; }
+  table { border-collapse: collapse; font-size: 0.88rem; margin: 0.6rem 0; }
+  th, td { border: 1px solid #e2e2ea; padding: 0.35rem 0.7rem; text-align: left; }
+  th { background: #f7f7fa; }
+  .swatch { display:inline-block; width:0.9em; height:0.9em; border-radius:3px;
+            vertical-align:-0.1em; margin-right:0.35em; border:1px solid rgba(0,0,0,.15); }
+  ol li, ul li { margin: 0.3rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🗂 Windows Terminal — Claude Code project tabs</h1>
+<p class="hint">How the "new tab" dropdown gets a new project profile that opens
+Claude Code directly in a project folder. Written 2026-07-12; at that point the
+dropdown held: RAG, Planning Dashboard, UAT, Chaosco, Amazon Ledger, Icebreaker,
+Kursmachen, Slack Download, WalkThrough Course.</p>
+
+<h2>Where the dropdown lives</h2>
+<div class="box b-blue">
+  <div class="box-head">One file controls everything</div>
+  <div class="box-body">
+    <p><code>C:\Users\AI_Agents\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json</code></p>
+    <ul>
+      <li>Every entry in <code>profiles → list</code> is one row in the dropdown.</li>
+      <li>Windows Terminal picks the change up <strong>immediately</strong> when the
+          file is saved — no restart needed.</li>
+      <li>Shortcut without hunting for the path: Windows Terminal →
+          dropdown arrow → <strong>Settings</strong> (Ctrl+,) →
+          <strong>Open JSON file</strong> (bottom-left).</li>
+      <li>Before editing by hand, copy the file to
+          <code>settings.json.backup-YYYY-MM-DD</code> next to it. If the JSON is
+          broken, Terminal shows an error banner and keeps running on the last
+          good version — restore the backup and save again.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Anatomy of a project profile</h2>
+<p>Copy an existing Claude Code block (Chaosco is a good template), change four
+things: <strong>guid</strong> (must be new and unique), <strong>name</strong>,
+<strong>startingDirectory</strong>, <strong>tabTitle</strong> + <strong>tabColor</strong>.</p>
+
+<pre><code>{
+    "guid": "{NEW-GUID-HERE}",
+    "name": "My Project",                &#47;&#47; text shown in the dropdown
+    "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoExit -Command claude",
+    "startingDirectory": "C:\\AIProjectsSandbox\\ClaudeProjekte\\MyProject",
+    "tabTitle": "MyProj",                &#47;&#47; short text on the tab itself
+    "tabColor": "#0e7490",               &#47;&#47; pick one not used yet
+    "suppressApplicationTitle": true,    &#47;&#47; keeps the tabTitle fixed
+    "hidden": false
+}</code></pre>
+
+<ul>
+  <li>Get a fresh GUID in PowerShell: <code>[guid]::NewGuid()</code> — then wrap it
+      in <code>{ }</code> in the file. (JSON comments above are illustration only —
+      Windows Terminal tolerates them, but keep the real file clean.)</li>
+  <li>Backslashes in paths are doubled (<code>\\</code>) — JSON escaping.</li>
+  <li>The block goes anywhere inside <code>profiles → list</code>; dropdown order =
+      list order, so keep the Claude Code projects together above cmd/Azure.</li>
+</ul>
+
+<h2>Tab colors in use (pick a NEW one)</h2>
+<table>
+  <tr><th>Color</th><th>Hex</th><th>Profile</th></tr>
+  <tr><td><span class="swatch" style="background:#2456c4"></span>blue</td><td>#2456c4</td><td>RAG (workgroup-rag)</td></tr>
+  <tr><td><span class="swatch" style="background:#1a7f4e"></span>green</td><td>#1a7f4e</td><td>Planning Dashboard</td></tr>
+  <tr><td><span class="swatch" style="background:#b45309"></span>amber</td><td>#b45309</td><td>UAT Test Requirements</td></tr>
+  <tr><td><span class="swatch" style="background:#6d28d9"></span>purple</td><td>#6d28d9</td><td>Chaosco</td></tr>
+  <tr><td><span class="swatch" style="background:#0e7490"></span>teal</td><td>#0e7490</td><td>Amazon Ledger</td></tr>
+  <tr><td><span class="swatch" style="background:#be185d"></span>pink</td><td>#be185d</td><td>Icebreaker</td></tr>
+  <tr><td><span class="swatch" style="background:#4d7c0f"></span>olive</td><td>#4d7c0f</td><td>Kursmachen</td></tr>
+  <tr><td><span class="swatch" style="background:#b91c1c"></span>red</td><td>#b91c1c</td><td>Slack Download</td></tr>
+  <tr><td><span class="swatch" style="background:#475569"></span>slate</td><td>#475569</td><td>WalkThrough Course</td></tr>
+</table>
+
+<h2>The lazy way — prompt for a Claude Code instance</h2>
+<div class="box b-green">
+  <div class="box-head">Copy-paste this into any Claude Code session</div>
+  <div class="box-body">
+<pre><code>Please add a new project profile to my Windows Terminal dropdown.
+
+The settings file is:
+C:\Users\AI_Agents\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
+
+Steps:
+1. Back the file up first (settings.json.backup-&lt;today&gt; next to it).
+2. In profiles.list, copy the pattern of the existing "Chaosco" profile:
+   PowerShell running claude via
+   "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoExit -Command claude",
+   suppressApplicationTitle true, hidden false.
+3. Generate a fresh GUID for the new entry.
+4. startingDirectory = the project folder I name below.
+5. Give it a short tabTitle and a tabColor that is NOT already used by
+   another profile in the file (list the colors in use if unsure).
+6. Insert it after the last Claude Code project profile (before the
+   cmd.exe entry) and verify the file still parses as valid JSON.
+7. Also update the color table and profile list in
+   C:\AIProjectsSandbox\ClaudeProjekte\chaosco\docs\windows_terminal_tabs.html
+   so the documentation stays current.
+
+Project folder: &lt;PASTE FULL PATH HERE&gt;
+Dropdown name:  &lt;NAME HERE&gt;</code></pre>
+  </div>
+</div>
+
+<div class="box b-amber">
+  <div class="box-head">Good to know</div>
+  <div class="box-body">
+    <ul>
+      <li><strong>Remove a project:</strong> delete its block from
+          <code>profiles.list</code> (or set <code>"hidden": true</code> to keep it
+          but hide it from the dropdown).</li>
+      <li><strong>Rename / recolor:</strong> edit <code>name</code> /
+          <code>tabTitle</code> / <code>tabColor</code> in place — takes effect on
+          the next new tab.</li>
+      <li><strong>Backups on disk:</strong> <code>settings.json.backup-2026-07-05</code>
+          and <code>settings.json.backup-2026-07-12</code> already exist next to the
+          settings file.</li>
+      <li>The <code>defaultProfile</code> at the top of the file decides what a
+          plain "new tab" (the + button) opens — currently plain Windows
+          PowerShell, not a project.</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>
