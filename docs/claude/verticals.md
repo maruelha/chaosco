@@ -90,6 +90,14 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   AUTHORED inline next step (blur-save,
   `POST /ecom-gatekeeper/ticket/<key>/next-step`) with ↻/🕘 archive
   buttons, Details link (with note count), inline comments expander.
+- ECOM Sales report v1 `/ecom-gatekeeper/sales-report` [USER 2026-07-12]
+  (button on the gatekeeper page): standalone print-ready page like the
+  spillover reports — ALL tickets currently assigned to Marina, grouped
+  In gatekeeping (rust) / In validation with MB (blue); columns # · Jira
+  ID (·E = on the board) · Solman ID · Summary · Status · Market · Order
+  numbers (extracted) · Next step. Editable 📣 call-out bullets on top
+  (report_comments key 'sales'; blank/empty hidden in print). Print (A4
+  landscape) + Download HTML. Layout iterations later.
 - Ticket detail page `/ecom-gatekeeper/ticket/<jira_key>`
   (`gatekeeper_ticket.html`): Jira card (status/assignee/epic/markets,
   open-in-Jira, extracted order numbers + source, acceptance criteria,

@@ -18,7 +18,7 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
 
 @app.route("/report-comments/<report>/add", methods=["POST"])
 def report_comment_add(report: str):
-    if report not in ("spillover", "retail", "ecom"):
+    if report not in ("spillover", "retail", "ecom", "sales"):
         return jsonify({"ok": False}), 400
     comment = request.form.get("comment", "").strip()
     conn = _get_conn()

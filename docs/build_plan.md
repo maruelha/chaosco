@@ -17,10 +17,11 @@ Last updated: 2026-07-05
 1. **Teams review list placement** — dashboard card (Claude's
    recommendation) vs Inbox section vs both; the only blocker for that
    build (`docs/teams_review_concept.md`).
-1b. **Sales report** (agreed 2026-07-12, not built yet): report view over
-   all tickets assigned to Marina (both boards — from the jira store),
-   grouped in-gatekeeping / in-validation, with next steps + order
-   numbers; print/copy like the spillover report views.
+1b. ~~Sales report v1~~ ✅ BUILT 2026-07-12: `/ecom-gatekeeper/sales-report`
+   — all tickets assigned to Marina, grouped in-gatekeeping /
+   in-validation, next steps + order numbers + editable call-outs (key
+   'sales'), print + HTML download. Layout iterations still to come
+   [USER: "we will talk about layout later"].
 2. **Day-plan confirmations**: Excel push mode (dated snapshot files with
    only-new rows — recommended) · step 9: file inbox→To-Do as NEW todo
    only, or also into existing? · step 10: due date on promises?

@@ -6,9 +6,11 @@
   <div class="page-header-row">
     <h1>ECOM Gatekeeper Check</h1>
     <div class="page-header-actions">
+      <a href="{{ url_for('gatekeeper_sales_report') }}" class="btn" target="_blank"
+         title="all tickets assigned to Marina, grouped in-gatekeeping / in-validation">📄 Sales report</a>
       <form method="post" action="{{ url_for('ecom_gatekeeper_import_jira') }}" style="display:inline">
         <button type="submit" class="btn btn-primary"
-                title="import the newest .xml from the gatekeeper Jira folder — refreshes status, assignee, acceptance criteria and comments">
+                title="import the newest .xml from the Jira folder — refreshes status, assignee, acceptance criteria and comments">
           &#8635; Update from Jira</button>
       </form>
     </div>

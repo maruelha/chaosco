@@ -258,6 +258,49 @@ def test_jira_ticket_detail_next_step_and_notes(client, monkeypatch):
     assert client.get("/ecom-gatekeeper/ticket/NOPE-1").status_code == 404
 
 
+def test_sales_report_v1(client, monkeypatch):
+    """[USER 2026-07-12] Sales report: all tickets assigned to me, grouped
+    in-gatekeeping / in-validation, next steps + orders + call-outs."""
+    import app.web_reports as web_reports
+    monkeypatch.setattr(web_reports, "_get_conn", web_reference._get_conn)
+    client.post("/ecom-gatekeeper/import-jira")
+
+    conn = web_reference._get_conn()
+    try:
+        from pathlib import Path
+        db_path = Path(conn.execute("PRAGMA database_list").fetchone()[2])
+        from app.db import gatekeeper as db_gk
+        db_gk.init_schema(db_path)
+        db_gk.set_gatekeeper_next_step(conn, "S4ECOM-1492", "chase delivery note")
+        with conn:
+            # a second ticket in validation + one NOT assigned to me
+            conn.execute("INSERT INTO jira_issues (jira_key, summary, solman_id,"
+                         " jira_status, jira_assignee, markets, seen_in_gatekeeper,"
+                         " first_seen, last_seen) VALUES"
+                         " ('S4ECOM-9', 'validating', 'SM9', 'In Validation',"
+                         "  'Haase, Marina [External]', 'EMEA - DE', 1, 'd', 'd'),"
+                         " ('S4ECOM-8', 'not mine', 'SM8', 'Open',"
+                         "  'Sales Person', '', 1, 'd', 'd')")
+    finally:
+        conn.close()
+
+    html = client.get("/ecom-gatekeeper/sales-report").get_data(as_text=True)
+    assert "ECOM Sales Report" in html
+    gk_sec = html.split("In gatekeeping")[1].split("In validation with MB")[0]
+    val_sec = html.split("In validation with MB")[1]
+    assert "S4ECOM-1492" in gk_sec and "chase delivery note" in gk_sec
+    assert "TBY_DC_ANLA1O8PUR" in gk_sec          # order numbers from AC
+    assert "S4ECOM-9" in val_sec
+    assert "S4ECOM-8" not in html                  # not assigned to me -> excluded
+
+    # call-outs use the 'sales' report key
+    d = client.post("/report-comments/sales/add",
+                    data={"comment": "two orders pending with Sales"}).get_json()
+    assert d["ok"]
+    html = client.get("/ecom-gatekeeper/sales-report").get_data(as_text=True)
+    assert 'value="two orders pending with Sales"' in html
+
+
 def test_import_error_is_shown_not_raised(client, tmp_path, monkeypatch):
     empty = tmp_path / "empty"
     empty.mkdir()

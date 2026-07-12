@@ -77,6 +77,52 @@ def ecom_gatekeeper_list():
                            jira_msg=request.args.get("jira_msg"))
 
 
+@app.route("/ecom-gatekeeper/sales-report")
+def gatekeeper_sales_report():
+    """ECOM Sales report v1 [USER 2026-07-12]: every jira ticket currently
+    ASSIGNED TO ME (across both boards), grouped in-gatekeeping vs
+    in-validation, with next steps + extracted order numbers + editable
+    call-out bullets (report_comments key 'sales'). Standalone print-ready
+    page like the spillover reports; layout iterations later."""
+    from datetime import date
+    from app.db import gatekeeper as db_gk
+    from app.db import jira as db_jira
+    from app.jira_importer import extract_order_numbers
+    conn = _get_conn()
+    try:
+        issues = db_jira.list_jira_issues(conn)
+        comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
+                        for i in issues}
+        next_steps = db_gk.get_gatekeeper_next_steps(conn)
+        report_comments = database.list_report_comments(conn, "sales")
+        board_keys = {k.strip().lower() for (k,) in conn.execute(
+            "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
+    finally:
+        conn.close()
+
+    me = (_cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
+    validation = {s.strip().lower()
+                  for s in _cfg.get("jira_validation_statuses", ["In Validation"])}
+    mine = [i for i in issues
+            if me and me in (i.get("jira_assignee") or "").lower()]
+    for i in mine:
+        i["in_validation"] = (i.get("jira_status") or "").strip().lower() in validation
+        i["on_board"] = i["jira_key"].strip().lower() in board_keys
+        i["next_step"] = next_steps.get(i["jira_key"])
+        i["orders"] = extract_order_numbers(i.get("acceptance_criteria"),
+                                            comments_map[i["jira_key"]])["orders"]
+    sections = [
+        ("In gatekeeping", [i for i in mine if not i["in_validation"]]),
+        ("In validation with MB", [i for i in mine if i["in_validation"]]),
+    ]
+    return render_template(
+        "gatekeeper_sales_report.html",
+        sections=sections, total=len(mine),
+        report_comments=report_comments,
+        today=date.today().strftime("%Y-%m-%d"),
+    )
+
+
 @app.route("/ecom-gatekeeper/ticket/<jira_key>/next-step", methods=["POST"])
 def gatekeeper_ticket_next_step(jira_key: str):
     """Inline blur-save of the authored next step on the tickets table."""
