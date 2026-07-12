@@ -50,7 +50,10 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   Orders incl. "Take over orders from Gatekeeper" =
   `relink_gatekeeper_orders` by same jira id · notes via registry entry
   `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
-  Dashboard card. Tests: `tests/test_ecom_pages.py`.
+  Dashboard card. Tests: `tests/test_ecom_pages.py`. List rows with Jira
+  data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
+  the GATEKEEPER notes (entity `jira`, same key — the shared history
+  travels with the ticket).
 - Status report `/ecom/report` [USER 2026-07-09]: SAME bucket definitions
   as Retail (one config — status_mappings.yaml; "Not Ready" = known
   exclusion, visible in the inline diagnostics section, no separate
@@ -103,17 +106,26 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   first "_"; epic/markets from custom fields by NAME; description HTML) +
   `jira_comments` (HTML bodies, NO authors — export only has JIRAUSER keys).
 - `app/jira_importer.py`: Jira RSS parser (DC 10.3; pre-pass escapes bare
-  `&`), `run_jira_import(cfg, 'gatekeeper'|'ecom')` — takes the NEWEST .xml
-  in `jira_gatekeeper_folder` / `jira_ecom_folder` (settings.yaml),
-  filenames irrelevant. Per-source RELEVANCE FILTER [USER 2026-07-12] — the
-  Jira search may be as broad/lazy as convenient (XML size is irrelevant):
-  gatekeeper accepts ONLY tickets assigned to me
-  (`jira_gatekeeper_assignee` in settings, substring sense check); ecom
-  accepts ONLY tickets whose key is on the ECOM board (`ecom.jira_id`).
-  Skipped counts appear in the result banners. Accepted tickets get source
-  tags (`seen_in_gatekeeper`/`seen_in_ecom`, set never cleared — a ticket
-  may live in both worlds); the gatekeeper page lists only
-  gatekeeper-tagged tickets, so a broad ECOM export can never flood it.
+  `&`; parses reporter + markets [USER 2026-07-12: needed later]).
+  `run_jira_import(cfg)` = ONE unified import [USER 2026-07-12] — newest
+  .xml in `jira_folder` (fallback `jira_gatekeeper_folder`; both boards'
+  buttons run the same import). The Jira search may be broad/lazy (e.g.
+  `assignee WAS currentUser()` + the board epics). Per ticket: already in
+  store → REFRESH (tracked forever — keeps "Back with Sales" current even
+  after reassignment); new + assigned to me
+  (`jira_gatekeeper_assignee`) → enter; new + on the ECOM board
+  (`ecom.jira_id`) → enter; else ignored (counted). Source tags
+  `seen_in_gatekeeper`/`seen_in_ecom` reflect current membership (set,
+  never cleared).
+- Gatekeeper board = SALES-FACING work contexts [USER 2026-07-12]:
+  section "Active gatekeeping" (assigned to me AND status not in
+  `jira_validation_statuses`, default 'In Validation' — covers first AND
+  second checks) + section "↩ Back with Sales" (assigned away; "ECOM"
+  badge when on the board; cancelled tickets stay visible here by
+  decision). In-validation tickets leave the board (they are MB work → the
+  ECOM board) — only an info count links over. TRIPWIRE: red alarm box
+  NAMES tickets that are in validation but NOT on the ECOM board
+  (invisible on both boards otherwise).
 - Re-import rule [USER 2026-07-05]: match by jira key; ONLY jira_status,
   jira_assignee, comments (REPLACED wholesale) and — since 2026-07-11 —
   `acceptance_criteria` refresh (living test data: testers fill order

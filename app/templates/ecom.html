@@ -88,8 +88,36 @@
         <button type="button" class="btn btn-sm js-open-orders"
                 data-entity-type="ecom" data-entity-id="{{ r.ecom_id }}"
                 data-od-name="{{ r.test_case_id }} / {{ r.country }}">Orders</button>
+        {% if r.jira_id in jira_keys %}
+        <button type="button" class="rt-cbtn" title="Jira comments + gatekeeper notes"
+                onclick="ecomJira(this)">Jira {{ (jira_comments.get(r.jira_id, [])|length) + (jira_notes.get(r.jira_id, [])|length) }} ▸</button>
+        {% endif %}
       </td>
     </tr>
+    {% if r.jira_id in jira_keys %}
+    <tr class="ecom-jira-detail" style="display:none">
+      <td colspan="10" style="background:#fafafa; padding:0.6rem 1rem">
+        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Jira comments ({{ jira_comments.get(r.jira_id, [])|length }})</div>
+        {% for c in jira_comments.get(r.jira_id, []) %}
+        <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
+          {% if c.created %}<div style="color:#999; font-size:0.72rem">{{ c.created }}</div>{% endif %}
+          <div style="overflow-x:auto">{{ c.body | safe }}</div>
+        </div>
+        {% else %}
+        <p style="color:#999; font-size:0.82rem; margin:0.3rem 0 0">No Jira comments.</p>
+        {% endfor %}
+        <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-top:0.6rem">Gatekeeper notes ({{ jira_notes.get(r.jira_id, [])|length }})</div>
+        {% for n in jira_notes.get(r.jira_id, []) %}
+        <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fffdf5">
+          <div style="color:#999; font-size:0.72rem">{{ n.created_at }}{% if n.heading %} — <strong>{{ n.heading }}</strong>{% endif %}</div>
+          <div style="white-space:pre-wrap">{{ n.note }}</div>
+        </div>
+        {% else %}
+        <p style="color:#999; font-size:0.82rem; margin:0.3rem 0 0">No gatekeeper notes.</p>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endif %}
     {% else %}
     <tr><td colspan="10" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
     {% endfor %}
@@ -97,6 +125,15 @@
 </table>
 
 {% include '_order_details.html' %}
+
+<script>
+function ecomJira(btn) {
+  const detail = btn.closest("tr").nextElementSibling;
+  const open = detail.style.display !== "none";
+  detail.style.display = open ? "none" : "";
+  btn.textContent = btn.textContent.replace(open ? "▾" : "▸", open ? "▸" : "▾");
+}
+</script>
 
 <div class="btn-row" style="margin-top:1.2rem">
   <a href="{{ url_for('dashboard') }}" class="btn">&#8592; Dashboard</a>

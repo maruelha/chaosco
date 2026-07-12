@@ -45,10 +45,17 @@ def ecom_list():
                                      scenarios=scenarios or None, q=q)
         distincts = db_ecom.get_ecom_distincts(conn)
         jira_keys = {i["jira_key"] for i in db_jira.list_jira_issues(conn)}
+        # per-row expander [USER 2026-07-12]: jira comments + the notes made
+        # on the gatekeeper side (entity 'jira' — same key, shared history)
+        jira_comments = {r["jira_id"]: db_jira.list_jira_comments(conn, r["jira_id"])
+                         for r in rows if r["jira_id"] in jira_keys}
+        jira_notes = {r["jira_id"]: database.list_notes(conn, "jira", r["jira_id"])
+                      for r in rows if r["jira_id"] in jira_keys}
     finally:
         conn.close()
     return render_template(
         "ecom.html", rows=rows, distincts=distincts, jira_keys=jira_keys,
+        jira_comments=jira_comments, jira_notes=jira_notes,
         sel_statuses=statuses, sel_countries=countries, sel_scenarios=scenarios,
         q=q or "",
         jira_ok=request.args.get("jira_ok"),
@@ -59,13 +66,13 @@ def ecom_list():
 @bp.route("/import-jira", methods=["POST"])
 def ecom_import_jira():
     """'Update from Jira' — runs the ECOM-folder XML import (step 2 code)."""
-    result = run_jira_import(_cfg, "ecom")
+    result = run_jira_import(_cfg)
     if result["ok"]:
         msg = (f"{Path(result['xml_path']).name}: {result['parsed']} in file — "
-               f"{result['relevant']} on the board · "
-               f"{result['skipped_not_on_board']} ignored (not on the board) · "
-               f"{result['inserted']} new · {result['updated']} refreshed · "
-               f"{result['comments']} comments")
+               f"{result['refreshed']} tracked refreshed · "
+               f"{result['new_gatekeeper']} new (assigned to Marina) · "
+               f"{result['new_board']} new (on the board) · "
+               f"{result['ignored']} ignored · {result['comments']} comments")
         return redirect(url_for("ecom.ecom_list", jira_ok="1", jira_msg=msg))
     return redirect(url_for("ecom.ecom_list", jira_ok="0", jira_msg=result["error"]))
 

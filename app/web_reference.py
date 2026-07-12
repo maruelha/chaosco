@@ -30,8 +30,34 @@ def ecom_gatekeeper_list():
         gk_next_steps = db_gk.get_gatekeeper_next_steps(conn)
         jira_note_counts = {i["jira_key"]: len(database.list_notes(conn, "jira", i["jira_key"]))
                             for i in jira_issues}
+        board_keys = {k.strip().lower() for (k,) in conn.execute(
+            "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
     finally:
         conn.close()
+
+    # work-context sections [USER 2026-07-12]: gatekeeper board = Sales-facing
+    # work. Active = assigned to me & not in validation; Back with Sales =
+    # assigned away; in-validation tickets belong to the ECOM board (MB work).
+    me = (_cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
+    validation = {s.strip().lower()
+                  for s in _cfg.get("jira_validation_statuses", ["In Validation"])}
+    for i in jira_issues:
+        i["mine"] = bool(me) and me in (i.get("jira_assignee") or "").lower()
+        i["in_validation"] = (i.get("jira_status") or "").strip().lower() in validation
+        i["on_board"] = i["jira_key"].strip().lower() in board_keys
+    gk_sections = [
+        ("Active gatekeeping — with me",
+         [i for i in jira_issues if i["mine"] and not i["in_validation"]]),
+        ("↩ Back with Sales",
+         [i for i in jira_issues if not i["mine"]]),
+    ]
+    in_validation_count = sum(1 for i in jira_issues
+                              if i["mine"] and i["in_validation"])
+    # tripwire: in validation but NOT on the ECOM board -> invisible on both
+    # boards without this warning
+    validation_lost = [i["jira_key"] for i in jira_issues
+                       if i["in_validation"] and not i["on_board"]]
+
     # order-number report [USER 2026-07-11]: acceptance criteria first,
     # newest order-carrying comment as fallback
     from app.jira_importer import extract_order_numbers
@@ -41,6 +67,9 @@ def ecom_gatekeeper_list():
     return render_template("ecom_gatekeeper.html", rows=rows,
                            docs_s4_ids=docs_s4_ids,
                            jira_issues=jira_issues, jira_comments=jira_comments,
+                           gk_sections=gk_sections,
+                           in_validation_count=in_validation_count,
+                           validation_lost=validation_lost,
                            jira_orders=jira_orders,
                            gk_next_steps=gk_next_steps,
                            jira_note_counts=jira_note_counts,
@@ -102,18 +131,17 @@ def gatekeeper_ticket_detail(jira_key: str):
 
 @app.route("/ecom-gatekeeper/import-jira", methods=["POST"])
 def ecom_gatekeeper_import_jira():
-    """'Update from Jira' — newest .xml from jira_gatekeeper_folder into the
-    shared jira store (step 2 code; re-import refreshes status/assignee/
-    comments only)."""
+    """'Update from Jira' — ONE unified import [USER 2026-07-12]: refresh
+    everything tracked, enter new tickets assigned to me or on the board."""
     from pathlib import Path as _Path
     from app.jira_importer import run_jira_import
-    result = run_jira_import(_cfg, "gatekeeper")
+    result = run_jira_import(_cfg)
     if result["ok"]:
         msg = (f"{_Path(result['xml_path']).name}: {result['parsed']} in file — "
-               f"{result['relevant']} assigned to you · "
-               f"{result['skipped_other_assignee']} skipped (other assignee) · "
-               f"{result['inserted']} new · {result['updated']} refreshed · "
-               f"{result['comments']} comments")
+               f"{result['refreshed']} tracked refreshed · "
+               f"{result['new_gatekeeper']} new (assigned to you) · "
+               f"{result['new_board']} new (on the board) · "
+               f"{result['ignored']} ignored · {result['comments']} comments")
         return redirect(url_for("ecom_gatekeeper_list", jira_ok="1", jira_msg=msg))
     return redirect(url_for("ecom_gatekeeper_list", jira_ok="0", jira_msg=result["error"]))
 

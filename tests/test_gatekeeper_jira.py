@@ -40,15 +40,17 @@ def client(tmp_path, monkeypatch):
     db_path = tmp_path / "gk.db"
     database.init_db(db_path).close()
     db_jira.init_schema(db_path)
+    from app.db import ecom as db_ecom
     from app.db import gatekeeper as db_gk
     db_gk.init_schema(db_path)
+    db_ecom.init_schema(db_path)   # the page derives on-board state
     folder = tmp_path / "jira_gk"
     folder.mkdir()
     (folder / "export.xml").write_text(XML, encoding="utf-8")
     monkeypatch.setattr(web_reference, "_get_conn",
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_reference._cfg, "database_path", str(db_path))
-    monkeypatch.setitem(web_reference._cfg, "jira_gatekeeper_folder", str(folder))
+    monkeypatch.setitem(web_reference._cfg, "jira_folder", str(folder))
     return app.test_client()
 
 
@@ -72,7 +74,7 @@ def test_acceptance_criteria_parsed_and_refreshed_on_reimport(client, tmp_path, 
     folder = tmp_path / "gk2"
     folder.mkdir()
     (folder / "v1.xml").write_text(XML, encoding="utf-8")
-    monkeypatch.setitem(web_reference._cfg, "jira_gatekeeper_folder", str(folder))
+    monkeypatch.setitem(web_reference._cfg, "jira_folder", str(folder))
     client.post("/ecom-gatekeeper/import-jira")
 
     conn = web_reference._get_conn()
@@ -219,7 +221,7 @@ def test_jira_ticket_detail_next_step_and_notes(client, monkeypatch):
     html = client.get("/ecom-gatekeeper").get_data(as_text=True)
     assert "gk-jns" in html and 'data-entity-type="jira"' in html
     assert "Deprecated — manual gatekeeper table" in html
-    assert html.index("the gatekeeper working list") < html.index("Deprecated")
+    assert html.index("Active gatekeeping") < html.index("Deprecated")
 
     # inline next-step save
     d = client.post("/ecom-gatekeeper/ticket/S4ECOM-1492/next-step",
@@ -259,6 +261,55 @@ def test_jira_ticket_detail_next_step_and_notes(client, monkeypatch):
 def test_import_error_is_shown_not_raised(client, tmp_path, monkeypatch):
     empty = tmp_path / "empty"
     empty.mkdir()
-    monkeypatch.setitem(web_reference._cfg, "jira_gatekeeper_folder", str(empty))
+    monkeypatch.setitem(web_reference._cfg, "jira_folder", str(empty))
     resp = client.post("/ecom-gatekeeper/import-jira")
     assert "jira_ok=0" in resp.headers["Location"]
+
+
+def test_work_sections_and_tripwire(client, monkeypatch):
+    """[USER 2026-07-12] gatekeeper board = Sales-facing work: active (mine,
+    not in validation) + Back with Sales (assigned away); in-validation
+    tickets leave the board; validation-without-Excel raises the tripwire."""
+    client.post("/ecom-gatekeeper/import-jira")
+    conn = web_reference._get_conn()
+    try:
+        with conn:
+            # second tracked ticket, reassigned away -> Back with Sales
+            conn.execute(
+                "INSERT INTO jira_issues (jira_key, summary, jira_status,"
+                " jira_assignee, seen_in_gatekeeper, first_seen, last_seen)"
+                " VALUES ('S4ECOM-2', 'sent back', 'Open', 'Sales Person', 1, 'd', 'd')")
+    finally:
+        conn.close()
+
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    active = html.split("Active gatekeeping")[1].split("Back with Sales")[0]
+    back = html.split("Back with Sales")[1].split("Order numbers report")[0]
+    assert "S4ECOM-1492" in active and "S4ECOM-1492" not in back
+    assert "S4ECOM-2" in back and "Sales Person" in back
+
+    # ticket moves to validation -> leaves the board, and (not in Excel)
+    # trips the warning with its KEY named
+    conn = web_reference._get_conn()
+    try:
+        with conn:
+            conn.execute("UPDATE jira_issues SET jira_status='In Validation'"
+                         " WHERE jira_key='S4ECOM-1492'")
+    finally:
+        conn.close()
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    active = html.split("Active gatekeeping")[1].split("Back with Sales")[0]
+    assert "S4ECOM-1492" not in active
+    assert "In validation but NOT on the ECOM board" in html
+    assert html.count("S4ECOM-1492") >= 1            # named in the tripwire
+
+    # putting it on the Excel board clears the tripwire
+    conn = web_reference._get_conn()
+    try:
+        with conn:
+            conn.execute("INSERT INTO ecom (match_key, jira_id, first_seen,"
+                         " last_seen) VALUES ('k', 'S4ECOM-1492', 'd', 'd')")
+    finally:
+        conn.close()
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    assert "In validation but NOT on the ECOM board" not in html

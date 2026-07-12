@@ -128,6 +128,9 @@ def parse_jira_xml(path: Path) -> list[dict]:
         assignee_el = item.find("assignee")
         assignee = _text(assignee_el) or (
             assignee_el.get("username", "") if assignee_el is not None else "")
+        reporter_el = item.find("reporter")
+        reporter = _text(reporter_el) or (
+            reporter_el.get("username", "") if reporter_el is not None else "")
         comments = [{
             "created": (c.get("created") or "").strip() or None,
             "body": _text(c),
@@ -142,6 +145,7 @@ def parse_jira_xml(path: Path) -> list[dict]:
             "acceptance_criteria": cf["acceptance_criteria"],
             "jira_status": (item.findtext("status") or "").strip() or None,
             "jira_assignee": assignee.strip() or None,
+            "reporter": reporter.strip() or None,
             "type": (item.findtext("type") or "").strip() or None,
             "priority": (item.findtext("priority") or "").strip() or None,
             "description": _text(item.find("description")) or None,
@@ -160,31 +164,31 @@ def newest_xml(folder: Path) -> Path | None:
     return candidates[0] if candidates else None
 
 
-_SOURCES = {"gatekeeper": "jira_gatekeeper_folder", "ecom": "jira_ecom_folder"}
+def run_jira_import(cfg: dict) -> dict:
+    """ONE unified import [USER 2026-07-12] — newest .xml in `jira_folder`
+    (fallback: `jira_gatekeeper_folder`); the Jira search can be as
+    broad/lazy as convenient (e.g. `assignee WAS currentUser()` + the board
+    epics). Per ticket:
 
+    - already in the store           -> REFRESH (tracked forever — keeps
+      "Back with Sales" current even when no longer assigned to me)
+    - new + assigned to me           -> enter (the gatekeeper sense check;
+      `jira_gatekeeper_assignee` in settings, substring match)
+    - new + key on the ECOM board    -> enter (board rows that never passed
+      gatekeeping still get their Jira data)
+    - anything else                  -> ignored (counted)
 
-def run_jira_import(cfg: dict, source: str) -> dict:
-    """Parse the newest XML of one source folder + upsert into the shared
-    store — with a per-source relevance filter [USER 2026-07-12], so the
-    Jira search can be as broad/lazy as convenient:
-
-    gatekeeper — only tickets ASSIGNED TO ME are accepted (sense check;
-        `jira_gatekeeper_assignee` in settings, substring match); others
-        are counted as skipped_other_assignee.
-    ecom — only tickets whose key is ON THE ECOM BOARD (ecom.jira_id);
-        others are counted as skipped_not_on_board.
+    Accepted tickets get source tags refreshed: assigned-to-me -> gatekeeper,
+    on-board -> ecom (set, never cleared).
     """
-    result: dict = {"ok": False, "error": None, "source": source,
-                    "xml_path": None, "parsed": 0, "relevant": 0,
-                    "skipped_other_assignee": 0, "skipped_not_on_board": 0,
+    result: dict = {"ok": False, "error": None,
+                    "xml_path": None, "parsed": 0,
+                    "refreshed": 0, "new_gatekeeper": 0, "new_board": 0,
+                    "ignored": 0,
                     "inserted": 0, "updated": 0, "comments": 0}
-    folder_key = _SOURCES.get(source)
-    if folder_key is None:
-        result["error"] = f"unknown source {source!r} (use 'gatekeeper' or 'ecom')"
-        return result
-    folder = Path(cfg.get(folder_key, ""))
+    folder = Path(cfg.get("jira_folder") or cfg.get("jira_gatekeeper_folder", ""))
     if not folder.is_dir():
-        result["error"] = f"folder not found: {folder} ({folder_key} in settings)"
+        result["error"] = f"folder not found: {folder} (jira_folder in settings)"
         return result
     xml_path = newest_xml(folder)
     if xml_path is None:
@@ -200,28 +204,47 @@ def run_jira_import(cfg: dict, source: str) -> dict:
     result["parsed"] = len(issues)
 
     from app import database
+    from app.db import ecom as db_ecom
     db_path = Path(cfg["database_path"])
     db_jira.init_schema(db_path)
+    db_ecom.init_schema(db_path)
     conn = database.get_connection(db_path)
     try:
-        if source == "gatekeeper":
-            me = (cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
-            if me:
-                accepted = [i for i in issues
-                            if me in (i.get("jira_assignee") or "").lower()]
-                result["skipped_other_assignee"] = len(issues) - len(accepted)
+        in_store = {k for (k,) in conn.execute("SELECT jira_key FROM jira_issues")}
+        board = {k.strip().lower() for (k,) in conn.execute(
+            "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
+        me = (cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
+
+        def _mine(iss) -> bool:
+            return bool(me) and me in (iss.get("jira_assignee") or "").lower()
+
+        def _on_board(iss) -> bool:
+            return iss["jira_key"].strip().lower() in board
+
+        accepted = []
+        for iss in issues:
+            if iss["jira_key"] in in_store:
+                accepted.append(iss)
+                result["refreshed"] += 1
+            elif _mine(iss):
+                accepted.append(iss)
+                result["new_gatekeeper"] += 1
+            elif _on_board(iss):
+                accepted.append(iss)
+                result["new_board"] += 1
             else:
-                accepted = issues   # no assignee configured -> no sense check
-        else:  # ecom
-            from app.db import ecom as db_ecom
-            db_ecom.init_schema(db_path)   # board table must exist for the filter
-            board = {k.strip().lower() for (k,) in conn.execute(
-                "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
-            accepted = [i for i in issues
-                        if i["jira_key"].strip().lower() in board]
-            result["skipped_not_on_board"] = len(issues) - len(accepted)
-        result["relevant"] = len(accepted)
-        counts = db_jira.upsert_jira_issues(conn, accepted, seen_in=source)
+                result["ignored"] += 1
+
+        counts = db_jira.upsert_jira_issues(conn, accepted)
+        # source tags reflect CURRENT membership (set, never cleared)
+        with conn:
+            for iss in accepted:
+                if _mine(iss):
+                    conn.execute("UPDATE jira_issues SET seen_in_gatekeeper=1"
+                                 " WHERE jira_key=?", (iss["jira_key"],))
+                if _on_board(iss):
+                    conn.execute("UPDATE jira_issues SET seen_in_ecom=1"
+                                 " WHERE jira_key=?", (iss["jira_key"],))
     finally:
         conn.close()
     result.update(counts)

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS jira_issues (
     markets       TEXT,
     jira_status   TEXT,              -- refreshed on re-import
     jira_assignee TEXT,              -- refreshed on re-import
+    reporter      TEXT,              -- who raised it [USER 2026-07-12]
     type          TEXT,
     priority      TEXT,
     description   TEXT,              -- HTML as exported
@@ -62,6 +63,7 @@ def init_schema(db_path: Path) -> None:
             "ALTER TABLE jira_issues ADD COLUMN acceptance_criteria TEXT",
             "ALTER TABLE jira_issues ADD COLUMN seen_in_gatekeeper INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE jira_issues ADD COLUMN seen_in_ecom INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE jira_issues ADD COLUMN reporter TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -99,22 +101,26 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict],
                 "SELECT 1 FROM jira_issues WHERE jira_key=?",
                 (iss["jira_key"],)).fetchone()
             if exists:
+                # reporter refreshes too — immutable in Jira, so this only
+                # backfills rows imported before the column existed
                 conn.execute(
                     "UPDATE jira_issues SET jira_status=?, jira_assignee=?,"
-                    " acceptance_criteria=?, last_seen=? WHERE jira_key=?",
+                    " acceptance_criteria=?, reporter=?, last_seen=? WHERE jira_key=?",
                     (iss.get("jira_status"), iss.get("jira_assignee"),
-                     iss.get("acceptance_criteria"), now, iss["jira_key"]))
+                     iss.get("acceptance_criteria"), iss.get("reporter"),
+                     now, iss["jira_key"]))
                 updated += 1
             else:
                 conn.execute(
                     "INSERT INTO jira_issues (jira_key, solman_id, summary, epic,"
-                    " markets, jira_status, jira_assignee, type, priority,"
+                    " markets, jira_status, jira_assignee, reporter, type, priority,"
                     " description, acceptance_criteria, link, created, updated,"
                     " first_seen, last_seen)"
-                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (iss["jira_key"], iss.get("solman_id"), iss.get("summary"),
                      iss.get("epic"), iss.get("markets"), iss.get("jira_status"),
-                     iss.get("jira_assignee"), iss.get("type"), iss.get("priority"),
+                     iss.get("jira_assignee"), iss.get("reporter"),
+                     iss.get("type"), iss.get("priority"),
                      iss.get("description"), iss.get("acceptance_criteria"),
                      iss.get("link"), iss.get("created"),
                      iss.get("updated"), now, now))

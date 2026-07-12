@@ -81,18 +81,40 @@
 </table>
 {% endset %}
 
-{# ---- Jira tickets from the shared store — THE current gatekeeper ---- #}
-<details class="rt-section" open>
-  <summary>Jira tickets — the gatekeeper working list
-    <span class="rt-count">{{ jira_issues|length }}</span>
-  </summary>
-  {% if jira_issues %}
-  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
-    Jira fields are read-only from the shared store. <strong>Next step</strong> is
-    yours (saved on blur, keyed by the jira ticket — survives the handover to
-    ECOM); ↻ archives it, 🕘 shows the history. Details = description, comments,
-    orders and notes.
+{# ---- Tripwire: in validation but NOT on the ECOM board (invisible on both) ---- #}
+{% if validation_lost %}
+<div class="alarm-box" style="margin-bottom:1rem">
+  <h2>⚠ In validation but NOT on the ECOM board</h2>
+  <p style="color:#a10d19; font-size:0.85rem">
+    These tickets would be invisible on both boards — handed over per status,
+    but the test case is missing from the Excel (or the import has not run):
+    {% for k in validation_lost %}<span class="mono">{{ k }}</span>{% if not loop.last %} · {% endif %}{% endfor %}
   </p>
+</div>
+{% endif %}
+
+{# ---- Gatekeeper working sections [USER 2026-07-12]: Sales-facing work only.
+      In-validation tickets belong to the ECOM board (MB-facing). ---- #}
+{% if not jira_issues %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No Jira data yet — drop an XML export into the Jira folder and press
+  <strong>&#8635; Update from Jira</strong>.
+</p>
+{% endif %}
+{% for section_title, section_items in gk_sections %}
+<details class="rt-section" {% if loop.first or section_items %}open{% endif %}>
+  <summary>{{ section_title }}
+    <span class="rt-count">{{ section_items|length }}</span>
+  </summary>
+  {% if loop.first %}
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    <strong>Next step</strong> is yours (saved on blur, keyed by the jira
+    ticket — survives the handover to ECOM); ↻ archives it, 🕘 shows the
+    history. {% if in_validation_count %}<span style="color:#888">{{ in_validation_count }}
+    ticket(s) in validation → see the <a href="{{ url_for('ecom.ecom_list') }}">ECOM board</a>.</span>{% endif %}
+  </p>
+  {% endif %}
+  {% if section_items %}
   <table class="rt-table">
     <thead>
       <tr>
@@ -106,11 +128,12 @@
       </tr>
     </thead>
     <tbody>
-      {% for i in jira_issues %}
+      {% for i in section_items %}
       <tr>
         <td class="mono" style="font-size:0.78rem">
           {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
           {% else %}{{ i.jira_key }}{% endif %}
+          {% if i.on_board %}<span class="pill pill--gray" title="the test case is on the ECOM board">ECOM</span>{% endif %}
         </td>
         <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
         <td><a href="{{ url_for('gatekeeper_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a></td>
@@ -156,12 +179,10 @@
     </tbody>
   </table>
   {% else %}
-  <p style="color:#888; margin:0.6rem 1rem">
-    No Jira data yet — drop an XML export into the gatekeeper Jira folder and
-    press <strong>&#8635; Update from Jira</strong>.
-  </p>
+  <p style="color:#888; margin:0.6rem 1rem">Nothing here right now.</p>
   {% endif %}
 </details>
+{% endfor %}
 
 {# ---- Order-numbers report (from Jira: acceptance criteria, comment fallback) ---- #}
 {% if jira_issues %}

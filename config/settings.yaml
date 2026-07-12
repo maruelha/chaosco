@@ -108,18 +108,24 @@ tracker_scenario_groups:
   "PROMAT/FOC": ["promat", "foc"]
 
 # ---------------------------------------------------------------------------
-# Jira XML exports (ECOM Gatekeeper v2, day plan 05.07 step 2).
-# Drop Jira XML exports here — the importer always takes the NEWEST .xml in
-# each folder, filenames don't matter [USER 2026-07-06].
+# Jira XML — ONE unified import [USER 2026-07-12]. Drop exports here (the
+# NEWEST .xml wins, filenames don't matter). The Jira search may be broad,
+# e.g. `assignee WAS currentUser()` + the board epics: tickets already
+# tracked are refreshed; new ones enter only if assigned to me or on the
+# ECOM board; the rest is ignored.
 # ---------------------------------------------------------------------------
 
-jira_gatekeeper_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download\jira_gatekeeper'
-jira_ecom_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download\jira_ecom'
+jira_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download\jira_gatekeeper'
+# (jira_ecom_folder retired 2026-07-12 — one upload serves both boards)
 
-# Gatekeeper import sense check [USER 2026-07-12]: only tickets whose Jira
-# assignee CONTAINS this (case-insensitive) are accepted; others are skipped
-# and reported. The ECOM import filters by the board instead (ecom.jira_id).
+# Entry sense check: new tickets are accepted when the Jira assignee
+# CONTAINS this (case-insensitive).
 jira_gatekeeper_assignee: 'Haase, Marina'
+
+# Status value(s) meaning "handed to MB / in validation" — these tickets
+# leave the gatekeeper working sections (they live on the ECOM board).
+jira_validation_statuses:
+  - 'In Validation'
 
 # Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
 # (gitignored) — never here:

@@ -202,89 +202,91 @@ def test_newest_xml_wins_regardless_of_name(tmp_path):
     assert newest_xml(tmp_path) == new
 
 
-def test_run_jira_import_end_to_end(db_path, tmp_path):
-    folder = tmp_path / "gk"
-    folder.mkdir()
-    (folder / "export.xml").write_text(XML_V1, encoding="utf-8")
-    cfg = {"database_path": str(db_path), "jira_gatekeeper_folder": str(folder)}
-
-    result = run_jira_import(cfg, "gatekeeper")
-    assert result["ok"], result["error"]
-    assert result["parsed"] == 2 and result["inserted"] == 2
-    conn = database.get_connection(db_path)
-    try:
-        assert len(db_jira.list_jira_issues(conn)) == 2
-    finally:
-        conn.close()
-
-
-def test_gatekeeper_import_accepts_only_my_tickets(db_path, tmp_path):
-    """[USER 2026-07-12] gatekeeper sense check: only tickets assigned to me
-    enter the store; the export may be as broad as convenient."""
+def test_run_jira_import_folder_fallback(db_path, tmp_path):
+    # jira_folder is the primary key; jira_gatekeeper_folder still works
     folder = tmp_path / "gk"
     folder.mkdir()
     (folder / "export.xml").write_text(XML_V1, encoding="utf-8")
     cfg = {"database_path": str(db_path), "jira_gatekeeper_folder": str(folder),
            "jira_gatekeeper_assignee": "Marina"}
 
-    r = run_jira_import(cfg, "gatekeeper")
-    assert r["ok"]
-    assert r["parsed"] == 2 and r["relevant"] == 1
-    assert r["skipped_other_assignee"] == 1        # GK-102 belongs to JIRAUSER456
-
-    conn = database.get_connection(db_path)
-    try:
-        gk = db_jira.list_jira_issues(conn, seen_in="gatekeeper")
-        assert [i["jira_key"] for i in gk] == ["GK-101"]
-        assert db_jira.list_jira_issues(conn) == gk   # nothing else imported
-    finally:
-        conn.close()
+    result = run_jira_import(cfg)
+    assert result["ok"], result["error"]
+    assert result["parsed"] == 2 and result["new_gatekeeper"] == 1
 
 
-def test_ecom_import_accepts_only_board_tickets(db_path, tmp_path):
-    """[USER 2026-07-12] ECOM filter: only tickets whose key is on the ECOM
-    board (ecom.jira_id) enter the store — 200 irrelevant tickets in the
-    export cost nothing."""
+def test_unified_import_entry_rules(db_path, tmp_path):
+    """[USER 2026-07-12] ONE upload: tracked tickets refresh; new tickets
+    enter only if assigned to me OR on the ECOM board; the rest is ignored
+    — so the Jira export may be as broad/lazy as convenient."""
     from app.db import ecom as db_ecom
     db_ecom.init_schema(db_path)
     conn = database.get_connection(db_path)
     try:
         with conn:
-            conn.execute("INSERT INTO ecom (match_key, jira_id, created_at,"
-                         " first_seen, last_seen) VALUES ('k', 'gk-102', 'n', 'd', 'd')"
-                         if False else
-                         "INSERT INTO ecom (match_key, jira_id, first_seen, last_seen)"
-                         " VALUES ('k', 'GK-102', 'd', 'd')")
+            conn.execute("INSERT INTO ecom (match_key, jira_id, first_seen,"
+                         " last_seen) VALUES ('k', 'GK-102', 'd', 'd')")
     finally:
         conn.close()
 
-    folder = tmp_path / "ecom"
+    folder = tmp_path / "jira"
     folder.mkdir()
     (folder / "export.xml").write_text(XML_V1, encoding="utf-8")
-    cfg = {"database_path": str(db_path), "jira_ecom_folder": str(folder)}
+    cfg = {"database_path": str(db_path), "jira_folder": str(folder),
+           "jira_gatekeeper_assignee": "Marina"}
 
-    r = run_jira_import(cfg, "ecom")
+    r = run_jira_import(cfg)
     assert r["ok"]
-    assert r["parsed"] == 2 and r["relevant"] == 1
-    assert r["skipped_not_on_board"] == 1          # GK-101 is not on the board
+    # GK-101 assigned to 'Marina H.' -> gatekeeper entry;
+    # GK-102 (JIRAUSER456) is on the board -> board entry
+    assert r["parsed"] == 2
+    assert r["new_gatekeeper"] == 1 and r["new_board"] == 1
+    assert r["refreshed"] == 0 and r["ignored"] == 0
 
     conn = database.get_connection(db_path)
     try:
+        assert [i["jira_key"] for i in db_jira.list_jira_issues(conn, seen_in="gatekeeper")] \
+            == ["GK-101"]
         assert [i["jira_key"] for i in db_jira.list_jira_issues(conn, seen_in="ecom")] \
             == ["GK-102"]
-        # the gatekeeper view stays untouched by an ecom import
-        assert db_jira.list_jira_issues(conn, seen_in="gatekeeper") == []
+    finally:
+        conn.close()
+
+
+def test_unified_import_tracks_forever_and_ignores_strangers(db_path, tmp_path):
+    """A tracked ticket keeps refreshing even when no longer assigned to me
+    (the 'Back with Sales' case); untracked strangers stay out."""
+    folder = tmp_path / "jira"
+    folder.mkdir()
+    (folder / "v1.xml").write_text(XML_V1, encoding="utf-8")
+    cfg = {"database_path": str(db_path), "jira_folder": str(folder),
+           "jira_gatekeeper_assignee": "Marina"}
+    r = run_jira_import(cfg)
+    assert r["new_gatekeeper"] == 1 and r["ignored"] == 1   # GK-102 = stranger
+
+    # v2: GK-101 reassigned away (back to Sales) + status change,
+    # GK-103 is a stranger
+    (folder / "v2.xml").write_text(XML_V2, encoding="utf-8")
+    r = run_jira_import(cfg)
+    assert r["refreshed"] == 1                              # GK-101 still tracked
+    assert r["new_gatekeeper"] == 0 and r["ignored"] == 1   # GK-103 stays out
+
+    conn = database.get_connection(db_path)
+    try:
+        i = db_jira.get_jira_issue(conn, "GK-101")
+        assert i["jira_status"] == "Resolved"               # refreshed
+        assert i["jira_assignee"] == "Someone Else"         # assignee tracked
+        assert i["seen_in_gatekeeper"] == 1                 # tag sticky
+        assert db_jira.get_jira_issue(conn, "GK-103") is None
     finally:
         conn.close()
 
 
 def test_run_jira_import_clear_errors(db_path, tmp_path):
     cfg = {"database_path": str(db_path),
-           "jira_gatekeeper_folder": str(tmp_path / "missing")}
-    assert "folder not found" in run_jira_import(cfg, "gatekeeper")["error"]
+           "jira_folder": str(tmp_path / "missing")}
+    assert "folder not found" in run_jira_import(cfg)["error"]
 
     empty = tmp_path / "empty"; empty.mkdir()
-    cfg["jira_gatekeeper_folder"] = str(empty)
-    assert "no .xml file" in run_jira_import(cfg, "gatekeeper")["error"]
-
-    assert "unknown source" in run_jira_import(cfg, "nope")["error"]
+    cfg["jira_folder"] = str(empty)
+    assert "no .xml file" in run_jira_import(cfg)["error"]
