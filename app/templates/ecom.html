@@ -63,8 +63,10 @@
       <th>Name</th>
       <th>Scenario</th>
       <th>Country</th>
-      <th>Status</th>
-      <th>Assigned to</th>
+      <th title="Excel status">Status</th>
+      <th title="Excel assignee">Assigned to</th>
+      <th title="live from the Jira store">Jira status</th>
+      <th title="live from the Jira store">Jira assignee</th>
       <th title="row exists in the shared Jira store">Jira</th>
       <th title="description changed marker from the Excel">Δ Desc</th>
       <th></th>
@@ -80,6 +82,8 @@
       <td>{{ r.country or "" }}</td>
       <td>{{ r.status or "" }}</td>
       <td>{{ r.assigned_to or "" }}</td>
+      <td style="font-size:0.8rem">{{ jira_info[r.jira_id].jira_status if r.jira_id in jira_keys else "—" }}</td>
+      <td style="font-size:0.8rem">{{ jira_info[r.jira_id].jira_assignee if r.jira_id in jira_keys else "—" }}</td>
       <td>{% if r.jira_id in jira_keys %}<span class="pill pill--green" title="Jira details + comments available">&#10003;</span>
           {% else %}<span style="color:#c5c5cc" title="not in the Jira store yet">·</span>{% endif %}</td>
       <td>{% if r.description_change %}<span class="pill pill--gray" title="{{ r.description_change }}">Δ</span>{% endif %}</td>
@@ -96,7 +100,7 @@
     </tr>
     {% if r.jira_id in jira_keys %}
     <tr class="ecom-jira-detail" style="display:none">
-      <td colspan="10" style="background:#fafafa; padding:0.6rem 1rem">
+      <td colspan="12" style="background:#fafafa; padding:0.6rem 1rem">
         <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Jira comments ({{ jira_comments.get(r.jira_id, [])|length }})</div>
         {% for c in jira_comments.get(r.jira_id, []) %}
         <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
@@ -119,7 +123,7 @@
     </tr>
     {% endif %}
     {% else %}
-    <tr><td colspan="10" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
+    <tr><td colspan="12" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
     {% endfor %}
   </tbody>
 </table>

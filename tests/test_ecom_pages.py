@@ -75,6 +75,11 @@ def test_list_renders_with_jira_chip_only_when_in_store(client):
     _seed_jira(client)
     html = client.get("/ecom/").get_data(as_text=True)
     assert "Jira details + comments available" in html
+    # live jira status + assignee columns [USER 2026-07-12]
+    assert "Jira status" in html and "In Progress" in html
+    assert "Dev X" in html
+    # comments + gatekeeper notes reachable via the expander
+    assert "ecomJira" in html and "first comment" in html
 
 
 def test_detail_shows_jira_section_or_hint(client):

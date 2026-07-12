@@ -44,7 +44,8 @@ def ecom_list():
                                      countries=countries or None,
                                      scenarios=scenarios or None, q=q)
         distincts = db_ecom.get_ecom_distincts(conn)
-        jira_keys = {i["jira_key"] for i in db_jira.list_jira_issues(conn)}
+        jira_info = {i["jira_key"]: i for i in db_jira.list_jira_issues(conn)}
+        jira_keys = set(jira_info)
         # per-row expander [USER 2026-07-12]: jira comments + the notes made
         # on the gatekeeper side (entity 'jira' — same key, shared history)
         jira_comments = {r["jira_id"]: db_jira.list_jira_comments(conn, r["jira_id"])
@@ -55,6 +56,7 @@ def ecom_list():
         conn.close()
     return render_template(
         "ecom.html", rows=rows, distincts=distincts, jira_keys=jira_keys,
+        jira_info=jira_info,
         jira_comments=jira_comments, jira_notes=jira_notes,
         sel_statuses=statuses, sel_countries=countries, sel_scenarios=scenarios,
         q=q or "",
