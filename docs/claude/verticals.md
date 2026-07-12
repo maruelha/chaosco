@@ -105,7 +105,15 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - `app/jira_importer.py`: Jira RSS parser (DC 10.3; pre-pass escapes bare
   `&`), `run_jira_import(cfg, 'gatekeeper'|'ecom')` — takes the NEWEST .xml
   in `jira_gatekeeper_folder` / `jira_ecom_folder` (settings.yaml),
-  filenames irrelevant.
+  filenames irrelevant. Per-source RELEVANCE FILTER [USER 2026-07-12] — the
+  Jira search may be as broad/lazy as convenient (XML size is irrelevant):
+  gatekeeper accepts ONLY tickets assigned to me
+  (`jira_gatekeeper_assignee` in settings, substring sense check); ecom
+  accepts ONLY tickets whose key is on the ECOM board (`ecom.jira_id`).
+  Skipped counts appear in the result banners. Accepted tickets get source
+  tags (`seen_in_gatekeeper`/`seen_in_ecom`, set never cleared — a ticket
+  may live in both worlds); the gatekeeper page lists only
+  gatekeeper-tagged tickets, so a broad ECOM export can never flood it.
 - Re-import rule [USER 2026-07-05]: match by jira key; ONLY jira_status,
   jira_assignee, comments (REPLACED wholesale) and — since 2026-07-11 —
   `acceptance_criteria` refresh (living test data: testers fill order

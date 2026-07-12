@@ -165,9 +165,18 @@ _SOURCES = {"gatekeeper": "jira_gatekeeper_folder", "ecom": "jira_ecom_folder"}
 
 def run_jira_import(cfg: dict, source: str) -> dict:
     """Parse the newest XML of one source folder + upsert into the shared
-    store. Returns a result dict for the import screen (step 3)."""
+    store — with a per-source relevance filter [USER 2026-07-12], so the
+    Jira search can be as broad/lazy as convenient:
+
+    gatekeeper — only tickets ASSIGNED TO ME are accepted (sense check;
+        `jira_gatekeeper_assignee` in settings, substring match); others
+        are counted as skipped_other_assignee.
+    ecom — only tickets whose key is ON THE ECOM BOARD (ecom.jira_id);
+        others are counted as skipped_not_on_board.
+    """
     result: dict = {"ok": False, "error": None, "source": source,
-                    "xml_path": None, "parsed": 0,
+                    "xml_path": None, "parsed": 0, "relevant": 0,
+                    "skipped_other_assignee": 0, "skipped_not_on_board": 0,
                     "inserted": 0, "updated": 0, "comments": 0}
     folder_key = _SOURCES.get(source)
     if folder_key is None:
@@ -195,7 +204,24 @@ def run_jira_import(cfg: dict, source: str) -> dict:
     db_jira.init_schema(db_path)
     conn = database.get_connection(db_path)
     try:
-        counts = db_jira.upsert_jira_issues(conn, issues)
+        if source == "gatekeeper":
+            me = (cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
+            if me:
+                accepted = [i for i in issues
+                            if me in (i.get("jira_assignee") or "").lower()]
+                result["skipped_other_assignee"] = len(issues) - len(accepted)
+            else:
+                accepted = issues   # no assignee configured -> no sense check
+        else:  # ecom
+            from app.db import ecom as db_ecom
+            db_ecom.init_schema(db_path)   # board table must exist for the filter
+            board = {k.strip().lower() for (k,) in conn.execute(
+                "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
+            accepted = [i for i in issues
+                        if i["jira_key"].strip().lower() in board]
+            result["skipped_not_on_board"] = len(issues) - len(accepted)
+        result["relevant"] = len(accepted)
+        counts = db_jira.upsert_jira_issues(conn, accepted, seen_in=source)
     finally:
         conn.close()
     result.update(counts)

@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS jira_issues (
     link          TEXT,
     created       TEXT,
     updated       TEXT,
+    seen_in_gatekeeper INTEGER NOT NULL DEFAULT 0,  -- source tags: which
+    seen_in_ecom       INTEGER NOT NULL DEFAULT 0,  -- import(s) carried it
     first_seen    TEXT NOT NULL,
     last_seen     TEXT NOT NULL
 );
@@ -56,10 +58,15 @@ def init_schema(db_path: Path) -> None:
     try:
         conn.executescript(_SCHEMA)
         # migrations (safe to re-run)
-        try:
-            conn.execute("ALTER TABLE jira_issues ADD COLUMN acceptance_criteria TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
+        for ddl in (
+            "ALTER TABLE jira_issues ADD COLUMN acceptance_criteria TEXT",
+            "ALTER TABLE jira_issues ADD COLUMN seen_in_gatekeeper INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE jira_issues ADD COLUMN seen_in_ecom INTEGER NOT NULL DEFAULT 0",
+        ):
+            try:
+                conn.execute(ddl)
+            except sqlite3.OperationalError:
+                pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -74,11 +81,16 @@ def _rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
 
-def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict]) -> dict:
+def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict],
+                       seen_in: str | None = None) -> dict:
     """Upsert parsed issues by jira_key. New keys: full insert. Existing keys:
     ONLY jira_status, jira_assignee, acceptance_criteria (living test data),
     last_seen refresh. Comments of every imported issue are REPLACED
-    wholesale. Returns counts."""
+    wholesale. seen_in ('gatekeeper'|'ecom') tags the source — the flag is
+    set, never cleared (a ticket may legitimately live in both worlds).
+    Returns counts."""
+    assert seen_in in (None, "gatekeeper", "ecom")
+    flag_col = f"seen_in_{seen_in}" if seen_in else None
     inserted = updated = comments = 0
     now = _now()
     with conn:
@@ -107,6 +119,9 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict]) -> dict:
                      iss.get("link"), iss.get("created"),
                      iss.get("updated"), now, now))
                 inserted += 1
+            if flag_col:
+                conn.execute(f"UPDATE jira_issues SET {flag_col}=1 WHERE jira_key=?",
+                             (iss["jira_key"],))
             conn.execute("DELETE FROM jira_comments WHERE jira_key=?",
                          (iss["jira_key"],))
             for c in iss.get("comments", []):
@@ -123,9 +138,16 @@ def get_jira_issue(conn: sqlite3.Connection, jira_key: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def list_jira_issues(conn: sqlite3.Connection) -> list[dict]:
-    return _rows_to_dicts(conn.execute(
-        "SELECT * FROM jira_issues ORDER BY jira_key"))
+def list_jira_issues(conn: sqlite3.Connection,
+                     seen_in: str | None = None) -> list[dict]:
+    """All issues, or only those tagged with one source
+    (seen_in='gatekeeper'|'ecom') — the gatekeeper page uses the tag so a
+    broad ECOM export can never flood its working list."""
+    sql = "SELECT * FROM jira_issues"
+    if seen_in in ("gatekeeper", "ecom"):
+        sql += f" WHERE seen_in_{seen_in} = 1"
+    sql += " ORDER BY jira_key"
+    return _rows_to_dicts(conn.execute(sql))
 
 
 def list_jira_comments(conn: sqlite3.Connection, jira_key: str) -> list[dict]:

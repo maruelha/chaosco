@@ -218,6 +218,66 @@ def test_run_jira_import_end_to_end(db_path, tmp_path):
         conn.close()
 
 
+def test_gatekeeper_import_accepts_only_my_tickets(db_path, tmp_path):
+    """[USER 2026-07-12] gatekeeper sense check: only tickets assigned to me
+    enter the store; the export may be as broad as convenient."""
+    folder = tmp_path / "gk"
+    folder.mkdir()
+    (folder / "export.xml").write_text(XML_V1, encoding="utf-8")
+    cfg = {"database_path": str(db_path), "jira_gatekeeper_folder": str(folder),
+           "jira_gatekeeper_assignee": "Marina"}
+
+    r = run_jira_import(cfg, "gatekeeper")
+    assert r["ok"]
+    assert r["parsed"] == 2 and r["relevant"] == 1
+    assert r["skipped_other_assignee"] == 1        # GK-102 belongs to JIRAUSER456
+
+    conn = database.get_connection(db_path)
+    try:
+        gk = db_jira.list_jira_issues(conn, seen_in="gatekeeper")
+        assert [i["jira_key"] for i in gk] == ["GK-101"]
+        assert db_jira.list_jira_issues(conn) == gk   # nothing else imported
+    finally:
+        conn.close()
+
+
+def test_ecom_import_accepts_only_board_tickets(db_path, tmp_path):
+    """[USER 2026-07-12] ECOM filter: only tickets whose key is on the ECOM
+    board (ecom.jira_id) enter the store — 200 irrelevant tickets in the
+    export cost nothing."""
+    from app.db import ecom as db_ecom
+    db_ecom.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        with conn:
+            conn.execute("INSERT INTO ecom (match_key, jira_id, created_at,"
+                         " first_seen, last_seen) VALUES ('k', 'gk-102', 'n', 'd', 'd')"
+                         if False else
+                         "INSERT INTO ecom (match_key, jira_id, first_seen, last_seen)"
+                         " VALUES ('k', 'GK-102', 'd', 'd')")
+    finally:
+        conn.close()
+
+    folder = tmp_path / "ecom"
+    folder.mkdir()
+    (folder / "export.xml").write_text(XML_V1, encoding="utf-8")
+    cfg = {"database_path": str(db_path), "jira_ecom_folder": str(folder)}
+
+    r = run_jira_import(cfg, "ecom")
+    assert r["ok"]
+    assert r["parsed"] == 2 and r["relevant"] == 1
+    assert r["skipped_not_on_board"] == 1          # GK-101 is not on the board
+
+    conn = database.get_connection(db_path)
+    try:
+        assert [i["jira_key"] for i in db_jira.list_jira_issues(conn, seen_in="ecom")] \
+            == ["GK-102"]
+        # the gatekeeper view stays untouched by an ecom import
+        assert db_jira.list_jira_issues(conn, seen_in="gatekeeper") == []
+    finally:
+        conn.close()
+
+
 def test_run_jira_import_clear_errors(db_path, tmp_path):
     cfg = {"database_path": str(db_path),
            "jira_gatekeeper_folder": str(tmp_path / "missing")}

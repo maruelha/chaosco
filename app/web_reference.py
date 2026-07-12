@@ -24,7 +24,7 @@ def ecom_gatekeeper_list():
         docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
         from app.db import jira as db_jira   # direct import (facade-order safe)
         from app.db import gatekeeper as db_gk
-        jira_issues = db_jira.list_jira_issues(conn)
+        jira_issues = db_jira.list_jira_issues(conn, seen_in="gatekeeper")
         jira_comments = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                          for i in jira_issues}
         gk_next_steps = db_gk.get_gatekeeper_next_steps(conn)
@@ -109,7 +109,9 @@ def ecom_gatekeeper_import_jira():
     from app.jira_importer import run_jira_import
     result = run_jira_import(_cfg, "gatekeeper")
     if result["ok"]:
-        msg = (f"{_Path(result['xml_path']).name}: {result['parsed']} tickets — "
+        msg = (f"{_Path(result['xml_path']).name}: {result['parsed']} in file — "
+               f"{result['relevant']} assigned to you · "
+               f"{result['skipped_other_assignee']} skipped (other assignee) · "
                f"{result['inserted']} new · {result['updated']} refreshed · "
                f"{result['comments']} comments")
         return redirect(url_for("ecom_gatekeeper_list", jira_ok="1", jira_msg=msg))

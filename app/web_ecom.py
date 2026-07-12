@@ -61,7 +61,9 @@ def ecom_import_jira():
     """'Update from Jira' — runs the ECOM-folder XML import (step 2 code)."""
     result = run_jira_import(_cfg, "ecom")
     if result["ok"]:
-        msg = (f"{Path(result['xml_path']).name}: {result['parsed']} issues — "
+        msg = (f"{Path(result['xml_path']).name}: {result['parsed']} in file — "
+               f"{result['relevant']} on the board · "
+               f"{result['skipped_not_on_board']} ignored (not on the board) · "
                f"{result['inserted']} new · {result['updated']} refreshed · "
                f"{result['comments']} comments")
         return redirect(url_for("ecom.ecom_list", jira_ok="1", jira_msg=msg))

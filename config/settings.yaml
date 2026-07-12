@@ -116,6 +116,11 @@ tracker_scenario_groups:
 jira_gatekeeper_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download\jira_gatekeeper'
 jira_ecom_folder: 'C:\AIProjectsSandbox\ClaudeProjekte\chaosco\Download\jira_ecom'
 
+# Gatekeeper import sense check [USER 2026-07-12]: only tickets whose Jira
+# assignee CONTAINS this (case-insensitive) are accepted; others are skipped
+# and reported. The ECOM import filters by the board instead (ecom.jira_id).
+jira_gatekeeper_assignee: 'Haase, Marina'
+
 # Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
 # (gitignored) — never here:
 #   email_user: 'you@gmx.de'
