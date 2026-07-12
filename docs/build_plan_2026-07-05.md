@@ -33,13 +33,15 @@ as-is (instance labels ARE "Epic Link" and "Markets"; no tuning needed).
 Solman-id split verified (PCS0001MU01_…). FINDING: Jira carries NO
 order-number field — order numbers live in the COMMENT texts.
 
-Remaining Jira tasks:
-1. [MARINA] one XML export into `Download/jira_ecom/` (the ECOM open-issues
-   search) — unlocks the ECOM Jira card content + description-change
+Remaining Jira tasks (UPDATED 2026-07-12 — ONE unified import now;
+`jira_folder`, the jira_ecom folder is retired):
+1. [MARINA] broaden the saved Jira search so the export also contains the
+   ECOM-board tickets (JQL `assignee WAS currentUser()` OR the board
+   epics) — unlocks the ECOM Jira columns/cards + description-change
    auto-flag (step 8 optional add-on).
-2. Steps 3–6 (Gatekeeper v2 card → integrations → Excel push →
-   report/email) are now buildable; a first slice exists on the OLD
-   gatekeeper page (import button + read-only tickets table, 2026-07-11).
+2. Steps 4–6 (remaining gatekeeper integrations → Excel push →
+   report/email) are buildable; step 3's core + the Sales report v1
+   exist (2026-07-11/12).
 
 - `app/db/jira.py`: `jira_issues` (jira_key PK, solman_id = summary before
   first "_", summary, epic, markets, jira_status, jira_assignee, type,

@@ -53,7 +53,8 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   Dashboard card. Tests: `tests/test_ecom_pages.py`. List rows with Jira
   data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
   the GATEKEEPER notes (entity `jira`, same key — the shared history
-  travels with the ticket).
+  travels with the ticket) — plus live "Jira status" / "Jira assignee"
+  columns from the store ("—" until the ticket is imported).
 - Status report `/ecom/report` [USER 2026-07-09]: SAME bucket definitions
   as Retail (one config — status_mappings.yaml; "Not Ready" = known
   exclusion, visible in the inline diagnostics section, no separate

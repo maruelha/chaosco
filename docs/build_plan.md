@@ -36,11 +36,14 @@ Last updated: 2026-07-05
 (`jira_gatekeeper_folder` / `jira_ecom_folder`); importer takes the newest
 `.xml` per folder.
 
-4. **First real Jira XML exports** — gatekeeper export ✅ RECEIVED
-   2026-07-11 (`jjira1107.xml`, trial verified, importer works as-is).
-   STILL OPEN: one export into `Download/jira_ecom/` (the ECOM open-issues
-   search) for the ECOM Jira card + description-change auto-flag. In Jira:
-   issue search → Export → XML; any filename.
+4. **Jira exports** — gatekeeper export ✅ RECEIVED 2026-07-11 (trial
+   verified). SUPERSEDED 2026-07-12 by the ONE unified import
+   (`jira_folder` = the old gatekeeper folder; `jira_ecom` retired).
+   STILL OPEN [MARINA]: broaden the saved Jira search so the export also
+   CONTAINS the ECOM-board tickets — recommended JQL:
+   `assignee WAS currentUser()` OR the board epics. That lights up the
+   ECOM board's Jira columns/cards + enables the description-change
+   auto-flag.
 
 ---
 
@@ -154,11 +157,10 @@ Last updated: 2026-07-05
    `/ecom/report` — same buckets as Retail (one config), impacted
    ECOM-channel defects, inline diagnostics, HTML download, Save-to-Excel
    (ECOM sheet), 4th email checkbox. No PPT.
-3. **Jira trial run** — the card's only remaining gate. [MARINA] drop one
-   real export into `Download/jira_ecom/`, then: press "↻ Update from
-   Jira", verify the parse read-back together, and tune the Epic/Markets
-   custom-field NAME matching in `app/jira_importer.py` to whatever the
-   instance actually calls those fields.
+3. ~~Jira trial run~~ ✅ VERIFIED 2026-07-11 on the real gatekeeper export
+   (field names matched as-is). Remaining [MARINA]: broaden the Jira
+   search to include the board tickets (see "waiting on Marina" item 4) —
+   the unified import then fills the ECOM Jira columns/cards.
 4. **Description-change auto-flag** (optional add-on, after task 3): flag
    an ECOM row when a Jira re-import changes the stored description —
    signal for the description_change workflow (today only the Excel's Δ

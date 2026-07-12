@@ -85,6 +85,28 @@ as they come up (convention in CLAUDE.md).</p>
 </div>
 
 <div class="box b-blue">
+  <div class="box-head">New on 12.07 — one Jira upload, work sections, Sales report</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="t12">
+      <span><strong>Broaden the saved Jira search</strong> so the export also contains
+      the ECOM-board tickets — recommended JQL: <code>assignee WAS currentUser()</code>
+      OR the board epics. One export, one folder (the old gatekeeper folder),
+      both boards fed; the ECOM Jira columns light up after the next import.</span></label>
+    <label class="task"><input type="checkbox" data-k="t13">
+      <span><strong>Walk the new gatekeeper sections</strong>
+      <span class="where">→ ECOM Gatekeeper</span><br>
+      Active gatekeeping (yours, not "In Validation") · ↩ Back with Sales
+      (reassigned away — the chase list) · in-validation tickets live on the ECOM
+      board · red tripwire names tickets in validation that are missing from the
+      Excel. Status value configurable (<code>jira_validation_statuses</code>).</span></label>
+    <label class="task"><input type="checkbox" data-k="t14">
+      <span><strong>Try the 📄 Sales report</strong> (button on the Gatekeeper page):
+      all your tickets grouped in-gatekeeping / in-validation, order numbers +
+      next steps + call-out bullets. Layout wishes → tell Claude.</span></label>
+  </div>
+</div>
+
+<div class="box b-blue">
   <div class="box-head">New on 11.07 — Gatekeeper via Jira + tracker "expected"</div>
   <div class="box-body">
     <label class="task"><input type="checkbox" data-k="t10">
