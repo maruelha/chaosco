@@ -40,7 +40,7 @@ Adding notes to ECOM, Omni, or any future module then becomes: two template line
 | Test Learnings | ⚠️ Inline | Expand row in list + detail | No | No | No |
 | Test Limitations | ⚠️ Inline | Expand row in list + detail | No | No | No |
 | Core South Spillover | ⚠️ Inline | Detail page (link from list) | Yes | Yes | Yes |
-| Known Production Defects | ❌ Missing | — | — | — | — |
+| Known Production Defects | ✅ Full (2026-07-13) | Detail page | Yes | Yes | Yes |
 
 The "inline" modules have a quick-add textarea but no heading, no edit, no delete,
 no screenshots. They were built as convenience shortcuts, not as the full notes module.

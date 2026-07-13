@@ -63,7 +63,9 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 
 - `shelf` — catch-all store; list/detail/combine; inbox files into it
 - `links`, `contacts`, `encouragements`/`encouragement_people`,
-  `test_learnings`, `test_limitations`, `known_prod_defects`
+  `test_learnings`, `test_limitations`, `known_prod_defects` (detail page
+  carries the shared notes section since 2026-07-13; registry key
+  `prod_defect`)
 - `ecom_gatekeeper` — inline-editable pre-handoff table; notes + order
   details; future handover re-points order_details to the ECOM vertical
 - `order_details` — generic per-entity order log

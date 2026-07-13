@@ -198,12 +198,15 @@ def prod_defect_detail(record_id: int):
                 comments=_f("comments"),
                 confluence=_f("confluence"),
             )
+        notes = database.list_notes(conn, "prod_defect", str(record_id))
+        attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("prod_defect_detail", record_id=record_id, saved="1"))
     saved = request.args.get("saved") == "1"
-    return render_template("prod_defect_detail.html", record=record, is_new=False, saved=saved)
+    return render_template("prod_defect_detail.html", record=record, is_new=False, saved=saved,
+                           notes=notes, attachments_by_note=attachments_by_note)
 
 
 @app.route("/prod_defects/<int:record_id>/delete", methods=["POST"])

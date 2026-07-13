@@ -7,6 +7,7 @@ live DB is never touched).
 import pytest
 
 from app import database
+import app.web_core as web_core
 import app.web_notes as web_notes
 from app.web import app
 
@@ -19,6 +20,7 @@ def client(tmp_path, monkeypatch):
                                           area=None, category=None)
     conn.close()
     monkeypatch.setattr(web_notes, "_db_path", db_path)
+    monkeypatch.setattr(web_core, "_db_path", db_path)
     c = app.test_client()
     c.shelf_id = shelf_id
     c.db_path = db_path
@@ -87,6 +89,39 @@ def test_note_entity_mismatch_404s(client):
     note_id = _notes(client.db_path)[0]["id"]
     # the same note id must not be editable through another entity's URL
     assert client.get(f"/n/defect/XYZ/{note_id}/edit").status_code == 404
+
+
+def test_prod_defect_notes_roundtrip(client):
+    """Known Production Defects carry notes via the generic routes."""
+    conn = database.get_connection(client.db_path)
+    try:
+        record = database.create_known_prod_defect(
+            conn, short_description="POS voucher rounding", scenario="Voucher at POS",
+            description=None, biz_impact=None, numbers=None, refs=None,
+            next_steps=None, comments=None, confluence=None)
+    finally:
+        conn.close()
+    rid = record["id"]
+
+    r = client.get(f"/n/prod_defect/{rid}/add")
+    assert r.status_code == 200
+    assert b"Voucher at POS" in r.data         # entity label from the registry
+
+    r = client.post(f"/n/prod_defect/{rid}/add", data={"note": "seen again in wave 2"})
+    assert r.status_code == 302
+    assert f"/prod_defects/{rid}?note_added=1" in r.headers["Location"]
+
+    conn = database.get_connection(client.db_path)
+    try:
+        notes = database.list_notes(conn, "prod_defect", str(rid))
+    finally:
+        conn.close()
+    assert len(notes) == 1 and notes[0]["note"] == "seen again in wave 2"
+
+    # the detail page renders the notes section
+    r = client.get(f"/prod_defects/{rid}")
+    assert r.status_code == 200
+    assert b"seen again in wave 2" in r.data
 
 
 def test_contact_and_link_notes_and_inbox_filing(client, monkeypatch):

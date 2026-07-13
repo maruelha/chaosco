@@ -85,6 +85,12 @@
 </form>
 
 {% if not is_new %}
+{% with entity_type='prod_defect', entity_id=record.id %}
+{% include '_notes_section.html' %}
+{% endwith %}
+{% endif %}
+
+{% if not is_new %}
 <script>
 document.getElementById('btn-delete').addEventListener('click', async () => {
   if (!confirm('Delete this entry? This cannot be undone.')) return;

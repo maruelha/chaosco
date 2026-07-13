@@ -1096,12 +1096,12 @@
       <span class="screen-url">GET/POST /prod_defects/new &nbsp;·&nbsp; /prod_defects/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Create or edit a production defect entry. The same template handles both new and existing records.</p>
+      <p class="screen-desc">Create or edit a production defect entry. The same template handles both new and existing records. Existing records carry the shared Notes section (entity type <code>prod_defect</code>) below the form — new entries get it after the first save.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
         <span class="feat-value">Technical Key · Short Description · Scenario · Description · Business Impact · Numbers · References · Next Steps · Comments · Confluence link</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation)</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation) · <span class="pill pill-action">+ Add note</span> (generic notes module, with attachments)</span>
         <span class="feat-label">Flash</span>
         <span class="feat-value">Green "Saved." banner on return from POST</span>
         <span class="feat-label">Table written</span>
