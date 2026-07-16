@@ -63,6 +63,11 @@ from app.web_next_steps import bp as _ns_bp
 _db_ns.init_schema(_db_path)
 app.register_blueprint(_ns_bp)
 
+# Order-details archive (2026-07-16) — grouped history batches; routes live
+# with the other generic /order-details/... routes in web_spillover.
+from app.db import order_archive as _db_oa
+_db_oa.init_schema(_db_path)
+
 # Global search (2026-07-10) — floating 🔍 widget in base.html; source
 # registry in app/db/search.py (order numbers now, topics via FTS later).
 from app.web_search import bp as _search_bp

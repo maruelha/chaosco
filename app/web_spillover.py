@@ -372,6 +372,45 @@ def order_detail_delete(detail_id: int):
     return jsonify({"ok": True})
 
 
+# --- order archive (2026-07-16): selected rows -> one grouped history batch
+
+
+@app.route("/order-details/<entity_type>/<entity_id>/archive", methods=["POST"])
+def order_details_archive(entity_type: str, entity_id: str):
+    ids = [int(i) for i in request.form.get("ids", "").split(",") if i.strip().isdigit()]
+    label = request.form.get("label", "").strip()
+    if not ids:
+        return jsonify({"ok": False, "error": "no rows selected"})
+    conn = _get_conn()
+    try:
+        result = database.archive_order_details(conn, entity_type, entity_id, ids, label)
+    finally:
+        conn.close()
+    if result["count"] == 0:
+        return jsonify({"ok": False, "error": "no matching rows"})
+    return jsonify({"ok": True, **result})
+
+
+@app.route("/order-details/<entity_type>/<entity_id>/history")
+def order_details_history(entity_type: str, entity_id: str):
+    conn = _get_conn()
+    try:
+        batches = database.list_order_batches(conn, entity_type, entity_id)
+    finally:
+        conn.close()
+    return jsonify({"batches": batches, "count": len(batches)})
+
+
+@app.route("/order-details/history/batch/<int:batch_id>/delete", methods=["POST"])
+def order_batch_delete(batch_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_order_batch(conn, batch_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 # ---------------------------------------------------------------------------
 # ECOM Gatekeeper Check
 
