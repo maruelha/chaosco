@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-07-16</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-07-16</h1>
+<p class="hint">Everything built in the 16.07. session, as a click-through checklist.
+Ticks are remembered by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>).
+Several features migrate/create tables on startup: order archive, order re-pointing to Jira,
+inbox columns, Teams chats (your saved channels move into the new registry),
+message types (seeds itself), track-sales column.</div>
+
+<!-- 1 -->
+<div class="box b-blue">
+  <div class="box-head">1 · Order details — archive as group</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Open <a href="http://127.0.0.1:8010/spillover" target="_blank">Spillover</a>,
+      click <strong>Order details</strong> on a row with several order lines.
+      <span class="expect">Each row has a select checkbox in front; header checkbox = select all.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Tick 2 rows that belong together → <strong>📦 Archive selected as group</strong>,
+      give a label (e.g. "test chain").
+      <span class="expect">Rows leave the live list; "Archived groups (1)" appears below with date + label + both rows.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span>Delete the test group via its ✕ (confirm).
+      <span class="expect">Group gone; live rows NOT restored (archive delete is permanent — re-add the lines if they were real).</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · Inbox — text search</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>Open the <a href="http://127.0.0.1:8010/inbox" target="_blank">Inbox</a>,
+      type part of a heading or note text into the search box in the "Pending" header.
+      <span class="expect">Items filter live; badge shows "x / y"; ✕ or Escape clears.
+      Searching "edit" must NOT match every item (button labels excluded).</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-teal">
+  <div class="box-head">3 · Orders shared by Jira ticket (Gatekeeper ⇄ ECOM)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>On the <a href="http://127.0.0.1:8010/ecom-gatekeeper" target="_blank">Gatekeeper Check</a>,
+      each Jira ticket row has an <strong>Orders</strong> button. Open one, add an order line.
+      <span class="expect">Your pre-existing ECOM/gatekeeper orders were migrated here automatically.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Open the SAME ticket on the <a href="http://127.0.0.1:8010/ecom/" target="_blank">ECOM board</a> → Orders.
+      <span class="expect">The line you just added is there — same rows, no copy. The old
+      "⇗ Take over orders from Gatekeeper" button on the ECOM detail page is gone.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>Global 🔍 search for one of those order numbers.
+      <span class="expect">Hit under "Order details" linking to the Gatekeeper ticket page.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-teal">
+  <div class="box-head">4 · ⤵ Take over orders from Jira acceptance criteria</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Open Orders on a ticket whose <strong>acceptance criteria</strong> list labeled order numbers
+      not yet in the list.
+      <span class="expect">Amber box "From Jira acceptance criteria — not in the list" + the missing
+      type/number pairs + "⤵ Take over from Jira".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Click take over.
+      <span class="expect">Rows created with the type from the Jira label; box disappears; clicking again adds nothing.
+      Numbers only mentioned in COMMENTS are never offered; archived numbers are never re-offered.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-amber">
+  <div class="box-head">5 · Inbox — reference fields, ⚡ Auto-file, Incoming buckets</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Add an <a href="http://127.0.0.1:8010/inbox" target="_blank">Inbox</a> item with a real
+      <strong>Jira ID</strong> in the new field; add another with <strong>route to: Contact → Incoming</strong>.
+      <span class="expect">Both show coloured chips (Jira … / ↪ Contacts incoming).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Click <strong>⚡ Auto-file</strong>.
+      <span class="expect">Preview dialog: "Will move" (pre-ticked, with target + via) and
+      "Stays in the inbox" with reasons (ambiguous/no match). Nothing moves before Confirm.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5c">
+      <span>Confirm, then check the Jira ticket's notes (Gatekeeper ticket page) and
+      <a href="http://127.0.0.1:8010/contacts" target="_blank">Contacts</a>.
+      <span class="expect">Note landed on the ticket; Contacts shows the amber "📥 Incoming" section on top.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5d">
+      <span>In the Incoming section: search a contact, <strong>Attach ›</strong> the note to it
+      (create the contact first if needed — it is never auto-connected).
+      <span class="expect">Note moves onto the contact; Incoming section empties/disappears.
+      Same works on <a href="http://127.0.0.1:8010/links" target="_blank">Links</a> and
+      <a href="http://127.0.0.1:8010/followups" target="_blank">Follow-ups</a>.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-purple">
+  <div class="box-head">6 · Teams chats — registry, per-ticket links, 💬 widget</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span>Open <a href="http://127.0.0.1:8010/teams-chats/" target="_blank">Teams Chats</a> (new dashboard card).
+      <span class="expect">Your previously saved Teams channels appear here (migrated out of /links);
+      the channel picker on the ping page still works.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span>Add a chat (name + link copied from Teams, OR just member emails), tick its <strong>⭐</strong>.
+      <span class="expect">The floating <strong>💬 Chats</strong> button (above 🔍, every page) lists it —
+      ↗ opens Teams, 📋 copies the link.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s6c">
+      <span>On a Gatekeeper ticket page (or Retail/Spillover/ECOM detail), click <strong>💬 Teams chats</strong>
+      and attach the chat.
+      <span class="expect">List rows now show a small 💬 for that ticket — one chat = opens Teams directly,
+      several = dialog. ECOM board + Gatekeeper ticket share the same attachments.</span></span></label>
+  </div>
+</div>
+
+<!-- 7 -->
+<div class="box b-purple">
+  <div class="box-head">7 · ✉️ Issue-message builder + Message Types</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s7a">
+      <span>Open <a href="http://127.0.0.1:8010/message-types" target="_blank">Message Types</a> and fill a
+      TIBCO/IIB API on e.g. "Sales order".
+      <span class="expect">8 seeded types (Reservation…Settlement file), inline editable.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7b">
+      <span>Click <strong>✉️</strong> on a Gatekeeper row: pick message type + special text, tick a highlighted order.
+      <span class="expect">Preview = "SolManID — orders: all numbers", the resolved text, and a TIBCO/IIB
+      line when the type has APIs (deletable — preview is editable). Retail rows use tc/country,
+      Spillover the item name.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7c">
+      <span>Try all three actions: 📋 Copy · 💬 copy &amp; open a chat (paste there) · 💾 Save to test case.
+      <span class="expect">Saved message appears as a note on the ticket (heading "Issue message — …").</span></span></label>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="box b-slate">
+  <div class="box-head">8 · Dashboard card order</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s8a">
+      <span>Check the <a href="http://127.0.0.1:8010/" target="_blank">Dashboard</a>.
+      <span class="expect">Order: Inbox · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM ·
+      Defects · Export Reports · Meeting Prep · Requirements Tracker · Topics · Follow-ups · Links ·
+      Contacts · Shelf · Encouragements · CS Follow-Up Tracker · To-Do · Teams Chats · Message Types ·
+      Enhancements.</span></span></label>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="box b-green">
+  <div class="box-head">9 · Sales report v2 — sections, 📣, filters, 🎉</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s9a">
+      <span>Open the <a href="http://127.0.0.1:8010/ecom-gatekeeper/sales-report" target="_blank">Sales report</a>.
+      <span class="expect">Three sections: <strong>With Sales</strong> (green) · <strong>With Marina</strong> (rust:
+      In Progress / Ready for Verification / In Verification) · <strong>With MB</strong> (blue: your tickets in other
+      statuses). Epic shown as clickable link instead of SolMan ID; Scenario + Reporter columns; 🎉 on Done/Closed/Passed.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s9b">
+      <span>Tick <strong>📣</strong> on a ticket that is back with Sales (checkbox column on the Gatekeeper AND ECOM boards),
+      reload the report.
+      <span class="expect">It appears under "With Sales". Ticking a ticket still assigned to you changes nothing
+      until it is reassigned (pre-tick = insurance).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s9c">
+      <span>Use the filter bar (Reporter / Status / Scenario, combinable) and click a column header to sort.
+      <span class="expect">Counts show "x of y"; Clear resets; the FILTERED view is what prints.
+      Scenario is "—" for tickets not on the ECOM board (comes from the board row).</span></span></label>
+  </div>
+</div>
+
+<div class="box b-slate">
+  <div class="box-head">Also from this session (no clicking needed)</div>
+  <div class="box-body" style="font-size:0.85rem; color:#555">
+    Management PPT deck → <code>report_export/ChaosCoordinator_Management_Overview.pptx</code> ·
+    ppt_utils rounded-rectangles-are-ovals bug → decision waiting in
+    <a href="MarinaCheckSoon.html">MarinaCheckSoon</a> ·
+    config: <code>jira_marina_statuses</code> / <code>jira_passed_statuses</code> in settings.yaml.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0716-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>
