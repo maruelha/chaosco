@@ -47,8 +47,11 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   scenario + search, Jira-✓ chip, Δ-Desc pill, Orders via the shared
   order-details component) + detail (Excel fields read-only · Jira card
   read-only from the shared store or "no data yet" hint · annotations ·
-  Orders incl. "Take over orders from Gatekeeper" =
-  `relink_gatekeeper_orders` by same jira id · notes via registry entry
+  Orders — since 2026-07-16 addressed `('jira', jira_key)`, the SAME rows
+  as the Gatekeeper Check (see coordination.md "Shared jira address"); the
+  former "Take over orders from Gatekeeper" button is retired
+  (`relink_gatekeeper_orders` + `/ecom/<id>/pull-orders` kept as inert
+  legacy) · notes via registry entry
   `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
   Dashboard card. Tests: `tests/test_ecom_pages.py`. List rows with Jira
   data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
