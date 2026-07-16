@@ -131,8 +131,12 @@
   <button type="button" class="btn js-open-chats"
           data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
           data-tcl-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">&#128172; Teams chats</button>
+  <button type="button" class="btn js-open-msg"
+          data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+          data-msg-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">&#9993; Issue message</button>
 </div>
 {% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
 
 {% with entity_type='jira', entity_id=issue.jira_key %}
   {% include '_notes_section.html' %}

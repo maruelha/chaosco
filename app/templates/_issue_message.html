@@ -1,0 +1,196 @@
+{# Issue-message builder — drop-in component [USER 2026-07-16].
+
+     {% include '_issue_message.html' %}      (once per page)
+
+   Opening buttons anywhere (rows AND detail pages):
+
+     <button type="button" class="btn btn-sm js-open-msg"
+             data-entity-type="jira|retail|spillover" data-entity-id="<id>"
+             data-msg-name="<dialog subtitle>">✉️</button>
+
+   Builds a standardized issue message:
+     <identifier> — orders: <all order numbers>        (context header)
+     <special text with {message} and {orders} resolved>
+     TIBCO: … · IIB: …                                 (when the type has APIs)
+   Special texts are FIXED in app/issue_messages.py; message types come from
+   the editable /message-types card. Preview is editable — controls rebuild
+   it (edits are lost on control change, act after editing). Actions:
+   copy · copy & open an attached/pinned Teams chat · save as note.
+   NOTE: assembly logic mirrors issue_messages.build_message — keep in sync.
+#}
+<dialog id="dlg-msg" style="min-width:34rem;max-width:44rem">
+  <div class="dlg-header">
+    <div class="dlg-title">&#9993; Issue message</div>
+    <div class="dlg-subtitle" id="im-row-name"></div>
+  </div>
+  <div class="dlg-body">
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem">
+      <div>
+        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block">Message type</label>
+        <select id="im-type" class="form-control"></select>
+      </div>
+      <div style="flex:1;min-width:14rem">
+        <label style="font-size:0.72rem;font-weight:700;color:#888;display:block">Special text</label>
+        <select id="im-template" class="form-control" style="width:100%"></select>
+      </div>
+    </div>
+    <div id="im-apis" style="font-size:0.75rem;color:#0e7490;margin-bottom:0.5rem;display:none"></div>
+
+    <div style="margin-bottom:0.6rem">
+      <label style="font-size:0.72rem;font-weight:700;color:#888;display:block">
+        Highlighted order(s) <span style="font-weight:400;color:#aaa">— none ticked = all</span></label>
+      <div id="im-orders" style="display:flex;flex-direction:column;gap:2px;max-height:9rem;overflow-y:auto"></div>
+    </div>
+
+    <label style="font-size:0.72rem;font-weight:700;color:#888;display:block">Message
+      <span style="font-weight:400;color:#aaa">— editable; changing a control above rebuilds it</span></label>
+    <textarea id="im-preview" class="form-control" rows="7"
+              style="width:100%;box-sizing:border-box;resize:vertical;font-size:0.85rem"></textarea>
+
+    <div id="im-chats" style="margin-top:0.6rem"></div>
+    <div id="im-status" style="font-size:0.8rem;color:#166534;margin-top:0.4rem;display:none"></div>
+  </div>
+  <div class="dlg-footer" style="display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap">
+    <a href="/message-types" class="btn btn-sm" style="margin-right:auto">Message types…</a>
+    <button type="button" class="btn" id="im-copy">&#128203; Copy</button>
+    <button type="button" class="btn btn-primary" id="im-save">&#128190; Save to test case</button>
+    <button type="button" class="btn" onclick="document.getElementById('dlg-msg').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+if (!window.imInit) {
+  window.imInit = true;
+  (function () {
+    const dlg = document.getElementById('dlg-msg');
+    let meta = null, ctx = null, imType = null, imId = null;
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;');
+    }
+
+    function selectedType() {
+      const id = parseInt(document.getElementById('im-type').value, 10);
+      return meta.types.find(t => t.id === id) || null;
+    }
+    function selectedTemplate() {
+      const key = document.getElementById('im-template').value;
+      return meta.templates.find(t => t.key === key) || null;
+    }
+    function highlighted() {
+      return [...document.querySelectorAll('#im-orders input:checked')].map(cb => cb.value);
+    }
+
+    // mirrors app/issue_messages.build_message — keep in sync
+    function build() {
+      const t = selectedType(), tpl = selectedTemplate();
+      if (!tpl) return;
+      const all = ctx.orders.map(o => o.number);
+      const hi = highlighted();
+      const orders = (hi.length ? hi : all).join(', ') || '—';
+      let header = ctx.ident;
+      if (all.length) header += ' — orders: ' + all.join(', ');
+      const body = tpl.text.split('{message}').join(t ? t.name : '')
+                           .split('{orders}').join(orders);
+      const lines = [header, '', body];
+      const apis = [t && t.tibco_api ? 'TIBCO: ' + t.tibco_api : '',
+                    t && t.iib_api ? 'IIB: ' + t.iib_api : ''].filter(Boolean).join(' · ');
+      if (apis) lines.push('', apis);
+      document.getElementById('im-preview').value = lines.join('\n');
+
+      const apiInfo = document.getElementById('im-apis');
+      if (t && (t.tibco_api || t.iib_api || t.comment)) {
+        apiInfo.textContent = [t.tibco_api ? 'TIBCO: ' + t.tibco_api : '',
+                               t.iib_api ? 'IIB: ' + t.iib_api : '',
+                               t.comment || ''].filter(Boolean).join(' · ');
+        apiInfo.style.display = '';
+      } else { apiInfo.style.display = 'none'; }
+    }
+
+    function flash(msg) {
+      const el = document.getElementById('im-status');
+      el.textContent = msg;
+      el.style.display = '';
+      setTimeout(() => { el.style.display = 'none'; }, 2500);
+    }
+
+    function loadChats() {
+      const box = document.getElementById('im-chats');
+      box.innerHTML = '';
+      Promise.all([
+        fetch(`/teams-chats/refs/${imType}/${encodeURIComponent(imId)}`).then(r => r.json()),
+        fetch('/teams-chats/pinned.json').then(r => r.json()),
+      ]).then(([attached, pinned]) => {
+        const seen = new Set(attached.map(c => c.id));
+        const chats = attached.map(c => ({...c, tag: 'attached'}))
+          .concat(pinned.filter(c => !seen.has(c.id)).map(c => ({...c, tag: 'pinned'})));
+        if (!chats.length) return;
+        box.innerHTML = '<span style="font-size:0.72rem;font-weight:700;color:#888">Copy &amp; open chat:</span> ' +
+          chats.map(c =>
+            `<button type="button" class="btn btn-sm im-chat" data-url="${esc(c.url)}"` +
+            ` title="copies the message, then opens the chat — paste there">` +
+            '&#128172; ' + esc(c.name) + (c.tag === 'pinned' ? ' ⭐' : '') + '</button>').join(' ');
+      });
+    }
+
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.js-open-msg');
+      if (!btn) return;
+      imType = btn.dataset.entityType;
+      imId = btn.dataset.entityId;
+      document.getElementById('im-row-name').textContent = btn.dataset.msgName || '';
+      Promise.all([
+        fetch('/issue-msg/meta.json').then(r => r.json()),
+        fetch(`/issue-msg/context/${imType}/${encodeURIComponent(imId)}`).then(r => r.json()),
+      ]).then(([m, c]) => {
+        if (!c.ok) return;
+        meta = m; ctx = c;
+        document.getElementById('im-type').innerHTML =
+          m.types.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+        document.getElementById('im-template').innerHTML =
+          m.templates.map(t => `<option value="${t.key}">${esc(t.label)}</option>`).join('');
+        document.getElementById('im-orders').innerHTML = ctx.orders.length
+          ? ctx.orders.map(o =>
+              `<label style="display:flex;gap:0.4rem;align-items:center;font-size:0.83rem;cursor:pointer">` +
+              `<input type="checkbox" value="${esc(o.number)}">` +
+              `<span style="color:#6e6e73">${esc(o.label)}</span> <strong class="mono">${esc(o.number)}</strong></label>`).join('')
+          : '<em style="color:#999;font-size:0.82rem">No order numbers on this test case.</em>';
+        build();
+        loadChats();
+        dlg.showModal();
+      });
+    });
+
+    ['im-type', 'im-template'].forEach(id =>
+      document.getElementById(id).addEventListener('change', build));
+    document.getElementById('im-orders').addEventListener('change', build);
+
+    document.getElementById('im-copy').addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('im-preview').value)
+        .then(() => flash('✓ Copied to clipboard.'));
+    });
+
+    document.getElementById('im-chats').addEventListener('click', e => {
+      const btn = e.target.closest('.im-chat');
+      if (!btn) return;
+      navigator.clipboard.writeText(document.getElementById('im-preview').value)
+        .then(() => {
+          flash('✓ Copied — paste it in the chat.');
+          window.open(btn.dataset.url, '_blank', 'noopener');
+        });
+    });
+
+    document.getElementById('im-save').addEventListener('click', async () => {
+      const tpl = selectedTemplate();
+      const fd = new FormData();
+      fd.append('heading', 'Issue message — ' + (tpl ? tpl.label : ''));
+      fd.append('text', document.getElementById('im-preview').value);
+      const d = await (await fetch(`/issue-msg/${imType}/${encodeURIComponent(imId)}/save-note`,
+                                   { method: 'POST', body: fd })).json();
+      flash(d.ok ? '✓ Saved as note on the test case.' : '✗ ' + d.error);
+    });
+
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  }());
+}
+</script>

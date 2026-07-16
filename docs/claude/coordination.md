@@ -177,6 +177,35 @@ Routes: add / <id>/update / <id>/delete / all.json /
 refs/<etype>/<eid>[/attach|/detach]. Tests: tests/test_teams_chats.py
 (migration + picker continuity, url resolution, pinned, refs).
 
+## Issue-message builder (issue_messages.py + web_issue_msg.py)
+
+[USER 2026-07-16] Standardized order-issue texts from the ✉️ button on the
+rows AND detail pages of Retail / Spillover / ECOM / Gatekeeper. Message =
+context header ("<identifier> — orders: <all order numbers>") + a SPECIAL
+TEXT with {message} (type name) and {orders} (highlighted numbers; none
+ticked = all) resolved + a "TIBCO: … · IIB: …" line when the type has APIs
+(deletable — the preview textarea is editable, controls rebuild it).
+
+- **Message types** = editable table `message_types` (name, tibco_api,
+  iib_api, comment; /message-types card, dashboard card; seeded with the 8
+  defaults when empty — deleting all brings them back, accepted edge case).
+- **Special texts FIXED in code** (`issue_messages.SPECIAL_TEXTS`, 8
+  entries) — [USER]: editable "might be a bit brittle". Changing wording =
+  edit that list. `build_message()` is the assembly contract; the JS in
+  `_issue_message.html` MIRRORS it — keep both in sync.
+- **Context per screen**: jira → SolMan ID (fallback key) + order_details;
+  retail → "tc / country" + imported order/S4 fields (labeled); spillover →
+  name (+ external id) + order_details + imported order_numbers cell.
+- **Actions**: 📋 copy · copy-&-open a Teams chat (attached first, then
+  pinned — Teams can't prefill existing chats, so copy-then-paste) ·
+  💾 save as note on the entity (source='issue-msg', heading = template
+  label; save targets jira/retail/spillover).
+- Routes: /message-types[/add|/<id>/update|/<id>/delete],
+  /issue-msg/meta.json, /issue-msg/context/<etype>/<eid>,
+  /issue-msg/<etype>/<eid>/save-note. Component `_issue_message.html`
+  (delegated `.js-open-msg`, data-msg-name = subtitle). Tests:
+  tests/test_issue_messages.py.
+
 ## Topics (app/db/topics.py + app/web_topics.py)
 
 Active-work counterpart to Shelf (Shelf = archive, Topic = being worked on).

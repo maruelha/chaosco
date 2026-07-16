@@ -209,6 +209,9 @@
           {% endif %}
           <a href="{{ url_for('notes.note_add', entity_type='retail', entity_id=row.retail_id) }}" class="btn btn-sm">+ Note</a>
           {{ ui.chat_row_button(chats_by_entity.get(row.retail_id|string), 'retail', row.retail_id, row.test_case_id ~ ' / ' ~ row.country) }}
+          <button type="button" class="btn btn-sm js-open-msg" title="build a standardized issue message"
+                  data-entity-type="retail" data-entity-id="{{ row.retail_id }}"
+                  data-msg-name="{{ row.test_case_id }} / {{ row.country }}">&#9993;</button>
         </td>
         <td class="rc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
@@ -222,6 +225,7 @@
 </div>
 
 {% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
 
 {# ---- Annotation popup (Next step only) ---- #}
 <dialog id="dlg-ann">

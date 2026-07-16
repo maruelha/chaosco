@@ -268,6 +268,7 @@
     <li><a href="#order_details_history">order_details_history</a></li>
     <li><a href="#teams_chats">teams_chats</a></li>
     <li><a href="#teams_chat_refs">teams_chat_refs</a></li>
+    <li><a href="#message_types">message_types</a></li>
     <li><a href="#report_comments">report_comments</a></li>
     <li><a href="#spillover_report_selection">spillover_report_selection</a></li>
     <li><a href="#defect_notes">defect_notes</a> (legacy)</li>
@@ -677,6 +678,33 @@
       <strong>Unique:</strong> (entity_type, entity_id, chat_id) &nbsp;·&nbsp;
       <strong>Index:</strong> idx_tc_refs_entity ON (entity_type, entity_id) &nbsp;·&nbsp;
       <strong>Attach/detach:</strong> <code>POST /teams-chats/refs/&lt;etype&gt;/&lt;eid&gt;/attach|detach</code> (chat_id)
+    </div>
+  </div>
+
+  <!-- message_types -->
+  <div class="table-card" id="message_types">
+    <div class="table-card-header">
+      <span class="tname">message_types</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Reference for the ✉️ issue-message builder (2026-07-16): message types with their TIBCO/IIB APIs. Seeded with 8 defaults when empty; managed on /message-types. The builder's special texts are fixed in code (app/issue_messages.py), not here.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">E.g. Sales order · Return billing · Settlement file</td></tr>
+        <tr><td class="col-name">tibco_api</td><td class="col-type">TEXT</td><td></td><td class="note-text">TIBCO service this message flows through — appended to generated messages when set</td></tr>
+        <tr><td class="col-name">iib_api</td><td class="col-type">TEXT</td><td></td><td class="note-text">IIB flow — same treatment</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free-text; shown in the builder dialog</td></tr>
+        <tr><td class="col-name">sort_order</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Combobox order (seed order; new types append)</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime</td></tr>
+      </tbody>
+    </table>
+    <div class="relations">
+      <strong>Manage:</strong> <code>/message-types</code> (add · &lt;id&gt;/update · &lt;id&gt;/delete) &nbsp;·&nbsp;
+      <strong>Builder:</strong> <code>GET /issue-msg/meta.json</code> serves types + fixed templates
     </div>
   </div>
 

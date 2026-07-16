@@ -105,8 +105,12 @@
   <button type="button" class="btn js-open-chats"
           data-entity-type="retail" data-entity-id="{{ row.retail_id }}"
           data-tcl-name="{{ row.test_case_id }} / {{ row.country }}">&#128172; Teams chats</button>
+  <button type="button" class="btn js-open-msg"
+          data-entity-type="retail" data-entity-id="{{ row.retail_id }}"
+          data-msg-name="{{ row.test_case_id }} / {{ row.country }}">&#9993; Issue message</button>
 </div>
 {% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
 
 {% with entity_type='retail', entity_id=row.retail_id %}
   {% include '_notes_section.html' %}

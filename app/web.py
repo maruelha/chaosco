@@ -76,6 +76,13 @@ from app.web_teams_chats import bp as _tc_bp
 _db_tc.init_schema(_db_path)
 app.register_blueprint(_tc_bp)
 
+# Issue-message builder (2026-07-16) — /message-types reference card +
+# /issue-msg JSON for the ✉️ dialog; special texts fixed in issue_messages.py.
+from app.db import message_types as _db_mt
+from app.web_issue_msg import bp as _im_bp
+_db_mt.init_schema(_db_path)
+app.register_blueprint(_im_bp)
+
 # Global search (2026-07-10) — floating 🔍 widget in base.html; source
 # registry in app/db/search.py (order numbers now, topics via FTS later).
 from app.web_search import bp as _search_bp

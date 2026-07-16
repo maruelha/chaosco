@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Message Types — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Issue Message Types</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+  <p class="page-subtitle">The message types offered by the ✉️ issue-message builder
+    on Retail / ECOM / Gatekeeper / Spillover rows. Fill in the <strong>TIBCO API</strong>
+    and <strong>IIB API</strong> as you learn them — when set, the generated message gets
+    an API line (deletable in the preview). The special texts themselves are fixed in
+    code (<code>app/issue_messages.py</code>) — deliberate, to keep them from breaking.</p>
+</div>
+
+<div style="margin-bottom:0.6rem">
+  <button type="button" class="btn btn-primary btn-sm" id="btn-add-mt">+ Add message type</button>
+</div>
+
+<table class="rt-table" id="mt-table">
+  <thead>
+    <tr>
+      <th style="width:14rem">Name</th>
+      <th style="width:16rem">TIBCO API</th>
+      <th style="width:16rem">IIB API</th>
+      <th>Comment</th>
+      <th style="width:3.5rem"></th>
+    </tr>
+  </thead>
+  <tbody id="mt-tbody">
+    {% for t in types %}
+    <tr class="mt-row" data-id="{{ t.id }}">
+      <td><input type="text" class="mt-input" data-field="name" value="{{ t.name }}"></td>
+      <td><input type="text" class="mt-input mono" style="font-size:0.78rem" data-field="tibco_api" value="{{ t.tibco_api or '' }}" placeholder="tibco service…"></td>
+      <td><input type="text" class="mt-input mono" style="font-size:0.78rem" data-field="iib_api" value="{{ t.iib_api or '' }}" placeholder="iib flow…"></td>
+      <td><input type="text" class="mt-input" data-field="comment" value="{{ t.comment or '' }}"></td>
+      <td style="text-align:center">
+        <button type="button" class="btn btn-sm btn-danger mt-del" title="delete">✕</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<style>
+  .mt-input { width:100%; box-sizing:border-box; padding:0.3rem 0.4rem; border:1px solid #d6d6de; border-radius:4px; font-size:0.85rem; }
+</style>
+
+<script>
+(function () {
+  function saveRow(tr) {
+    const fd = new FormData();
+    ['name','tibco_api','iib_api','comment'].forEach(f =>
+      fd.append(f, tr.querySelector(`[data-field="${f}"]`).value));
+    fetch(`/message-types/${tr.dataset.id}/update`, { method: 'POST', body: fd });
+  }
+  function wire(tr) {
+    tr.querySelectorAll('.mt-input').forEach(el => el.addEventListener('blur', () => saveRow(tr)));
+    tr.querySelector('.mt-del').addEventListener('click', () => {
+      if (!confirm('Delete this message type?')) return;
+      fetch(`/message-types/${tr.dataset.id}/delete`, { method: 'POST' })
+        .then(r => r.json()).then(d => { if (d.ok) tr.remove(); });
+    });
+  }
+  document.querySelectorAll('.mt-row').forEach(wire);
+
+  document.getElementById('btn-add-mt').addEventListener('click', () => {
+    const name = prompt('Name of the message type:');
+    if (!name || !name.trim()) return;
+    const fd = new FormData();
+    fd.append('name', name.trim());
+    fetch('/message-types/add', { method: 'POST', body: fd })
+      .then(r => r.json()).then(d => { if (d.ok) window.location.reload(); });
+  });
+}());
+</script>
+{% endblock %}

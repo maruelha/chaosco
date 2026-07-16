@@ -180,6 +180,7 @@
     <li><a href="#email-reports">Email Reports</a></li>
     <li><a href="#teams-ping">Teams Ping</a></li>
     <li><a href="#teams-chats">Teams Chats — Manage</a></li>
+    <li><a href="#message-types">Message Types — Manage</a></li>
     <li><a href="#teams-entity-components">Drop-in components (channels, links)</a></li>
 
     <li class="group-label">Defects</li>
@@ -258,7 +259,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Topics (active count badge, green accent) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent, + Email Reports link) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · ECOM · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Topics (active count badge, green accent) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent, + Email Reports link) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · ECOM · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Contacts ·CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -551,6 +552,8 @@
         <span class="feat-value">Opens the Comment History popup: shows imported <code>comment</code> read-only, plus editable comment history textarea. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
         <span class="feat-label">Notes button</span>
         <span class="feat-value">Links to <code>/spillover/&lt;id&gt;</code> (Spillover Detail). Shows note count badge when notes exist.</span>
+        <span class="feat-label">💬 / ✉️ row buttons (2026-07-16)</span>
+        <span class="feat-value"><strong>💬</strong> appears only when Teams chats are attached (one = direct open, several = dialog; shared <code>_teams_chat_links.html</code>). <strong>✉️</strong> always — opens the issue-message builder (shared <code>_issue_message.html</code>). Both also on the Spillover Detail page.</span>
         <span class="feat-label">Order details API</span>
         <span class="feat-value">
           <code>GET /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;</code> — list rows as JSON (includes docs_in_s4)<br>
@@ -696,7 +699,7 @@
       <span class="screen-url">GET /ecom-gatekeeper</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Pre-handoff sense check. Since 2026-07-11 the <strong>Jira tickets table is THE current gatekeeper</strong>: per ticket read-only Jira fields (ID → open-in-Jira, Solman ID, Summary → detail page, Status, Assignee) + an <strong>authored inline Next step</strong> (blur-save into <code>gatekeeper_annotations</code>, keyed by jira_key — survives the ECOM handover) with ↻ archive / 🕘 history buttons, an <strong>Orders button</strong> (2026-07-16: shared <code>_order_details.html</code> component addressed <code>('jira', jira_key)</code> — the ECOM board shows the SAME rows, connected not copied; green ✓ when any row has S4 docs; the dialog compares the ticket's <strong>acceptance-criteria orders</strong> against the list — live + archived — and offers <strong>⤵ Take over from Jira</strong> for missing numbers, add-only, type from the Jira label), a Details link (note count) and a comments expander. Ticket detail page <code>/ecom-gatekeeper/ticket/&lt;jira_key&gt;</code>: Jira card incl. extracted order numbers, acceptance criteria, description, comment thread + "My next step" (archive component) + <strong>Order details card</strong> (2026-07-16, shared component at <code>('jira', jira_key)</code>) + full notes module (entity <code>jira</code>; inbox filing option "Gatekeeper ticket"). The old fully inline-editable manual table is <strong>deprecated</strong> — kept collapsed at the bottom, still functional (inline edits, notes, orders, next-step archive), until Marina is sure it can go.</p>
+      <p class="screen-desc">Pre-handoff sense check. Since 2026-07-11 the <strong>Jira tickets table is THE current gatekeeper</strong>: per ticket read-only Jira fields (ID → open-in-Jira, Solman ID, Summary → detail page, Status, Assignee) + an <strong>authored inline Next step</strong> (blur-save into <code>gatekeeper_annotations</code>, keyed by jira_key — survives the ECOM handover) with ↻ archive / 🕘 history buttons, an <strong>Orders button</strong> (2026-07-16: shared <code>_order_details.html</code> component addressed <code>('jira', jira_key)</code> — the ECOM board shows the SAME rows, connected not copied; green ✓ when any row has S4 docs; the dialog compares the ticket's <strong>acceptance-criteria orders</strong> against the list — live + archived — and offers <strong>⤵ Take over from Jira</strong> for missing numbers, add-only, type from the Jira label), a <strong>💬 chats button</strong> when Teams chats are attached and an <strong>✉️ issue-message button</strong> (2026-07-16, shared components, both at <code>('jira', key)</code>), a Details link (note count) and a comments expander. Ticket detail page <code>/ecom-gatekeeper/ticket/&lt;jira_key&gt;</code>: Jira card incl. extracted order numbers, acceptance criteria, description, comment thread + "My next step" (archive component) + <strong>Order details card</strong> + <strong>💬 Teams chats / ✉️ Issue message buttons</strong> (all 2026-07-16, shared components at <code>('jira', jira_key)</code>) + full notes module (entity <code>jira</code>; inbox filing option "Gatekeeper ticket"). The old fully inline-editable manual table is <strong>deprecated</strong> — kept collapsed at the bottom, still functional (inline edits, notes, orders, next-step archive), until Marina is sure it can go.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
         <span class="feat-value">Jira ID (90px) · Solman ID (110px) · Test case name (flex) · Status (140px, colour-coded select) · Next step (230px) · Buttons (Notes · Orders · ↻ new-next-step · 🕘 history · ✕). ↻/🕘 = the shared next-step archive component (2026-07-11): ↻ archives the current next step and blanks the inline field, 🕘 shows the history dialog. Gatekeeper rows are also an <strong>inbox filing target</strong> ("Gatekeeper" picker option, search by jira id / solman id / name).</span>
@@ -750,7 +753,7 @@
       <p class="screen-desc">ECOM test cases imported from the tracking Excel's ECOM tab (match key = <strong>JIRA ID</strong>). Blueprint <code>app/web_ecom.py</code>, storage <code>app/db/ecom.py</code>. Built 2026-07-09 (day plan steps 7+8). Jira context is read-only from the shared jira store.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Jira ID · Test case · Name (→ detail) · Scenario · Country · Status (Excel) · Assigned to (Excel) · <strong>Jira status · Jira assignee</strong> (2026-07-12, live from the store; "—" until the ticket is imported) · <strong>Jira ✓</strong> chip (row exists in the jira store) · <strong>Δ Desc</strong> pill (description-change text from the Excel, tooltip) · Detail (with note count) + Orders + Jira ▸ expander buttons</span>
+        <span class="feat-value">Jira ID · Test case · Name (→ detail) · Scenario · Country · Status (Excel) · Assigned to (Excel) · <strong>Jira status · Jira assignee</strong> (2026-07-12, live from the store; "—" until the ticket is imported) · <strong>Jira ✓</strong> chip (row exists in the jira store) · <strong>Δ Desc</strong> pill (description-change text from the Excel, tooltip) · Detail (with note count) + Orders + 💬 chats (only when attached; one = direct open, several = dialog) + ✉️ issue message + Jira ▸ expander buttons</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">Status · Country · Scenario selects + free-text search (jira id / test case id / name), GET params, Clear link, row count</span>
         <span class="feat-label">↻ Update from Jira</span>
@@ -791,7 +794,7 @@
       <span class="screen-url">GET/POST /ecom/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Five sections, Excel and Jira strictly separated: read-only imported Excel fields; read-only <strong>Jira</strong> card (status, assignee, type, priority, epic, markets, open-in-Jira link, description HTML, full comment thread — or a "no Jira data yet" hint until the XML import runs); editable annotations; Orders; notes.</p>
+      <p class="screen-desc">Five sections, Excel and Jira strictly separated: read-only imported Excel fields; read-only <strong>Jira</strong> card (status, assignee, type, priority, epic, markets, open-in-Jira link, description HTML, full comment thread — or a "no Jira data yet" hint until the XML import runs); editable annotations; Orders; 💬 Teams chats + ✉️ Issue message buttons (2026-07-16, shared components at <code>('jira', key)</code>); notes.</p>
       <div class="features">
         <span class="feat-label">Annotations</span>
         <span class="feat-value">Next step · Comment history · Action needed — <code>ecom_annotations</code> keyed by <strong>jira_id</strong>, survives re-imports; importer never touches it.</span>
@@ -870,6 +873,8 @@
         <span class="feat-value"><span class="pill pill-ajax">Next step</span> — editable on row; saves on blur to <code>POST /retail/&lt;id&gt;/annotation</code></span>
         <span class="feat-label">Comment popup</span>
         <span class="feat-value">Per-row "Comment History" button; saves via <code>POST /retail/&lt;id&gt;/comment</code></span>
+        <span class="feat-label">💬 / ✉️ row buttons (2026-07-16)</span>
+        <span class="feat-value"><strong>💬</strong> in the notes cell only when Teams chats are attached (one = direct open, several = dialog). <strong>✉️</strong> always — issue-message builder; retail orders come from the imported order/S4 fields. Both also on the Retail Detail page.</span>
         <span class="feat-label">Row link</span>
         <span class="feat-value">Click row (or test case ID) → Retail Detail screen</span>
         <span class="feat-label">Header links</span>
@@ -889,7 +894,7 @@
       <span class="screen-url">GET /retail/&lt;retail_id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Full view of a single retail test case. Shows all imported fields plus an annotation section and a notes log at the bottom.</p>
+      <p class="screen-desc">Full view of a single retail test case. Shows all imported fields plus an annotation section, the 💬 Teams chats and ✉️ Issue message buttons (2026-07-16, shared components), and a notes log at the bottom.</p>
       <div class="features">
         <span class="feat-label">Read-only fields</span>
         <span class="feat-value">All columns from the <code>retail</code> table: status, scenario, all S4 doc numbers, order refs, defect ref, evidence links, dates, etc.</span>
@@ -1696,6 +1701,25 @@
         <span class="feat-value"><code>_next_step_history.html</code> include (once per page) + buttons with class <code>js-ns-archive</code> / <code>js-ns-history</code> and <code>data-entity-type/-id</code>. "↻ New next step" archives the current STORED next step into <code>next_step_history</code> (timestamped) and clears the live field (<code>POST /next-steps/&lt;type&gt;/&lt;id&gt;/archive</code>, registry-driven Blueprint <code>web_next_steps.py</code> — only-this-field upserts per vertical); "History" opens the shared dialog (newest first, entries deletable). Delegated clicks; <code>data-ns-target</code> selectors are blanked client-side. Currently on: Spillover Details popup (also blanks the row cell via the <code>ns-archived</code> event), Retail detail, ECOM detail, Defect detail.</span>
         <span class="feat-label">Notes coverage update</span>
         <span class="feat-value">Contacts and Links now carry the FULL notes module and are inbox filing targets (picker options Contact / Link).</span>
+        <span class="feat-label">Issue-message builder (2026-07-16)</span>
+        <span class="feat-value"><code>_issue_message.html</code> include + <code>.js-open-msg</code> ✉️ buttons on the rows AND detail pages of Retail / Spillover / ECOM / Gatekeeper. Dialog: message-type select (from <code>/message-types</code>) · special-text select (8 FIXED templates in <code>app/issue_messages.py</code>) · highlighted-order checkboxes (from the entity's order numbers; none = all) · editable preview. Message = context header (<em>identifier — orders: all numbers</em>; jira → SolMan ID, retail → tc/country, spillover → name + external id) + resolved template + TIBCO/IIB line when the type has APIs. Actions: 📋 copy · copy &amp; open an attached/pinned Teams chat (paste there) · 💾 save as note on the entity. APIs: <code>GET /issue-msg/meta.json</code> · <code>GET /issue-msg/context/&lt;etype&gt;/&lt;eid&gt;</code> · <code>POST /issue-msg/&lt;etype&gt;/&lt;eid&gt;/save-note</code>.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message types management -->
+  <div class="screen-card" id="message-types">
+    <div class="screen-card-header">
+      <span class="screen-title">Issue Message Types — Manage</span>
+      <span class="screen-url">GET /message-types</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Reference card for the ✉️ issue-message builder (2026-07-16). One row per message type (Reservation order · Sales order · Sales billing · Return order · Return billing · Exchange order · Exchange billing · Settlement file — seeded, extensible) with the <strong>TIBCO API</strong>, <strong>IIB API</strong> and a comment. Dashboard card "Message Types".</p>
+      <div class="features">
+        <span class="feat-label">Table</span>
+        <span class="feat-value">Name · TIBCO API · IIB API · Comment · ✕ delete. Inline blur-save (<code>POST /message-types/&lt;id&gt;/update</code>); + Add via prompt (<code>POST /message-types/add</code>). When APIs are set, the builder shows them and appends a TIBCO/IIB line to the message (deletable in the preview).</span>
+        <span class="feat-label">Special texts</span>
+        <span class="feat-value">Deliberately NOT editable here — fixed in <code>app/issue_messages.py</code> (USER decision: editable templates felt brittle).</span>
       </div>
     </div>
   </div>

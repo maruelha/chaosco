@@ -234,6 +234,9 @@
              class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
              title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
           {{ ui.chat_row_button(chats_by_entity.get(row.spillover_id|string), 'spillover', row.spillover_id, row.name or '') }}
+          <button type="button" class="btn btn-sm js-open-msg" title="build a standardized issue message"
+                  data-entity-type="spillover" data-entity-id="{{ row.spillover_id }}"
+                  data-msg-name="{{ row.name or '' }}">&#9993;</button>
         </td>
         <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-next cell-nextstep" title="{{ (row.next_step or '') | e }}">
@@ -348,6 +351,7 @@
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
 {% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
 
 {# ---- JavaScript ---- #}
 <script>

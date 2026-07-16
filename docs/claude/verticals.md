@@ -51,8 +51,9 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   as the Gatekeeper Check (see coordination.md "Shared jira address"); the
   former "Take over orders from Gatekeeper" button is retired
   (`relink_gatekeeper_orders` + `/ecom/<id>/pull-orders` kept as inert
-  legacy) · Teams chats via the shared registry component, also at
-  ('jira', key) (2026-07-16, see coordination.md) · notes via registry
+  legacy) · Teams chats + ✉️ issue-message builder via the shared
+  registry components, also at ('jira', key) (2026-07-16, see
+  coordination.md) · notes via registry
   entry `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
   Dashboard card. Tests: `tests/test_ecom_pages.py`. List rows with Jira
   data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
