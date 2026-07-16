@@ -197,6 +197,26 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-07-16 ================= -->
+<h2 class="date">Added 2026-07-16</h2>
+
+<div class="box b-red">
+  <div class="box-head">PPT bug found: "rounded" cards are actually OVALS</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="ppt-oval-1">
+      <span><strong>Decide: fix the rounded-rectangle bug in <code>app/ppt_utils.py</code>?</strong>
+      <span class="where">→ affects Retail + Spillover report PPT exports</span><br>
+      <code>_add_rect(..., rounded=True)</code> uses auto-shape type <code>9</code>,
+      which is <strong>OVAL</strong> — rounded rectangle is type <code>5</code>.
+      Every "rounded card" in the Retail and Spillover PPT reports (stat strip,
+      bucket cards, comment box, status badges) renders as an ellipse.
+      Found 2026-07-16 while building the management overview deck.
+      One-line fix (<code>9</code> → <code>5</code>, ideally via
+      <code>MSO_SHAPE.ROUNDED_RECTANGLE</code>) — but check a fresh Retail report
+      export afterwards, in case you've grown to like the oval look 🙂</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

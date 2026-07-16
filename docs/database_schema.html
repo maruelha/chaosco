@@ -265,6 +265,7 @@
     <li><a href="#notes">notes</a></li>
     <li><a href="#attachments">attachments</a></li>
     <li><a href="#order_details">order_details</a></li>
+    <li><a href="#order_details_history">order_details_history</a></li>
     <li><a href="#report_comments">report_comments</a></li>
     <li><a href="#spillover_report_selection">spillover_report_selection</a></li>
     <li><a href="#defect_notes">defect_notes</a> (legacy)</li>
@@ -558,7 +559,7 @@
     <div class="table-card-header">
       <span class="tname">order_details</span>
       <span class="badge badge-shared">Shared</span>
-      <span class="tdesc">Generic order-number log — mirrors the <code>notes</code> pattern so any entity type can have order-number lines with a comment. Currently used by spillover.</span>
+      <span class="tdesc">Generic order-number log — mirrors the <code>notes</code> pattern so any entity type can have order-number lines with a comment. Used by spillover and — since 2026-07-16 — by the shared <code>('jira', jira_key)</code> address that connects the Gatekeeper Check and the ECOM board (one row set, no copy).</span>
     </div>
     <table>
       <thead>
@@ -581,6 +582,39 @@
       <strong>Add:</strong> <code>POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/add</code> &nbsp;·&nbsp;
       <strong>Update:</strong> <code>POST /order-details/&lt;id&gt;/update</code> &nbsp;·&nbsp;
       <strong>Delete:</strong> <code>POST /order-details/&lt;id&gt;/delete</code>
+    </div>
+  </div>
+
+  <!-- order_details_history -->
+  <div class="table-card" id="order_details_history">
+    <div class="table-card-header">
+      <span class="tname">order_details_history</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Archived order rows, grouped in batches — "Archive selected as group" in the Order-details popup moves ticked live rows here together (added 2026-07-16, mirrors next_step_history).</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Same address scheme as <code>order_details</code></td></tr>
+        <tr><td class="col-name">entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">TEXT representation of the parent row's PK</td></tr>
+        <tr><td class="col-name">batch_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Rows archived together share one batch_id (global counter) — this IS the group</td></tr>
+        <tr><td class="col-name">order_type</td><td class="col-type">TEXT</td><td></td><td class="note-text">Copied from the live row</td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td class="note-text">Copied from the live row</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Copied from the live row</td></tr>
+        <tr><td class="col-name">docs_in_s4</td><td class="col-type">INTEGER</td><td></td><td class="note-text">DEFAULT 0; copied from the live row</td></tr>
+        <tr><td class="col-name">label</td><td class="col-type">TEXT</td><td></td><td class="note-text">Optional free-text group label (same value on every row of the batch)</td></tr>
+        <tr><td class="col-name">archived_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime; same value on every row of the batch</td></tr>
+      </tbody>
+    </table>
+    <div class="relations">
+      <strong>Index:</strong> idx_od_hist_entity ON (entity_type, entity_id) &nbsp;·&nbsp;
+      <strong>Archive:</strong> <code>POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/archive</code> (form: ids CSV, label) &nbsp;·&nbsp;
+      <strong>List:</strong> <code>GET /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/history</code> &nbsp;·&nbsp;
+      <strong>Delete batch:</strong> <code>POST /order-details/history/batch/&lt;batch_id&gt;/delete</code> &nbsp;·&nbsp;
+      <strong>Storage:</strong> <code>app/db/order_archive.py</code>
     </div>
   </div>
 
@@ -991,8 +1025,8 @@
     </table>
     <div class="relations">
       <strong>Notes:</strong> <code>notes</code> WHERE entity_type='ecom_gatekeeper' &nbsp;·&nbsp;
-      <strong>Orders:</strong> <code>order_details</code> WHERE entity_type='ecom_gatekeeper' &nbsp;·&nbsp;
-      <strong>Future:</strong> UPDATE order_details SET entity_type='ecom', entity_id=&lt;ecom_id&gt; to re-point orders to an ECOM test case without copying data
+      <strong>Orders:</strong> <code>order_details</code> WHERE entity_type='ecom_gatekeeper' (deprecated table only) &nbsp;·&nbsp;
+      <strong>Done 2026-07-16:</strong> rows with a known jira id were re-pointed to the shared <code>('jira', jira_key)</code> address (<code>migrate_order_details_to_jira</code>, idempotent at startup) — Gatekeeper Check and ECOM board read the same rows
     </div>
   </div>
 </div>

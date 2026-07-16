@@ -36,6 +36,13 @@ jira = "Gatekeeper ticket" (2026-07-11, the current gatekeeper; search by
 jira key / solman id / summary), test_learning, followup, shelf, topic,
 contact, link.
 
+**Inbox text search** [USER 2026-07-16]: search box in the Pending card
+header, live CLIENT-side filter (no route, no SQL) over heading + note text
++ attachment names — deliberately not whole-card textContent, so button
+labels ("Edit") don't match everything. Count badge shows "shown / total"
+while filtering; ✕ / Escape clears; box only renders when items exist.
+Markup contract pinned by tests/test_inbox_search.py.
+
 ## Attachments
 
 `attachments` table (note_id FK, filename, original_name); files in
@@ -186,6 +193,32 @@ Dialog-header name: button `data-od-name` → row `data-name` → row
 `[data-field="testcase_name"]` input. Backend was already generic:
 `order_details` table (db/reference.py, `get_docs_s4_entity_ids(type)` for
 the initial badge) + `/order-details/...` routes (web_spillover.py).
-Currently on: Spillover list, ECOM Gatekeeper (extracted from their inline
-copies 2026-07-09, day plan step 1). Tests:
+Currently on: Spillover list, ECOM Gatekeeper deprecated manual table
+(extracted from their inline copies 2026-07-09), Gatekeeper Check jira
+rows + ticket detail, ECOM board + detail. Tests:
 tests/test_order_details_component.py.
+
+**Shared jira address** [USER 2026-07-16]: gatekeeper/ECOM order rows are
+addressed ('jira', jira_key) — the Gatekeeper Check and the ECOM board read
+the SAME rows, connected, never copied (like gatekeeper notes/next steps).
+`db/ecom.migrate_order_details_to_jira` re-points legacy 'ecom' /
+'ecom_gatekeeper' rows (live + archived batches) where a jira id is known;
+runs idempotently from ecom.init_schema on every startup. The "Take over
+orders from Gatekeeper" button is gone (relink_gatekeeper_orders +
+/ecom/<id>/pull-orders kept as inert legacy). get_docs_s4_entity_ids now
+returns str for non-numeric ids (jira keys). Global search resolves
+'jira'-addressed order rows to the gatekeeper ticket page. Tests:
+tests/test_orders_shared_jira.py.
+
+**Order archive** [USER 2026-07-16]: rows that belong together (sales +
+return + exchange order of one chain) are ticked via the select column and
+"📦 Archive selected as group" moves them into `order_details_history` as
+ONE batch (shared batch_id + archived_at + optional label via prompt; ids
+of other entities are ignored server-side). The dialog's collapsible
+"Archived groups (N)" section lists batches newest-first, read-only, with
+per-batch delete (confirm). Pending inline edits are awaited before
+archiving. Storage `app/db/order_archive.py` (schema init in web.py);
+routes with the other generic order routes in web_spillover.py:
+`POST /order-details/<etype>/<eid>/archive` (form: ids CSV, label),
+`GET .../history`, `POST /order-details/history/batch/<id>/delete`.
+Tests: tests/test_order_archive.py.

@@ -279,6 +279,8 @@
       <div class="features">
         <span class="feat-label">Add item</span>
         <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
+        <span class="feat-label">Text search (2026-07-16)</span>
+        <span class="feat-value">Search box in the Pending card header — live client-side filter (no reload) matching heading, note text, and attachment names, case-insensitive. Button labels are deliberately excluded so e.g. "edit" doesn't match every item. While filtering, the count badge shows <em>shown / total</em>; ✕ or Escape clears. Only rendered when items exist.</span>
         <span class="feat-label">Per-item actions</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Edit</span> — inline toggle; updates heading and note text<br>
@@ -537,7 +539,8 @@
         <span class="feat-value">
           Opens a popup table for this item's order-number lines. Columns: <strong>Type</strong> · <strong>Order Number</strong> · <strong>Comment</strong> · <strong>S4 docs</strong> (checkbox — green when ticked). Each text field saves on blur; checkbox saves immediately on change. Both call <code>POST /order-details/&lt;detail_id&gt;/update</code>.<br>
           When any order line has <strong>S4 docs</strong> checked, the button shows a green <strong>✓</strong> badge in the list so the status is visible without opening the popup. Badge updates live as the checkbox is toggled.<br>
-          Uses the generic <code>order_details</code> table (entity_type=<code>'spillover'</code>). Since 2026-07-09 the popup is the shared <code>_order_details.html</code> component (dialog + delegated JS, one include per page) — the former inline copy was deleted.
+          Uses the generic <code>order_details</code> table (entity_type=<code>'spillover'</code>). Since 2026-07-09 the popup is the shared <code>_order_details.html</code> component (dialog + delegated JS, one include per page) — the former inline copy was deleted.<br>
+          <strong>Archive as group (2026-07-16):</strong> a select checkbox per row (header checkbox = select all) + <strong>📦 Archive selected as group</strong>. Ticked rows — e.g. sales + return + exchange order of one chain — move together into <code>order_details_history</code> as one batch (optional free-text label via prompt; date always recorded). The collapsible <strong>Archived groups (N)</strong> section below the table lists batches newest-first, read-only, each with a ✕ that deletes the whole batch after confirm.
         </span>
         <span class="feat-label">Comments button</span>
         <span class="feat-value">Opens the Comment History popup: shows imported <code>comment</code> read-only, plus editable comment history textarea. Saves via <code>POST /spillover/&lt;id&gt;/comment</code>.</span>
@@ -549,6 +552,9 @@
           <code>POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/add</code> — create empty row → <code>&#123;ok, id&#125;</code><br>
           <code>POST /order-details/&lt;detail_id&gt;/update</code> — save order_type, order_number, comment, docs_in_s4<br>
           <code>POST /order-details/&lt;detail_id&gt;/delete</code> — remove row<br>
+          <code>POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/archive</code> — form: <code>ids</code> (CSV of detail ids), <code>label</code> (optional) → archives the selected rows as one batch → <code>&#123;ok, batch_id, count&#125;</code><br>
+          <code>GET /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/history</code> — archived batches, newest first → <code>&#123;batches, count&#125;</code><br>
+          <code>POST /order-details/history/batch/&lt;batch_id&gt;/delete</code> — delete a whole archived batch<br>
           Generic — works for any entity type.
         </span>
         <span class="feat-label">Table source</span>
@@ -683,7 +689,7 @@
       <span class="screen-url">GET /ecom-gatekeeper</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Pre-handoff sense check. Since 2026-07-11 the <strong>Jira tickets table is THE current gatekeeper</strong>: per ticket read-only Jira fields (ID → open-in-Jira, Solman ID, Summary → detail page, Status, Assignee) + an <strong>authored inline Next step</strong> (blur-save into <code>gatekeeper_annotations</code>, keyed by jira_key — survives the ECOM handover) with ↻ archive / 🕘 history buttons, a Details link (note count) and a comments expander. Ticket detail page <code>/ecom-gatekeeper/ticket/&lt;jira_key&gt;</code>: Jira card incl. extracted order numbers, acceptance criteria, description, comment thread + "My next step" (archive component) + full notes module (entity <code>jira</code>; inbox filing option "Gatekeeper ticket"). The old fully inline-editable manual table is <strong>deprecated</strong> — kept collapsed at the bottom, still functional (inline edits, notes, orders, next-step archive), until Marina is sure it can go.</p>
+      <p class="screen-desc">Pre-handoff sense check. Since 2026-07-11 the <strong>Jira tickets table is THE current gatekeeper</strong>: per ticket read-only Jira fields (ID → open-in-Jira, Solman ID, Summary → detail page, Status, Assignee) + an <strong>authored inline Next step</strong> (blur-save into <code>gatekeeper_annotations</code>, keyed by jira_key — survives the ECOM handover) with ↻ archive / 🕘 history buttons, an <strong>Orders button</strong> (2026-07-16: shared <code>_order_details.html</code> component addressed <code>('jira', jira_key)</code> — the ECOM board shows the SAME rows, connected not copied; green ✓ when any row has S4 docs), a Details link (note count) and a comments expander. Ticket detail page <code>/ecom-gatekeeper/ticket/&lt;jira_key&gt;</code>: Jira card incl. extracted order numbers, acceptance criteria, description, comment thread + "My next step" (archive component) + <strong>Order details card</strong> (2026-07-16, shared component at <code>('jira', jira_key)</code>) + full notes module (entity <code>jira</code>; inbox filing option "Gatekeeper ticket"). The old fully inline-editable manual table is <strong>deprecated</strong> — kept collapsed at the bottom, still functional (inline edits, notes, orders, next-step archive), until Marina is sure it can go.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
         <span class="feat-value">Jira ID (90px) · Solman ID (110px) · Test case name (flex) · Status (140px, colour-coded select) · Next step (230px) · Buttons (Notes · Orders · ↻ new-next-step · 🕘 history · ✕). ↻/🕘 = the shared next-step archive component (2026-07-11): ↻ archives the current next step and blanks the inline field, 🕘 shows the history dialog. Gatekeeper rows are also an <strong>inbox filing target</strong> ("Gatekeeper" picker option, search by jira id / solman id / name).</span>
@@ -703,7 +709,7 @@
         <span class="feat-label">Notes button</span>
         <span class="feat-value">Links to <code>/ecom-gatekeeper/&lt;id&gt;</code> (detail/notes page). Shows note count badge when notes exist.</span>
         <span class="feat-label">Orders button</span>
-        <span class="feat-value">Opens the shared <code>_order_details.html</code> component (identical to Spillover since 2026-07-09 — the former inline copy was deleted). Columns: Type · Order number · Comment · S4 docs (checkbox). Uses <code>order_details</code> table with <code>entity_type='ecom_gatekeeper'</code>. Green ✓ badge appears on the button when any linked order has <code>docs_in_s4=1</code> — now also on initial page load (<code>get_docs_s4_entity_ids</code>), not just after toggling. Future: orders can be re-pointed to an ECOM test case by updating <code>entity_type</code> + <code>entity_id</code> — no data is copied or lost.</span>
+        <span class="feat-value">Opens the shared <code>_order_details.html</code> component (identical to Spillover since 2026-07-09 — the former inline copy was deleted). Columns: Type · Order number · Comment · S4 docs (checkbox). Deprecated-table rows use <code>entity_type='ecom_gatekeeper'</code>; the <strong>Jira ticket rows use <code>('jira', jira_key)</code></strong> (2026-07-16) — shared with the ECOM board. Green ✓ badge on initial page load (<code>get_docs_s4_entity_ids</code>) and live while toggling. Legacy rows with a known jira id were re-pointed to the jira address by the startup migration <code>migrate_order_details_to_jira</code>.</span>
         <span class="feat-label">Delete (✕)</span>
         <span class="feat-value">Confirm dialog → <code>POST /ecom-gatekeeper/&lt;id&gt;/delete</code> → removes the row, all linked notes, and all linked order_details in one transaction. Row removed from DOM without page reload.</span>
         <span class="feat-label">Order numbers report (2026-07-11)</span>
@@ -745,7 +751,7 @@
         <span class="feat-label">Jira ▸ expander (2026-07-12)</span>
         <span class="feat-value">Rows with Jira data get a "Jira N ▸" button expanding inline: the <strong>Jira comments</strong> plus the <strong>gatekeeper notes</strong> (notes with entity <code>jira</code>, same key) — the ticket's history travels with it onto the ECOM board.</span>
         <span class="feat-label">Orders button</span>
-        <span class="feat-value">Shared <code>_order_details.html</code> component with <code>entity_type='ecom'</code>.</span>
+        <span class="feat-value">Shared <code>_order_details.html</code> component — since 2026-07-16 addressed <code>entity_type='jira'</code>, <code>entity_id=jira_key</code>, so the Gatekeeper Check shows the SAME rows (connected, never copied).</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>ecom</code> LEFT JOIN <code>ecom_annotations</code> (by jira_id) + note-count subquery + <code>jira_issues</code> keys for the chip</span>
       </div>
@@ -784,8 +790,8 @@
         <span class="feat-value">Next step · Comment history · Action needed — <code>ecom_annotations</code> keyed by <strong>jira_id</strong>, survives re-imports; importer never touches it.</span>
         <span class="feat-label">Jira card</span>
         <span class="feat-value">Joined live by jira id from <code>jira_issues</code>/<code>jira_comments</code>; comments are read-only HTML without authors (the export only carries JIRAUSER keys).</span>
-        <span class="feat-label">⇗ Take over orders from Gatekeeper</span>
-        <span class="feat-value"><code>POST /ecom/&lt;id&gt;/pull-orders</code> — the gatekeeper→ECOM handover: re-points <code>order_details</code> rows of old-gatekeeper rows with the SAME jira id at this test case (<code>relink_gatekeeper_orders</code>; nothing is copied, the jira store needs no relink at all). Banner shows the moved count.</span>
+        <span class="feat-label">Orders (shared, 2026-07-16)</span>
+        <span class="feat-value">Order details addressed <code>('jira', jira_key)</code> — the Gatekeeper Check ticket page shows the SAME rows; no handover step. The former <strong>⇗ Take over orders from Gatekeeper</strong> button is retired (<code>POST /ecom/&lt;id&gt;/pull-orders</code> + <code>relink_gatekeeper_orders</code> kept as inert legacy); existing rows were re-pointed by the idempotent startup migration <code>migrate_order_details_to_jira</code>.</span>
         <span class="feat-label">Notes</span>
         <span class="feat-value">Full notes module via registry entry <code>ecom</code> (generic <code>/n/ecom/&lt;id&gt;/…</code> routes); ECOM rows are note-able and appear in note breadcrumbs.</span>
       </div>
