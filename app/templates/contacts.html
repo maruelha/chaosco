@@ -12,6 +12,10 @@
   </div>
 </div>
 
+{% with inc_module='contact', inc_items=incoming %}
+  {% include '_incoming_section.html' %}
+{% endwith %}
+
 {# ---- Filters ---- #}
 <form method="get" action="{{ url_for('contacts_list') }}" class="filters-bar" id="filters-form">
   <div class="filter-group">

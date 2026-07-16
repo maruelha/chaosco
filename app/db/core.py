@@ -374,7 +374,11 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("source TEXT",):
+    # notes: source tag + inbox reference fields / routing (2026-07-16 —
+    # order_number/solman_id/jira_id feed the inbox auto-file matching;
+    # route_to = Contact/Link/Follow-up incoming-bucket routing)
+    for col in ("source TEXT", "order_number TEXT", "solman_id TEXT",
+                "jira_id TEXT", "route_to TEXT"):
         try:
             conn.execute(f"ALTER TABLE notes ADD COLUMN {col}")
             conn.commit()

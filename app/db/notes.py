@@ -68,16 +68,86 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 
 _INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link"}
 
+# Incoming buckets [USER 2026-07-16]: the inbox route_to dropdown pushes an
+# item to (module, 'incoming') — sorted manually on that module's page,
+# NEVER auto-connected to a row.
+_ROUTE_TO_MODULES = {"contact", "link", "followup"}
+_MODULE_TABLES = {"contact": "contacts", "link": "links", "followup": "followups"}
 
-def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None) -> int:
+
+def list_incoming_notes(conn: sqlite3.Connection, module: str) -> list[dict]:
+    """Notes parked at (module, 'incoming'), newest first, with att count."""
+    if module not in _ROUTE_TO_MODULES:
+        return []
+    return _rows_to_dicts(conn.execute(
+        "SELECT n.*, COUNT(a.id) as att_count FROM notes n"
+        " LEFT JOIN attachments a ON a.note_id = n.id"
+        " WHERE n.entity_type = ? AND n.entity_id = 'incoming'"
+        " GROUP BY n.id ORDER BY n.created_at DESC", (module,)
+    ))
+
+
+def delete_incoming_note(conn: sqlite3.Connection, note_id: int) -> list[str]:
+    """Delete an incoming-bucket note + attachment rows; returns filenames
+    for the caller to unlink (mirrors delete_inbox_item)."""
+    note = get_note(conn, note_id)
+    if (note is None or note["entity_id"] != "incoming"
+            or note["entity_type"] not in _ROUTE_TO_MODULES):
+        return []
+    rows = _rows_to_dicts(conn.execute(
+        "SELECT filename FROM attachments WHERE note_id = ?", (note_id,)))
+    with conn:
+        conn.execute("DELETE FROM attachments WHERE note_id = ?", (note_id,))
+        conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    return [r["filename"] for r in rows]
+
+
+def file_incoming_note(conn: sqlite3.Connection, note_id: int, target_id: str) -> bool:
+    """Sort an incoming note onto a real row of ITS OWN module — the type is
+    fixed by where the note is parked; only the entity_id changes."""
+    note = get_note(conn, note_id)
+    if (note is None or note["entity_id"] != "incoming"
+            or note["entity_type"] not in _ROUTE_TO_MODULES):
+        return False
+    table = _MODULE_TABLES[note["entity_type"]]
+    exists = conn.execute(
+        f"SELECT 1 FROM {table} WHERE id = ?", (target_id,)).fetchone()
+    if not exists:
+        return False
+    with conn:
+        conn.execute(
+            "UPDATE notes SET entity_id = ? WHERE id = ? AND entity_id = 'incoming'",
+            (str(target_id), note_id),
+        )
+    return True
+
+
+def add_inbox_item(conn: sqlite3.Connection, heading: str | None, note_text: str | None,
+                   order_number: str | None = None, solman_id: str | None = None,
+                   jira_id: str | None = None, route_to: str | None = None) -> int:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         cur = conn.execute(
-            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note)"
-            " VALUES ('input', 'inbox', ?, ?, ?)",
-            (now, heading, note_text),
+            "INSERT INTO notes (entity_type, entity_id, created_at, heading, note,"
+            " order_number, solman_id, jira_id, route_to)"
+            " VALUES ('input', 'inbox', ?, ?, ?, ?, ?, ?, ?)",
+            (now, heading, note_text, order_number, solman_id, jira_id,
+             route_to if route_to in _ROUTE_TO_MODULES else None),
         )
     return cur.lastrowid
+
+
+def set_inbox_refs(conn: sqlite3.Connection, note_id: int,
+                   order_number: str | None, solman_id: str | None,
+                   jira_id: str | None, route_to: str | None) -> None:
+    """Update only the reference/routing fields of an inbox item."""
+    with conn:
+        conn.execute(
+            "UPDATE notes SET order_number=?, solman_id=?, jira_id=?, route_to=?"
+            " WHERE id=? AND entity_type='input' AND entity_id='inbox'",
+            (order_number, solman_id, jira_id,
+             route_to if route_to in _ROUTE_TO_MODULES else None, note_id),
+        )
 
 
 def list_inbox_items(conn: sqlite3.Connection) -> list[dict]:

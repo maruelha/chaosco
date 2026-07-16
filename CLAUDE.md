@@ -65,7 +65,7 @@ app/
   database.py       facade over app/db/
   db/               core(schema) defects spillover retail notes planning
                     reference topics entity_links email jira gatekeeper
-                    ecom next_steps order_archive search
+                    ecom next_steps order_archive inbox_autofile search
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

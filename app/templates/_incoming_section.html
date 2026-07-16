@@ -1,0 +1,100 @@
+{# Incoming bucket — drop-in section for module list pages [USER 2026-07-16].
+
+   Notes routed here from the Inbox ("route to: Contact/Link/Follow-up")
+   park at (module, 'incoming') and are sorted MANUALLY: create the row on
+   this page as usual, then attach the note to it — never auto-connected.
+
+   Usage (once per page, before the main list):
+
+     {% with inc_module='contact', inc_items=incoming %}
+       {% include '_incoming_section.html' %}
+     {% endwith %}
+
+   inc_module: 'contact' | 'link' | 'followup' (= /inbox/targets type).
+   Renders nothing when the bucket is empty.
+#}
+{% if inc_items %}
+<div class="notes-card" id="incoming-section" style="border-left:3px solid #b45309;margin-bottom:1.2rem">
+  <div class="card-header-row">
+    <h2>&#128229; Incoming</h2>
+    <span class="notes-count-badge">{{ inc_items | length }}</span>
+    <span style="font-size:0.78rem;color:#888;margin-left:0.6rem">
+      routed from the Inbox — attach each to a row here (create the row first if needed) or delete</span>
+  </div>
+  <div class="notes-list">
+    {% for item in inc_items %}
+    <div class="note-item" id="inc-item-{{ item.id }}">
+      <div class="note-meta">
+        <span class="note-heading">{{ item.heading or '(no heading)' }}</span>
+        <span class="note-date mono">{{ item.created_at }}</span>
+        {% if item.att_count %}<span class="notes-count-badge" title="attachments">&#128206; {{ item.att_count }}</span>{% endif %}
+      </div>
+      {% if item.note %}<p class="note-text" style="white-space:pre-wrap">{{ item.note }}</p>{% endif %}
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem">
+        <input type="text" class="form-control inc-search" data-note="{{ item.id }}"
+               placeholder="type to find the target row…" style="min-width:220px" autocomplete="off">
+        <form method="post" action="{{ url_for('incoming_note_file', note_id=item.id) }}"
+              style="display:inline" id="inc-file-form-{{ item.id }}">
+          <input type="hidden" name="target_id" id="inc-target-{{ item.id }}">
+          <button type="submit" class="btn btn-sm btn-primary" id="inc-btn-{{ item.id }}" disabled>Attach &rsaquo;</button>
+        </form>
+        <form method="post" action="{{ url_for('incoming_note_delete', note_id=item.id) }}"
+              style="display:inline" onsubmit="return confirm('Delete this incoming note (and its attachments)?')">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </div>
+      <div class="inc-results" id="inc-results-{{ item.id }}" style="margin-top:0.4rem"></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+if (!window.incInit) {
+  window.incInit = true;
+  (function () {
+    var MODULE = "{{ inc_module }}";
+    var timers = {};
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    document.addEventListener('input', function (e) {
+      var inp = e.target.closest('.inc-search');
+      if (!inp) return;
+      var id = inp.dataset.note;
+      clearTimeout(timers[id]);
+      timers[id] = setTimeout(function () {
+        var q = inp.value.trim();
+        var box = document.getElementById('inc-results-' + id);
+        fetch('/inbox/targets?type=' + encodeURIComponent(MODULE) + '&q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data.length) { box.innerHTML = '<small style="color:#aeaeb2">No matching rows.</small>'; return; }
+            var html = '<div style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto">';
+            data.forEach(function (it) {
+              html += '<button type="button" class="btn btn-sm inc-pick" style="text-align:left"'
+                + ' data-note="' + id + '" data-value="' + esc(it.value) + '" data-label="' + esc(it.label) + '">'
+                + esc(it.label) + '</button>';
+            });
+            box.innerHTML = html + '</div>';
+          });
+      }, 280);
+    });
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.inc-pick');
+      if (!btn) return;
+      var id = btn.dataset.note;
+      document.getElementById('inc-target-' + id).value = btn.dataset.value;
+      document.getElementById('inc-btn-' + id).disabled = false;
+      btn.closest('div').querySelectorAll('.inc-pick').forEach(function (b) { b.classList.remove('btn-primary'); });
+      btn.classList.add('btn-primary');
+      var inp = document.querySelector('.inc-search[data-note="' + id + '"]');
+      if (inp) inp.value = btn.dataset.label;
+    });
+  }());
+}
+</script>
+{% endif %}

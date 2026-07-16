@@ -5,8 +5,16 @@
 <div class="page-header">
   <div class="page-header-row">
     <h1>Inbox {% if items %}<span class="notes-count-badge">{{ items | length }}</span>{% endif %}</h1>
+    {% if items %}
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-primary" id="btn-autofile"
+              title="preview items whose reference fields match a ticket/defect, or that are routed to Contacts/Links/Follow-ups">&#9889; Auto-file</button>
+    </div>
+    {% endif %}
   </div>
 </div>
+
+{% if auto_filed %}<div class="saved-banner">&#10003;&nbsp; {{ auto_filed }} item(s) auto-filed.</div>{% endif %}
 
 {% if note_added %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
 {% if note_saved %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
@@ -22,6 +30,17 @@
     </div>
     <div style="margin-bottom:0.75rem">
       <textarea name="note" class="form-control" rows="10" placeholder="Paste your note here…" style="width:100%;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.75rem">
+      <input type="text" name="order_number" class="form-control" placeholder="Order number (optional)" style="min-width:180px">
+      <input type="text" name="solman_id" class="form-control" placeholder="SolMan ID (optional)" style="min-width:150px">
+      <input type="text" name="jira_id" class="form-control" placeholder="Jira ID (optional)" style="min-width:150px">
+      <select name="route_to" class="form-control" title="route to a module's Incoming bucket — sorted there, out of the inbox">
+        <option value="">— route to (optional) —</option>
+        <option value="contact">Contact → Incoming</option>
+        <option value="link">Link → Incoming</option>
+        <option value="followup">Follow-up → Incoming</option>
+      </select>
     </div>
     <button type="submit" class="btn btn-primary">Save to Inbox</button>
   </form>
@@ -53,6 +72,14 @@
         <span class="note-heading">{{ item.heading or '(no heading)' }}</span>
         <span class="note-date mono">{{ item.created_at }}</span>
       </div>
+      {% if item.order_number or item.solman_id or item.jira_id or item.route_to %}
+      <div class="note-refs" style="display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.2rem 0 0.4rem;font-size:0.75rem">
+        {% if item.jira_id %}<span class="mono" style="background:#e0edff;color:#1e40af;border-radius:3px;padding:0.05em 0.45em">Jira {{ item.jira_id }}</span>{% endif %}
+        {% if item.solman_id %}<span class="mono" style="background:#ede9fe;color:#5b21b6;border-radius:3px;padding:0.05em 0.45em">SolMan {{ item.solman_id }}</span>{% endif %}
+        {% if item.order_number %}<span class="mono" style="background:#dcfce7;color:#15803d;border-radius:3px;padding:0.05em 0.45em">Order {{ item.order_number }}</span>{% endif %}
+        {% if item.route_to %}<span style="background:#fef3c7;color:#92400e;border-radius:3px;padding:0.05em 0.45em">&#8618; {{ {'contact':'Contacts','link':'Links','followup':'Follow-ups'}[item.route_to] }} incoming</span>{% endif %}
+      </div>
+      {% endif %}
       <p class="note-text" style="white-space:pre-wrap">{{ item.note or '' }}</p>
 
       {# Attachments #}
@@ -95,6 +122,17 @@
           </div>
           <div style="margin-bottom:0.5rem">
             <textarea name="note" class="form-control" rows="10" style="width:100%;resize:vertical">{{ item.note or '' }}</textarea>
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">
+            <input type="text" name="order_number" value="{{ item.order_number or '' }}" class="form-control" placeholder="Order number" style="min-width:170px">
+            <input type="text" name="solman_id" value="{{ item.solman_id or '' }}" class="form-control" placeholder="SolMan ID" style="min-width:140px">
+            <input type="text" name="jira_id" value="{{ item.jira_id or '' }}" class="form-control" placeholder="Jira ID" style="min-width:140px">
+            <select name="route_to" class="form-control">
+              <option value="">— route to —</option>
+              <option value="contact" {% if item.route_to == 'contact' %}selected{% endif %}>Contact → Incoming</option>
+              <option value="link" {% if item.route_to == 'link' %}selected{% endif %}>Link → Incoming</option>
+              <option value="followup" {% if item.route_to == 'followup' %}selected{% endif %}>Follow-up → Incoming</option>
+            </select>
           </div>
           <button type="submit" class="btn btn-sm btn-primary">Save</button>
           <button type="button" class="btn btn-sm" onclick="toggleEdit({{ item.id }})">Cancel</button>
@@ -166,6 +204,22 @@
   Inbox is empty — add a note above to get started.
 </div>
 {% endif %}
+
+{# ---- Auto-file preview dialog [USER 2026-07-16] ---- #}
+<dialog id="dlg-autofile" style="max-width:640px;width:90%">
+  <div class="dlg-header">
+    <div class="dlg-title">&#9889; Auto-file preview</div>
+    <div class="dlg-subtitle">nothing moves until you confirm</div>
+  </div>
+  <div class="dlg-body">
+    <div id="af-movable"></div>
+    <div id="af-skipped" style="margin-top:0.8rem"></div>
+  </div>
+  <div class="dlg-footer" style="display:flex;gap:0.6rem;justify-content:flex-end">
+    <button type="button" class="btn" onclick="document.getElementById('dlg-autofile').close()">Cancel</button>
+    <button type="button" class="btn btn-primary" id="af-confirm" disabled>Move selected</button>
+  </div>
+</dialog>
 
 <script>
 (function () {
@@ -273,8 +327,73 @@
     }
   });
 
+  /* ---- Auto-file: preview then confirm [USER 2026-07-16] ---- */
+  var afBtn = document.getElementById('btn-autofile');
+  if (afBtn) {
+    var afDlg = document.getElementById('dlg-autofile');
+    var afConfirm = document.getElementById('af-confirm');
+
+    afBtn.addEventListener('click', function () {
+      fetch('/inbox/autofile/preview')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var mv = document.getElementById('af-movable');
+          var sk = document.getElementById('af-skipped');
+          if (!d.movable.length) {
+            mv.innerHTML = '<p style="color:#888">Nothing to move — no inbox item with '
+              + 'reference fields resolves to a unique target right now.</p>';
+          } else {
+            var html = '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;'
+              + 'letter-spacing:.05em;color:#166534;margin-bottom:0.3rem">Will move (' + d.movable.length + ')</div>';
+            d.movable.forEach(function (m) {
+              html += '<label style="display:flex;gap:0.5rem;align-items:baseline;padding:0.25rem 0;'
+                + 'border-bottom:1px solid #f2f2f6;cursor:pointer">'
+                + '<input type="checkbox" class="af-pick" checked value="' + m.note_id + '">'
+                + '<span><strong>' + esc(m.heading) + '</strong>'
+                + ' <span style="color:#888">&rarr;</span> ' + esc(m.label)
+                + ' <span style="color:#aeaeb2;font-size:0.78rem">(via ' + esc(m.via) + ')</span></span></label>';
+            });
+            mv.innerHTML = html;
+          }
+          if (d.skipped.length) {
+            var shtml = '<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;'
+              + 'letter-spacing:.05em;color:#92400e;margin-bottom:0.3rem">Stays in the inbox (' + d.skipped.length + ')</div>';
+            d.skipped.forEach(function (s) {
+              shtml += '<div style="padding:0.2rem 0;color:#555;font-size:0.85rem"><strong>'
+                + esc(s.heading) + '</strong> — ' + esc(s.reason) + '</div>';
+            });
+            sk.innerHTML = shtml;
+          } else {
+            sk.innerHTML = '';
+          }
+          afConfirm.disabled = !d.movable.length;
+          afDlg.showModal();
+        });
+    });
+
+    document.getElementById('af-movable').addEventListener('change', function () {
+      afConfirm.disabled = !document.querySelector('#af-movable .af-pick:checked');
+    });
+
+    afConfirm.addEventListener('click', function () {
+      var ids = [].map.call(document.querySelectorAll('#af-movable .af-pick:checked'),
+                            function (cb) { return cb.value; });
+      if (!ids.length) return;
+      var fd = new FormData();
+      fd.append('ids', ids.join(','));
+      fetch('/inbox/autofile/apply', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (d.ok) { window.location = '/inbox?auto_filed=' + d.filed; }
+        });
+    });
+
+    afDlg.addEventListener('click', function (e) { if (e.target === afDlg) afDlg.close(); });
+  }
+
   /* ---- Inbox text search: live filter on heading + note text + attachment
-         names (NOT button labels, so "edit" doesn't match everything) ---- */
+         names + reference chips (NOT button labels, so "edit" doesn't match
+         everything) ---- */
   var searchInp   = document.getElementById('inbox-search');
   var searchClear = document.getElementById('inbox-search-clear');
   if (searchInp) {
@@ -286,8 +405,10 @@
         var hay = [];
         var h = item.querySelector('.note-heading');
         var t = item.querySelector('.note-text');
+        var refs = item.querySelector('.note-refs');
         if (h) hay.push(h.textContent);
         if (t) hay.push(t.textContent);
+        if (refs) hay.push(refs.textContent);
         item.querySelectorAll('.att-name').forEach(function (a) { hay.push(a.textContent); });
         var match = !q || hay.join('\n').toLowerCase().indexOf(q) !== -1;
         item.style.display = match ? '' : 'none';

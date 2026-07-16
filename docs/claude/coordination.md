@@ -38,10 +38,35 @@ contact, link.
 
 **Inbox text search** [USER 2026-07-16]: search box in the Pending card
 header, live CLIENT-side filter (no route, no SQL) over heading + note text
-+ attachment names — deliberately not whole-card textContent, so button
-labels ("Edit") don't match everything. Count badge shows "shown / total"
-while filtering; ✕ / Escape clears; box only renders when items exist.
-Markup contract pinned by tests/test_inbox_search.py.
++ attachment names + reference chips — deliberately not whole-card
+textContent, so button labels ("Edit") don't match everything. Count badge
+shows "shown / total" while filtering; ✕ / Escape clears; box only renders
+when items exist. Markup contract pinned by tests/test_inbox_search.py.
+
+**Inbox reference fields + auto-file** [USER 2026-07-16]: notes table
+gained optional `order_number`, `solman_id`, `jira_id`, `route_to` columns
+(core.py migration; set via the inbox add/edit forms, shown as chips —
+the intended landing zone for a future Power Automate Teams import).
+"⚡ Auto-file" button = preview-then-confirm dialog
+(GET /inbox/autofile/preview, POST /inbox/autofile/apply — matches
+RECOMPUTED server-side on apply). Matching is FIELDS ONLY (no text
+scanning — deliberate v1), precedence route_to > jira_id > solman_id >
+order_number, the first PRESENT field decides with no fall-through; only
+UNAMBIGUOUS matches move (a solman id hitting a jira ticket AND a defect
+stays, with reason shown). Targets: jira store (→ notes at ('jira', key))
+and defects; order numbers resolve via order_details('jira'), ecom rows,
+defects.order_number. Logic app/db/inbox_autofile.py. Tests:
+tests/test_inbox_autofile.py.
+
+**Incoming buckets** [USER 2026-07-16]: route_to = contact|link|followup
+pushes an item to (module, 'incoming') — NEVER auto-connected to a row
+(explicit user decision). Contacts / Links / Follow-ups list pages render
+the shared `_incoming_section.html` include ("Incoming (N)", amber accent,
+only when non-empty): per note a target search (reuses /inbox/targets) +
+"Attach ›" (POST /incoming-notes/<id>/file — type fixed to the note's own
+module, target validated) + delete (removes note + attachments).
+Storage helpers in db/notes.py (list_incoming_notes, file_incoming_note,
+delete_incoming_note).
 
 ## Attachments
 

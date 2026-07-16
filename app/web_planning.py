@@ -338,11 +338,12 @@ def followup_list():
                     group_name=f_group or None,
                     include_done=f_done)
         opts  = database.get_followup_filter_options(conn)
+        incoming = database.list_incoming_notes(conn, "followup")
     finally:
         conn.close()
     today = date.today().isoformat()
     return render_template("followup_list.html",
-        items=items, opts=opts, today=today,
+        items=items, opts=opts, today=today, incoming=incoming,
         statuses=database.FOLLOWUP_STATUSES,
         f_whom=f_whom, f_group=f_group, f_when=f_when, f_done=f_done)
 

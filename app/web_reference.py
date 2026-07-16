@@ -312,9 +312,11 @@ def links_list():
         rows    = database.list_links(conn, areas=areas or None, tools=tools or None,
                                       tags=tags or None, search=search or None)
         options = database.get_link_options(conn)
+        incoming = database.list_incoming_notes(conn, "link")
     finally:
         conn.close()
     return render_template("links.html", rows=rows, options=options,
+                           incoming=incoming,
                            areas=areas, tools=tools, tags=tags, search=search)
 
 
@@ -391,9 +393,11 @@ def contacts_list():
         rows    = database.list_contacts(conn, areas=areas or None, topics=topics or None,
                                          tags=tags or None, search=search or None)
         options = database.get_contact_options(conn)
+        incoming = database.list_incoming_notes(conn, "contact")
     finally:
         conn.close()
     return render_template("contacts.html", rows=rows, options=options,
+                           incoming=incoming,
                            areas=areas, topics=topics, tags=tags, search=search)
 
 
@@ -685,7 +689,15 @@ def inbox():
         "inbox.html", items=items, attachments_by_note=attachments_by_note,
         note_added=note_added, note_saved=note_saved,
         note_deleted=note_deleted, note_filed=note_filed,
+        auto_filed=request.args.get("auto_filed"),
     )
+
+
+def _inbox_ref_fields():
+    return (request.form.get("order_number", "").strip() or None,
+            request.form.get("solman_id", "").strip() or None,
+            request.form.get("jira_id", "").strip() or None,
+            request.form.get("route_to", "").strip() or None)
 
 
 @app.route("/inbox/add", methods=["POST"])
@@ -695,7 +707,7 @@ def inbox_add():
     if heading or note_text:
         conn = _get_conn()
         try:
-            database.add_inbox_item(conn, heading, note_text)
+            database.add_inbox_item(conn, heading, note_text, *_inbox_ref_fields())
         finally:
             conn.close()
     return redirect(url_for("inbox", note_added="1"))
@@ -711,9 +723,76 @@ def inbox_edit(note_id: int):
             note = database.get_note(conn, note_id)
             if note and note["entity_type"] == "input":
                 database.update_note(conn, note_id, heading, note_text)
+                database.set_inbox_refs(conn, note_id, *_inbox_ref_fields())
         finally:
             conn.close()
     return redirect(url_for("inbox", note_saved="1"))
+
+
+# --- Auto-file [USER 2026-07-16]: fields-only matching, preview-then-confirm
+
+
+@app.route("/inbox/autofile/preview")
+def inbox_autofile_preview():
+    conn = _get_conn()
+    try:
+        result = database.preview_autofile(conn)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, **result})
+
+
+@app.route("/inbox/autofile/apply", methods=["POST"])
+def inbox_autofile_apply():
+    ids = [int(i) for i in request.form.get("ids", "").split(",")
+           if i.strip().isdigit()]
+    if not ids:
+        return jsonify({"ok": False, "error": "no items selected"})
+    conn = _get_conn()
+    try:
+        result = database.apply_autofile(conn, ids)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, **result})
+
+
+# --- Incoming buckets [USER 2026-07-16]: (contact|link|followup, 'incoming')
+# — sorted manually on the module page, never auto-connected to a row.
+
+_INCOMING_LIST_URLS = {"contact": "contacts_list", "link": "links_list",
+                       "followup": "followup_list"}
+
+
+def _incoming_redirect(note):
+    endpoint = _INCOMING_LIST_URLS.get(note["entity_type"] if note else "", "inbox")
+    return redirect(url_for(endpoint))
+
+
+@app.route("/incoming-notes/<int:note_id>/file", methods=["POST"])
+def incoming_note_file(note_id: int):
+    target_id = request.form.get("target_id", "").strip()
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        database.file_incoming_note(conn, note_id, target_id)
+    finally:
+        conn.close()
+    return _incoming_redirect(note)
+
+
+@app.route("/incoming-notes/<int:note_id>/delete", methods=["POST"])
+def incoming_note_delete(note_id: int):
+    conn = _get_conn()
+    try:
+        note = database.get_note(conn, note_id)
+        filenames = database.delete_incoming_note(conn, note_id)
+    finally:
+        conn.close()
+    for fname in filenames:
+        fp = _UPLOAD_FOLDER / fname
+        if fp.exists():
+            fp.unlink()
+    return _incoming_redirect(note)
 
 
 @app.route("/inbox/<int:note_id>/delete", methods=["POST"])

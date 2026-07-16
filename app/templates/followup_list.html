@@ -9,6 +9,10 @@
   </div>
 </div>
 
+{% with inc_module='followup', inc_items=incoming %}
+  {% include '_incoming_section.html' %}
+{% endwith %}
+
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
   <input name="with_whom"  type="text" placeholder="With whom *" required class="fu-input fu-short">

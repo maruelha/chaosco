@@ -279,6 +279,10 @@
       <div class="features">
         <span class="feat-label">Add item</span>
         <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
+        <span class="feat-label">Reference fields (2026-07-16)</span>
+        <span class="feat-value">Optional per item: <strong>Order number · SolMan ID · Jira ID</strong> (columns on <code>notes</code>, shown as coloured chips, searchable) + a <strong>route-to dropdown</strong> (Contact / Link / Follow-up → that module's Incoming bucket). Editable in the inline edit form. Designed as the landing zone for a future Power Automate Teams import.</span>
+        <span class="feat-label">⚡ Auto-file (2026-07-16)</span>
+        <span class="feat-value">Header button → preview dialog: "Will move" list (checkboxes, all pre-ticked) + "Stays in the inbox" with reasons — nothing moves without confirm. Matching is <strong>fields only</strong>, precedence route-to → Jira ID → SolMan ID → Order number (first present field decides, no fall-through), only <strong>unambiguous</strong> matches move. Targets: Jira tickets (notes land at <code>('jira', key)</code> — visible on the Gatekeeper ticket + ECOM expander) and Defects; routed items go to the module's Incoming section. Matches are recomputed server-side on apply. APIs: <code>GET /inbox/autofile/preview</code> · <code>POST /inbox/autofile/apply</code> (ids CSV).</span>
         <span class="feat-label">Text search (2026-07-16)</span>
         <span class="feat-value">Search box in the Pending card header — live client-side filter (no reload) matching heading, note text, and attachment names, case-insensitive. Button labels are deliberately excluded so e.g. "edit" doesn't match every item. While filtering, the count badge shows <em>shown / total</em>; ✕ or Escape clears. Only rendered when items exist.</span>
         <span class="feat-label">Per-item actions</span>
@@ -1282,6 +1286,8 @@
     <div class="screen-card-body">
       <p class="screen-desc">Lightweight "chase" list — who needs to be followed up with, on what topic, and by when. Items can be assigned to a named group to cluster related topics. Done items hidden by default. Sorted by: in_progress first, then open, then by next date.</p>
       <div class="features">
+        <span class="feat-label">Incoming section (2026-07-16)</span>
+        <span class="feat-value">Amber "📥 Incoming" card on top (only when non-empty): inbox items routed here via the route-to dropdown / Auto-file, parked at <code>('followup', 'incoming')</code>. Per note: target search (reuses <code>/inbox/targets</code>) + <span class="pill pill-action">Attach ›</span> to hang the note on an existing follow-up (create the row first if needed — never auto-connected) + Delete. Shared <code>_incoming_section.html</code> include.</span>
         <span class="feat-label">Columns</span>
         <span class="feat-value">With Whom · Topic · Group · When Next · Status · actions — all four text columns are sortable client-side (click header ▲/▼)</span>
         <span class="feat-label">Filters</span>
@@ -1418,6 +1424,8 @@
     <div class="screen-card-body">
       <p class="screen-desc">Personal URL bookmark store. All links are clickable; each has a one-click copy button. Filterable by area, tool, and tag.</p>
       <div class="features">
+        <span class="feat-label">Incoming section (2026-07-16)</span>
+        <span class="feat-value">Amber "📥 Incoming" card on top (only when non-empty): inbox items routed here, parked at <code>('link', 'incoming')</code>; attach each to an existing link via target search or delete — never auto-connected. Shared <code>_incoming_section.html</code> include.</span>
         <span class="feat-label">Columns</span>
         <span class="feat-value">Description · URL (clickable) · Area · Tool · Tags</span>
         <span class="feat-label">Filters</span>
@@ -1465,6 +1473,8 @@
     <div class="screen-card-body">
       <p class="screen-desc">Personal contact directory for UAT coordination. Stores name, email (free text, multiple addresses ok), area, topic, comments, and tags. Dashboard card links directly here.</p>
       <div class="features">
+        <span class="feat-label">Incoming section (2026-07-16)</span>
+        <span class="feat-value">Amber "📥 Incoming" card on top (only when non-empty): inbox items routed here, parked at <code>('contact', 'incoming')</code>; attach each to an existing contact via target search or delete — never auto-connected. Shared <code>_incoming_section.html</code> include. APIs: <code>POST /incoming-notes/&lt;note_id&gt;/file</code> (target_id) · <code>POST /incoming-notes/&lt;note_id&gt;/delete</code>.</span>
         <span class="feat-label">Columns</span>
         <span class="feat-value">Name · Email · Area · Topic · Tags · Comments (truncated)</span>
         <span class="feat-label">Filters</span>

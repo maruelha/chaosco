@@ -521,9 +521,13 @@
         <tr><td class="col-name">heading</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Note body</td></tr>
         <tr><td class="col-name">source</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional source tag (e.g. who added it). Added via ALTER TABLE.</td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Inbox reference field (2026-07-16) — feeds auto-file matching; NULL for non-inbox notes</td></tr>
+        <tr><td class="col-name">solman_id</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Inbox reference field — matched against jira_issues.solman_id AND defects.defect_id</td></tr>
+        <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Inbox reference field — matched against jira_issues.jira_key</td></tr>
+        <tr><td class="col-name">route_to</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text"><code>contact</code> · <code>link</code> · <code>followup</code> — auto-file pushes the item to that module's (module, 'incoming') bucket</td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>Index:</strong> ix_notes_entity ON (entity_type, entity_id)</div>
+    <div class="relations"><strong>Index:</strong> ix_notes_entity ON (entity_type, entity_id) &nbsp;·&nbsp; <strong>Special entity_id values:</strong> <code>'inbox'</code> (entity_type='input', unfiled) · <code>'incoming'</code> (entity_type contact/link/followup — routed from the inbox, sorted manually on the module page)</div>
   </div>
 
   <!-- attachments -->
