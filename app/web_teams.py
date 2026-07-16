@@ -79,28 +79,28 @@ def _entity_and_row(conn, entity_type: str, entity_id: str):
 
 
 # ---------------------------------------------------------------------------
-# Teams channels — saved as Links with tool = TEAMS_CHANNEL_TOOL (no parallel
-# table; they also appear on /links). The picker component
-# (_teams_channels.html) is fully AJAX-driven, so ANY card can include it
-# without route/context changes: {% include '_teams_channels.html' %}
+# Teams channels — since 2026-07-16 stored in the teams_chats registry
+# (kind='channel'; old "Teams Channel" links rows migrated at startup).
+# Routes/shapes unchanged so the picker component (_teams_channels.html)
+# and every including card keep working: {% include '_teams_channels.html' %}
 # ---------------------------------------------------------------------------
-
-TEAMS_CHANNEL_TOOL = "Teams Channel"
 
 
 @bp.route("/channels.json")
 def channels_json():
+    from app.db import teams_chats as db_tc
     conn = _get_conn()
     try:
-        rows = database.list_links(conn, tools=[TEAMS_CHANNEL_TOOL])
+        rows = [c for c in db_tc.list_teams_chats(conn) if c["kind"] == "channel"]
     finally:
         conn.close()
-    return jsonify([{"id": r["id"], "name": r["description"], "url": r["url"]}
+    return jsonify([{"id": r["id"], "name": r["name"], "url": r["url"]}
                     for r in rows])
 
 
 @bp.route("/channels/add", methods=["POST"])
 def channel_add():
+    from app.db import teams_chats as db_tc
     name = request.form.get("name", "").strip()
     url = request.form.get("url", "").strip()
     if not name or not url.startswith("https://teams.microsoft.com/"):
@@ -109,8 +109,7 @@ def channel_add():
                                  "(starts with https://teams.microsoft.com/)."})
     conn = _get_conn()
     try:
-        database.create_link(conn, description=name, url=url,
-                             area=None, tool=TEAMS_CHANNEL_TOOL, tags=None)
+        db_tc.create_teams_chat(conn, name, kind="channel", link=url)
     finally:
         conn.close()
     return jsonify({"ok": True})
@@ -118,12 +117,13 @@ def channel_add():
 
 @bp.route("/channels/<int:link_id>/delete", methods=["POST"])
 def channel_delete(link_id: int):
+    from app.db import teams_chats as db_tc
     conn = _get_conn()
     try:
-        row = database.get_link(conn, link_id)
-        if row is None or row.get("tool") != TEAMS_CHANNEL_TOOL:
-            return jsonify({"ok": False, "error": "not a Teams channel link"}), 404
-        database.delete_link(conn, link_id)
+        row = db_tc.get_teams_chat(conn, link_id)
+        if row is None or row["kind"] != "channel":
+            return jsonify({"ok": False, "error": "not a Teams channel"}), 404
+        db_tc.delete_teams_chat(conn, link_id)
     finally:
         conn.close()
     return jsonify({"ok": True})

@@ -179,6 +179,7 @@
     <li><a href="#topic-detail">Topics — Working page</a></li>
     <li><a href="#email-reports">Email Reports</a></li>
     <li><a href="#teams-ping">Teams Ping</a></li>
+    <li><a href="#teams-chats">Teams Chats — Manage</a></li>
     <li><a href="#teams-entity-components">Drop-in components (channels, links)</a></li>
 
     <li class="group-label">Defects</li>
@@ -257,7 +258,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Inbox (pending count badge) · Topics (active count badge, green accent) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent, + Email Reports link) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
+        <span class="feat-value">Inbox (pending count badge) · Topics (active count badge, green accent) · Shelf (item count badge, purple accent) · Import · Export Reports (teal accent, + Email Reports link) · Defects · Core South Spillover · ECOM Gatekeeper · Retail · ECOM · Retail Requirements Tracker (unresolved count badge, amber accent) · Meeting Prep · To-Do · Follow-ups · Links · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · Contacts · CS Follow-Up Tracker · Encouragements (undelivered count badge) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -1686,13 +1687,34 @@
     <div class="screen-card-body">
       <div class="features">
         <span class="feat-label">Teams channel picker</span>
-        <span class="feat-value"><code>_teams_channels.html</code> include — button + dialog: saved channels open in the Teams client; add via "Get link to channel" (validated) / remove inline. Stored as Links with tool = "Teams Channel" (also on /links). Fully AJAX. Currently at the bottom of Defects and Spillover.</span>
+        <span class="feat-value"><code>_teams_channels.html</code> include — button + dialog: saved channels open in the Teams client; add via "Get link to channel" (validated) / remove inline. Since 2026-07-16 stored in the <code>teams_chats</code> registry (kind='channel'; old links rows migrated at startup) — routes/shapes unchanged. Fully AJAX. Currently at the bottom of Defects and Spillover.</span>
+        <span class="feat-label">Teams chat links (2026-07-16)</span>
+        <span class="feat-value"><code>_teams_chat_links.html</code> include + <code>.js-open-chats</code> buttons — per-ticket Teams chats dialog: attached chats (open ↗ · copy · detach) + registry search-attach + inline "register &amp; attach". Tickets REFERENCE <code>teams_chats</code> rows (never copied; multiple per ticket). On the detail pages of Retail / Spillover / ECOM / Gatekeeper ticket (ECOM + gatekeeper share via <code>('jira', key)</code>); list rows show <code>ui.chat_row_button</code>: hidden without chats, one chat = direct open, several = dialog. APIs: <code>GET /teams-chats/refs/&lt;etype&gt;/&lt;eid&gt;</code> · <code>POST …/attach|detach</code> (chat_id).</span>
         <span class="feat-label">Entity links</span>
         <span class="feat-value"><code>_entity_links.html</code> include (with el_entity_type / el_entity_id) — per-entity URL list (table <code>entity_links</code>), add/delete, http(s)-only. Currently on the Topic working page.</span>
         <span class="feat-label">Next-step archive (2026-07-10)</span>
         <span class="feat-value"><code>_next_step_history.html</code> include (once per page) + buttons with class <code>js-ns-archive</code> / <code>js-ns-history</code> and <code>data-entity-type/-id</code>. "↻ New next step" archives the current STORED next step into <code>next_step_history</code> (timestamped) and clears the live field (<code>POST /next-steps/&lt;type&gt;/&lt;id&gt;/archive</code>, registry-driven Blueprint <code>web_next_steps.py</code> — only-this-field upserts per vertical); "History" opens the shared dialog (newest first, entries deletable). Delegated clicks; <code>data-ns-target</code> selectors are blanked client-side. Currently on: Spillover Details popup (also blanks the row cell via the <code>ns-archived</code> event), Retail detail, ECOM detail, Defect detail.</span>
         <span class="feat-label">Notes coverage update</span>
         <span class="feat-value">Contacts and Links now carry the FULL notes module and are inbox filing targets (picker options Contact / Link).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Teams Chats management -->
+  <div class="screen-card" id="teams-chats">
+    <div class="screen-card-header">
+      <span class="screen-title">Teams Chats &amp; Channels — Manage</span>
+      <span class="screen-url">GET /teams-chats/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">The ONE place to manage the Teams registry (2026-07-16). A row = a chat or channel with a <strong>name</strong> plus either a <strong>link</strong> copied from Teams or the members' <strong>emails</strong> (the deep link is built on click via <code>teams_link.build_chat_link</code>). Dashboard card "Teams Chats".</p>
+      <div class="features">
+        <span class="feat-label">Table</span>
+        <span class="feat-value">Name · Kind (chat/channel) · Link · Emails · Description · <strong>⭐ pinned</strong> checkbox · ↗ open + ✕ delete. Inline blur-save (<code>POST /teams-chats/&lt;id&gt;/update</code>); + Add row via prompts (<code>POST /teams-chats/add</code>, validates name + link-or-emails, teams.microsoft.com only). Delete also detaches the entry from every ticket.</span>
+        <span class="feat-label">Floating 💬 widget</span>
+        <span class="feat-value">In <code>base.html</code>, stacked above the 🔍 search button on EVERY page: lists the <strong>pinned</strong> entries only (<code>GET /teams-chats/pinned.json</code>) with open-in-Teams ↗ and copy-link 📋 per chat + "Manage chats &amp; channels…" link. Hidden in print.</span>
+        <span class="feat-label">Storage</span>
+        <span class="feat-value"><code>teams_chats</code> + <code>teams_chat_refs</code> (app/db/teams_chats.py). Old "Teams Channel" links rows are migrated in at startup (idempotent) — the ping-page channel picker keeps working unchanged.</span>
       </div>
     </div>
   </div>

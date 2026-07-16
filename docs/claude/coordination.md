@@ -143,12 +143,39 @@ tests/test_teams_link.py.
 "Teams channels" button + dialog: saved channels open in the Teams client,
 add (name + "Get link to channel" URL, validated to teams.microsoft.com) and
 remove inline. Fully AJAX (`/teams-ping/channels.json|add|<id>/delete`), so
-the including page needs NO route/context changes. Channels are stored as
-Links with tool = "Teams Channel" (no parallel table; also manageable on
-/links). Currently included at the BOTTOM of the Defects and Spillover lists,
-next to a generic "Teams chat" button (/teams-ping/chat/0 — the ping
-page without entity context: empty message, recipient from contacts
-autocomplete).
+the including page needs NO route/context changes. Since 2026-07-16 channels
+are STORED in the `teams_chats` registry (kind='channel'; the old "Teams
+Channel" links rows were migrated out of links at startup) — the picker's
+routes and shapes are unchanged. Currently included at the BOTTOM of the
+Defects and Spillover lists, next to a generic "Teams chat" button
+(/teams-ping/chat/0 — the ping page without entity context: empty message,
+recipient from contacts autocomplete).
+
+## Teams chats & channels registry (db/teams_chats.py + web_teams_chats.py)
+
+[USER 2026-07-16] ONE table `teams_chats` for chats AND channels: name,
+kind, `link` (copied Teams deep link) OR `emails` (deep link built on click
+via teams_link.build_chat_link), description, `pinned`. ONE management UI
+`/teams-chats` (dashboard card): inline-edit table, add via prompts, delete
+detaches everywhere. Migration `migrate_channel_links` moves old
+"Teams Channel" links rows in (idempotent, at startup from init_schema).
+
+**Per-ticket chats** — `teams_chat_refs (entity_type, entity_id, chat_id)`:
+tickets REFERENCE registry rows (connected, never copied; multiple per
+ticket allowed). Drop-in `_teams_chat_links.html` (dialog + delegated
+`.js-open-chats` buttons, data-tcl-name = subtitle): attached list (open ↗
+· copy · detach) + registry search-attach + inline "new chat: register &
+attach". On the DETAIL pages of Retail, Spillover, ECOM, Gatekeeper ticket
+(ECOM + gatekeeper share via ('jira', key), like orders/notes). LIST rows
+get `ui.chat_row_button(...)` (_macros.html): nothing when no chats, ONE
+chat = direct open link, several = dialog button — context needs
+`chats_by_entity` (db helper, tolerant of missing schema in test fixtures).
+
+**Floating 💬 widget** (base.html, stacked above 🔍): PINNED chats only —
+open ↗ + copy per chat + "Manage…" link. `/teams-chats/pinned.json`.
+Routes: add / <id>/update / <id>/delete / all.json /
+refs/<etype>/<eid>[/attach|/detach]. Tests: tests/test_teams_chats.py
+(migration + picker continuity, url resolution, pinned, refs).
 
 ## Topics (app/db/topics.py + app/web_topics.py)
 

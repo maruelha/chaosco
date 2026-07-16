@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Teams Chats — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Teams Chats &amp; Channels</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+  </div>
+  <p class="page-subtitle">The one place to manage Teams chats and channels.
+    A row needs a <strong>name</strong> plus either a <strong>link</strong> copied from Teams
+    (⋯ → "Copy link") or the members' <strong>emails</strong> (comma-separated — the deep
+    link is built on click). <strong>⭐ Pinned</strong> rows appear in the floating 💬 widget
+    on every page; any row can be attached to Retail / ECOM / Gatekeeper / Spillover items.</p>
+</div>
+
+<div style="margin-bottom:0.6rem">
+  <button type="button" class="btn btn-primary btn-sm" id="btn-add-chat">+ Add row</button>
+</div>
+
+<table class="rt-table" id="tc-table">
+  <thead>
+    <tr>
+      <th style="width:14rem">Name</th>
+      <th style="width:6.5rem">Kind</th>
+      <th>Link</th>
+      <th style="width:16rem">Emails</th>
+      <th style="width:14rem">Description</th>
+      <th style="width:3.5rem;text-align:center" title="show in the floating 💬 widget">⭐</th>
+      <th style="width:6.5rem"></th>
+    </tr>
+  </thead>
+  <tbody id="tc-tbody">
+    {% for c in chats %}
+    <tr class="tcm-row" data-id="{{ c.id }}">
+      <td><input type="text" class="tcm-input" data-field="name" value="{{ c.name }}"></td>
+      <td>
+        <select class="tcm-input" data-field="kind">
+          <option value="chat" {% if c.kind == 'chat' %}selected{% endif %}>Chat</option>
+          <option value="channel" {% if c.kind == 'channel' %}selected{% endif %}>Channel</option>
+        </select>
+      </td>
+      <td><input type="text" class="tcm-input mono" style="font-size:0.75rem" data-field="link" value="{{ c.link or '' }}" placeholder="https://teams.microsoft.com/…"></td>
+      <td><input type="text" class="tcm-input" style="font-size:0.78rem" data-field="emails" value="{{ c.emails or '' }}" placeholder="a@x.com, b@x.com"></td>
+      <td><input type="text" class="tcm-input" data-field="description" value="{{ c.description or '' }}"></td>
+      <td style="text-align:center"><input type="checkbox" class="tcm-pin" data-field="pinned" {% if c.pinned %}checked{% endif %} style="width:1.05rem;height:1.05rem;cursor:pointer"></td>
+      <td style="white-space:nowrap;text-align:right">
+        <a href="{{ c.url }}" target="_blank" rel="noopener" class="btn btn-sm" title="open in Teams">↗</a>
+        <button type="button" class="btn btn-sm btn-danger tcm-del" title="delete (also detaches from all tickets)">✕</button>
+      </td>
+    </tr>
+    {% else %}
+    <tr id="tc-empty"><td colspan="7" class="table-empty">No chats yet — click <strong>+ Add row</strong> to start.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p id="tc-save-err" style="color:#c00;font-size:0.8rem;display:none"></p>
+
+<style>
+  .tcm-input { width:100%; box-sizing:border-box; padding:0.3rem 0.4rem; border:1px solid #d6d6de; border-radius:4px; font-size:0.85rem; }
+</style>
+
+<script>
+(function () {
+  const tbody = document.getElementById('tc-tbody');
+  const err = document.getElementById('tc-save-err');
+
+  function saveRow(tr) {
+    const fd = new FormData();
+    ['name','kind','link','emails','description'].forEach(f =>
+      fd.append(f, tr.querySelector(`[data-field="${f}"]`).value));
+    fd.append('pinned', tr.querySelector('[data-field="pinned"]').checked ? '1' : '0');
+    fetch(`/teams-chats/${tr.dataset.id}/update`, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(d => {
+        err.style.display = d.ok ? 'none' : '';
+        if (!d.ok) err.textContent = '✗ ' + d.error;
+      });
+  }
+
+  function wire(tr) {
+    tr.querySelectorAll('.tcm-input').forEach(el => {
+      el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'blur', () => saveRow(tr));
+    });
+    tr.querySelector('.tcm-pin').addEventListener('change', () => saveRow(tr));
+    tr.querySelector('.tcm-del').addEventListener('click', () => {
+      if (!confirm('Delete this entry? It is also detached from all tickets.')) return;
+      fetch(`/teams-chats/${tr.dataset.id}/delete`, { method: 'POST' })
+        .then(r => r.json()).then(d => { if (d.ok) tr.remove(); });
+    });
+  }
+  document.querySelectorAll('.tcm-row').forEach(wire);
+
+  document.getElementById('btn-add-chat').addEventListener('click', () => {
+    const name = prompt('Name of the chat/channel:');
+    if (!name || !name.trim()) return;
+    const link = prompt('Teams link (leave empty to use emails instead):', '') || '';
+    let emails = '';
+    if (!link.trim()) {
+      emails = prompt('Member emails (comma-separated):', '') || '';
+      if (!emails.trim()) { alert('Need a link or emails.'); return; }
+    }
+    const fd = new FormData();
+    fd.append('name', name.trim());
+    fd.append('link', link.trim());
+    fd.append('emails', emails.trim());
+    fetch('/teams-chats/add', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { alert(d.error); return; }
+        window.location.reload();
+      });
+  });
+}());
+</script>
+{% endblock %}

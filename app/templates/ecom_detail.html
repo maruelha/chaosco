@@ -164,6 +164,15 @@
 </div>
 
 {# ---- Section 5: Notes ---- #}
+{# ---- Teams chats (shared registry; keyed by the Jira ticket like orders
+      and gatekeeper notes — the Gatekeeper ticket page shows the SAME chats) #}
+<div class="btn-row" style="margin-bottom:1rem">
+  <button type="button" class="btn js-open-chats"
+          data-entity-type="jira" data-entity-id="{{ row.jira_id }}"
+          data-tcl-name="{{ row.jira_id }} — {{ row.test_case_id }} / {{ row.country }}">&#128172; Teams chats</button>
+</div>
+{% include '_teams_chat_links.html' %}
+
 {% with entity_type='ecom', entity_id=row.ecom_id %}
   {% include '_notes_section.html' %}
 {% endwith %}

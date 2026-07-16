@@ -52,6 +52,8 @@ def retail_list():
             action_needed=action_needed or None,
         )
         options = database.get_retail_filter_options(conn)
+        from app.db import teams_chats as db_tc
+        chats_by_entity = db_tc.chats_by_entity(conn, "retail")
     finally:
         conn.close()
 
@@ -59,6 +61,7 @@ def retail_list():
         "retail.html",
         rows=rows,
         options=options,
+        chats_by_entity=chats_by_entity,
         statuses=statuses,
         assignees=assignees,
         countries=countries,

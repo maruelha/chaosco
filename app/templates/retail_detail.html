@@ -100,6 +100,14 @@
 {% include '_next_step_history.html' %}
 
 {# ---- Section 3: Notes ---- #}
+{# ---- Teams chats (shared registry, referenced not copied) ---- #}
+<div class="btn-row" style="margin-bottom:1rem">
+  <button type="button" class="btn js-open-chats"
+          data-entity-type="retail" data-entity-id="{{ row.retail_id }}"
+          data-tcl-name="{{ row.test_case_id }} / {{ row.country }}">&#128172; Teams chats</button>
+</div>
+{% include '_teams_chat_links.html' %}
+
 {% with entity_type='retail', entity_id=row.retail_id %}
   {% include '_notes_section.html' %}
 {% endwith %}

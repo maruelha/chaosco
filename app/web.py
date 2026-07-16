@@ -68,6 +68,14 @@ app.register_blueprint(_ns_bp)
 from app.db import order_archive as _db_oa
 _db_oa.init_schema(_db_path)
 
+# Teams chats & channels registry (2026-07-16) — /teams-chats management
+# page, floating 💬 widget JSON, per-ticket refs. Old "Teams Channel" links
+# rows are migrated into teams_chats at startup (idempotent).
+from app.db import teams_chats as _db_tc
+from app.web_teams_chats import bp as _tc_bp
+_db_tc.init_schema(_db_path)
+app.register_blueprint(_tc_bp)
+
 # Global search (2026-07-10) — floating 🔍 widget in base.html; source
 # registry in app/db/search.py (order numbers now, topics via FTS later).
 from app.web_search import bp as _search_bp

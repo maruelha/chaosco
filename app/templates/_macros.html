@@ -95,3 +95,22 @@
   </table>
 </div>
 {% endmacro %}
+
+{# ---- Teams chat button for list rows [USER 2026-07-16] ----
+   Renders nothing when no chats are attached; ONE chat = direct open link,
+   several = opens the shared _teams_chat_links.html dialog (include it once
+   on the page). chats = chats_by_entity.get(<entity_id as string>).
+     {{ ui.chat_row_button(chats_by_entity.get(r.jira_id), 'jira', r.jira_id, r.jira_id) }}
+#}
+{% macro chat_row_button(chats, entity_type, entity_id, name='') -%}
+  {%- if chats -%}
+    {%- if chats|length == 1 -%}
+      <a href="{{ chats[0].url }}" target="_blank" rel="noopener" class="btn btn-sm"
+         title="open Teams chat: {{ chats[0].name }}">&#128172;</a>
+    {%- else -%}
+      <button type="button" class="btn btn-sm js-open-chats" title="{{ chats|length }} Teams chats attached"
+              data-entity-type="{{ entity_type }}" data-entity-id="{{ entity_id }}"
+              data-tcl-name="{{ name }}">&#128172;{{ chats|length }}</button>
+    {%- endif -%}
+  {%- endif -%}
+{%- endmacro %}

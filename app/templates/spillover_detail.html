@@ -91,6 +91,14 @@
 </div>
 
 {# ---- Notes ---- #}
+{# ---- Teams chats (shared registry, referenced not copied) ---- #}
+<div class="btn-row" style="margin-bottom:1rem">
+  <button type="button" class="btn js-open-chats"
+          data-entity-type="spillover" data-entity-id="{{ row.spillover_id }}"
+          data-tcl-name="{{ row.name }}">&#128172; Teams chats</button>
+</div>
+{% include '_teams_chat_links.html' %}
+
 {% with entity_type='spillover', entity_id=row.spillover_id %}
   {% include '_notes_section.html' %}
 {% endwith %}

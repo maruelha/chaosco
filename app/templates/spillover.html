@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import '_macros.html' as ui %}
 {% block title %}Core South Spillover — Test Coordination{% endblock %}
 
 {% block content %}
@@ -232,6 +233,7 @@
           <a href="{{ url_for('spillover_detail', spillover_id=row.spillover_id) }}"
              class="btn btn-sm" style="margin-top:0.3rem;display:block;white-space:nowrap"
              title="Open notes for this item">Notes{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
+          {{ ui.chat_row_button(chats_by_entity.get(row.spillover_id|string), 'spillover', row.spillover_id, row.name or '') }}
         </td>
         <td class="sc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
         <td class="sc-next cell-nextstep" title="{{ (row.next_step or '') | e }}">
@@ -345,6 +347,7 @@
 
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
+{% include '_teams_chat_links.html' %}
 
 {# ---- JavaScript ---- #}
 <script>

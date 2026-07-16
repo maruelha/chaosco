@@ -1,0 +1,164 @@
+{# Teams chat links — drop-in component for any page [USER 2026-07-16].
+
+     {% include '_teams_chat_links.html' %}     (once per page)
+
+   Fully AJAX-driven like _order_details.html — no route/context changes on
+   the including page. An opening button only needs:
+
+     <button type="button" class="btn btn-sm js-open-chats"
+             data-entity-type="<type>" data-entity-id="<id>"
+             data-tcl-name="<dialog subtitle>">💬 Chats</button>
+
+   The dialog lists the chats ATTACHED to that entity (open in Teams · copy
+   link · detach) and attaches more: search the registry, click to attach —
+   or register a new chat inline (name + link OR emails) which attaches it
+   in one go. Registry rows are REFERENCED, never copied; manage them on
+   /teams-chats. Clicks are DELEGATED on document.
+#}
+<dialog id="dlg-chats">
+  <div class="dlg-header">
+    <div class="dlg-title">&#128172; Teams chats</div>
+    <div class="dlg-subtitle" id="tcl-row-name"></div>
+  </div>
+  <div class="dlg-body">
+    <div id="tcl-attached"><em style="color:#999">Loading…</em></div>
+
+    <div style="border-top:1px solid #eee;margin-top:0.8rem;padding-top:0.7rem">
+      <div style="font-size:0.78rem;font-weight:600;color:#555;margin-bottom:0.3rem">Attach a chat</div>
+      <input type="text" id="tcl-search" class="form-control" placeholder="search the registry…"
+             autocomplete="off" style="width:100%;box-sizing:border-box">
+      <div id="tcl-results" style="margin-top:0.4rem"></div>
+    </div>
+
+    <details style="margin-top:0.7rem">
+      <summary style="cursor:pointer;font-size:0.8rem;color:#555">+ New chat (register &amp; attach)</summary>
+      <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.45rem">
+        <input type="text" id="tcl-new-name" class="form-control" placeholder="Name (e.g. PL returns chat)">
+        <input type="text" id="tcl-new-link" class="form-control mono" style="font-size:0.75rem"
+               placeholder="Teams link (⋯ → Copy link) — or leave empty and use emails">
+        <input type="text" id="tcl-new-emails" class="form-control" placeholder="OR member emails, comma-separated">
+        <div>
+          <button type="button" class="btn btn-sm btn-primary" id="tcl-new-save">Save &amp; attach</button>
+          <span id="tcl-new-err" style="color:#c00;font-size:0.78rem;display:none"></span>
+        </div>
+      </div>
+    </details>
+  </div>
+  <div class="dlg-footer">
+    <a href="/teams-chats/" class="btn btn-sm" style="float:left">Manage registry…</a>
+    <button type="button" class="btn" onclick="document.getElementById('dlg-chats').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+if (!window.tclInit) {
+  window.tclInit = true;
+  (function () {
+    const dlg = document.getElementById('dlg-chats');
+    let tclType = null, tclId = null, tclBtn = null, timer = null;
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;');
+    }
+
+    function loadAttached() {
+      fetch(`/teams-chats/refs/${tclType}/${encodeURIComponent(tclId)}`)
+        .then(r => r.json())
+        .then(chats => {
+          const el = document.getElementById('tcl-attached');
+          if (!chats.length) {
+            el.innerHTML = '<em style="color:#999;font-size:0.85rem">No chats attached yet.</em>';
+            return;
+          }
+          el.innerHTML = chats.map(c =>
+            '<div style="display:flex;align-items:center;gap:0.4rem;padding:3px 0">' +
+            `<a href="${esc(c.url)}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;text-align:left">` +
+            (c.kind === 'channel' ? '&#128250; ' : '&#128172; ') + esc(c.name) + ' ↗</a>' +
+            `<button type="button" class="btn btn-sm tcl-copy" data-url="${esc(c.url)}" title="copy link">&#128203;</button>` +
+            `<button type="button" class="btn btn-sm tcl-detach" data-chat="${c.id}" title="detach from this item">✕</button>` +
+            '</div>').join('');
+        });
+    }
+
+    function runSearch() {
+      const q = document.getElementById('tcl-search').value.trim();
+      fetch('/teams-chats/all.json?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(chats => {
+          const el = document.getElementById('tcl-results');
+          if (!chats.length) {
+            el.innerHTML = '<em style="color:#999;font-size:0.82rem">Nothing in the registry' + (q ? ' for “' + esc(q) + '”' : '') + '.</em>';
+            return;
+          }
+          el.innerHTML = '<div style="display:flex;flex-direction:column;gap:3px;max-height:170px;overflow-y:auto">' +
+            chats.map(c =>
+              `<button type="button" class="btn btn-sm tcl-pick" data-chat="${c.id}" style="text-align:left">` +
+              (c.kind === 'channel' ? '&#128250; ' : '&#128172; ') + esc(c.name) +
+              (c.pinned ? ' ⭐' : '') + '</button>').join('') + '</div>';
+        });
+    }
+
+    // delegated open buttons — JS-added rows included
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.js-open-chats');
+      if (!btn) return;
+      tclType = btn.dataset.entityType;
+      tclId = btn.dataset.entityId;
+      tclBtn = btn;
+      document.getElementById('tcl-row-name').textContent = btn.dataset.tclName || '';
+      document.getElementById('tcl-search').value = '';
+      loadAttached();
+      runSearch();
+      dlg.showModal();
+    });
+
+    document.getElementById('tcl-search').addEventListener('input', () => {
+      clearTimeout(timer); timer = setTimeout(runSearch, 250);
+    });
+
+    dlg.addEventListener('click', async e => {
+      const pick = e.target.closest('.tcl-pick');
+      if (pick) {
+        const fd = new FormData();
+        fd.append('chat_id', pick.dataset.chat);
+        await fetch(`/teams-chats/refs/${tclType}/${encodeURIComponent(tclId)}/attach`, { method: 'POST', body: fd });
+        loadAttached();
+        return;
+      }
+      const det = e.target.closest('.tcl-detach');
+      if (det) {
+        const fd = new FormData();
+        fd.append('chat_id', det.dataset.chat);
+        await fetch(`/teams-chats/refs/${tclType}/${encodeURIComponent(tclId)}/detach`, { method: 'POST', body: fd });
+        loadAttached();
+        return;
+      }
+      const cp = e.target.closest('.tcl-copy');
+      if (cp) {
+        navigator.clipboard.writeText(cp.dataset.url).then(() => {
+          cp.textContent = '✓'; setTimeout(() => { cp.innerHTML = '&#128203;'; }, 1200);
+        });
+        return;
+      }
+      if (e.target === dlg) dlg.close();
+    });
+
+    document.getElementById('tcl-new-save').addEventListener('click', async () => {
+      const err = document.getElementById('tcl-new-err');
+      const fd = new FormData();
+      fd.append('name', document.getElementById('tcl-new-name').value.trim());
+      fd.append('link', document.getElementById('tcl-new-link').value.trim());
+      fd.append('emails', document.getElementById('tcl-new-emails').value.trim());
+      const d = await (await fetch('/teams-chats/add', { method: 'POST', body: fd })).json();
+      if (!d.ok) { err.textContent = d.error; err.style.display = ''; return; }
+      err.style.display = 'none';
+      const fd2 = new FormData();
+      fd2.append('chat_id', d.chat.id);
+      await fetch(`/teams-chats/refs/${tclType}/${encodeURIComponent(tclId)}/attach`, { method: 'POST', body: fd2 });
+      ['tcl-new-name', 'tcl-new-link', 'tcl-new-emails'].forEach(i => { document.getElementById(i).value = ''; });
+      loadAttached();
+      runSearch();
+    });
+  }());
+}
+</script>

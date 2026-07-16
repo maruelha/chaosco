@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import '_macros.html' as ui %}
 {% block title %}ECOM Gatekeeper Check — Test Coordination{% endblock %}
 
 {% block content %}
@@ -156,6 +157,7 @@
           <button type="button" class="btn btn-sm js-open-orders" title="order details — the same rows appear on the ECOM board"
                   data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
                   data-od-name="{{ i.jira_key }} — {{ i.summary or '' }}">Orders{% if i.jira_key in docs_s4_jira %}<span class="s4-tick"> ✓</span>{% endif %}</button>
+          {{ ui.chat_row_button(chats_by_entity.get(i.jira_key), 'jira', i.jira_key, i.jira_key ~ ' — ' ~ (i.summary or '')) }}
           <a href="{{ url_for('gatekeeper_ticket_detail', jira_key=i.jira_key) }}"
              class="btn btn-sm">Details{% if jira_note_counts.get(i.jira_key) %} ({{ jira_note_counts[i.jira_key] }}){% endif %}</a>
           <button type="button" class="rt-cbtn" title="description + comments inline" onclick="gkJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
@@ -254,6 +256,7 @@
 {# ---- Order details popup (shared component) ---- #}
 {% include '_order_details.html' %}
 {% include '_next_step_history.html' %}
+{% include '_teams_chat_links.html' %}
 
 <script>
 function gkOrdersCopy() {

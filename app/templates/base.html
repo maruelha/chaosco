@@ -82,6 +82,67 @@
 }());
 </script>
 
+{# ---- Pinned Teams chats floating panel [USER 2026-07-16] ---- #}
+<div id="chats-widget">
+  <div id="chats-panel" class="enh-panel" style="display:none">
+    <div class="enh-panel-header">
+      <strong>💬 Teams chats</strong>
+      <button class="enh-close-btn" id="chats-close">✕</button>
+    </div>
+    <div id="chats-list" class="enh-list"></div>
+    <div style="padding:0.5rem 0.9rem;border-top:1px solid #eee">
+      <a href="/teams-chats/" style="font-size:0.78rem">Manage chats &amp; channels…</a>
+    </div>
+  </div>
+  <button id="chats-toggle" class="enh-toggle-btn" title="Pinned Teams chats — manage on /teams-chats">💬 Chats</button>
+</div>
+
+<script>
+(function () {
+  const toggle = document.getElementById('chats-toggle');
+  const panel  = document.getElementById('chats-panel');
+  const list   = document.getElementById('chats-list');
+  let open = false;
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+  }
+
+  function load() {
+    fetch('/teams-chats/pinned.json')
+      .then(r => r.json())
+      .then(chats => {
+        if (!chats.length) {
+          list.innerHTML = '<em style="color:#999;font-size:0.8rem;padding:0.6rem 0.9rem;display:block">'
+            + 'No pinned chats yet — pin some on the manage page below.</em>';
+          return;
+        }
+        list.innerHTML = chats.map(c =>
+          '<div style="display:flex;align-items:center;gap:0.4rem;padding:3px 0.9rem">' +
+          `<a href="${esc(c.url)}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;text-align:left">` +
+          (c.kind === 'channel' ? '&#128250; ' : '&#128172; ') + esc(c.name) + ' ↗</a>' +
+          `<button type="button" class="btn btn-sm chats-copy" data-url="${esc(c.url)}" title="copy link">&#128203;</button>` +
+          '</div>').join('');
+      });
+  }
+
+  function setOpen(v) {
+    open = v;
+    panel.style.display = v ? 'flex' : 'none';
+    if (v) load();
+  }
+  toggle.addEventListener('click', () => setOpen(!open));
+  document.getElementById('chats-close').addEventListener('click', () => setOpen(false));
+  list.addEventListener('click', e => {
+    const cp = e.target.closest('.chats-copy');
+    if (!cp) return;
+    navigator.clipboard.writeText(cp.dataset.url).then(() => {
+      cp.textContent = '✓'; setTimeout(() => { cp.innerHTML = '&#128203;'; }, 1200);
+    });
+  });
+}());
+</script>
+
 {# ---- Future Enhancements floating panel ---- #}
 <div id="enh-widget">
   <button id="enh-toggle" class="enh-toggle-btn" title="Future Enhancements">

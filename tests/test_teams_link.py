@@ -3,6 +3,7 @@ and the /teams-ping page on a temp DB)."""
 import pytest
 
 from app import database, teams_link
+from app.db import teams_chats as db_tc
 import app.web_teams as web_teams
 from app.web import app
 
@@ -49,6 +50,7 @@ def client(tmp_path, monkeypatch):
     fid = database.add_followup(conn, with_whom="Bernd", topic="B2B retest",
                                 when_next="2026-07-05", group_name=None)
     conn.close()
+    db_tc.init_schema(db_path)   # channels live in teams_chats since 2026-07-16
     monkeypatch.setattr(web_teams, "_db_path", db_path)
     c = app.test_client()
     c.fid = fid
@@ -137,11 +139,13 @@ def test_channels_add_list_delete_roundtrip(client):
     assert r.get_json()["ok"] is True
     chs = client.get("/teams-ping/channels.json").get_json()
     assert [c["name"] for c in chs] == ["DTC O2C Daily"]
-    # stored as a normal link, visible to the links module
+    # since 2026-07-16 stored in the teams_chats registry (kind='channel'),
+    # NOT in the links table anymore
     conn = database.get_connection(client.db_path)
     try:
-        links = database.list_links(conn, tools=["Teams Channel"])
-        assert links[0]["description"] == "DTC O2C Daily"
+        assert database.list_links(conn, tools=["Teams Channel"]) == []
+        rows = db_tc.list_teams_chats(conn)
+        assert rows[0]["name"] == "DTC O2C Daily" and rows[0]["kind"] == "channel"
     finally:
         conn.close()
     assert client.post(f"/teams-ping/channels/{chs[0]['id']}/delete").get_json()["ok"] is True
@@ -154,12 +158,13 @@ def test_channel_add_rejects_non_teams_urls(client):
     assert r.get_json()["ok"] is False
 
 
-def test_channel_delete_refuses_ordinary_links(client):
+def test_channel_delete_refuses_non_channel_entries(client):
     conn = database.get_connection(client.db_path)
     try:
-        link = database.create_link(conn, description="normal bookmark",
-                                    url="https://example.com", area=None,
-                                    tool="Confluence", tags=None)
+        # a CHAT registry row must not be deletable via the channel route
+        chat_id = db_tc.create_teams_chat(conn, "a chat", kind="chat",
+                                          emails="a@x.com")
     finally:
         conn.close()
-    assert client.post(f"/teams-ping/channels/{link['id']}/delete").status_code == 404
+    assert client.post(f"/teams-ping/channels/{chat_id}/delete").status_code == 404
+    assert client.post("/teams-ping/channels/99999/delete").status_code == 404

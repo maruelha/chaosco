@@ -126,6 +126,14 @@
 {% include '_order_details.html' %}
 
 {# ---- Section 3: Notes ---- #}
+{# ---- Teams chats (shared registry; same rows appear on the ECOM board) #}
+<div class="btn-row" style="margin-bottom:1rem">
+  <button type="button" class="btn js-open-chats"
+          data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+          data-tcl-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">&#128172; Teams chats</button>
+</div>
+{% include '_teams_chat_links.html' %}
+
 {% with entity_type='jira', entity_id=issue.jira_key %}
   {% include '_notes_section.html' %}
 {% endwith %}

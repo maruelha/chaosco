@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import '_macros.html' as ui %}
 {% block title %}ECOM — Test Coordination{% endblock %}
 
 {% block content %}
@@ -92,6 +93,7 @@
         <button type="button" class="btn btn-sm js-open-orders"
                 data-entity-type="jira" data-entity-id="{{ r.jira_id }}"
                 data-od-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}">Orders</button>
+        {{ ui.chat_row_button(chats_by_entity.get(r.jira_id), 'jira', r.jira_id, r.jira_id ~ ' — ' ~ (r.testcase_name or '')) }}
         {% if r.jira_id in jira_keys %}
         <button type="button" class="rt-cbtn" title="Jira comments + gatekeeper notes"
                 onclick="ecomJira(this)">Jira {{ (jira_comments.get(r.jira_id, [])|length) + (jira_notes.get(r.jira_id, [])|length) }} ▸</button>
@@ -129,6 +131,7 @@
 </table>
 
 {% include '_order_details.html' %}
+{% include '_teams_chat_links.html' %}
 
 <script>
 function ecomJira(btn) {

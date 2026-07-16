@@ -65,7 +65,8 @@ app/
   database.py       facade over app/db/
   db/               core(schema) defects spillover retail notes planning
                     reference topics entity_links email jira gatekeeper
-                    ecom next_steps order_archive inbox_autofile search
+                    ecom next_steps order_archive inbox_autofile
+                    teams_chats search
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py
@@ -76,7 +77,9 @@ app/
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export
   web_topics.py     Topics card (/topics) — active work: steps, workpad, notes;
                     storage in db/topics.py; teams_link.py/web_teams.py = Teams
-                    ping + channel picker; web_email.py + emailer.py below
+                    ping + channel picker; web_teams_chats.py = Teams chats &
+                    channels registry (/teams-chats, floating 💬 widget,
+                    per-ticket refs); web_email.py + emailer.py below
   emailer.py        email reports via GMX SMTP (creds ONLY in settings.local.yaml);
                     web_email.py = /email-report Blueprint; recipients in db/email.py
   ppt_utils.py / ppt_retail.py / ppt_spillover.py

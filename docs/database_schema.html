@@ -266,6 +266,8 @@
     <li><a href="#attachments">attachments</a></li>
     <li><a href="#order_details">order_details</a></li>
     <li><a href="#order_details_history">order_details_history</a></li>
+    <li><a href="#teams_chats">teams_chats</a></li>
+    <li><a href="#teams_chat_refs">teams_chat_refs</a></li>
     <li><a href="#report_comments">report_comments</a></li>
     <li><a href="#spillover_report_selection">spillover_report_selection</a></li>
     <li><a href="#defect_notes">defect_notes</a> (legacy)</li>
@@ -619,6 +621,62 @@
       <strong>List:</strong> <code>GET /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;/history</code> &nbsp;·&nbsp;
       <strong>Delete batch:</strong> <code>POST /order-details/history/batch/&lt;batch_id&gt;/delete</code> &nbsp;·&nbsp;
       <strong>Storage:</strong> <code>app/db/order_archive.py</code>
+    </div>
+  </div>
+
+  <!-- teams_chats -->
+  <div class="table-card" id="teams_chats">
+    <div class="table-card-header">
+      <span class="tname">teams_chats</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Teams chats &amp; channels registry (2026-07-16). Managed on /teams-chats; pinned rows feed the floating 💬 widget; tickets reference rows via teams_chat_refs. Old "Teams Channel" links rows migrated in at startup.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Display name</td></tr>
+        <tr><td class="col-name">kind</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text"><code>chat</code> (default) · <code>channel</code></td></tr>
+        <tr><td class="col-name">link</td><td class="col-type">TEXT</td><td></td><td class="note-text">Deep link copied from Teams; wins over emails when both set</td></tr>
+        <tr><td class="col-name">emails</td><td class="col-type">TEXT</td><td></td><td class="note-text">Member emails (comma-sep) — deep link built on click via <code>teams_link.build_chat_link</code>. Link OR emails required (app-level rule).</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">pinned</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">DEFAULT 0. 1 = shown in the floating 💬 widget on every page.</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime</td></tr>
+      </tbody>
+    </table>
+    <div class="relations">
+      <strong>Manage:</strong> <code>/teams-chats/</code> (add · &lt;id&gt;/update · &lt;id&gt;/delete — delete also removes all refs) &nbsp;·&nbsp;
+      <strong>Widget:</strong> <code>GET /teams-chats/pinned.json</code> &nbsp;·&nbsp;
+      <strong>Channel picker:</strong> <code>/teams-ping/channels.*</code> reads kind='channel'
+    </div>
+  </div>
+
+  <!-- teams_chat_refs -->
+  <div class="table-card" id="teams_chat_refs">
+    <div class="table-card-header">
+      <span class="tname">teams_chat_refs</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Ticket ↔ chat references — a ticket REFERENCES registry rows (never copies the URL). Multiple chats per ticket allowed.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text"><code>retail</code> · <code>spillover</code> · <code>jira</code> (= gatekeeper ticket + ECOM board, like orders/notes)</td></tr>
+        <tr><td class="col-name">entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">TEXT representation of the parent row's PK / jira key</td></tr>
+        <tr><td class="col-name">chat_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → teams_chats</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO datetime</td></tr>
+      </tbody>
+    </table>
+    <div class="relations">
+      <strong>Unique:</strong> (entity_type, entity_id, chat_id) &nbsp;·&nbsp;
+      <strong>Index:</strong> idx_tc_refs_entity ON (entity_type, entity_id) &nbsp;·&nbsp;
+      <strong>Attach/detach:</strong> <code>POST /teams-chats/refs/&lt;etype&gt;/&lt;eid&gt;/attach|detach</code> (chat_id)
     </div>
   </div>
 

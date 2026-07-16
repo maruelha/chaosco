@@ -48,6 +48,8 @@ def spillover_list():
         options          = database.get_spillover_filter_options(conn)
         docs_s4_ids      = database.get_docs_s4_spillover_ids(conn)
         report_comments  = database.list_report_comments(conn, "spillover")
+        from app.db import teams_chats as db_tc
+        chats_by_entity  = db_tc.chats_by_entity(conn, "spillover")
     finally:
         conn.close()
 
@@ -66,6 +68,7 @@ def spillover_list():
         hidden_statuses=hidden,
         docs_s4_ids=docs_s4_ids,
         report_comments=report_comments,
+        chats_by_entity=chats_by_entity,
     )
 
 
