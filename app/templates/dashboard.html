@@ -6,6 +6,9 @@
   <h1>Dashboard</h1>
 </div>
 
+{# Card order fixed by Marina [USER 2026-07-16]: daily work first (capture,
+   import, the four boards, defects, reports, meetings, tracker), then
+   coordination/reference, then the admin/registry cards, Enhancements last. #}
 <div class="action-grid">
 
   <div class="action-card" style="border-left:3px solid #2b6cb0">
@@ -14,24 +17,42 @@
     <a href="{{ url_for('inbox') }}" class="btn btn-primary">Open Inbox</a>
   </div>
 
-  <div class="action-card" style="border-left:3px solid #16a34a">
-    <h2>Topics {% if active_topics %}<span class="notes-count-badge">{{ active_topics }}</span>{% endif %}</h2>
-    <p>Topics you are actively working on — next steps, notes, and a big formatted workpad per topic.</p>
-    <a href="{{ url_for('topics.topics_list') }}" class="btn btn-primary">Open Topics</a>
-  </div>
-
-  <div class="action-card" style="border-left:3px solid #7c3aed">
-    <h2>Shelf {% if shelf_count %}<span class="notes-count-badge">{{ shelf_count }}</span>{% endif %}</h2>
-    <p>Catch-all store for notes and observations that don't belong to a specific defect or test case yet.</p>
-    <a href="{{ url_for('shelf_list') }}" class="btn">View Shelf</a>
-  </div>
-
   <div class="action-card">
     <h2>Import DTC ROE Tracking</h2>
     <p>Find the newest export, archive it, and upsert all enabled tabs into the database.</p>
     <form method="post" action="{{ url_for('do_import') }}">
       <button type="submit" class="btn btn-primary">Run Import</button>
     </form>
+  </div>
+
+  <div class="action-card">
+    <h2>Core South Spillover</h2>
+    <p>View spillover items and edit importance, next steps, and comment history inline.</p>
+    <a href="{{ url_for('spillover_list') }}" class="btn">View Spillover</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Retail</h2>
+    <p>View all retail test-case items, filter by status or country, and annotate next steps.</p>
+    <a href="{{ url_for('retail_list') }}" class="btn">View Retail</a>
+  </div>
+
+  <div class="action-card">
+    <h2>ECOM Gatekeeper</h2>
+    <p>Pre-handoff sense check for ECOM test cases. Track status, next steps, notes, and orders per case.</p>
+    <a href="{{ url_for('ecom_gatekeeper_list') }}" class="btn">View Gatekeeper</a>
+  </div>
+
+  <div class="action-card">
+    <h2>ECOM</h2>
+    <p>ECOM test cases from the tracking Excel, matched by Jira ID — with read-only Jira details and comments once the XML import runs.</p>
+    <a href="{{ url_for('ecom.ecom_list') }}" class="btn">View ECOM</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Defects</h2>
+    <p>View, search and filter all imported defects.</p>
+    <a href="{{ url_for('defects_list') }}" class="btn">View Defects</a>
   </div>
 
   <div class="action-card" style="border-left:3px solid #0e7490">
@@ -43,33 +64,9 @@
   </div>
 
   <div class="action-card">
-    <h2>Defects</h2>
-    <p>View, search and filter all imported defects.</p>
-    <a href="{{ url_for('defects_list') }}" class="btn">View Defects</a>
-  </div>
-
-  <div class="action-card">
-    <h2>Core South Spillover</h2>
-    <p>View spillover items and edit importance, next steps, and comment history inline.</p>
-    <a href="{{ url_for('spillover_list') }}" class="btn">View Spillover</a>
-  </div>
-
-  <div class="action-card">
-    <h2>ECOM Gatekeeper</h2>
-    <p>Pre-handoff sense check for ECOM test cases. Track status, next steps, notes, and orders per case.</p>
-    <a href="{{ url_for('ecom_gatekeeper_list') }}" class="btn">View Gatekeeper</a>
-  </div>
-
-  <div class="action-card">
-    <h2>Retail</h2>
-    <p>View all retail test-case items, filter by status or country, and annotate next steps.</p>
-    <a href="{{ url_for('retail_list') }}" class="btn">View Retail</a>
-  </div>
-
-  <div class="action-card">
-    <h2>ECOM</h2>
-    <p>ECOM test cases from the tracking Excel, matched by Jira ID — with read-only Jira details and comments once the XML import runs.</p>
-    <a href="{{ url_for('ecom.ecom_list') }}" class="btn">View ECOM</a>
+    <h2>Meeting Prep</h2>
+    <p>Track topics per meeting, filter by meeting, mark items as discussed.</p>
+    <a href="{{ url_for('meeting_prep_list') }}" class="btn">View Meeting Prep</a>
   </div>
 
   <div class="action-card" style="border-left:3px solid #b45309">
@@ -79,16 +76,10 @@
     <a href="{{ url_for('retail_tracker.tracker_home') }}" class="btn">Import &amp; admin</a>
   </div>
 
-  <div class="action-card">
-    <h2>Meeting Prep</h2>
-    <p>Track topics per meeting, filter by meeting, mark items as discussed.</p>
-    <a href="{{ url_for('meeting_prep_list') }}" class="btn">View Meeting Prep</a>
-  </div>
-
-  <div class="action-card">
-    <h2>To-Do</h2>
-    <p>Track tasks with priority, due date, owner, and notes. Filter and close when done.</p>
-    <a href="{{ url_for('todo_list') }}" class="btn">View To-Do</a>
+  <div class="action-card" style="border-left:3px solid #16a34a">
+    <h2>Topics {% if active_topics %}<span class="notes-count-badge">{{ active_topics }}</span>{% endif %}</h2>
+    <p>Topics you are actively working on — next steps, notes, and a big formatted workpad per topic.</p>
+    <a href="{{ url_for('topics.topics_list') }}" class="btn btn-primary">Open Topics</a>
   </div>
 
   <div class="action-card">
@@ -104,21 +95,21 @@
   </div>
 
   <div class="action-card">
-    <h2>Teams Chats</h2>
-    <p>Manage Teams chats &amp; channels — pin the important ones for the floating 💬 widget, attach any to Retail / ECOM / Gatekeeper / Spillover items.</p>
-    <a href="{{ url_for('teams_chats.manage') }}" class="btn">Manage Chats</a>
-  </div>
-
-  <div class="action-card">
-    <h2>Message Types</h2>
-    <p>Reference for the ✉️ issue-message builder — message types with their TIBCO / IIB APIs and comments.</p>
-    <a href="{{ url_for('issue_msg.message_types_page') }}" class="btn">Manage Types</a>
-  </div>
-
-  <div class="action-card">
     <h2>Contacts</h2>
     <p>Contact directory — name, email, area, topic; filterable by area, topic, and tags.</p>
     <a href="{{ url_for('contacts_list') }}" class="btn">View Contacts</a>
+  </div>
+
+  <div class="action-card" style="border-left:3px solid #7c3aed">
+    <h2>Shelf {% if shelf_count %}<span class="notes-count-badge">{{ shelf_count }}</span>{% endif %}</h2>
+    <p>Catch-all store for notes and observations that don't belong to a specific defect or test case yet.</p>
+    <a href="{{ url_for('shelf_list') }}" class="btn">View Shelf</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Encouragements {% if to_deliver %}<span class="notes-count-badge">{{ to_deliver }}</span>{% endif %}</h2>
+    <p>Record what you appreciate about people. Track what has been delivered.</p>
+    <a href="{{ url_for('encouragements_list') }}" class="btn">View Encouragements</a>
   </div>
 
   <div class="action-card">
@@ -128,9 +119,21 @@
   </div>
 
   <div class="action-card">
-    <h2>Encouragements {% if to_deliver %}<span class="notes-count-badge">{{ to_deliver }}</span>{% endif %}</h2>
-    <p>Record what you appreciate about people. Track what has been delivered.</p>
-    <a href="{{ url_for('encouragements_list') }}" class="btn">View Encouragements</a>
+    <h2>To-Do</h2>
+    <p>Track tasks with priority, due date, owner, and notes. Filter and close when done.</p>
+    <a href="{{ url_for('todo_list') }}" class="btn">View To-Do</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Teams Chats</h2>
+    <p>Manage Teams chats &amp; channels — pin the important ones for the floating 💬 widget, attach any to Retail / ECOM / Gatekeeper / Spillover items.</p>
+    <a href="{{ url_for('teams_chats.manage') }}" class="btn">Manage Chats</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Message Types</h2>
+    <p>Reference for the ✉️ issue-message builder — message types with their TIBCO / IIB APIs and comments.</p>
+    <a href="{{ url_for('issue_msg.message_types_page') }}" class="btn">Manage Types</a>
   </div>
 
   <div class="action-card">
