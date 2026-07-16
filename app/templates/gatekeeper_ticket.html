@@ -111,6 +111,20 @@
 
 {% include '_next_step_history.html' %}
 
+{# ---- Section 2b: Order details (authored) — shared with the ECOM board ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Order details</h2>
+    <span class="editable-badge">&#9998; Keyed by the Jira ticket — the ECOM board shows the SAME rows</span>
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn js-open-orders"
+            data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+            data-od-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">Order details</button>
+  </div>
+</div>
+{% include '_order_details.html' %}
+
 {# ---- Section 3: Notes ---- #}
 {% with entity_type='jira', entity_id=issue.jira_key %}
   {% include '_notes_section.html' %}

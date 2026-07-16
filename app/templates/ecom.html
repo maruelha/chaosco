@@ -90,8 +90,8 @@
       <td style="white-space:nowrap">
         <a href="{{ url_for('ecom.ecom_detail', ecom_id=r.ecom_id) }}" class="btn btn-sm">Detail{% if r.note_count %} ({{ r.note_count }}){% endif %}</a>
         <button type="button" class="btn btn-sm js-open-orders"
-                data-entity-type="ecom" data-entity-id="{{ r.ecom_id }}"
-                data-od-name="{{ r.test_case_id }} / {{ r.country }}">Orders</button>
+                data-entity-type="jira" data-entity-id="{{ r.jira_id }}"
+                data-od-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}">Orders</button>
         {% if r.jira_id in jira_keys %}
         <button type="button" class="rt-cbtn" title="Jira comments + gatekeeper notes"
                 onclick="ecomJira(this)">Jira {{ (jira_comments.get(r.jira_id, [])|length) + (jira_notes.get(r.jira_id, [])|length) }} ▸</button>

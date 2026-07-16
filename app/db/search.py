@@ -52,6 +52,11 @@ def search_order_number(conn: sqlite3.Connection, q: str) -> list[dict]:
             row = conn.execute("SELECT test_case_id, country FROM ecom WHERE ecom_id=?",
                                (eid,)).fetchone()
             label = f"{row[0]} / {row[1]}" if row else None
+        elif etype == "jira":
+            # shared gatekeeper/ECOM order rows (addressed by jira key, 2026-07-16)
+            row = conn.execute("SELECT summary FROM jira_issues WHERE jira_key=?",
+                               (eid,)).fetchone()
+            label = f"{eid} — {row[0]}" if row and row[0] else str(eid)
         if label is None:
             continue  # orphaned line — nothing to navigate to
         match = r["order_number"]

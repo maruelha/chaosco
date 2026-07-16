@@ -126,7 +126,7 @@
         <th style="width:7.5rem">Status</th>
         <th style="width:9rem">Assignee</th>
         <th style="width:15rem">Next step</th>
-        <th style="width:11rem"></th>
+        <th style="width:14rem"></th>
       </tr>
     </thead>
     <tbody>
@@ -153,6 +153,9 @@
           <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
                   data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
                   data-ns-label="{{ i.jira_key }} — {{ i.summary or '' }}">🕘</button>
+          <button type="button" class="btn btn-sm js-open-orders" title="order details — the same rows appear on the ECOM board"
+                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
+                  data-od-name="{{ i.jira_key }} — {{ i.summary or '' }}">Orders{% if i.jira_key in docs_s4_jira %}<span class="s4-tick"> ✓</span>{% endif %}</button>
           <a href="{{ url_for('gatekeeper_ticket_detail', jira_key=i.jira_key) }}"
              class="btn btn-sm">Details{% if jira_note_counts.get(i.jira_key) %} ({{ jira_note_counts[i.jira_key] }}){% endif %}</a>
           <button type="button" class="rt-cbtn" title="description + comments inline" onclick="gkJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>

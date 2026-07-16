@@ -204,7 +204,8 @@ def ecom_detail(ecom_id: int):
 
 @bp.route("/<int:ecom_id>/pull-orders", methods=["POST"])
 def ecom_pull_orders(ecom_id: int):
-    """Gatekeeper → ECOM handover: re-point order rows with the same jira id."""
+    """LEGACY — superseded by the shared ('jira', key) order address
+    (2026-07-16); the button was removed, route kept for URL stability."""
     conn = _get_conn()
     try:
         row = db_ecom.get_ecom_by_id(conn, ecom_id)

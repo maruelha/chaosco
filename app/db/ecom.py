@@ -61,8 +61,50 @@ def init_schema(db_path: Path) -> None:
     try:
         conn.executescript(_SCHEMA)
         conn.commit()
+        migrate_order_details_to_jira(conn)
     finally:
         conn.close()
+
+
+def migrate_order_details_to_jira(conn: sqlite3.Connection) -> dict:
+    """One shared order list per Jira ticket [USER 2026-07-16].
+
+    Order rows used to be addressed at the page objects ('ecom', ecom_id /
+    'ecom_gatekeeper', row id), which meant a handover step between the
+    Gatekeeper Check and the ECOM board. Now both read the SAME rows at
+    ('jira', jira_key) — nothing is copied, ever. This re-points existing
+    rows (live table AND archived history batches) wherever a jira id is
+    known; rows without one keep their old address. Idempotent, safe to
+    re-run on every startup; try/except covers a fresh DB where the core
+    tables don't exist yet. Returns {table: rows moved}."""
+    moved: dict[str, int] = {}
+    for table in ("order_details", "order_details_history"):
+        try:
+            with conn:
+                cur_ecom = conn.execute(f"""
+                    UPDATE {table}
+                    SET entity_type = 'jira',
+                        entity_id = (SELECT TRIM(e.jira_id) FROM ecom e
+                                     WHERE CAST(e.ecom_id AS TEXT) = {table}.entity_id)
+                    WHERE entity_type = 'ecom'
+                      AND EXISTS (SELECT 1 FROM ecom e
+                                  WHERE CAST(e.ecom_id AS TEXT) = {table}.entity_id
+                                    AND TRIM(COALESCE(e.jira_id, '')) <> '')
+                """)
+                cur_gk = conn.execute(f"""
+                    UPDATE {table}
+                    SET entity_type = 'jira',
+                        entity_id = (SELECT TRIM(g.jira_id) FROM ecom_gatekeeper g
+                                     WHERE CAST(g.id AS TEXT) = {table}.entity_id)
+                    WHERE entity_type = 'ecom_gatekeeper'
+                      AND EXISTS (SELECT 1 FROM ecom_gatekeeper g
+                                  WHERE CAST(g.id AS TEXT) = {table}.entity_id
+                                    AND TRIM(COALESCE(g.jira_id, '')) <> '')
+                """)
+            moved[table] = cur_ecom.rowcount + cur_gk.rowcount
+        except sqlite3.OperationalError:
+            moved[table] = 0  # table not created yet (fresh DB, partial init)
+    return moved
 
 
 _ECOM_MUTABLE = [
@@ -233,10 +275,12 @@ def get_ecom_defects_impacted(conn: sqlite3.Connection,
 
 def relink_gatekeeper_orders(conn: sqlite3.Connection, jira_id: str,
                              ecom_id: int) -> int:
-    """Gatekeeper → ECOM handover (day plan step 8): re-point order_details
-    rows of old-gatekeeper rows with the SAME jira id at this ECOM row.
-    Nothing is copied — the rows just change address. The shared jira store
-    needs no relink at all (both sides read it by jira_key). Returns # moved."""
+    """LEGACY (superseded 2026-07-16 by migrate_order_details_to_jira +
+    the shared ('jira', jira_key) order address — no handover step exists
+    anymore; the UI button is gone, the route is kept for URL stability).
+
+    Original behaviour (day plan step 8): re-point order_details rows of
+    old-gatekeeper rows with the SAME jira id at this ECOM row. Returns # moved."""
     with conn:
         cur = conn.execute("""
             UPDATE order_details

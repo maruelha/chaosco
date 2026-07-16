@@ -22,6 +22,7 @@ def ecom_gatekeeper_list():
     try:
         rows = database.list_ecom_gatekeeper_rows(conn)
         docs_s4_ids = database.get_docs_s4_entity_ids(conn, "ecom_gatekeeper")
+        docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
         from app.db import jira as db_jira   # direct import (facade-order safe)
         from app.db import gatekeeper as db_gk
         jira_issues = db_jira.list_jira_issues(conn, seen_in="gatekeeper")
@@ -66,6 +67,7 @@ def ecom_gatekeeper_list():
                    for i in jira_issues}
     return render_template("ecom_gatekeeper.html", rows=rows,
                            docs_s4_ids=docs_s4_ids,
+                           docs_s4_jira=docs_s4_jira,
                            jira_issues=jira_issues, jira_comments=jira_comments,
                            gk_sections=gk_sections,
                            in_validation_count=in_validation_count,

@@ -702,12 +702,15 @@ def update_order_detail(
 
 def get_docs_s4_entity_ids(conn: sqlite3.Connection, entity_type: str) -> set:
     """Entity ids (of one type) that have at least one order row with docs-in-S4
-    — drives the green ✓ on the Order-details button at page load."""
+    — drives the green ✓ on the Order-details button at page load.
+    Numeric ids come back as int (spillover, ecom_gatekeeper); non-numeric
+    ones as str (jira keys, since orders moved to the jira address 2026-07-16)."""
     cur = conn.execute(
         "SELECT DISTINCT entity_id FROM order_details"
         " WHERE entity_type = ? AND docs_in_s4 = 1", (entity_type,)
     )
-    return {int(row[0]) for row in cur.fetchall()}
+    return {int(row[0]) if str(row[0]).isdigit() else row[0]
+            for row in cur.fetchall()}
 
 
 def get_docs_s4_spillover_ids(conn: sqlite3.Connection) -> set:

@@ -32,6 +32,8 @@ def _url_for_hit(hit_type: str, hit_id) -> str | None:
             return url_for("ecom_gatekeeper_detail", row_id=hit_id)
         if hit_type == "ecom":
             return url_for("ecom.ecom_detail", ecom_id=hit_id)
+        if hit_type == "jira":
+            return url_for("gatekeeper_ticket_detail", jira_key=hit_id)
         if hit_type == "retail":
             return url_for("retail_detail", retail_id=hit_id)
         if hit_type == "defect":

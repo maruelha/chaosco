@@ -149,23 +149,17 @@
   </form>
 </div>
 
-{# ---- Section 4: Orders ---- #}
+{# ---- Section 4: Orders — shared with the Gatekeeper Check (keyed by the
+      Jira ticket since 2026-07-16, so no handover/copy step anymore) ---- #}
 <div class="detail-card">
   <div class="card-header-row">
     <h2>Orders</h2>
+    <span class="editable-badge">&#9998; Keyed by the Jira ticket — the Gatekeeper Check shows the SAME rows</span>
   </div>
-  {% if orders_moved is not none %}
-  <div class="saved-banner">&#10003;&nbsp; {{ orders_moved }} order line(s) taken over from the Gatekeeper.</div>
-  {% endif %}
   <div class="btn-row">
     <button type="button" class="btn js-open-orders"
-            data-entity-type="ecom" data-entity-id="{{ row.ecom_id }}"
-            data-od-name="{{ row.test_case_id }} / {{ row.country }}">Order details</button>
-    <form method="post" action="{{ url_for('ecom.ecom_pull_orders', ecom_id=row.ecom_id) }}">
-      <button type="submit" class="btn"
-              title="re-point order lines of old Gatekeeper rows with the same Jira ID at this test case (nothing is copied)">
-        &#8631; Take over orders from Gatekeeper</button>
-    </form>
+            data-entity-type="jira" data-entity-id="{{ row.jira_id }}"
+            data-od-name="{{ row.jira_id }} — {{ row.test_case_id }} / {{ row.country }}">Order details</button>
   </div>
 </div>
 
