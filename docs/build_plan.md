@@ -8,7 +8,7 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-07-05
+Last updated: 2026-07-14
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
@@ -127,6 +127,71 @@ Last updated: 2026-07-05
    section vs both. Reuses the Links storage (tool = "Teams Channel") and
    the AJAX component pattern; NO walkthrough automation (decided
    2026-07-06).
+
+### Topic dossiers / focus-switch view (DISCUSSION NOTES 2026-07-14 — not yet a build plan)
+
+Captured from the planning discussion with Marina; open questions below must
+be answered before anything is built.
+
+**Core insight [USER]:** the expensive part of the day is the FOCUS SWITCH —
+"when I go to a topic I want to at a glance see what happened and what needs
+to happen next." Copying items in as she goes is fine ("cool to have
+everything in one space"); the missing payoff is the consolidated per-topic
+view, not a capture tool. (The original "alternative snipping tool" idea is
+superseded by this.)
+
+**Hard constraints [USER]:**
+- Nothing leaves the computer — no cloud services, no external AI APIs.
+  Any OCR/embedding/parsing must run locally.
+- No Jira API (or Teams read/API) without OFFICIAL confirmation first —
+  "important to do everything correctly." Jira API + Teams read access
+  should go into ONE approval request; Claude offered to draft the scope
+  text. Playwright-scraping Teams as an approval workaround: REJECTED
+  (compliance + the Teams web client is automation-hostile).
+- Second computer reaches neither Jira nor chaosco; Teams stays the
+  transfer channel from there.
+
+**Target shape — topic dossier page:** a topic is a BUNDLE (discussion-
+shaped, not ticket-shaped: emails, long conversations, meeting fragments +
+linked tickets/test cases/defects accumulating over weeks):
+1. "Next" headline on top (reuse the next-step + history component).
+2. Merged timeline, newest first, across ALL sources: notes, filed Teams
+   snippets, Jira status/comments, Excel status changes, order logs.
+3. Two entry kinds: short EVENTS shown in full; long DOCUMENTS (email
+   threads, chat discussions, minutes) collapsed to one gist line —
+   date, source, gist — expandable to full text.
+4. Linked entities' status changes flow in automatically (entity_links
+   table + Topics module exist as seeds).
+
+**Inputs:** paste-as-you-go (~30 items/day, auto-routing by known
+identifiers — jira keys, order numbers, test case ids — with auto-file on
+a single confident match + review list); emails via .eml/.msg text
+extraction (stdlib/extract-msg, local); meeting minutes LATER [USER
+2026-07-14: "ideally at some point"] — docling (local) is the candidate
+parser if minutes/PDF/DOCX volume materialises, overkill for pasted text.
+
+**Search (load-bearing, decided direction):**
+1. FTS5 full-text over notes/documents/emails first — free, local, exact
+   for identifier-rich queries.
+2. Local SEMANTIC layer as a PLANNED second step — [USER 2026-07-14]: "I
+   would be searching with different words because I am just coordinating,
+   not a topic expert" — the vocabulary-gap case is exactly where
+   embeddings help. Local-only (e.g. small sentence-transformers model +
+   sqlite-vec); NO cloud embedding APIs. Supersedes the earlier
+   "vectorize only if FTS proves insufficient" lean for topic content.
+
+**Outbound:** compose day-close/report text in-app, deliver via prefilled
+Teams deep links (teams_link.py mechanism exists) — Marina reviews and
+presses send herself. Day-close cockpit (SAP-checks pending → Jira
+round-trip → reports) as a later phase.
+
+**OPEN [USER — decide when fresh]:**
+1. Gist line on long documents: typed by Marina at paste time vs
+   auto-first-sentence + edit (Claude's lean: auto + edit; discipline
+   requirements kill tools).
+2. Is the existing Topics card the seed of the dossier, or unused — and if
+   unused, why? (Decides upgrade-in-place vs rethink.)
+3. Approval request for Jira API + Teams read: does Marina want the draft?
 
 ### Reports / Export (dashboard "Export Reports" button)
 
