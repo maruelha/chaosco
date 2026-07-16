@@ -258,12 +258,15 @@ def test_jira_ticket_detail_next_step_and_notes(client, monkeypatch):
     assert client.get("/ecom-gatekeeper/ticket/NOPE-1").status_code == 404
 
 
-def test_sales_report_v1(client, monkeypatch):
-    """[USER 2026-07-12] Sales report: all tickets assigned to me, grouped
-    in-gatekeeping / in-validation, next steps + orders + call-outs."""
+def test_sales_report_v2(client, monkeypatch):
+    """[USER 2026-07-16] Sales report v2: three sections — With Sales
+    (tracked + not assigned to me), With Marina (assigned + marina
+    statuses), With MB (assigned + other statuses) — epic link column,
+    🎉 on passed tickets, call-outs unchanged."""
+    import re
     import app.web_reports as web_reports
     monkeypatch.setattr(web_reports, "_get_conn", web_reference._get_conn)
-    client.post("/ecom-gatekeeper/import-jira")
+    client.post("/ecom-gatekeeper/import-jira")     # S4ECOM-1492, status Blocked
 
     conn = web_reference._get_conn()
     try:
@@ -273,25 +276,59 @@ def test_sales_report_v1(client, monkeypatch):
         db_gk.init_schema(db_path)
         db_gk.set_gatekeeper_next_step(conn, "S4ECOM-1492", "chase delivery note")
         with conn:
-            # a second ticket in validation + one NOT assigned to me
-            conn.execute("INSERT INTO jira_issues (jira_key, summary, solman_id,"
-                         " jira_status, jira_assignee, markets, seen_in_gatekeeper,"
-                         " first_seen, last_seen) VALUES"
-                         " ('S4ECOM-9', 'validating', 'SM9', 'In Validation',"
-                         "  'Haase, Marina [External]', 'EMEA - DE', 1, 'd', 'd'),"
-                         " ('S4ECOM-8', 'not mine', 'SM8', 'Open',"
-                         "  'Sales Person', '', 1, 'd', 'd')")
+            conn.execute(
+                "INSERT INTO jira_issues (jira_key, summary, solman_id,"
+                " jira_status, jira_assignee, reporter, markets, epic, link,"
+                " seen_in_gatekeeper, first_seen, last_seen) VALUES"
+                " ('S4ECOM-7', 'active one', 'SM7', 'In Progress',"
+                "  'Haase, Marina [External]', 'Phalk', 'DE', 'S4ECOM-100',"
+                "  'https://jira.example.com/browse/S4ECOM-7', 1, 'd', 'd'),"
+                " ('S4ECOM-6', 'finished one', 'SM6', 'Done',"
+                "  'Haase, Marina [External]', 'Calvin', 'DE', '', '', 1, 'd', 'd'),"
+                " ('S4ECOM-8', 'handed back', 'SM8', 'Open',"
+                "  'Sales Person', 'Phalk', '', '', '', 1, 'd', 'd')")
+            # scenario comes from the matching ECOM board row (by jira key)
+            conn.execute(
+                "INSERT INTO ecom (match_key, jira_id, testcase_scenario,"
+                " test_case_id, country, first_seen, last_seen)"
+                " VALUES ('mk7', 'S4ECOM-7', 'CANCELLATION', 'T7', 'DE', 'd', 'd')")
     finally:
         conn.close()
 
     html = client.get("/ecom-gatekeeper/sales-report").get_data(as_text=True)
     assert "ECOM Sales Report" in html
-    gk_sec = html.split("In gatekeeping")[1].split("In validation with MB")[0]
-    val_sec = html.split("In validation with MB")[1]
-    assert "S4ECOM-1492" in gk_sec and "chase delivery note" in gk_sec
-    assert "TBY_DC_ANLA1O8PUR" in gk_sec          # order numbers from AC
-    assert "S4ECOM-9" in val_sec
-    assert "S4ECOM-8" not in html                  # not assigned to me -> excluded
+    assert "S4ECOM-8" not in html                  # handed back, NOT tracked yet
+    marina_sec = html.split("With Marina")[1].split("With MB")[0]
+    mb_sec = html.split("With MB")[1]
+    assert "S4ECOM-7" in marina_sec                # In Progress -> With Marina
+    # epic rendered as a link built from the ticket's own browse link
+    assert 'href="https://jira.example.com/browse/S4ECOM-100"' in marina_sec
+    # scenario (from the ECOM board row) + reporter shown; filter/sort hooks
+    assert "CANCELLATION" in marina_sec and "Phalk" in marina_sec
+    assert 'data-reporter="phalk"' in marina_sec
+    assert 'data-scenario="cancellation"' in marina_sec
+    assert 'id="rf-reporter"' in html and 'id="rf-scenario"' in html
+    assert '<option value="calvin">Calvin</option>' in html
+    assert "S4ECOM-1492" in mb_sec                 # Blocked -> With MB
+    assert "chase delivery note" in mb_sec
+    assert "TBY_DC_ANLA1O8PUR" in mb_sec           # order numbers from AC
+    assert "S4ECOM-6" in mb_sec and "🎉" in mb_sec  # Done -> passed icon
+
+    # track the handed-back ticket -> appears under "With Sales"
+    assert client.post("/ecom-gatekeeper/ticket/S4ECOM-8/track-sales",
+                       data={"track": "1"}).get_json() == {"ok": True, "track": 1}
+    html = client.get("/ecom-gatekeeper/sales-report").get_data(as_text=True)
+    sales_sec = html.split("With Sales")[1].split("With Marina")[0]
+    assert "S4ECOM-8" in sales_sec
+    # a tracked ticket still assigned to me stays in ITS section, not Sales
+    client.post("/ecom-gatekeeper/ticket/S4ECOM-7/track-sales", data={"track": "1"})
+    html = client.get("/ecom-gatekeeper/sales-report").get_data(as_text=True)
+    assert "S4ECOM-7" not in html.split("With Sales")[1].split("With Marina")[0]
+
+    # the 📣 checkbox renders (checked) on the gatekeeper board
+    html = client.get("/ecom-gatekeeper").get_data(as_text=True)
+    assert re.search(r'js-track-sales" data-key="S4ECOM-1492"', html)
+    assert re.search(r'js-track-sales" data-key="S4ECOM-7"\s+checked', html)
 
     # call-outs use the 'sales' report key
     d = client.post("/report-comments/sales/add",

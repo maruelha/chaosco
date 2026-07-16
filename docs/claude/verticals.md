@@ -96,14 +96,31 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   AUTHORED inline next step (blur-save,
   `POST /ecom-gatekeeper/ticket/<key>/next-step`) with ↻/🕘 archive
   buttons, Details link (with note count), inline comments expander.
-- ECOM Sales report v1 `/ecom-gatekeeper/sales-report` [USER 2026-07-12]
-  (button on the gatekeeper page): standalone print-ready page like the
-  spillover reports — ALL tickets currently assigned to Marina, grouped
-  In gatekeeping (rust) / In validation with MB (blue); columns # · Jira
-  ID (·E = on the board) · Solman ID · Summary · Status · Market · Order
-  numbers (extracted) · Next step. Editable 📣 call-out bullets on top
-  (report_comments key 'sales'; blank/empty hidden in print). Print (A4
-  landscape) + Download HTML. Layout iterations later.
+- ECOM Sales report v2 `/ecom-gatekeeper/sales-report` [USER 2026-07-16,
+  v1 layout deliberately KEPT — "I like it better"] (button on the
+  gatekeeper page): standalone print-ready page, THREE sections —
+  **With Sales** (green: `track_sales` ticked AND no longer assigned to
+  Marina), **With Marina** (rust: assigned + status in
+  `jira_marina_statuses`, default In Progress / Ready for Verification /
+  In Verification), **With MB** (blue: assigned + any other status).
+  Columns # · Jira ID (·E = on the board) · **Epic link** (browse URL
+  built from the ticket's own link with the key swapped; plain text when
+  the epic field is not a key; replaced Solman ID) · Summary (**🎉** in
+  front when status ∈ `jira_passed_statuses` — default Done/Closed — or
+  starts with "Passed") · **Scenario** (from the matching ECOM board row
+  by jira key; "—" off-board) · Status · **Reporter** · Market · Order
+  numbers (extracted) · Next step. **Filter bar** (screen-only, the
+  filtered state is what prints): Reporter / Status / Scenario dropdowns,
+  AND-combined, per-section "x of y" counts + Clear; **column-header
+  sorting** per table (click to flip). All client-side — rows carry
+  data-reporter/-status/-scenario. The **📣 track-sales checkbox** sits on EVERY jira row of
+  the Gatekeeper AND ECOM boards (AJAX
+  `POST /ecom-gatekeeper/ticket/<key>/track-sales`; stored
+  `gatekeeper_annotations.track_sales`, survives the handover) — tickable
+  proactively on tickets still with Marina/MB so nothing is lost when
+  reassigned; it only takes effect on the report once un-assigned.
+  Editable 📣 call-out bullets on top (report_comments key 'sales';
+  blank/empty hidden in print). Print (A4 landscape) + Download HTML.
 - Ticket detail page `/ecom-gatekeeper/ticket/<jira_key>`
   (`gatekeeper_ticket.html`): Jira card (status/assignee/epic/markets,
   open-in-Jira, extracted order numbers + source, acceptance criteria,

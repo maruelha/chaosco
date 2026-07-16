@@ -31,6 +31,7 @@ def ecom_gatekeeper_list():
         jira_comments = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                          for i in jira_issues}
         gk_next_steps = db_gk.get_gatekeeper_next_steps(conn)
+        track_sales_keys = db_gk.get_track_sales_keys(conn)
         jira_note_counts = {i["jira_key"]: len(database.list_notes(conn, "jira", i["jira_key"]))
                             for i in jira_issues}
         board_keys = {k.strip().lower() for (k,) in conn.execute(
@@ -77,18 +78,39 @@ def ecom_gatekeeper_list():
                            validation_lost=validation_lost,
                            jira_orders=jira_orders,
                            gk_next_steps=gk_next_steps,
+                           track_sales_keys=track_sales_keys,
                            jira_note_counts=jira_note_counts,
                            jira_ok=request.args.get("jira_ok"),
                            jira_msg=request.args.get("jira_msg"))
 
 
+_EPIC_KEY_RE = None  # compiled lazily in _epic_link
+
+
+def _epic_link(issue: dict) -> str | None:
+    """Browse link for the ticket's epic — built from the ticket's own link
+    with the key swapped; None when the epic field is not a Jira key."""
+    global _EPIC_KEY_RE
+    import re
+    if _EPIC_KEY_RE is None:
+        _EPIC_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]+-\d+$")
+    epic = (issue.get("epic") or "").strip()
+    link = (issue.get("link") or "").strip()
+    key = (issue.get("jira_key") or "").strip()
+    if epic and link and key and _EPIC_KEY_RE.match(epic) and key in link:
+        return link.replace(key, epic)
+    return None
+
+
 @app.route("/ecom-gatekeeper/sales-report")
 def gatekeeper_sales_report():
-    """ECOM Sales report v1 [USER 2026-07-12]: every jira ticket currently
-    ASSIGNED TO ME (across both boards), grouped in-gatekeeping vs
-    in-validation, with next steps + extracted order numbers + editable
-    call-out bullets (report_comments key 'sales'). Standalone print-ready
-    page like the spillover reports; layout iterations later."""
+    """ECOM Sales report v2 [USER 2026-07-16]: THREE sections — "With Sales"
+    (ticked track_sales checkbox AND no longer assigned to Marina), "With
+    Marina" (assigned + status in jira_marina_statuses), "With MB" (assigned
+    + any other status). Epic link column instead of SolMan ID; 🎉 on passed
+    tickets (jira_passed_statuses). Layout kept from v1 [USER: "I like it
+    better"] — next steps, extracted order numbers, editable call-outs
+    (report_comments key 'sales'), print-ready."""
     from datetime import date
     from app.db import gatekeeper as db_gk
     from app.db import jira as db_jira
@@ -99,30 +121,66 @@ def gatekeeper_sales_report():
         comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                         for i in issues}
         next_steps = db_gk.get_gatekeeper_next_steps(conn)
+        tracked = db_gk.get_track_sales_keys(conn)
         report_comments = database.list_report_comments(conn, "sales")
         board_keys = {k.strip().lower() for (k,) in conn.execute(
             "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
+        # scenario per jira key from the ECOM board rows (tickets not on the
+        # board have none) — feeds the new Scenario column + filter
+        scenario_map: dict = {}
+        for jira_id, scen in conn.execute(
+                "SELECT jira_id, testcase_scenario FROM ecom"
+                " WHERE TRIM(COALESCE(jira_id,'')) <> ''"):
+            if (scen or "").strip():
+                scenario_map.setdefault(jira_id.strip().lower(), set()).add(scen.strip())
     finally:
         conn.close()
 
     me = (_cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
-    validation = {s.strip().lower()
-                  for s in _cfg.get("jira_validation_statuses", ["In Validation"])}
-    mine = [i for i in issues
-            if me and me in (i.get("jira_assignee") or "").lower()]
-    for i in mine:
-        i["in_validation"] = (i.get("jira_status") or "").strip().lower() in validation
+    marina_statuses = {s.strip().lower() for s in _cfg.get(
+        "jira_marina_statuses",
+        ["In Progress", "Ready for Verification", "In Verification"])}
+    passed_statuses = {s.strip().lower() for s in _cfg.get(
+        "jira_passed_statuses", ["Done", "Closed"])}
+
+    def _mine(i):
+        return me and me in (i.get("jira_assignee") or "").lower()
+
+    def _status(i):
+        return (i.get("jira_status") or "").strip().lower()
+
+    with_sales  = [i for i in issues if i["jira_key"] in tracked and not _mine(i)]
+    with_marina = [i for i in issues if _mine(i) and _status(i) in marina_statuses]
+    with_mb     = [i for i in issues if _mine(i) and _status(i) not in marina_statuses]
+
+    shown = with_sales + with_marina + with_mb
+    for i in shown:
         i["on_board"] = i["jira_key"].strip().lower() in board_keys
         i["next_step"] = next_steps.get(i["jira_key"])
         i["orders"] = extract_order_numbers(i.get("acceptance_criteria"),
                                             comments_map[i["jira_key"]])["orders"]
+        i["epic_link"] = _epic_link(i)
+        i["passed"] = _status(i) in passed_statuses or _status(i).startswith("passed")
+        i["scenario"] = " / ".join(sorted(
+            scenario_map.get(i["jira_key"].strip().lower(), set())))
     sections = [
-        ("In gatekeeping", [i for i in mine if not i["in_validation"]]),
-        ("In validation with MB", [i for i in mine if i["in_validation"]]),
+        ("With Sales", "sec-sales", with_sales),
+        ("With Marina", "sec-gk", with_marina),
+        ("With MB", "sec-val", with_mb),
     ]
+    # filter dropdown options [USER 2026-07-16]: reporter / status / scenario
+    filter_options = {
+        "reporters": sorted({(i.get("reporter") or "").strip()
+                             for i in shown if (i.get("reporter") or "").strip()}),
+        "statuses": sorted({(i.get("jira_status") or "").strip()
+                            for i in shown if (i.get("jira_status") or "").strip()}),
+        "scenarios": sorted({i["scenario"] for i in shown if i["scenario"]}),
+    }
     return render_template(
         "gatekeeper_sales_report.html",
-        sections=sections, total=len(mine),
+        sections=sections,
+        total=len(shown),
+        filter_options=filter_options,
         report_comments=report_comments,
         today=date.today().strftime("%Y-%m-%d"),
     )
@@ -139,6 +197,21 @@ def gatekeeper_ticket_next_step(jira_key: str):
     finally:
         database_conn.close()
     return jsonify({"ok": True})
+
+
+@app.route("/ecom-gatekeeper/ticket/<jira_key>/track-sales", methods=["POST"])
+def gatekeeper_ticket_track_sales(jira_key: str):
+    """AJAX toggle of the 'track on Sales report' checkbox [USER 2026-07-16]
+    — tickable on ANY ticket (both views); shows under 'With Sales' on the
+    report once the ticket is no longer assigned to Marina."""
+    from app.db import gatekeeper as db_gk
+    track = 1 if request.form.get("track") == "1" else 0
+    conn = _get_conn()
+    try:
+        db_gk.set_track_sales(conn, jira_key, track)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "track": track})
 
 
 @app.route("/ecom-gatekeeper/ticket/<jira_key>", methods=["GET", "POST"])

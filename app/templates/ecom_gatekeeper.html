@@ -127,6 +127,7 @@
         <th style="width:7.5rem">Status</th>
         <th style="width:9rem">Assignee</th>
         <th style="width:15rem">Next step</th>
+        <th style="width:2.4rem;text-align:center" title="track on Sales report — shows under 'With Sales' once no longer assigned to Marina">📣</th>
         <th style="width:14rem"></th>
       </tr>
     </thead>
@@ -146,6 +147,11 @@
           <input type="text" class="rt-comment gk-jns" data-key="{{ i.jira_key }}"
                  value="{{ gk_next_steps.get(i.jira_key, '') }}"
                  placeholder="next step…" onblur="gkJnsSave(this)">
+        </td>
+        <td style="text-align:center">
+          <input type="checkbox" class="js-track-sales" data-key="{{ i.jira_key }}"
+                 {% if i.jira_key in track_sales_keys %}checked{% endif %}
+                 title="track on Sales report" style="width:1rem;height:1rem;cursor:pointer;accent-color:#14532d">
         </td>
         <td style="white-space:nowrap; text-align:right">
           <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
@@ -167,7 +173,7 @@
         </td>
       </tr>
       <tr class="gk-jira-detail" style="display:none">
-        <td colspan="7" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="8" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -385,6 +391,18 @@ function gkJnsSave(input) {
     attachRowHandlers(tr);
     tr.querySelector('.gk-input').focus();
   });
+
+  // ---- 📣 track-on-Sales-report toggle (delegated; also used on /ecom) ----
+  if (!window.tsInit) {
+    window.tsInit = true;
+    document.addEventListener('change', e => {
+      const cb = e.target.closest('.js-track-sales');
+      if (!cb) return;
+      const body = new URLSearchParams({ track: cb.checked ? '1' : '0' });
+      fetch('/ecom-gatekeeper/ticket/' + encodeURIComponent(cb.dataset.key) + '/track-sales',
+            { method: 'POST', body });
+    });
+  }
 
   // Order-details dialog lives in _order_details.html (shared component).
 }());

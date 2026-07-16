@@ -70,6 +70,7 @@
       <th title="live from the Jira store">Jira assignee</th>
       <th title="row exists in the shared Jira store">Jira</th>
       <th title="description changed marker from the Excel">Δ Desc</th>
+      <th style="text-align:center" title="track on Sales report — shows under 'With Sales' once no longer assigned to Marina">📣</th>
       <th></th>
     </tr>
   </thead>
@@ -88,6 +89,11 @@
       <td>{% if r.jira_id in jira_keys %}<span class="pill pill--green" title="Jira details + comments available">&#10003;</span>
           {% else %}<span style="color:#c5c5cc" title="not in the Jira store yet">·</span>{% endif %}</td>
       <td>{% if r.description_change %}<span class="pill pill--gray" title="{{ r.description_change }}">Δ</span>{% endif %}</td>
+      <td style="text-align:center">
+        <input type="checkbox" class="js-track-sales" data-key="{{ r.jira_id }}"
+               {% if r.jira_id in track_sales_keys %}checked{% endif %}
+               title="track on Sales report" style="width:1rem;height:1rem;cursor:pointer;accent-color:#14532d">
+      </td>
       <td style="white-space:nowrap">
         <a href="{{ url_for('ecom.ecom_detail', ecom_id=r.ecom_id) }}" class="btn btn-sm">Detail{% if r.note_count %} ({{ r.note_count }}){% endif %}</a>
         <button type="button" class="btn btn-sm js-open-orders"
@@ -105,7 +111,7 @@
     </tr>
     {% if r.jira_id in jira_keys %}
     <tr class="ecom-jira-detail" style="display:none">
-      <td colspan="12" style="background:#fafafa; padding:0.6rem 1rem">
+      <td colspan="13" style="background:#fafafa; padding:0.6rem 1rem">
         <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Jira comments ({{ jira_comments.get(r.jira_id, [])|length }})</div>
         {% for c in jira_comments.get(r.jira_id, []) %}
         <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
@@ -128,7 +134,7 @@
     </tr>
     {% endif %}
     {% else %}
-    <tr><td colspan="12" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
+    <tr><td colspan="13" class="table-empty">No ECOM rows — run the import on the dashboard first.</td></tr>
     {% endfor %}
   </tbody>
 </table>
@@ -138,6 +144,18 @@
 {% include '_issue_message.html' %}
 
 <script>
+// ---- 📣 track-on-Sales-report toggle (delegated; same handler as gatekeeper) ----
+if (!window.tsInit) {
+  window.tsInit = true;
+  document.addEventListener('change', e => {
+    const cb = e.target.closest('.js-track-sales');
+    if (!cb) return;
+    const body = new URLSearchParams({ track: cb.checked ? '1' : '0' });
+    fetch('/ecom-gatekeeper/ticket/' + encodeURIComponent(cb.dataset.key) + '/track-sales',
+          { method: 'POST', body });
+  });
+}
+
 function ecomJira(btn) {
   const detail = btn.closest("tr").nextElementSibling;
   const open = detail.style.display !== "none";

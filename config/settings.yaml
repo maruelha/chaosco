@@ -127,6 +127,19 @@ jira_gatekeeper_assignee: 'Haase, Marina'
 jira_validation_statuses:
   - 'In Validation'
 
+# Sales report v2 (2026-07-16): "With Marina" = assigned to Marina AND
+# status in this list; any OTHER status on her tickets lands "With MB".
+jira_marina_statuses:
+  - 'In Progress'
+  - 'Ready for Verification'
+  - 'In Verification'
+
+# Jira statuses that count as passed on the Sales report (🎉 icon);
+# statuses starting with "Passed" always count too.
+jira_passed_statuses:
+  - 'Done'
+  - 'Closed'
+
 # Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
 # (gitignored) — never here:
 #   email_user: 'you@gmx.de'

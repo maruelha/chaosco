@@ -260,6 +260,7 @@
     <li><a href="#defect_annotations">defect_annotations</a></li>
     <li><a href="#spillover_annotations">spillover_annotations</a></li>
     <li><a href="#retail_annotations">retail_annotations</a></li>
+    <li><a href="#gatekeeper_annotations">gatekeeper_annotations</a></li>
 
     <li class="group-label">Shared / System</li>
     <li><a href="#notes">notes</a></li>
@@ -495,6 +496,27 @@
       </tbody>
     </table>
     <div class="relations"><strong>Relation:</strong> retail_annotations.retail_id → retail.retail_id (1 : 0..1)</div>
+  </div>
+
+  <!-- gatekeeper_annotations -->
+  <div class="table-card" id="gatekeeper_annotations">
+    <div class="table-card-header">
+      <span class="tname">gatekeeper_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Gatekeeper v2 working fields per JIRA TICKET (2026-07-11) — keyed by jira_key, so they survive the gatekeeper → ECOM handover. Never touched by imports.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → jira_issues</span></td><td></td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Authored inline next step (blur-save; ↻/🕘 next-step archive, entity <code>jira</code>)</td></tr>
+        <tr><td class="col-name">track_sales</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">DEFAULT 0 (2026-07-16). 📣 checkbox on both boards; ticked tickets show under "With Sales" on the Sales report once no longer assigned to Marina.</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Toggle:</strong> <code>POST /ecom-gatekeeper/ticket/&lt;jira_key&gt;/track-sales</code> &nbsp;·&nbsp; <strong>Next step:</strong> <code>POST /ecom-gatekeeper/ticket/&lt;jira_key&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/gatekeeper.py</code></div>
   </div>
 </div>
 

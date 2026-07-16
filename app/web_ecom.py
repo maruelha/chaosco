@@ -48,6 +48,8 @@ def ecom_list():
         jira_keys = set(jira_info)
         from app.db import teams_chats as db_tc
         chats_by_entity = db_tc.chats_by_entity(conn, "jira")
+        from app.db import gatekeeper as db_gk
+        track_sales_keys = db_gk.get_track_sales_keys(conn)
         # per-row expander [USER 2026-07-12]: jira comments + the notes made
         # on the gatekeeper side (entity 'jira' — same key, shared history)
         jira_comments = {r["jira_id"]: db_jira.list_jira_comments(conn, r["jira_id"])
@@ -59,6 +61,7 @@ def ecom_list():
     return render_template(
         "ecom.html", rows=rows, distincts=distincts, jira_keys=jira_keys,
         jira_info=jira_info, chats_by_entity=chats_by_entity,
+        track_sales_keys=track_sales_keys,
         jira_comments=jira_comments, jira_notes=jira_notes,
         sel_statuses=statuses, sel_countries=countries, sel_scenarios=scenarios,
         q=q or "",

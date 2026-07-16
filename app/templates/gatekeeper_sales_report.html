@@ -60,8 +60,28 @@
       background: #1e293b; color: #f1f5f9; border-radius: 6px 6px 0 0;
       padding: 0.45rem 0.9rem;
     }
+    .rpt-section-head.sec-sales { background: #14532d; }
     .rpt-section-head.sec-gk  { background: #7c2d12; }
     .rpt-section-head.sec-val { background: #1e3a8a; }
+    .rpt-epic a { color: #1d4ed8; text-decoration: none; }
+    .rpt-epic a:hover { text-decoration: underline; }
+    .passed-icon { margin-right: 0.25rem; }
+
+    /* filter bar (screen only — the filtered state also prints) */
+    .filterbar {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 7px;
+      padding: 0.5rem 0.8rem; margin-bottom: 1.25rem; font-size: 0.78rem;
+    }
+    .filterbar label { color: #64748b; font-weight: 600; }
+    .filterbar select {
+      font: inherit; padding: 0.2rem 0.4rem; border: 1px solid #cbd5e1;
+      border-radius: 5px; background: #fff; max-width: 14rem;
+    }
+    .rpt-table th.sortable { cursor: pointer; user-select: none; }
+    .rpt-table th.sortable:hover { color: #1e293b; }
+    .rpt-table th .sort-dir { margin-left: 0.2rem; }
+    @media print { .filterbar { display: none !important; } }
     .rpt-section-title { font-size: 0.88rem; font-weight: 700; flex: 1; }
     .rpt-section-count { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
 
@@ -109,19 +129,40 @@
 
 <div class="print-header">
   <h1>ECOM Sales Report</h1>
-  <p>{{ today }} &nbsp;·&nbsp; {{ total }} ticket{{ 's' if total != 1 else '' }} assigned to Marina</p>
+  <p>{{ today }} &nbsp;·&nbsp; {{ total }} ticket{{ 's' if total != 1 else '' }} — with Sales · with Marina · with MB</p>
 </div>
 
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · ECOM</div>
     <div class="rh-title">ECOM Sales Report</div>
-    <div class="rh-date">{{ today }} · all tickets currently assigned to Marina</div>
+    <div class="rh-date">{{ today }} · with Sales (tracked) · with Marina · with MB</div>
   </div>
   <div>
     <div class="rh-stat-val">{{ total }}</div>
     <div class="rh-stat-lbl">Tickets</div>
   </div>
+</div>
+
+{# ---- Filters (screen only; the filtered view is what prints) ---- #}
+<div class="filterbar">
+  <label for="rf-reporter">Reporter</label>
+  <select id="rf-reporter" class="rf-select">
+    <option value="">All</option>
+    {% for r in filter_options.reporters %}<option value="{{ r|lower }}">{{ r }}</option>{% endfor %}
+  </select>
+  <label for="rf-status">Status</label>
+  <select id="rf-status" class="rf-select">
+    <option value="">All</option>
+    {% for s in filter_options.statuses %}<option value="{{ s|lower }}">{{ s }}</option>{% endfor %}
+  </select>
+  <label for="rf-scenario">Scenario</label>
+  <select id="rf-scenario" class="rf-select">
+    <option value="">All</option>
+    {% for s in filter_options.scenarios %}<option value="{{ s|lower }}">{{ s }}</option>{% endfor %}
+  </select>
+  <button type="button" class="btn" id="rf-clear">Clear</button>
+  <span id="rf-hint" style="color:#94a3b8"></span>
 </div>
 
 {# ---- Call-outs (general notes, editable on screen) ---- #}
@@ -144,34 +185,43 @@
 <div class="empty-state">No tickets currently assigned — run ↻ Update from Jira first.</div>
 {% endif %}
 
-{% for section_title, items in sections %}
+{% for section_title, section_css, items in sections %}
 {% if items %}
 <div class="rpt-section">
-  <div class="rpt-section-head {{ 'sec-gk' if loop.first else 'sec-val' }}">
+  <div class="rpt-section-head {{ section_css }}">
     <span class="rpt-section-title">{{ section_title }}</span>
-    <span class="rpt-section-count">{{ items|length }} ticket{{ 's' if items|length != 1 else '' }}</span>
+    <span class="rpt-section-count" data-total="{{ items|length }}">{{ items|length }} ticket{{ 's' if items|length != 1 else '' }}</span>
   </div>
   <table class="rpt-table">
     <thead>
       <tr>
         <th style="width:1.6rem">#</th>
-        <th style="width:7rem">Jira ID</th>
-        <th style="width:8rem">Solman ID</th>
-        <th>Summary</th>
-        <th style="width:7rem">Status</th>
-        <th style="width:10rem">Market</th>
-        <th style="width:16%">Order numbers</th>
-        <th style="width:18%">Next step</th>
+        <th style="width:6.5rem" class="sortable">Jira ID</th>
+        <th style="width:7rem" class="sortable">Epic</th>
+        <th class="sortable">Summary</th>
+        <th style="width:8rem" class="sortable">Scenario</th>
+        <th style="width:6.5rem" class="sortable">Status</th>
+        <th style="width:6.5rem" class="sortable">Reporter</th>
+        <th style="width:7rem" class="sortable">Market</th>
+        <th style="width:14%">Order numbers</th>
+        <th style="width:16%">Next step</th>
       </tr>
     </thead>
     <tbody>
       {% for i in items %}
-      <tr>
+      <tr data-reporter="{{ (i.reporter or '')|lower }}"
+          data-status="{{ (i.jira_status or '')|lower }}"
+          data-scenario="{{ (i.scenario or '')|lower }}">
         <td style="color:#94a3b8">{{ loop.index }}</td>
         <td class="mono" style="font-size:0.76rem">{{ i.jira_key }}{% if i.on_board %} <span title="on the ECOM board">·E</span>{% endif %}</td>
-        <td class="mono" style="font-size:0.76rem">{{ i.solman_id or "—" }}</td>
-        <td>{{ i.summary or "—" }}</td>
+        <td class="mono rpt-epic" style="font-size:0.76rem">
+          {%- if i.epic_link %}<a href="{{ i.epic_link }}" target="_blank" rel="noopener">{{ i.epic }} ↗</a>
+          {%- elif i.epic %}{{ i.epic }}
+          {%- else %}—{% endif %}</td>
+        <td>{% if i.passed %}<span class="passed-icon" title="passed — 🎉">🎉</span>{% endif %}{{ i.summary or "—" }}</td>
+        <td style="font-size:0.76rem">{{ i.scenario or "—" }}</td>
         <td>{{ i.jira_status or "—" }}</td>
+        <td style="font-size:0.76rem">{{ i.reporter or "—" }}</td>
         <td style="font-size:0.76rem">{{ i.markets or "—" }}</td>
         <td class="rpt-orders">
           {% for line in i.orders %}<div>{{ line }}</div>{% else %}—{% endfor %}
@@ -230,6 +280,70 @@ window.addEventListener('beforeprint', () => {
 window.addEventListener('afterprint', () => {
   document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
   document.getElementById('callout-section').style.display = '';
+});
+
+/* ---- filter + sort [USER 2026-07-16] ------------------------------------
+   Client-side: reporter/status/scenario dropdowns AND-combine and hide
+   non-matching rows (hidden rows also stay hidden in print); any column
+   header except # / orders / next step sorts its own table (click again
+   to flip). Filtering never moves a ticket between sections. */
+function rfApply() {
+  const want = {
+    reporter: document.getElementById('rf-reporter').value,
+    status:   document.getElementById('rf-status').value,
+    scenario: document.getElementById('rf-scenario').value,
+  };
+  let shown = 0, total = 0;
+  document.querySelectorAll('.rpt-section').forEach(sec => {
+    let secShown = 0;
+    sec.querySelectorAll('tbody tr').forEach(tr => {
+      total += 1;
+      const ok = (!want.reporter || tr.dataset.reporter === want.reporter)
+              && (!want.status   || tr.dataset.status   === want.status)
+              && (!want.scenario || tr.dataset.scenario === want.scenario);
+      tr.style.display = ok ? '' : 'none';
+      if (ok) { secShown += 1; shown += 1; }
+    });
+    const count = sec.querySelector('.rpt-section-count');
+    if (count) {
+      const t = parseInt(count.dataset.total, 10);
+      count.textContent = (secShown === t)
+        ? t + ' ticket' + (t !== 1 ? 's' : '')
+        : secShown + ' of ' + t + ' tickets';
+    }
+  });
+  const filtering = want.reporter || want.status || want.scenario;
+  document.getElementById('rf-hint').textContent =
+    filtering ? ('showing ' + shown + ' of ' + total) : '';
+}
+document.querySelectorAll('.rf-select').forEach(sel =>
+  sel.addEventListener('change', rfApply));
+document.getElementById('rf-clear').addEventListener('click', () => {
+  document.querySelectorAll('.rf-select').forEach(sel => { sel.value = ''; });
+  rfApply();
+});
+
+document.querySelectorAll('.rpt-table th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const table = th.closest('table');
+    const idx = th.cellIndex;
+    const dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+    table.querySelectorAll('th.sortable').forEach(o => {
+      delete o.dataset.dir;
+      const d = o.querySelector('.sort-dir'); if (d) d.remove();
+    });
+    th.dataset.dir = dir;
+    th.insertAdjacentHTML('beforeend',
+      '<span class="sort-dir">' + (dir === 'asc' ? '▲' : '▼') + '</span>');
+    const tbody = table.querySelector('tbody');
+    [...tbody.querySelectorAll('tr')]
+      .sort((a, b) => {
+        const av = a.cells[idx].textContent.trim().toLowerCase();
+        const bv = b.cells[idx].textContent.trim().toLowerCase();
+        return (av < bv ? -1 : av > bv ? 1 : 0) * (dir === 'asc' ? 1 : -1);
+      })
+      .forEach(tr => tbody.appendChild(tr));
+  });
 });
 
 function downloadHtml() {
