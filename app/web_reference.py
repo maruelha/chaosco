@@ -177,6 +177,57 @@ def gatekeeper_ticket_detail(jira_key: str):
     )
 
 
+# --- Jira acceptance-criteria takeover for order details [USER 2026-07-16]
+# AC-only, archived counts as present, takeover only ADDS missing numbers.
+
+
+def _jira_missing_orders(conn, jira_key: str) -> list[dict]:
+    """AC (type, number) pairs whose number is in NO order row of
+    ('jira', jira_key) — live or archived. A row counts as covering a
+    number when its order_number equals or contains it (case-insensitive)."""
+    from app.db import jira as db_jira
+    from app.db import order_archive as db_oa
+    from app.jira_importer import extract_ac_order_pairs
+    issue = db_jira.get_jira_issue(conn, jira_key)
+    if issue is None:
+        return []
+    present = {n.casefold() for n in db_oa.all_order_numbers(conn, "jira", jira_key)}
+    missing = []
+    for pair in extract_ac_order_pairs(issue.get("acceptance_criteria")):
+        num = pair["order_number"].casefold()
+        if not any(num == have or num in have for have in present):
+            missing.append(pair)
+    return missing
+
+
+@app.route("/order-details/jira/<jira_key>/jira-suggestions")
+def order_details_jira_suggestions(jira_key: str):
+    conn = _get_conn()
+    try:
+        missing = _jira_missing_orders(conn, jira_key)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "missing": missing})
+
+
+@app.route("/order-details/jira/<jira_key>/take-over-jira", methods=["POST"])
+def order_details_take_over_jira(jira_key: str):
+    """Insert the missing AC numbers as order rows — recomputed server-side,
+    never modifies or deletes existing rows, idempotent when nothing is missing."""
+    conn = _get_conn()
+    try:
+        added = []
+        for pair in _jira_missing_orders(conn, jira_key):
+            detail_id = database.add_order_detail_full(
+                conn, "jira", jira_key, pair["order_type"], pair["order_number"])
+            added.append({"id": detail_id, "order_type": pair["order_type"],
+                          "order_number": pair["order_number"],
+                          "comment": "", "docs_in_s4": 0})
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "added": added})
+
+
 @app.route("/ecom-gatekeeper/import-jira", methods=["POST"])
 def ecom_gatekeeper_import_jira():
     """'Update from Jira' — ONE unified import [USER 2026-07-12]: refresh

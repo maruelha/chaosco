@@ -42,6 +42,13 @@
       <button type="button" class="btn btn-sm" id="btn-archive-orders"
               title="Archive the ticked rows together as one group">&#128230; Archive selected as group</button>
     </div>
+    <div id="od-jira-suggest" style="display:none;margin-top:0.9rem;border:1px solid #fcd34d;background:#fffbeb;border-radius:6px;padding:0.6rem 0.8rem">
+      <div style="font-size:0.8rem;font-weight:600;color:#92400e;margin-bottom:0.3rem">
+        From Jira acceptance criteria — not in the list:</div>
+      <div id="od-jira-suggest-list" style="font-size:0.85rem"></div>
+      <button type="button" class="btn btn-sm" id="btn-jira-takeover" style="margin-top:0.5rem"
+              title="add these numbers as order rows — existing rows are never touched">&#10549; Take over from Jira</button>
+    </div>
     <details id="od-history" style="margin-top:0.9rem">
       <summary style="cursor:pointer;font-size:0.85rem;color:#555">
         Archived groups (<span id="od-hist-count">0</span>)</summary>
@@ -134,7 +141,7 @@ if (!window.odInit) {
       tr.querySelector('.js-del-order').addEventListener('click', async () => {
         const resp = await fetch(`/order-details/${tr.dataset.detailId}/delete`, { method: 'POST' });
         const d    = await resp.json();
-        if (d.ok) { tr.remove(); updateS4Badge(); }
+        if (d.ok) { tr.remove(); updateS4Badge(); loadJiraSuggestions(); }
       });
       return tr;
     }
@@ -184,6 +191,28 @@ if (!window.odInit) {
       });
     }
 
+    // --- Jira acceptance-criteria takeover (jira-addressed dialogs only) --
+
+    async function loadJiraSuggestions() {
+      const box  = document.getElementById('od-jira-suggest');
+      const list = document.getElementById('od-jira-suggest-list');
+      if (odEntityType !== 'jira') { box.style.display = 'none'; list.innerHTML = ''; return; }
+      const d = await (await fetch(`/order-details/jira/${encodeURIComponent(odEntityId)}/jira-suggestions`)).json();
+      if (!d.ok || !d.missing.length) { box.style.display = 'none'; list.innerHTML = ''; return; }
+      list.innerHTML = d.missing.map(m =>
+        `<div><span style="color:#6e6e73">${odEsc(m.order_type)}</span> ` +
+        `<strong class="mono">${odEsc(m.order_number)}</strong></div>`).join('');
+      box.style.display = '';
+    }
+
+    document.getElementById('btn-jira-takeover').addEventListener('click', async () => {
+      const d = await (await fetch(`/order-details/jira/${encodeURIComponent(odEntityId)}/take-over-jira`,
+                                   { method: 'POST' })).json();
+      if (!d.ok) return;
+      d.added.forEach(r => ordersTbody.appendChild(buildOrderRow(r)));
+      loadJiraSuggestions();
+    });
+
     document.getElementById('od-select-all').addEventListener('change', e => {
       ordersTbody.querySelectorAll('.od-select').forEach(cb => { cb.checked = e.target.checked; });
     });
@@ -225,6 +254,7 @@ if (!window.odInit) {
       const rows = await resp.json();
       rows.forEach(r => ordersTbody.appendChild(buildOrderRow(r)));
       loadHistory();
+      loadJiraSuggestions();
       ordersDlg.showModal();
     });
 

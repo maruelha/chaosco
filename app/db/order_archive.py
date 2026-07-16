@@ -101,6 +101,22 @@ def list_order_batches(conn: sqlite3.Connection, entity_type: str,
     return batches
 
 
+def all_order_numbers(conn: sqlite3.Connection, entity_type: str,
+                      entity_id: str) -> set[str]:
+    """Every non-empty order number of an entity — LIVE rows AND archived
+    batches (archived counts as present [USER 2026-07-16]: an archived chain
+    is processed, its numbers must not be re-suggested)."""
+    numbers: set[str] = set()
+    for table in ("order_details", "order_details_history"):
+        numbers.update(
+            row[0] for row in conn.execute(
+                f"SELECT order_number FROM {table}"
+                f" WHERE entity_type=? AND entity_id=?"
+                f" AND TRIM(COALESCE(order_number,'')) <> ''",
+                (entity_type, str(entity_id))))
+    return numbers
+
+
 def delete_order_batch(conn: sqlite3.Connection, batch_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM order_details_history WHERE batch_id=?",

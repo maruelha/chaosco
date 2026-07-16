@@ -210,6 +210,20 @@ returns str for non-numeric ids (jira keys). Global search resolves
 'jira'-addressed order rows to the gatekeeper ticket page. Tests:
 tests/test_orders_shared_jira.py.
 
+**Jira AC takeover** [USER 2026-07-16]: jira-addressed dialogs compare the
+ACCEPTANCE CRITERIA's labeled orders (extract_ac_order_pairs in
+jira_importer.py — AC only, comments deliberately excluded; XXXX skipped;
+deduped) against ALL order numbers of the ticket — live AND archived
+(db/order_archive.all_order_numbers; archived counts as present). Missing
+pairs show in an amber "From Jira acceptance criteria" box with "⤵ Take
+over from Jira": inserts them as rows (type = the Jira label verbatim,
+add_order_detail_full), never modifies existing rows, idempotent. Missing
+list recomputed server-side on takeover; refreshed in the dialog after row
+delete. Routes in web_reference.py:
+`GET /order-details/jira/<key>/jira-suggestions`,
+`POST /order-details/jira/<key>/take-over-jira`. Tests:
+tests/test_jira_order_takeover.py.
+
 **Order archive** [USER 2026-07-16]: rows that belong together (sales +
 return + exchange order of one chain) are ticked via the select column and
 "📦 Archive selected as group" moves them into `order_details_history` as

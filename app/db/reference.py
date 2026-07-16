@@ -689,6 +689,19 @@ def add_order_detail(conn: sqlite3.Connection, entity_type: str, entity_id: str)
     return cur.lastrowid
 
 
+def add_order_detail_full(conn: sqlite3.Connection, entity_type: str,
+                          entity_id: str, order_type: str, order_number: str,
+                          comment: str = "") -> int:
+    """Pre-filled insert — used by the Jira acceptance-criteria takeover."""
+    cur = conn.execute(
+        "INSERT INTO order_details (entity_type, entity_id, order_type, order_number, comment, created_at)"
+        " VALUES (?, ?, ?, ?, ?, datetime('now'))",
+        (entity_type, entity_id, order_type or "", order_number or "", comment or ""),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
 def update_order_detail(
     conn: sqlite3.Connection, detail_id: int, order_type: str, order_number: str,
     comment: str, docs_in_s4: int = 0

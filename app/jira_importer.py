@@ -95,6 +95,20 @@ def _labeled_orders(text: str) -> list[str]:
     return out
 
 
+def extract_ac_order_pairs(acceptance_criteria: str | None) -> list[dict]:
+    """Labeled (type, number) pairs from the ACCEPTANCE CRITERIA only —
+    feeds the order-details takeover [USER 2026-07-16]. Comments are
+    deliberately excluded (unlabeled/noisy); placeholders (XXXX) skipped;
+    duplicate numbers deduped keeping the first label."""
+    pairs, seen = [], set()
+    for label, value in _ORDER_LABEL_RE.findall(acceptance_criteria or ""):
+        if _is_placeholder(value) or value.casefold() in seen:
+            continue
+        seen.add(value.casefold())
+        pairs.append({"order_type": label.strip(), "order_number": value})
+    return pairs
+
+
 def extract_order_numbers(acceptance_criteria: str | None,
                           comments: list[dict]) -> dict:
     """[USER 2026-07-11] 1. ALL labeled orders from the acceptance criteria
