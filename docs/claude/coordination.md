@@ -167,8 +167,10 @@ ticket allowed). Drop-in `_teams_chat_links.html` (dialog + delegated
 · copy · detach) + registry search-attach + inline "new chat: register &
 attach". On the DETAIL pages of Retail, Spillover, ECOM, Gatekeeper ticket
 (ECOM + gatekeeper share via ('jira', key), like orders/notes). LIST rows
-get `ui.chat_row_button(...)` (_macros.html): nothing when no chats, ONE
-chat = direct open link, several = dialog button — context needs
+get `ui.chat_row_button(...)` (_macros.html): ONE chat = direct open link
+(the fast path), several = dialog button, NONE = dimmed button opening the
+attach dialog [USER 2026-07-17 — first chat attachable right from every
+list] — context needs
 `chats_by_entity` (db helper, tolerant of missing schema in test fixtures).
 
 **Floating 💬 widget** (base.html, stacked above 🔍): PINNED chats only —

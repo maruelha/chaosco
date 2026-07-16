@@ -111,6 +111,9 @@ def test_migration_repoints_rows_with_known_jira_id(client):
 def test_pages_address_orders_by_jira_key(client):
     html = client.get("/ecom/").get_data(as_text=True)
     assert f'data-entity-type="jira" data-entity-id="{JIRA}"' in html
+    # chat row button renders even with NO chats attached (dimmed attach
+    # button, 2026-07-17) so the first chat is attachable from the list
+    assert "js-open-chats" in html
 
     html = client.get(f"/ecom/{client.ecom_id}").get_data(as_text=True)
     assert f'data-entity-type="jira" data-entity-id="{JIRA}"' in html
