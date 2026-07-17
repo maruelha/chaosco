@@ -36,6 +36,12 @@ jira = "Gatekeeper ticket" (2026-07-11, the current gatekeeper; search by
 jira key / solman id / summary), test_learning, followup, shelf, topic,
 contact, link.
 
+**Inbox delete**: per-item Delete button (confirm dialog) → POST
+/inbox/<id>/delete removes the note, its attachment rows AND the uploaded
+files in data/uploads; the ✕ on a single thumbnail removes just that
+attachment (shared /notes/... route + notes.js). Pinned by
+tests/test_inbox_delete.py (2026-07-18).
+
 **Inbox text search** [USER 2026-07-16]: search box in the Pending card
 header, live CLIENT-side filter (no route, no SQL) over heading + note text
 + attachment names + reference chips — deliberately not whole-card
