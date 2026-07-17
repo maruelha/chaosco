@@ -805,6 +805,18 @@ def inbox_edit(note_id: int):
     return redirect(url_for("inbox", note_saved="1"))
 
 
+@app.route("/inbox/<int:note_id>/route", methods=["POST"])
+def inbox_route(note_id: int):
+    """Quick route-to combobox on the item card — no edit form needed."""
+    route_to = request.form.get("route_to", "").strip() or None
+    conn = _get_conn()
+    try:
+        database.set_inbox_route(conn, note_id, route_to)
+    finally:
+        conn.close()
+    return redirect(url_for("inbox", note_saved="1"))
+
+
 # --- Auto-file [USER 2026-07-16]: fields-only matching, preview-then-confirm
 
 

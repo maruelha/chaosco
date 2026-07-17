@@ -286,13 +286,16 @@
         <span class="feat-label">⚡ Auto-file (2026-07-16)</span>
         <span class="feat-value">Header button → preview dialog: "Will move" list (checkboxes, all pre-ticked) + "Stays in the inbox" with reasons — nothing moves without confirm. Matching is <strong>fields only</strong>, precedence route-to → Jira ID → SolMan ID → Order number (first present field decides, no fall-through), only <strong>unambiguous</strong> matches move. Targets: Jira tickets (notes land at <code>('jira', key)</code> — visible on the Gatekeeper ticket + ECOM expander) and Defects; routed items go to the module's Incoming section. Matches are recomputed server-side on apply. APIs: <code>GET /inbox/autofile/preview</code> · <code>POST /inbox/autofile/apply</code> (ids CSV).</span>
         <span class="feat-label">Text search (2026-07-16)</span>
-        <span class="feat-value">Search box in the Pending card header — live client-side filter (no reload) matching heading, note text, and attachment names, case-insensitive. Button labels are deliberately excluded so e.g. "edit" doesn't match every item. While filtering, the count badge shows <em>shown / total</em>; ✕ or Escape clears. Only rendered when items exist.</span>
+        <span class="feat-value">Search box in the Pending card header — live client-side filter (no reload) matching heading, note text, and attachment names, case-insensitive. Button labels are deliberately excluded so e.g. "edit" doesn't match every item. While filtering, the count badge shows <em>shown / total</em>; ✕ or Escape clears. Only rendered when items exist. Widened 2026-07-18 (grows with the card header, larger font).</span>
         <span class="feat-label">Per-item actions</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Edit</span> — inline toggle; updates heading and note text<br>
           <span class="pill pill-ajax">Delete</span> — removes item and all attachments<br>
-          <span class="pill pill-ajax">File ›</span> — opens filing picker: choose type, search by name, select target, then Move ›
+          <span class="pill pill-ajax">File ›</span> — opens filing picker: choose type, search by name, select target, then Move ›<br>
+          <span class="pill pill-ajax">↪ route to…</span> — quick combobox (right-aligned, 2026-07-18): flag the item Contact / Link / Follow-up for the ⚡ Auto-file batch without opening the edit form; selecting saves immediately (<code>POST /inbox/&lt;note_id&gt;/route</code>)
         </span>
+        <span class="feat-label">Scroll position (2026-07-18)</span>
+        <span class="feat-value">The page keeps its scroll position after edit / file / delete / quick-route saves — no more jumping back to the top after each action.</span>
         <span class="feat-label">Filing behaviour</span>
         <span class="feat-value">For Defect / Retail / Spillover / Test Learning / Follow-up: single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.<br>
         For <strong>Shelf</strong>: a new Shelf item is created from the inbox heading; area and category are entered in the picker (both optional); the note is then re-parented to the new shelf item. Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>.</span>

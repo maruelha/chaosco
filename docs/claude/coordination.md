@@ -42,6 +42,17 @@ files in data/uploads; the ✕ on a single thumbnail removes just that
 attachment (shared /notes/... route + notes.js). Pinned by
 tests/test_inbox_delete.py (2026-07-18).
 
+**Inbox quick route-to** [USER 2026-07-18]: every pending item has a
+route-to combobox right in its actions row (POST /inbox/<id>/route →
+db set_inbox_route, route_to only — other ref fields untouched), so items
+can be flagged Contact/Link/Follow-up for the ⚡ Auto-file batch without
+opening the edit form. Selecting auto-submits. Tests:
+tests/test_inbox_quick_route.py. Same session: search box in the Pending
+header grew (flex, larger font), and the page keeps its scroll position
+across edit/file/delete/route round-trips (sessionStorage save on submit +
+restore on load; the quick-route select saves explicitly because
+programmatic form.submit() fires no submit event).
+
 **Inbox text search** [USER 2026-07-16]: search box in the Pending card
 header, live CLIENT-side filter (no route, no SQL) over heading + note text
 + attachment names + reference chips — deliberately not whole-card

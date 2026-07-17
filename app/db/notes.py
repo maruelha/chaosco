@@ -150,6 +150,17 @@ def set_inbox_refs(conn: sqlite3.Connection, note_id: int,
         )
 
 
+def set_inbox_route(conn: sqlite3.Connection, note_id: int,
+                    route_to: str | None) -> None:
+    """Update only route_to (quick combobox on the item — no edit form)."""
+    with conn:
+        conn.execute(
+            "UPDATE notes SET route_to=?"
+            " WHERE id=? AND entity_type='input' AND entity_id='inbox'",
+            (route_to if route_to in _ROUTE_TO_MODULES else None, note_id),
+        )
+
+
 def list_inbox_items(conn: sqlite3.Connection) -> list[dict]:
     return _rows_to_dicts(conn.execute(
         "SELECT n.*, COUNT(a.id) as att_count FROM notes n"
