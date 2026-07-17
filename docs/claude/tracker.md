@@ -63,7 +63,9 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   ("ask Sales — does this test exist?") then parked list ("Not part of our
   requirements — tested anyway", count + "countries ▸" expand like normal
   rows, inline comment, un-park). Hash helper opens collapsed sections on
-  anchor navigation.
+  anchor navigation. Both bottom lists (and "Kicked out" on payment methods)
+  use `ui-section--gray` [USER 2026-07-18] — without a color class the shared
+  section summary is white-on-white (headings looked empty).
 - Payment methods `/retail-tracker/payment-methods` — per (country × method ×
   kind) AJAX check-off, "● test passed" hints, category editable only while
   unknown, filters. 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY

@@ -1222,6 +1222,7 @@ details.ui-section[open] > summary::before, details.rt-section[open] > summary::
 .ui-section--teal > summary   { background:#0e7490; }
 .ui-section--slate > summary,  .rt-tab4    > summary { background:#334155; }
 .ui-section--green > summary  { background:#1a7f37; }
+.ui-section--gray > summary   { background:#6b7280; }
 .ui-section-count, .rt-count { margin-left:auto; background:rgba(255,255,255,.22);
     border-radius:20px; padding:2px 12px; font-size:0.85rem; font-weight:700; }
 .ui-section-count--full, .rt-count--full { background:#1a7f37; }
