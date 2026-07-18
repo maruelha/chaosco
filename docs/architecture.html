@@ -177,7 +177,7 @@
 <body>
 
 <h1>chaosco — Architecture</h1>
-<p class="subtitle">Local Flask app · SQLite database · Excel as read-only data source · Updated 2026-06-25</p>
+<p class="subtitle">Local Flask app · SQLite database · Excel + Jira XML as read-only data sources · Updated 2026-07-18 (post-refactor: feature route modules + app/db package)</p>
 
 
 <!-- ============================================================ -->
@@ -196,9 +196,9 @@
   <div class="layer-diagram">
     <div class="layer layer-browser">Browser (HTML / JS) <span class="layer-label">Jinja2 server-rendered pages · minimal inline JS for AJAX and UI state</span></div>
     <div class="layer-arrow">↕</div>
-    <div class="layer layer-flask">Flask web layer — <code>app/web.py</code> <span class="layer-label">All routes · assembles template context · calls database.py for every read and write</span></div>
+    <div class="layer layer-flask">Flask web layer — <code>app/web_*.py</code> feature modules + Blueprints <span class="layer-label"><code>app/web.py</code> assembles them · routes parse requests and render templates · every read/write goes through the storage layer</span></div>
     <div class="layer-arrow">↕</div>
-    <div class="layer layer-database">Data layer — <code>app/database.py</code> <span class="layer-label">ALL SQL lives here · the only module that writes to the DB</span></div>
+    <div class="layer layer-database">Storage layer — <code>app/db/</code> package <span class="layer-label">ALL SQL lives here (one module per area) · <code>app/database.py</code> is a facade re-exporting everything, so <code>from app import database</code> works everywhere</span></div>
     <div class="layer-arrow">↕</div>
     <div class="layer layer-sqlite">SQLite — <code>data/test_coordination.db</code> <span class="layer-label">Single file · WAL mode for concurrent reads</span></div>
   </div>
@@ -219,32 +219,36 @@
       <thead><tr><th>Rule</th><th>What it means in practice</th></tr></thead>
       <tbody>
         <tr>
-          <td>SQL only in database.py</td>
-          <td><code>app/web.py</code> never writes SQL directly. Every read and write goes through a function in <code>database.py</code>. This makes the DB contract visible in one place and keeps routes thin.</td>
+          <td>SQL only in the storage layer</td>
+          <td>Routes never write SQL. Every read and write goes through a function in the <code>app/db/</code> package (reached via the <code>app/database.py</code> facade). This makes the DB contract visible in one place and keeps routes thin.</td>
         </tr>
         <tr>
           <td>Excel is read-only</td>
-          <td>No importer or route ever writes to the Excel file. chaosco is a personal read layer on top of the shared workbook.</td>
+          <td>No importer or route ever writes to the shared Excel file (the only local Excel WRITE is the append-only report log workbook in <code>output/</code>). chaosco is a personal read layer on top of the shared workbook.</td>
         </tr>
         <tr>
           <td>Imported data and authored data never mix</td>
-          <td>Importers write only to their primary tables (<code>defects</code>, <code>spillover</code>, <code>retail</code>). User annotations live in separate tables (<code>defect_annotations</code>, <code>spillover_annotations</code>, <code>retail_annotations</code>). An import run can never overwrite a note, flag, or next-step.</td>
+          <td>Importers write only to their primary tables (<code>defects</code>, <code>spillover</code>, <code>retail</code>, <code>ecom</code>, <code>jira_issues</code>). User annotations live in separate tables (<code>defect_annotations</code>, …, <code>ecom_annotations</code>, <code>gatekeeper_annotations</code>). An import run can never overwrite a note, flag, or next-step.</td>
         </tr>
         <tr>
           <td>One notes table for everything</td>
-          <td>Every module that needs a notes log — defects, retail, todos, follow-ups, shelf, inbox, etc. — writes to the single <code>notes</code> table using (entity_type, entity_id) as the address. Never create a module-specific notes table.</td>
+          <td>Every module that needs a notes log writes to the single <code>notes</code> table using (entity_type, entity_id) as the address, served by the registry-driven generic Blueprint <code>web_notes.py</code> (+ shared <code>_notes_section.html</code> and <code>static/notes.js</code>). Never create a module-specific notes table, route set, or attachment script.</td>
         </tr>
         <tr>
           <td>Each Excel tab = its own importer + its own DB table</td>
-          <td>Defects, Spillover, and Retail each have a dedicated importer module. When ECOM/Omni are added, they get their own importer and table. Importers are never modified to touch another importer's table.</td>
+          <td>Defects, Spillover, Retail, and ECOM each have a dedicated importer module and table. Importers are never modified to touch another importer's table.</td>
         </tr>
         <tr>
           <td>Config-driven, not code-driven</td>
-          <td>File paths, sheet names, and hidden statuses live in <code>config/settings.yaml</code>. Retail report bucket definitions live in <code>config/status_mappings.yaml</code>. Changing a status label or folder path requires no code edit.</td>
+          <td>File paths, sheet names, hidden statuses, expected reporters, backup folder etc. live in <code>config/settings.yaml</code> (machine-specific overrides in gitignored <code>settings.local.yaml</code> — MERGED per top-level key over the base since 2026-07-05, local wins). Report bucket definitions (shared by Retail AND ECOM) live in <code>config/status_mappings.yaml</code>.</td>
         </tr>
         <tr>
-          <td>Retail is the template vertical</td>
-          <td>When adding ECOM or Omni, copy the Retail importer, Retail annotation table, and Retail UI screens as the starting point. Do not invent a new pattern.</td>
+          <td>UI from components</td>
+          <td>Templates import <code>_macros.html</code> (page header, stat cards, sections, tables, pills) and use the component classes in <code>style.css</code>. Shared behaviors are drop-in includes (<code>_notes_section</code>, <code>_order_details</code>, <code>_comment_history_dialog</code>, <code>_row_validation_dialog</code>, <code>_connections</code>, <code>_entity_links</code>, <code>_issue_message</code>, <code>_next_step_history</code>, <code>_teams_chat_links</code>). Never copy HTML between templates.</td>
+        </tr>
+        <tr>
+          <td>The tracker is the reference implementation for new modules</td>
+          <td>New modules follow the Blueprint pattern (own <code>app/db/</code> or <code>db_*.py</code> storage + own <code>web_*.py</code> Blueprint registered in <code>app/web.py</code> + macro-built templates + a notes-registry entry + tests). The Retail Requirements Tracker shows the full pattern end to end.</td>
         </tr>
       </tbody>
     </table>
@@ -261,38 +265,48 @@
       <tbody>
         <tr>
           <td>app/web.py</td>
-          <td>All Flask routes · template rendering · request parsing · redirects</td>
-          <td>Write SQL directly · import pandas · touch disk (except uploads)</td>
+          <td>The ASSEMBLER — imports the feature route modules, initialises schemas, registers all Blueprints. Entry point <code>python -m app.web</code>.</td>
+          <td>Define routes itself · write SQL</td>
+        </tr>
+        <tr>
+          <td>app/web_core.py</td>
+          <td>The shared Flask <code>app</code> object + web plumbing (config, upload folder, allowed extensions, <code>init_db</code> at startup)</td>
+          <td>Define routes</td>
+        </tr>
+        <tr>
+          <td>app/web_home / _defects / _spillover / _retail / _reports / _planning / _reference.py</td>
+          <td>Feature route modules — flat endpoint names on the shared app (dashboard/import/backup · defects · spillover · retail · sign-off reports · planning modules · gatekeeper/inbox/shelf/reference)</td>
+          <td>Write SQL directly · import pandas</td>
+        </tr>
+        <tr>
+          <td>Blueprints: web_notes · web_retail_tracker · web_topics · web_email · web_teams(_chats) · web_ecom · web_next_steps · web_entity_links · web_connections · web_issue_msg · web_search</td>
+          <td>The pattern for NEW modules — own url_prefix, own storage module, registered in web.py. web_notes / web_next_steps / web_search are REGISTRY-driven generics.</td>
+          <td>Write SQL directly</td>
         </tr>
         <tr>
           <td>app/database.py</td>
-          <td>All SQL · schema creation (<code>init_db</code>) · every read and write function</td>
-          <td>Import Flask · render templates · know about routes</td>
+          <td>FACADE over the <code>app/db/</code> package — re-exports every public name so <code>from app import database</code> works everywhere. New code may import <code>app.db.&lt;module&gt;</code> directly.</td>
+          <td>Contain SQL of its own</td>
         </tr>
         <tr>
-          <td>app/importer.py</td>
-          <td>Orchestrates all importers in sequence · reads config · calls each vertical importer</td>
-          <td>Write SQL directly (delegates to each importer module)</td>
+          <td>app/db/ package</td>
+          <td>ALL SQL, one module per area: core (schema+migrations) · defects · spillover · retail · notes · ecom · jira · gatekeeper · topics · entity_links · entity_connections · next_steps · order_archive · inbox_autofile · teams_chats · message_types · email · search · planning · reference — plus <code>db_retail_tracker.py</code></td>
+          <td>Import Flask · render templates</td>
         </tr>
         <tr>
-          <td>app/read_defects.py</td>
-          <td>Defects Excel tab → <code>database.upsert_defects()</code></td>
-          <td>Touch any table other than <code>defects</code></td>
-        </tr>
-        <tr>
-          <td>app/spillover_importer.py</td>
-          <td>Core South Spillover Excel tab → <code>database.upsert_spillover()</code></td>
-          <td>Touch any table other than <code>spillover</code></td>
-        </tr>
-        <tr>
-          <td>app/retail_importer.py</td>
-          <td>Retail Excel tab → <code>database.upsert_retail()</code></td>
-          <td>Touch any table other than <code>retail</code></td>
+          <td>Importers: read_defects · spillover_importer · retail_importer · ecom_importer (orchestrated by importer.py) · jira_importer · retail_tracker_importer · solman_sync</td>
+          <td>Excel tabs → their one table each (header-map driven, idempotent upserts) · Jira XML → the shared jira store · SolMan export → targeted defects update · archiver.py archives the source file (SHA-256 dedup)</td>
+          <td>Touch another importer's table · touch *_annotations · write to the Excel</td>
         </tr>
         <tr>
           <td>app/reporter.py</td>
-          <td>Reads <code>status_mappings.yaml</code> · counts retail rows per bucket · returns structured report data</td>
+          <td>Reads <code>status_mappings.yaml</code> · bucket counting for the Retail AND ECOM status reports · impacted-defect totals</td>
           <td>Write to DB · know about routes</td>
+        </tr>
+        <tr>
+          <td>Pure-logic helpers: issue_messages.py · row_validations.py · reporters.py · retail_tracker_counting.py · backup.py</td>
+          <td>✉️ message assembly (mirrored by the dialog JS) · per-row data-check rule registry (⚠ buttons) · expected-reporter matching · tracker counting · DB+uploads backup (sqlite3 backup API)</td>
+          <td>Import Flask · hold SQL (backup.py's sqlite3 use is the deliberate exception)</td>
         </tr>
         <tr>
           <td>app/ppt_utils.py</td>
@@ -310,13 +324,8 @@
           <td>Query the DB · import Flask request context</td>
         </tr>
         <tr>
-          <td>app/pdf_utils.py</td>
-          <td><code>render_pdf</code> / <code>save_pdf</code> via lazy WeasyPrint import. <strong>Retired</strong> — WeasyPrint removed (couldn't load GTK on Windows). Kept until all PDF routes are cleaned up.</td>
-          <td>Query the DB · import Flask request context</td>
-        </tr>
-        <tr>
           <td>app/report_exporter.py</td>
-          <td>Renders Retail + Spillover reports to the export folder. HTML works; the PDF step is <strong>non-functional</strong> (WeasyPrint removed), so the Export Reports button currently errors until reworked to PowerPoint. Called from <code>POST /export-reports</code>.</td>
+          <td>Renders dated <strong>HTML + PowerPoint</strong> snapshots of the Retail + Spillover reports to <code>report_export/</code>. Called from <code>POST /export-reports</code> (Export &amp; Backup dashboard card) — works. PDF is fully retired (pdf_utils.py deleted); browser Print → Save as PDF is the manual fallback.</td>
           <td>Write SQL directly · define Flask routes</td>
         </tr>
         <tr>
@@ -356,7 +365,9 @@
       <li><strong>Defects:</strong> <code>defect_id</code> (SolMan ID, TEXT primary key)</li>
       <li><strong>Spillover:</strong> <code>excel_row</code> cast to TEXT (stable after 2026-05 migration)</li>
       <li><strong>Retail:</strong> <code>lower(test_case_id) || "||" || lower(country)</code></li>
+      <li><strong>ECOM:</strong> <code>lower(trim(jira_id))</code> — rows without a JIRA ID are skipped</li>
     </ul>
+    <p><strong>Second import path — Jira XML</strong> (2026-07-11): "↻ Update from Jira" on the Gatekeeper AND ECOM pages runs ONE unified import (<code>app/jira_importer.py</code>): newest <code>.xml</code> in <code>jira_folder</code> → shared <code>jira_issues</code>/<code>jira_comments</code> store. Tracked tickets always refresh their living fields (status, assignee, acceptance criteria, comments, reporter); new tickets enter only when assigned to Marina or already on the ECOM board. Third path — SolMan export → <code>solman_sync.py</code> updates <code>defects.solman_status</code>/<code>assigned_to</code> only.</p>
   </div>
 </div>
 
@@ -368,9 +379,9 @@
     <div class="flow">
       <div class="flow-box browser">Browser request</div>
       <span class="flow-arrow">→</span>
-      <div class="flow-box web">web.py route</div>
+      <div class="flow-box web">web_*.py route</div>
       <span class="flow-arrow">→</span>
-      <div class="flow-box db">database.py function(s)</div>
+      <div class="flow-box db">app/db function(s) (via database facade)</div>
       <span class="flow-arrow">→</span>
       <div class="flow-box db">SQLite</div>
     </div>
@@ -395,15 +406,13 @@
   <div class="two-col">
 
     <div class="card">
-      <h3>Notes module</h3>
-      <p>One <code>notes</code> table for all entity types. Address = <code>(entity_type, entity_id)</code>. Adding notes to any new module requires:</p>
+      <h3>Notes module (registry-driven)</h3>
+      <p>One <code>notes</code> table for all entity types. Address = <code>(entity_type, entity_id)</code>. The generic Blueprint <code>web_notes.py</code> serves add/edit/delete for EVERY registered type (<code>/n/&lt;type&gt;/&lt;id&gt;/…</code>). Adding notes to a new module:</p>
       <ul>
-        <li>Call <code>database.add_note(conn, entity_type, entity_id, heading, text)</code></li>
-        <li>Call <code>database.list_notes(conn, entity_type, entity_id)</code> to fetch</li>
-        <li>Add note routes to <code>web.py</code> (add / edit / delete)</li>
-        <li>Render the notes block in the detail template</li>
+        <li>Add one entry to <code>web_notes.REGISTRY</code></li>
+        <li><code>{% include '_notes_section.html' %}</code> in the detail template</li>
       </ul>
-      <p class="note">Never create a module-specific notes table. The shared table is the only correct path.</p>
+      <p class="note">Done. Never create module-specific notes tables, routes, or JS — attachments/paste come from the shared <code>static/notes.js</code>.</p>
     </div>
 
     <div class="card">
@@ -419,11 +428,25 @@
 
     <div class="card">
       <h3>Order details module</h3>
-      <p>Generic order-number log, mirrors the notes pattern. Any module can attach order lines without a dedicated table. Currently used by Spillover and ECOM Gatekeeper.</p>
+      <p>Generic order-number log, mirrors the notes pattern. Used by Spillover and the Jira world — Gatekeeper tickets and the ECOM board share the SAME rows at address <code>('jira', jira_key)</code> (2026-07-16). Grouped archive batches live in <code>order_details_history</code> (📦 archive-as-group). The ⤵ take-over pulls labeled order numbers from a ticket's Jira acceptance criteria.</p>
       <ul>
         <li>Address = <code>(entity_type, entity_id)</code></li>
         <li>Columns: order_type · order_number · comment · docs_in_s4 (S4 confirmed flag)</li>
-        <li>Routes: <code>GET/POST /order-details/&lt;entity_type&gt;/&lt;entity_id&gt;[/add]</code></li>
+        <li>Drop-in include <code>_order_details.html</code> + <code>.js-open-orders</code> buttons</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>More drop-in components</h3>
+      <p>Same include-and-done philosophy (each documented in <code>docs/claude/coordination.md</code> and the components card of <code>docs/screens.html</code>):</p>
+      <ul>
+        <li><strong>Next-step archive</strong> — <code>_next_step_history.html</code>, ↻ archive + 🕘 history per entity</li>
+        <li><strong>Teams chats</strong> — registry (<code>teams_chats</code>) + per-ticket refs + floating 💬 widget</li>
+        <li><strong>✉️ Issue messages</strong> — <code>_issue_message.html</code> + fixed special texts (<code>issue_messages.py</code>)</li>
+        <li><strong>Comments dialog</strong> — <code>_comment_history_dialog.html</code> on the Retail / Spillover / ECOM boards</li>
+        <li><strong>⚠ Row validations</strong> — <code>_row_validation_dialog.html</code> + rule registry <code>row_validations.py</code></li>
+        <li><strong>Entity links</strong> (per-entity URLs) and <strong>Entity connections</strong> (many-to-many topic ↔ defect / retail / ecom / spillover, detail pages, collapsed when empty)</li>
+        <li><strong>Global 🔍 search</strong> — floating widget on every page, source registry in <code>db/search.py</code></li>
       </ul>
     </div>
 
@@ -443,20 +466,16 @@
 
 <!-- ============================================================ -->
 <div class="section">
-  <h2>Import vertical — how to add a new one (ECOM / Omni)</h2>
+  <h2>How to add a new module (the tracker is the reference implementation)</h2>
   <div class="card">
-    <p>Use Retail as the template. Steps:</p>
     <ol>
-      <li>Create <code>app/ecom_importer.py</code> — copy <code>retail_importer.py</code>, adjust column mappings and match key</li>
-      <li>Add <code>CREATE TABLE IF NOT EXISTS ecom (...)</code> to <code>database.init_db()</code></li>
-      <li>Add <code>CREATE TABLE IF NOT EXISTS ecom_annotations (...)</code> to <code>database.init_db()</code></li>
-      <li>Add <code>database.upsert_ecom()</code> — copy <code>upsert_retail()</code>, adjust for new table</li>
-      <li>Wire the importer into <code>app/importer.py</code></li>
-      <li>Add routes to <code>app/web.py</code> — copy Retail list + detail + annotation routes</li>
-      <li>Create templates — copy <code>retail_list.html</code> and <code>retail_detail.html</code> as starting points</li>
-      <li>Add dashboard card; update <code>docs/screens.html</code>, <code>docs/database_schema.html</code>, <code>CLAUDE.md</code></li>
+      <li>Own storage module: a file in <code>app/db/</code> (or <code>app/db_&lt;name&gt;.py</code>) with the schema, <code>init_schema</code>, and ALL its SQL</li>
+      <li>Own Flask <strong>Blueprint</strong> <code>app/web_&lt;name&gt;.py</code>; register it (and call <code>init_schema</code>) in <code>app/web.py</code></li>
+      <li>Templates assembled from <code>_macros.html</code> + the <code>style.css</code> components</li>
+      <li>Notes: one entry in <code>web_notes.REGISTRY</code> + <code>{% include '_notes_section.html' %}</code></li>
+      <li>Tests for the logic in <code>tests/test_&lt;name&gt;_*.py</code>; then update <code>docs/claude/*.md</code>, <code>docs/screens.html</code>, <code>docs/database_schema.html</code>, <code>CLAUDE.md</code></li>
     </ol>
-    <p class="note">ECOM orders already captured in <code>order_details</code> with <code>entity_type='ecom_gatekeeper'</code> can be re-pointed to the new ECOM rows via <code>UPDATE order_details SET entity_type='ecom', entity_id=&lt;ecom_id&gt;</code> — no data copy needed.</p>
+    <p class="note">A new import vertical (Omni) additionally follows the ECOM example: own header-map importer + own table + annotations table, wired into <code>app/importer.py</code>, buckets via the shared <code>status_mappings.yaml</code> if it reports.</p>
   </div>
 </div>
 
@@ -513,46 +532,10 @@
 
 <!-- ============================================================ -->
 <div class="section">
-  <h2>PDF export — retired</h2>
-  <div class="card" style="border-left:4px solid #c05600">
-    <p><strong>PDF generation via WeasyPrint has been retired.</strong> WeasyPrint depends on native GTK libraries (GObject, Pango, Cairo) that could not be loaded on the target Windows machine, so every PDF route errored; the rendered output was also poor. WeasyPrint has been uninstalled and removed from <code>requirements.txt</code>.</p>
-    <p><code>app/pdf_utils.py</code> still defines <code>render_pdf()</code> and <code>save_pdf()</code>, and the three PDF routes (<code>/retail/report/pdf</code>, <code>/spillover/report/pdf</code>, and the PDF step of <code>/export-reports</code>) still exist — but all are <strong>non-functional</strong> until the replacement lands. They will be reworked or removed when the PowerPoint export is built.</p>
-    <p><strong>Replacement:</strong> PowerPoint export via <code>python-pptx</code> (see below). Browser <em>Print → Save as PDF</em> on any report's HTML view remains a manual fallback.</p>
-  </div>
-</div>
-
-
-<!-- ============================================================ -->
-<div class="section">
-  <h2>Report export (automation pickup)</h2>
-  <div class="card">
-    <p>The <strong>Export Reports</strong> dashboard button (<code>POST /export-reports</code>) saves dated snapshots of both status reports to a local folder for pickup by external automation (e.g. n8n).</p>
-    <p style="background:#fff3cd;border-left:4px solid #c05600;padding:0.6rem 0.9rem;border-radius:4px">
-      <strong>Current state:</strong> the HTML half works, but the route still calls the retired PDF step, so the button <strong>currently errors</strong>. Planned rework: write <strong>HTML + PowerPoint</strong> (<code>.html</code> + <code>.pptx</code>) instead of HTML + PDF.</p>
-    <ul>
-      <li><strong>Planned</strong> output per click: <code>retail_report_YYYY-MM-DD.html</code> + <code>.pptx</code>, <code>spillover_report_YYYY-MM-DD.html</code> + <code>.pptx</code></li>
-      <li>Folder defaults to <code>report_export/</code> in the project root — gitignored, created automatically</li>
-      <li>Path is configurable: <code>report_export_folder</code> in <code>config/settings.yaml</code></li>
-      <li>Spillover export uses the current row selection in <code>spillover_report_selection</code> — keep the selection current before exporting</li>
-      <li>Logic lives in <code>app/report_exporter.py</code> — to add a third report, add a rendering block there; no changes needed in the route</li>
-    </ul>
-  </div>
-</div>
-
-
-<!-- ============================================================ -->
-<div class="section">
-  <h2>PowerPoint export — implemented for Retail report</h2>
+  <h2>Report outputs — PowerPoint replaced PDF</h2>
   <div class="card" style="border-left:4px solid #0e7490">
-    <p>The replacement for PDF is <strong>PowerPoint (.pptx) via <code>python-pptx</code></strong>. <code>python-pptx</code> is in <code>requirements.txt</code>.</p>
-    <ul>
-      <li><strong>Retail Status Report PPT</strong> (<code>GET /retail/report/ppt</code>) is <strong>live</strong>. Logic in <code>app/ppt_retail.py</code> (<code>build_retail_ppt()</code>). The "Download PDF" button on the Retail report is now "Download PPT".</li>
-      <li><strong>Spillover Status Report PPT</strong> (<code>GET /spillover/report/ppt</code>) is <strong>live</strong>. Logic in <code>app/ppt_spillover.py</code> (<code>build_spillover_ppt()</code>). The "Download PDF" button on the Spillover report view is now "Download PPT".</li>
-      <li><strong>Slide layout:</strong> Slide 1 — stats strip (total TCs · in tracker · % passed) + 4 overview bucket cards + 5 in-progress breakdown cards with emoji icons (📥🎯⚙️💬🚫) + optional comments box. Slide 2+ — blocked-defects table (12 rows/slide) with header + 3 summary cards in the footer.</li>
-      <li><strong>Direct-build approach</strong> (no template file needed): all shapes, colours, and fonts are drawn programmatically in Python — no dependency on an external <code>.pptx</code> template. Palette mirrors the Apple-inspired colour scheme used on the HTML report. Fonts: Bookman Old Style (headings) / Calibri (body).</li>
-      <li><strong>Still needed:</strong> Spillover report PPT and the <code>POST /export-reports</code> automation button (currently errors at the PDF step). See <code>docs/tech_backlog.md</code>.</li>
-      <li>Design reference: <code>docs/ppt_template_prompts.txt</code> contains the PptxGenJS spec used as the build blueprint.</li>
-    </ul>
+    <p><strong>PDF is fully retired</strong> (WeasyPrint's GTK dependencies never loaded on Windows; <code>pdf_utils.py</code> and all PDF routes are deleted). Browser <em>Print → Save as PDF</em> remains the manual fallback.</p>
+    <p><strong>Live outputs:</strong> Retail + Spillover Status Report PPTs (<code>ppt_retail.py</code> / <code>ppt_spillover.py</code> on shared <code>ppt_utils.py</code> primitives — direct-build, no template file) · Download-HTML snapshots on the reports and tracker boards (standalone, CSS inlined) · <code>POST /export-reports</code> writes dated <strong>HTML + PPTX</strong> for both reports to <code>report_export/</code> for automation pickup · 📧 email reports via GMX SMTP (<code>emailer.py</code>, recipients/lists in the DB) · append-only Excel report log (<code>output/retail_report_log.xlsx</code>, Retail + ECOM sheets).</p>
   </div>
 </div>
 
@@ -578,31 +561,27 @@
     <table class="rule-table">
       <thead><tr><th>File / folder</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td>app/web.py</td><td>All Flask routes — the only place HTML responses are assembled</td></tr>
-        <tr><td>app/database.py</td><td>All SQL — the ONLY module that writes to the DB</td></tr>
-        <tr><td>app/importer.py</td><td>Orchestrates all three importers in sequence</td></tr>
-        <tr><td>app/read_defects.py</td><td>Defects importer</td></tr>
-        <tr><td>app/spillover_importer.py</td><td>Spillover importer</td></tr>
-        <tr><td>app/retail_importer.py</td><td>Retail importer</td></tr>
-        <tr><td>app/reporter.py</td><td>Computes retail bucket counts from status_mappings.yaml</td></tr>
-        <tr><td>app/ppt_utils.py</td><td>Shared PPT palette, fonts, dimensions, and drawing primitives</td></tr>
-        <tr><td>app/ppt_retail.py</td><td>Generates Retail Status Report as <code>.pptx</code> bytes</td></tr>
-        <tr><td>app/ppt_spillover.py</td><td>Generates Spillover Status Report as <code>.pptx</code> bytes</td></tr>
-        <tr><td>app/pdf_utils.py</td><td>PDF helper (WeasyPrint) — <strong>retired/non-functional</strong>, kept until PDF routes are cleaned up</td></tr>
-        <tr><td>app/report_exporter.py</td><td>Renders Retail + Spillover reports to the export folder (HTML works; PDF step retired → PowerPoint planned for automation export)</td></tr>
-        <tr><td>app/config_loader.py</td><td>Loads settings.yaml</td></tr>
-        <tr><td>app/templates/base.html</td><td>Shared layout + Enhancements floating panel</td></tr>
-        <tr><td>config/settings.yaml</td><td>File paths, sheet names, hidden statuses, report_export_folder</td></tr>
-        <tr><td>config/status_mappings.yaml</td><td>Retail report bucket definitions</td></tr>
-        <tr><td>data/test_coordination.db</td><td>SQLite database (gitignored)</td></tr>
-        <tr><td>data/uploads/</td><td>Uploaded files attached to notes (gitignored)</td></tr>
-        <tr><td>report_export/</td><td>Dated report snapshots for automation pickup (gitignored, auto-created)</td></tr>
-        <tr><td>output/</td><td>Retail report Excel log</td></tr>
-        <tr><td>docs/database_schema.html</td><td>Full table + column reference</td></tr>
-        <tr><td>docs/screens.html</td><td>Screen-by-screen UI reference</td></tr>
-        <tr><td>docs/tech_backlog.md</td><td>Known deferrals, refactor plans, future work</td></tr>
-        <tr><td>docs/ppt_template_prompts.txt</td><td>Prompts for designing the branded PowerPoint report template in Claude chat</td></tr>
-        <tr><td>run_web.bat</td><td>Windows launcher — one-time dep cleanup, kills port 8010, starts Flask</td></tr>
+        <tr><td>app/web.py</td><td>Assembler — imports route modules, initialises schemas, registers Blueprints; entry point</td></tr>
+        <tr><td>app/web_core.py</td><td>Shared Flask app object + web plumbing (no routes)</td></tr>
+        <tr><td>app/web_*.py</td><td>Feature route modules + Blueprints (home/defects/spillover/retail/reports/planning/reference · notes/tracker/topics/email/teams/ecom/next-steps/entity-links/connections/issue-msg/search)</td></tr>
+        <tr><td>app/database.py + app/db/</td><td>Facade + the storage package — ALL SQL, one module per area</td></tr>
+        <tr><td>app/importer.py + *_importer.py + read_defects.py</td><td>Excel import pipeline (Defects · Spillover · Retail · ECOM · tracker seed); jira_importer.py = Jira XML → shared store; solman_sync.py; archiver.py</td></tr>
+        <tr><td>app/reporter.py</td><td>Bucket counting (Retail + ECOM reports) from status_mappings.yaml</td></tr>
+        <tr><td>app/ppt_utils.py / ppt_retail.py / ppt_spillover.py</td><td>PowerPoint builders (shared primitives + one builder per report)</td></tr>
+        <tr><td>app/report_exporter.py</td><td>Dated HTML + PPTX snapshots of both reports to report_export/ (works)</td></tr>
+        <tr><td>app/issue_messages.py · row_validations.py · reporters.py · backup.py</td><td>Pure-logic helpers: ✉️ message assembly · ⚠ data-check rules · expected-reporter matching · DB + uploads backup</td></tr>
+        <tr><td>app/emailer.py</td><td>Email reports via GMX SMTP (credentials ONLY in settings.local.yaml)</td></tr>
+        <tr><td>app/config_loader.py</td><td>Loads settings.yaml + merges settings.local.yaml over it (per top-level key)</td></tr>
+        <tr><td>app/templates/ + app/static/</td><td>_macros.html + drop-in component includes · style.css component library · notes.js</td></tr>
+        <tr><td>config/settings.yaml (+ .local)</td><td>Paths, sheets, hidden statuses, ecom_reporters, backup_folder, report_export_folder …</td></tr>
+        <tr><td>config/status_mappings.yaml</td><td>Report bucket definitions — ONE config for Retail and ECOM</td></tr>
+        <tr><td>data/test_coordination.db · data/uploads/</td><td>SQLite database + note attachments (both gitignored; backed up together by the Export &amp; Backup card)</td></tr>
+        <tr><td>report_export/ · output/ · archive/</td><td>Report snapshots for automation · Excel report log · archived source files (gitignored)</td></tr>
+        <tr><td>docs/database_schema.html · docs/screens.html · docs/architecture.html</td><td>The three HTML references: every table · every screen · this file</td></tr>
+        <tr><td>docs/claude/*.md · docs/build_plan.md · CLAUDE.md</td><td>Working docs for Claude sessions + the to-do plan</td></tr>
+        <tr><td>docs/marina_notes/</td><td>MarinaCheckSoon.html (decisions to check) + per-session click-through test plans</td></tr>
+        <tr><td>tests/</td><td>pytest suite — must be green before any commit</td></tr>
+        <tr><td>run_web.bat</td><td>Windows launcher — kills port 8010, starts Flask</td></tr>
       </tbody>
     </table>
   </div>

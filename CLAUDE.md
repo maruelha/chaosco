@@ -114,7 +114,10 @@ Print → Save as PDF is the manual fallback.
 
 - After every task: update the relevant docs (`docs/claude/*.md`,
   `docs/screens.html`, `docs/build_plan.md`) — ask "which documents would
-  you touch?" if unsure.
+  you touch?" if unsure. ALSO: `docs/database_schema.html` whenever a
+  table or column changes, and `docs/architecture.html` on structural
+  changes (new module/layer/pattern) — both drifted badly once
+  [USER 2026-07-18] because they weren't on this list.
 - Work in verifiable steps; the user confirms each before the next.
 - DB migrations: additive `ALTER TABLE` guarded by try/except in
   `app/db/core.py` (and each vertical's `init_schema`), safe to re-run.

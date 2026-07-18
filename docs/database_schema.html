@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Generated 2026-06-25</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-07-18 (all 53 tables)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -255,18 +255,27 @@
     <li><a href="#defects">defects</a></li>
     <li><a href="#spillover">spillover</a></li>
     <li><a href="#retail">retail</a></li>
+    <li><a href="#ecom">ecom</a></li>
 
     <li class="group-label">User-Authored Annotations</li>
     <li><a href="#defect_annotations">defect_annotations</a></li>
     <li><a href="#spillover_annotations">spillover_annotations</a></li>
     <li><a href="#retail_annotations">retail_annotations</a></li>
+    <li><a href="#ecom_annotations">ecom_annotations</a></li>
     <li><a href="#gatekeeper_annotations">gatekeeper_annotations</a></li>
+
+    <li class="group-label">Jira Store</li>
+    <li><a href="#jira_issues">jira_issues</a></li>
+    <li><a href="#jira_comments">jira_comments</a></li>
 
     <li class="group-label">Shared / System</li>
     <li><a href="#notes">notes</a></li>
     <li><a href="#attachments">attachments</a></li>
     <li><a href="#order_details">order_details</a></li>
     <li><a href="#order_details_history">order_details_history</a></li>
+    <li><a href="#next_step_history">next_step_history</a></li>
+    <li><a href="#entity_links">entity_links</a></li>
+    <li><a href="#entity_connections">entity_connections</a></li>
     <li><a href="#teams_chats">teams_chats</a></li>
     <li><a href="#teams_chat_refs">teams_chat_refs</a></li>
     <li><a href="#message_types">message_types</a></li>
@@ -274,8 +283,29 @@
     <li><a href="#spillover_report_selection">spillover_report_selection</a></li>
     <li><a href="#defect_notes">defect_notes</a> (legacy)</li>
 
+    <li class="group-label">Retail Requirements Tracker</li>
+    <li><a href="#retail_requirements">retail_requirements</a></li>
+    <li><a href="#tracker_countries">tracker_countries</a></li>
+    <li><a href="#requirement_country_targets">requirement_country_targets</a></li>
+    <li><a href="#country_payment_methods">country_payment_methods</a></li>
+    <li><a href="#cpm_checks">cpm_checks</a></li>
+    <li><a href="#tracker_tab4_tests">tracker_tab4_tests</a></li>
+    <li><a href="#tested_overrides">tested_overrides</a></li>
+    <li><a href="#tracker_missing_tests">tracker_missing_tests</a></li>
+    <li><a href="#tracker_clarify">tracker_clarify</a></li>
+    <li><a href="#tracker_parked_tests">tracker_parked_tests</a></li>
+
+    <li class="group-label">Topics</li>
+    <li><a href="#topics">topics</a></li>
+    <li><a href="#topic_steps">topic_steps</a></li>
+
+    <li class="group-label">Email Reports</li>
+    <li><a href="#report_recipients">report_recipients</a></li>
+    <li><a href="#email_lists">email_lists</a></li>
+    <li><a href="#email_list_members">email_list_members</a></li>
+
     <li class="group-label">ECOM Gatekeeper</li>
-    <li><a href="#ecom_gatekeeper">ecom_gatekeeper</a></li>
+    <li><a href="#ecom_gatekeeper">ecom_gatekeeper</a> (deprecated)</li>
 
     <li class="group-label">Shelf</li>
     <li><a href="#shelf">shelf</a></li>
@@ -1174,6 +1204,481 @@
       <strong>Inbox filing:</strong> <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code> — creates a shelf row, then re-parents the inbox note via UPDATE notes SET entity_type='shelf', entity_id=&lt;shelf_id&gt; &nbsp;·&nbsp;
       <strong>Combine:</strong> <code>POST /shelf/combine</code> — re-parents notes from secondary rows to a chosen primary, deletes secondaries. Attachments follow automatically (linked to note_id, not shelf_id).
     </div>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: ECOM VERTICAL (added to the doc 2026-07-18) -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">ECOM vertical — Excel tab import + jira-keyed annotations (2026-07-09)</div>
+
+  <div class="table-card" id="ecom">
+    <div class="table-card-header">
+      <span class="tname">ecom</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "ECOM" Excel tab. Match key = normalised JIRA ID. Rows without a JIRA ID are skipped by the importer.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">ecom_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(trim(jira_id)) — the upsert key</td></tr>
+        <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Joins jira_issues.jira_key live (Jira status/assignee/reporter/comments on the board)</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel status (NOT the Jira status)</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel assignee</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">testcase_name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">description_change</td><td class="col-type">TEXT</td><td></td><td class="note-text">Δ pill on the board (tooltip)</td></tr>
+        <tr><td class="col-name">execution_started</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">old_order_numbers</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">defect_id_ref</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Defect ID (if applicable)" — feeds the impacted-defects section of the ECOM report (substring match)</td></tr>
+        <tr><td class="col-name">s4_sales_order</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_billing_documents</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_journal_invoice_entry</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">delivery_note</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">reason_for_pass_with_reservation</td><td class="col-type">TEXT</td><td></td><td class="note-text">Required when status = "conditionally passed" — enforced softly by the ⚠ data check (app/row_validations.py)</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Imported Excel comment (read-only reference in the shared Comments dialog)</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Annotations:</strong> ecom_annotations (by jira_id) &nbsp;·&nbsp; <strong>Notes:</strong> <code>notes</code> WHERE entity_type='ecom' &nbsp;·&nbsp; <strong>Orders/chats:</strong> shared <code>('jira', jira_key)</code> address</div>
+  </div>
+
+  <div class="table-card" id="ecom_annotations">
+    <div class="table-card-header">
+      <span class="tname">ecom_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Working fields for ECOM rows — keyed by jira_id so they survive re-imports AND the gatekeeper→ECOM handover. Never written by the importer.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td></td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">ECOM-side next step (separate from gatekeeper_annotations.next_step — known duplication)</td></tr>
+        <tr><td class="col-name">comment_history</td><td class="col-type">TEXT</td><td></td><td class="note-text">Your maintained history — edited in the shared Comments dialog (board) and the detail page</td></tr>
+        <tr><td class="col-name">action_needed</td><td class="col-type">INTEGER</td><td></td><td class="note-text">DEFAULT 0</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: JIRA STORE -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Jira store — shared, filled by the XML import (2026-07-11)</div>
+
+  <div class="table-card" id="jira_issues">
+    <div class="table-card-header">
+      <span class="tname">jira_issues</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">One row per Jira ticket, from the newest .xml export in jira_folder. THE shared store: the Gatekeeper Check working sections and the ECOM board's live Jira columns read the same rows. Living fields (status, assignee, acceptance criteria, comments, reporter) refresh on every import.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">e.g. S4ECOM-1153</td></tr>
+        <tr><td class="col-name">solman_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Summary text before the first "_" (may be NULL)</td></tr>
+        <tr><td class="col-name">summary</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">epic</td><td class="col-type">TEXT</td><td></td><td class="note-text">Custom field by NAME; epic browse-link built by key swap</td></tr>
+        <tr><td class="col-name">markets</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">jira_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Refreshed on re-import</td></tr>
+        <tr><td class="col-name">jira_assignee</td><td class="col-type">TEXT</td><td></td><td class="note-text">Refreshed on re-import</td></tr>
+        <tr><td class="col-name">reporter</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">"Lastname, Firstname" — drives the reporter filters, per-reporter Sales reports and the unexpected-reporter data check (config ecom_reporters)</td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">HTML as exported</td></tr>
+        <tr><td class="col-name">acceptance_criteria</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Checklist text; source of the ⤵ take-over order numbers; refreshed on re-import</td></tr>
+        <tr><td class="col-name">link</td><td class="col-type">TEXT</td><td></td><td class="note-text">Browse URL (open-in-Jira)</td></tr>
+        <tr><td class="col-name">created / updated</td><td class="col-type">TEXT</td><td></td><td class="note-text">Jira timestamps</td></tr>
+        <tr><td class="col-name">seen_in_gatekeeper</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Source tag — set, never cleared; the gatekeeper page lists only tagged rows</td></tr>
+        <tr><td class="col-name">seen_in_ecom</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Same for the ECOM import path</td></tr>
+        <tr><td class="col-name">first_seen / last_seen</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Comments:</strong> jira_comments (replaced wholesale per import) &nbsp;·&nbsp; <strong>Authored:</strong> gatekeeper_annotations (by jira_key) &nbsp;·&nbsp; <strong>Notes/orders/chats:</strong> shared tables at <code>('jira', jira_key)</code></div>
+  </div>
+
+  <div class="table-card" id="jira_comments">
+    <div class="table-card-header">
+      <span class="tname">jira_comments</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Comment thread per ticket — read-only HTML bodies (the export carries no author names, only JIRAUSER keys). Replaced wholesale on every import of that ticket.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → jira_issues</span></td><td></td></tr>
+        <tr><td class="col-name">created</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">body</td><td class="col-type">TEXT</td><td></td><td class="note-text">HTML</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: SHARED COMPONENTS (added to the doc 2026-07-18) -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Shared components — generic (entity_type, entity_id) addressed</div>
+
+  <div class="table-card" id="next_step_history">
+    <div class="table-card-header">
+      <span class="tname">next_step_history</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Archive of past next steps (the "↻ New next step" component, 2026-07-10). One row per archived step; the live field stays one line.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">spillover · retail · ecom · defect · jira · ecom_gatekeeper …</td></tr>
+        <tr><td class="col-name">entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">The archived text</td></tr>
+        <tr><td class="col-name">archived_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="entity_links">
+    <div class="table-card-header">
+      <span class="tname">entity_links</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Per-entity URL list (the _entity_links.html drop-in, 2026-07-14). Currently used by Topics.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">entity_type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">entity_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">label</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Defaults from the URL when blank</td></tr>
+        <tr><td class="col-name">url</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">http(s) only</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="entity_connections">
+    <div class="table-card-header">
+      <span class="tname">entity_connections</span>
+      <span class="badge badge-shared">Shared</span>
+      <span class="tdesc">Many-to-many links BETWEEN entities (2026-07-18): topic ↔ defect / retail / ecom / spillover. One direction-less row per pair — sides stored in canonical order, so connecting from either side is the same row. Labels are resolved live, never stored.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">a_type / a_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">First side (canonically smaller by (type, id))</td></tr>
+        <tr><td class="col-name">b_type / b_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Second side; UNIQUE(a_type, a_id, b_type, b_id) dedupes</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>UI:</strong> _connections.html drop-in on the Topic / Defect / Retail / ECOM / Spillover DETAIL pages (collapsed when empty) &nbsp;·&nbsp; <strong>Picker search:</strong> reuses GET /inbox/targets</div>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: RETAIL REQUIREMENTS TRACKER -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Retail Requirements Tracker — own vertical (db_retail_tracker.py); "tested" always derived LIVE from retail statuses</div>
+
+  <div class="table-card" id="retail_requirements">
+    <div class="table-card-header">
+      <span class="tname">retail_requirements</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">One row per requirement (Sales/Return areas). Seeded once from the tracking Excel tabs 1–3; the DB is the living store afterwards — manual rows (source='manual', excel_row ≥ 5000) are never pruned by a re-import.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">sales · return; UNIQUE(area, excel_row)</td></tr>
+        <tr><td class="col-name">scenario_label</td><td class="col-type">TEXT</td><td></td><td class="note-text">Rolls up to scenario GROUPS via tracker_scenario_groups in settings.yaml</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Requirement text (✎ editable)</td></tr>
+        <tr><td class="col-name">excel_test_ref / test_name</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel-side test id + name (matching is by NAME after the underscore)</td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Resolved dashboard test id; may be a FUTURE "⏳ expected" id (absent from retail) that self-heals on import; NULL = unresolved</td></tr>
+        <tr><td class="col-name">sale_test_ref</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">required_raw / required_dtc</td><td class="col-type">TEXT / INTEGER</td><td></td><td class="note-text">"DTC required" cell; non-numeric values (e.g. "1 or 5") = needs decision</td></tr>
+        <tr><td class="col-name">all_countries</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">1 = required in ALL active countries</td></tr>
+        <tr><td class="col-name">comment / user_comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Imported comment vs. YOUR blur-saved board comment (importer never touches user_comment)</td></tr>
+        <tr><td class="col-name">excel_row / created_at / source</td><td class="col-type">—</td><td></td><td class="note-text">source: excel · manual</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Named-country targets:</strong> requirement_country_targets &nbsp;·&nbsp; <strong>Clarify list:</strong> tracker_clarify (by requirement_id)</div>
+  </div>
+
+  <div class="table-card" id="tracker_countries">
+    <div class="table-card-header">
+      <span class="tname">tracker_countries</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Country master for the tracker — seeded from the Excel country columns; active flag controls counting.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td></td></tr>
+        <tr><td class="col-name">excel_header</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">active</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">DEFAULT 1</td></tr>
+        <tr><td class="col-name">sort_order</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="requirement_country_targets">
+    <div class="table-card-header">
+      <span class="tname">requirement_country_targets</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Specific-country targets per requirement (from comments like "UK, IE" or names like "(special case PL)"); red-ring chips on the board.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">requirement_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → retail_requirements</span></td><td class="note-text">UNIQUE(requirement_id, country)</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="country_payment_methods">
+    <div class="table-card-header">
+      <span class="tname">country_payment_methods</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Tab-4 matrix: one row per (country × payment method). Kicked-out rows (active=0, mandatory inactive_reason) leave ALL counting.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">country / method_name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">UNIQUE(country, method_name)</td></tr>
+        <tr><td class="col-name">category</td><td class="col-type">TEXT</td><td></td><td class="note-text">card · voucher · NULL (= unknown, editable inline while unknown)</td></tr>
+        <tr><td class="col-name">active</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">0 = kicked out ("🚫", reason mandatory)</td></tr>
+        <tr><td class="col-name">inactive_reason</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Cleared by "↩ Take back in"</td></tr>
+        <tr><td class="col-name">comment / user_comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Imported vs. your blur-saved comment</td></tr>
+        <tr><td class="col-name">excel_row / created_at</td><td class="col-type">—</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Check-off:</strong> cpm_checks (per cpm_id × test kind)</div>
+  </div>
+
+  <div class="table-card" id="cpm_checks">
+    <div class="table-card-header">
+      <span class="tname">cpm_checks</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Manual per-method check-off: a human confirms (country × method × Sale/Return kind) was really covered by a test run.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">cpm_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → country_payment_methods</span></td><td class="note-text">UNIQUE(cpm_id, test_kind)</td></tr>
+        <tr><td class="col-name">test_kind</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">One of the four fixed tab-4 tests</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="tracker_tab4_tests">
+    <div class="table-card-header">
+      <span class="tname">tracker_tab4_tests</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">The four fixed tab-4 tests (Sale/Return × variants) with their dashboard test ids — shown as cards on the payment-methods page.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">test_kind</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td></td></tr>
+        <tr><td class="col-name">excel_test_ref / test_name / test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel refs + resolved dashboard id</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="tested_overrides">
+    <div class="table-card-header">
+      <span class="tname">tested_overrides</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Manual tested-override per (requirement or cpm) × country with mandatory reason — planned step 5 of the tracker; table exists, UI not built yet.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">requirement_id / cpm_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Exactly one side set</td></tr>
+        <tr><td class="col-name">test_kind</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">reason</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="tracker_missing_tests">
+    <div class="table-card-header">
+      <span class="tname">tracker_missing_tests</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Free-text "⚠ Tests missing" list — requirements with NO test case at all; red alarm section at the TOP of the board.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">text</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="tracker_clarify">
+    <div class="table-card-header">
+      <span class="tname">tracker_clarify</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">"Clarify with Sales — do these test cases exist?" list on the board. Entry auto-removed once its requirement resolves.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">requirement_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span> <span class="tag tag-fk">FK → retail_requirements</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="tracker_parked_tests">
+    <div class="table-card-header">
+      <span class="tname">tracker_parked_tests</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">"Not part of our requirements — tested anyway": passed tests judged out of requirement scope (parked from the coverage check). Passed countries derive live.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td></td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Inline blur-save on the board</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: TOPICS -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Topics — active working topics (2026-07-14)</div>
+
+  <div class="table-card" id="topics">
+    <div class="table-card-header">
+      <span class="tname">topics</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">One row per working topic — the counterpart to Shelf (Shelf = archive, Topic = worked on NOW). Dashboard card shows the active count.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">category</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text with datalist autocomplete</td></tr>
+        <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">DEFAULT 'Medium'</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">active · done (DEFAULT active)</td></tr>
+        <tr><td class="col-name">workpad</td><td class="col-type">TEXT</td><td></td><td class="note-text">Rich-text HTML (contenteditable pad; autosave blur/30s/Ctrl+S)</td></tr>
+        <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Steps:</strong> topic_steps &nbsp;·&nbsp; <strong>Notes:</strong> <code>notes</code> WHERE entity_type='topic' &nbsp;·&nbsp; <strong>Links:</strong> entity_links &nbsp;·&nbsp; <strong>Connections:</strong> entity_connections</div>
+  </div>
+
+  <div class="table-card" id="topic_steps">
+    <div class="table-card-header">
+      <span class="tname">topic_steps</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Next steps per topic; checking a step archives it (done + done_at), untick reopens.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">topic_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → topics</span></td><td></td></tr>
+        <tr><td class="col-name">step</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">done / done_at</td><td class="col-type">INTEGER / TEXT</td><td></td><td class="note-text">done DEFAULT 0</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: EMAIL REPORTS -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Email reports — recipients &amp; named mailing lists (/email-report)</div>
+
+  <div class="table-card" id="report_recipients">
+    <div class="table-card-header">
+      <span class="tname">report_recipients</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Recipient directory for report emails (GMX SMTP; credentials ONLY in settings.local.yaml).</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">email</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">active</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">DEFAULT 1</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-card" id="email_lists">
+    <div class="table-card-header">
+      <span class="tname">email_lists</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Named recipient selections (e.g. "Management", "Sales team") for one-click picks on /email-report.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-uq">UNIQUE</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Members:</strong> email_list_members (list_id × recipient_id)</div>
+  </div>
+
+  <div class="table-card" id="email_list_members">
+    <div class="table-card-header">
+      <span class="tname">email_list_members</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Join table: which recipients belong to which named list.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">list_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → email_lists</span></td><td class="note-text">UNIQUE(list_id, recipient_id)</td></tr>
+        <tr><td class="col-name">recipient_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → report_recipients</span></td><td></td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
