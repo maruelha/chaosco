@@ -226,7 +226,11 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   details / Comments / Notes), detail `/spillover/<id>`. 2026-07-09:
   "With whom" column (Sales | MB, `spillover_annotations.with_whom`,
   inline AJAX select + multi filter) and "Status report" filter/column
-  (in/not-in `spillover_report_selection`, green ✓)
+  (in/not-in `spillover_report_selection`, green ✓). The Status-report
+  filter DEFAULTS to "In report" on a fresh page open [USER 2026-07-18] —
+  only a MISSING in_report param gets the default; the form's explicit
+  "All" (present-but-empty) shows everything, so Clear returns to the
+  default view. Tests: tests/test_spillover_default_filter.py.
 - Spillover Status Report: select `/spillover/report` (persists selection
   in `spillover_report_selection`), TWO coexisting views [USER 2026-07-10:
   the table is ADDITIONAL, not a replacement]: detailed card view

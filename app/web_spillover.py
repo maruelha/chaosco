@@ -26,7 +26,12 @@ def spillover_list():
     assigned_to = request.args.getlist("assigned_to")
     critical    = request.args.getlist("critical")
     with_whom   = request.args.getlist("with_whom")
-    in_report   = request.args.get("in_report", "")
+    # Status-report filter defaults to "In report" on a fresh page open
+    # [USER 2026-07-18]; an explicit "All" submits in_report= (present but
+    # empty), which is respected — only a MISSING param gets the default.
+    in_report   = request.args.get("in_report")
+    if in_report is None:
+        in_report = "yes"
     show_all    = request.args.get("show_all") == "1"
 
     hidden = _cfg.get("spillover_hidden_statuses", [])
