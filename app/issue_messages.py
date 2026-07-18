@@ -2,8 +2,11 @@
 
 The SPECIAL TEXTS are deliberately FIXED here (not DB-editable — [USER]:
 "editable might be a bit brittle"). Placeholders:
-    {message}  -> the chosen message type name (message_types table)
-    {orders}   -> the highlighted order number(s), comma-joined
+    {message}   -> the chosen message type name (message_types table)
+    {orders}    -> the highlighted order number(s), comma-joined
+    {tibco_api} -> " (<tibco api>)" when the chosen type has one, else ""
+                   (leading space + brackets live in the replacement, so the
+                   sentence stays clean when the type has no TIBCO API)
 Templates that speak of "above orders" refer to the context header, which
 always leads the message: "<identifier> — orders: <all order numbers>".
 
@@ -14,7 +17,7 @@ from __future__ import annotations
 
 SPECIAL_TEXTS = [
     {"key": "check_tibco", "label": "Check in TIBCO",
-     "text": "please check if the {message} message for the {orders} has reached tibco"},
+     "text": "please check if the {message} message for the {orders} has reached tibco{tibco_api}"},
     {"key": "gatekeeper_s4", "label": "Gatekeeper check in S4",
      "text": "please check orders."},
     {"key": "sd_check_s4", "label": "SD team to check in S4",
@@ -44,7 +47,9 @@ def build_message(identifier: str, all_orders: list[str], template_text: str,
     header = identifier
     if all_orders:
         header += " — orders: " + ", ".join(all_orders)
-    body = template_text.replace("{message}", message_type).replace("{orders}", orders)
+    body = (template_text.replace("{message}", message_type)
+            .replace("{orders}", orders)
+            .replace("{tibco_api}", f" ({tibco_api})" if tibco_api else ""))
     lines = [header, "", body]
     apis = " · ".join(x for x in (f"TIBCO: {tibco_api}" if tibco_api else "",
                                   f"IIB: {iib_api}" if iib_api else "") if x)

@@ -91,7 +91,8 @@ if (!window.imInit) {
       let header = ctx.ident;
       if (all.length) header += ' — orders: ' + all.join(', ');
       const body = tpl.text.split('{message}').join(t ? t.name : '')
-                           .split('{orders}').join(orders);
+                           .split('{orders}').join(orders)
+                           .split('{tibco_api}').join(t && t.tibco_api ? ' (' + t.tibco_api + ')' : '');
       const lines = [header, '', body];
       const apis = [t && t.tibco_api ? 'TIBCO: ' + t.tibco_api : '',
                     t && t.iib_api ? 'IIB: ' + t.iib_api : ''].filter(Boolean).join(' · ');

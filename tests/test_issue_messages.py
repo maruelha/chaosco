@@ -79,6 +79,15 @@ def test_build_message_assembly():
                          "issue with the {message} {orders}", "Sales order", [])
     assert text == "TC1 / DE — orders: A1, B2\n\nissue with the Sales order A1, B2"
 
+    # check_tibco: {tibco_api} appends " (api)" to the sentence — or nothing
+    tibco_tpl = [t for t in SPECIAL_TEXTS if t["key"] == "check_tibco"][0]["text"]
+    text = build_message("8000123", ["A1"], tibco_tpl, "Sales order", [],
+                         tibco_api="tib.sales")
+    assert ("please check if the Sales order message for the A1"
+            " has reached tibco (tib.sales)") in text
+    text = build_message("8000123", ["A1"], tibco_tpl, "Sales order", [])
+    assert text.endswith("has reached tibco")
+
 
 def test_context_per_entity_type(client):
     conn = database.get_connection(client.db_path)

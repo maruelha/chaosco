@@ -211,7 +211,11 @@ ticked = all) resolved + a "TIBCO: … · IIB: …" line when the type has APIs
 - **Special texts FIXED in code** (`issue_messages.SPECIAL_TEXTS`, 8
   entries) — [USER]: editable "might be a bit brittle". Changing wording =
   edit that list. `build_message()` is the assembly contract; the JS in
-  `_issue_message.html` MIRRORS it — keep both in sync.
+  `_issue_message.html` MIRRORS it — keep both in sync. Placeholders:
+  {message}, {orders}, and {tibco_api} [USER 2026-07-18] — resolves to
+  " (<tibco api>)" when the chosen type has one, else "" (space + brackets
+  live in the replacement); used by check_tibco so the sentence ends
+  "…has reached tibco (API)".
 - **Context per screen**: jira → SolMan ID (fallback key) + order_details;
   retail → "tc / country" + imported order/S4 fields (labeled); spillover →
   name (+ external id) + order_details + imported order_numbers cell.
