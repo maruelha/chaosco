@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-07-18</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-07-18</h1>
+<p class="hint">Everything built in the 18.07. session, as a click-through checklist.
+Ticks are remembered by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>).
+New on startup: the <code>entity_connections</code> table, the
+<code>ecom_reporters</code> config (Phalk + Calvin), and your backup folder
+(<code>E:\chaosco_backups</code>) is already set in settings.local.yaml.</div>
+
+<!-- 1 -->
+<div class="box b-blue">
+  <div class="box-head">1 · Inbox — quick route-to, bigger search, no more jumping</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Open the <a href="http://127.0.0.1:8010/inbox" target="_blank">Inbox</a>: every pending
+      item has a small <strong>↪ route to…</strong> dropdown right in its button row.
+      Set one to Contact / Link / Follow-up.
+      <span class="expect">Saves immediately (amber chip appears) — no Edit needed. Ready for ⚡ Auto-file.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Look at the search box in the Pending header.
+      <span class="expect">Noticeably wider (grows with the window), slightly larger text.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span>Scroll DOWN to an item, then Edit + Save it (or file / delete / quick-route one).
+      <span class="expect">After the save the page stays at your scroll position — no jump to the top.
+      Note: the green "saved" banner sits at the top, so you may not see it — the changed item is the confirmation.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-amber">
+  <div class="box-head">2 · Requirements Tracker — bottom lists got visible headings</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>On the <a href="http://127.0.0.1:8010/retail-tracker/board" target="_blank">tracker board</a>,
+      scroll to the two collapsed lists at the bottom.
+      <span class="expect">Gray header bars now show "Clarify with Sales — do these test cases exist?" and
+      "Not part of our requirements — tested anyway" (the text was white-on-white before).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Same check on <a href="http://127.0.0.1:8010/retail-tracker/payment-methods" target="_blank">Payment methods</a>:
+      the "Kicked out — not applicable" section.
+      <span class="expect">Gray header, readable.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · ✉️ Check-in-TIBCO message ends with the API</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open ✉️ on any row, pick a message type that has a TIBCO API + special text
+      <strong>Check in TIBCO</strong>.
+      <span class="expect">The sentence ends "…has reached tibco <strong>(api)</strong>". Types without a
+      TIBCO API: no brackets. The TIBCO/IIB footer line still appears too — decide while working
+      whether that doubling bothers you (checkbox waiting in
+      <a href="MarinaCheckSoon.html">MarinaCheckSoon</a>).</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-teal">
+  <div class="box-head">4 · ECOM board — Comments button (Excel comment)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>On the <a href="http://127.0.0.1:8010/ecom/" target="_blank">ECOM board</a>, click
+      <strong>Comments</strong> on a row.
+      <span class="expect">Popup shows the imported <strong>Excel</strong> comment read-only + your own
+      comment-history textarea (same dialog as Retail/Spillover — now one shared component).
+      Jira comments stay in their own "Jira N ▸" expander.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Save a comment history, then open the row's Detail page.
+      <span class="expect">Same text in the annotation section — one field, two views. Retail + Spillover
+      Comments buttons behave exactly as before (just shared code now).</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-red">
+  <div class="box-head">5 · ⚠ Data checks (row validations) — Retail + ECOM</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>On <a href="http://127.0.0.1:8010/retail" target="_blank">Retail</a> or
+      <a href="http://127.0.0.1:8010/ecom/" target="_blank">ECOM</a>, find (or create in the Excel + re-import)
+      a row with status <strong>conditionally passed</strong> and an empty
+      "Reason for pass with reservation".
+      <span class="expect">Small red <strong>⚠</strong> button on exactly that row; click → "Data check" popup
+      names the problem. Clean rows show nothing. Read-only — the import is never blocked.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>ECOM only: a row whose Jira ticket was raised by someone who is NOT Phalk or Calvin also gets ⚠
+      ("reporter … not one of the expected reporters").
+      <span class="expect">More rules later = one entry in <code>app/row_validations.py</code>.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-slate">
+  <div class="box-head">6 · Defects — one ECOM, one RETAIL</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span>Open <a href="http://127.0.0.1:8010/defects" target="_blank">Defects</a> and the Channel filter.
+      <span class="expect">Exactly one <strong>ECOM</strong> and one <strong>RETAIL</strong> entry (no more
+      ecom/Ecom variants); picking one finds ALL casings. The Channel column also displays uppercase
+      (the raw Excel value stays stored).</span></span></label>
+  </div>
+</div>
+
+<!-- 7 -->
+<div class="box b-teal">
+  <div class="box-head">7 · Reporter filters + per-reporter Sales reports</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s7a">
+      <span>On the <a href="http://127.0.0.1:8010/ecom/" target="_blank">ECOM board</a>: new
+      <strong>Reporter</strong> dropdown (Phalk / Calvin) in the filter row.
+      <span class="expect">Filters by the ticket's Jira reporter ("Jindal, Phalk" matches Phalk);
+      rows without Jira data drop out while filtering.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7b">
+      <span>On the <a href="http://127.0.0.1:8010/ecom-gatekeeper" target="_blank">Gatekeeper Check</a>:
+      reporter dropdown in the header filters the work sections; next to 📄 Sales report there are
+      <strong>📄 Phalk</strong> and <strong>📄 Calvin</strong>.
+      <span class="expect">Each opens the Sales report with ONLY that reporter's tickets — title shows
+      "— Phalk", print/download follow, toolbar has an All/Phalk/Calvin switcher.
+      (Calvin's is empty until his tickets arrive.)</span></span></label>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="box b-slate">
+  <div class="box-head">8 · Dashboard — Known Prod Defects card</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s8a">
+      <span>Check the <a href="http://127.0.0.1:8010/" target="_blank">Dashboard</a> right after Defects.
+      <span class="expect">"Known Prod Defects" card with count badge → the register — it outlives the
+      spillover work. The Spillover-page link still works too.</span></span></label>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="box b-green">
+  <div class="box-head">9 · Export &amp; Backup — DB + screenshots to E:</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s9a">
+      <span>With the external drive plugged in, on the Dashboard's <strong>Export &amp; Backup</strong> card
+      click <strong>New dated copy</strong>.
+      <span class="expect">Result line: path <code>E:\chaosco_backups\chaosco_backup_&lt;timestamp&gt;.db</code>
+      + "Uploads mirrored: N new / M total" — screenshots/PDFs are copied too (the DB only stores filenames).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s9b">
+      <span>Click <strong>Overwrite copy</strong>, then reload the dashboard.
+      <span class="expect">Fixed <code>chaosco_backup.db</code> written/replaced; "Last backup: … (today)"
+      reminder under the buttons (turns amber when older than 7 days).</span></span></label>
+  </div>
+</div>
+
+<!-- 10 -->
+<div class="box b-blue">
+  <div class="box-head">10 · Spillover — opens on "In report"</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s10a">
+      <span>Open <a href="http://127.0.0.1:8010/spillover" target="_blank">Core South Spillover</a> fresh.
+      <span class="expect">Status report filter pre-set to <strong>In report</strong> — only report lines show.
+      Pick "All" in the dropdown to see everything. Note: <strong>Clear returns to the default</strong>
+      (In report), not to All.</span></span></label>
+  </div>
+</div>
+
+<!-- 11 -->
+<div class="box b-green">
+  <div class="box-head">11 · Topics — workpad first + 🔗 Connected items</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s11a">
+      <span>Open a <a href="http://127.0.0.1:8010/topics/" target="_blank">Topic</a>.
+      <span class="expect">Order now: meta → <strong>Workpad</strong> → Next steps → Links →
+      Connected items → Notes.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s11b">
+      <span>In <strong>🔗 Connected items</strong>: pick type Defect (or Retail TC / ECOM / Spillover),
+      type to search, click a hit.
+      <span class="expect">Chip appears with type + live label, linking to the item's detail page.
+      Section is collapsed when empty, opens itself when something is connected.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s11c">
+      <span>Open that defect/test case's <strong>detail page</strong> (connections live on details only).
+      <span class="expect">Its Connected items section shows the topic back — same connection, both
+      directions. ✕ disconnects for both sides. Gatekeeper page has none on purpose: the ECOM row
+      covers the test case.</span></span></label>
+  </div>
+</div>
+
+<div class="box b-slate">
+  <div class="box-head">Also from this session (no clicking needed)</div>
+  <div class="box-body" style="font-size:0.85rem; color:#555">
+    Inbox delete + attachment cleanup verified &amp; pinned with tests (existed already) ·
+    validation framework: new rules = one entry in <code>app/row_validations.py</code> ·
+    expected reporters configurable via <code>ecom_reporters</code> in settings.yaml ·
+    backup covers DB + uploads; NOT covered (deliberate): excel archive, report_export, jira XMLs,
+    settings.local.yaml (credentials) · TIBCO-footer decision waiting in
+    <a href="MarinaCheckSoon.html">MarinaCheckSoon</a> · suite now at 272 tests.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0718-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>
