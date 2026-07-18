@@ -121,6 +121,14 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Real-file trial (gatekeeper search, 8 tickets, 27 comments): parser OK
   first try; the instance's custom-field names ARE "Epic Link"/"Markets".
   Jira has NO order-number field — order numbers live in comment texts.
+- **Acceptance-criteria HTML stripping** [USER 2026-07-18]: depending on
+  the export, the checklist plugin's markup arrives as TEXT/CDATA — then
+  itertext() returned raw `<div>/<span>/<svg>` noise into
+  acceptance_criteria. `_checklist_to_text` (jira_importer.py,
+  HTMLParser-based) keeps only visible text (svg/style/script dropped,
+  block tags → line breaks; the "0/2" checklist progress survives); plain
+  text passes through unchanged. AC is a living field, so ONE
+  "↻ Update from Jira" heals already-noisy stored values.
 - `/ecom-gatekeeper` [USER 2026-07-11]: the JIRA TICKETS table is THE
   current gatekeeper; the manual `ecom_gatekeeper` table is DEPRECATED
   (kept, collapsed at the bottom, still fully functional). "↻ Update from

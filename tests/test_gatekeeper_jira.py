@@ -97,6 +97,33 @@ def test_acceptance_criteria_parsed_and_refreshed_on_reimport(client, tmp_path, 
         conn.close()
 
 
+def test_checklist_html_noise_is_stripped(tmp_path):
+    """[USER 2026-07-18] Some exports carry the checklist markup as TEXT
+    (CDATA) — the acceptance criteria must come out as clean lines, never
+    raw <div>/<span>/<svg> noise; svg path data is dropped entirely."""
+    noisy = XML.replace(
+        "<customfieldvalues><checklist><div>\n"
+        "          <span>Omni Order: TBY_DC_ANLA1O8PUR DN : 320985207</span>\n"
+        "          <span>Return Order: 6000084253</span>\n"
+        "          <span>Exchange Order: XXXXXXXXXXX</span>\n"
+        "        </div></checklist></customfieldvalues>",
+        "<customfieldvalues><checklist><![CDATA["
+        '<div class="o-completion" style="display: flex;">'
+        '<span class="aui-lozenge" style="font-size: 12px;">'
+        '<svg width="15" height="15"><path clip-rule="evenodd" d="m10.4,3.4l-7.8,0z"/></svg>'
+        "0/2</span></div>"
+        '<div style="margin-bottom: 8px;"><span>Omni Order: TBY_DC_ANLA1O8PUR</span></div>'
+        "<div><span>Return Order: 6000084253</span></div>"
+        "]]></checklist></customfieldvalues>")
+    p = tmp_path / "noisy.xml"
+    p.write_text(noisy, encoding="utf-8")
+    ac = parse_jira_xml(p)[0]["acceptance_criteria"]
+    assert "<" not in ac and "aui-lozenge" not in ac and "clip-rule" not in ac
+    assert "Omni Order: TBY_DC_ANLA1O8PUR" in ac
+    assert "Return Order: 6000084253" in ac
+    assert "0/2" in ac                          # checklist progress survives
+
+
 def test_order_extraction_rules():
     comments = [
         {"created": "old", "body": "just chatter"},

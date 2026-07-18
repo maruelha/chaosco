@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from html.parser import HTMLParser
 from pathlib import Path
 
 from app.db import jira as db_jira
@@ -37,6 +38,47 @@ def _text(elem) -> str:
     if elem is None:
         return ""
     return "".join(elem.itertext()).strip()
+
+
+class _ChecklistText(HTMLParser):
+    """Visible text out of the checklist plugin's HTML blob [USER 2026-07-18]:
+    depending on the export, the checklist markup arrives as TEXT (CDATA), so
+    itertext() returns raw <div>/<span>/<svg> noise. This keeps only the
+    human-readable text; svg/style/script content is dropped entirely and
+    block tags become line breaks."""
+    _SKIP = {"svg", "style", "script"}
+    _BLOCK = {"div", "p", "li", "tr", "br"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._SKIP:
+            self._skip_depth += 1
+        elif tag in self._BLOCK:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in self._SKIP and self._skip_depth:
+            self._skip_depth -= 1
+        elif tag in self._BLOCK:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if not self._skip_depth:
+            self.parts.append(data)
+
+
+def _checklist_to_text(raw: str) -> str:
+    """Markup-tolerant cleanup: plain text passes through unchanged."""
+    if "<" in raw:
+        parser = _ChecklistText()
+        parser.feed(raw)
+        raw = "".join(parser.parts)
+    lines = [" ".join(l.split()) for l in raw.splitlines()]
+    return "\n".join(l for l in lines if l)
 
 
 def _split_solman_id(summary: str) -> str | None:
@@ -59,9 +101,7 @@ def _customfields(item) -> dict:
         if name == "acceptance criteria":
             vals = cf.find("customfieldvalues")
             raw = "".join(vals.itertext()) if vals is not None else ""
-            lines = [" ".join(l.split()) for l in raw.splitlines()]
-            text = "\n".join(l for l in lines if l)
-            out["acceptance_criteria"] = text or None
+            out["acceptance_criteria"] = _checklist_to_text(raw) or None
             continue
         values = [_text(v) for v in cf.findall(".//customfieldvalue")]
         values = [v for v in values if v]
