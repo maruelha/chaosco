@@ -177,6 +177,10 @@
 {% include '_teams_chat_links.html' %}
 {% include '_issue_message.html' %}
 
+{% with conn_entity_type='ecom', conn_entity_id=row.ecom_id %}
+  {% include '_connections.html' %}
+{% endwith %}
+
 {% with entity_type='ecom', entity_id=row.ecom_id %}
   {% include '_notes_section.html' %}
 {% endwith %}

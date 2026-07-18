@@ -42,6 +42,13 @@ from app.web_entity_links import bp as _entity_links_bp
 _db_entity_links.init_schema(_db_path)
 app.register_blueprint(_entity_links_bp)
 
+# Entity connections (2026-07-18) — many-to-many topic ↔ defect / retail /
+# ecom / spillover links; drop-in _connections.html on the detail pages.
+from app.db import entity_connections as _db_conn
+from app.web_connections import bp as _conn_bp
+_db_conn.init_schema(_db_path)
+app.register_blueprint(_conn_bp)
+
 # Shared Jira store (day plan 05.07 step 2) — no routes yet, the Gatekeeper
 # v2 card (step 3) and the ECOM vertical (steps 7-8) consume it.
 from app.db import jira as _db_jira

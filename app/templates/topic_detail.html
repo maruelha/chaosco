@@ -58,6 +58,29 @@
           onclick="return confirm('Delete this topic with all steps and notes? This cannot be undone.')">Delete topic</button>
 </form>
 
+{# ---- workpad (the actual content — first, per Marina 2026-07-18) ---- #}
+{% call ui.section('Workpad', 'slate', open=True) %}
+<div style="padding:0.6rem 1rem 1rem">
+  <div class="tp-toolbar">
+    <button type="button" onclick="tpFmt('bold')" title="bold"><b>B</b></button>
+    <button type="button" onclick="tpFmt('italic')" title="italic"><i>I</i></button>
+    <button type="button" onclick="tpFmt('underline')" title="underline"><u>U</u></button>
+    <button type="button" onclick="tpFmt('strikeThrough')" title="strike"><s>S</s></button>
+    <button type="button" onclick="tpBlock('H2')" title="heading">H2</button>
+    <button type="button" onclick="tpBlock('H3')" title="sub-heading">H3</button>
+    <button type="button" onclick="tpBlock('P')" title="normal text">¶</button>
+    <button type="button" onclick="tpFmt('insertUnorderedList')" title="bullet list">&bull; list</button>
+    <button type="button" onclick="tpFmt('insertOrderedList')" title="numbered list">1. list</button>
+    <button type="button" onclick="tpBlock('BLOCKQUOTE')" title="quote">&#10077;</button>
+    <button type="button" onclick="tpHighlight()" title="highlight">&#128397;</button>
+    <button type="button" onclick="tpFmt('removeFormat')" title="clear formatting">T&#824;</button>
+    <span style="margin-left:auto" class="tp-savestate" id="tp-savestate">saved</span>
+    <button type="button" class="btn btn-sm btn-primary" onclick="tpSave()">Save</button>
+  </div>
+  <div id="tp-pad" contenteditable="true">{{ topic.workpad | safe if topic.workpad else '' }}</div>
+</div>
+{% endcall %}
+
 {# ---- next steps ---- #}
 {% call ui.section('Next steps', 'blue', badge=open_steps|length ~ ' open', open=True) %}
 <div style="padding:0.6rem 1rem 0.9rem">
@@ -101,28 +124,10 @@
   {% include '_entity_links.html' %}
 {% endwith %}
 
-{# ---- workpad ---- #}
-{% call ui.section('Workpad', 'slate', open=True) %}
-<div style="padding:0.6rem 1rem 1rem">
-  <div class="tp-toolbar">
-    <button type="button" onclick="tpFmt('bold')" title="bold"><b>B</b></button>
-    <button type="button" onclick="tpFmt('italic')" title="italic"><i>I</i></button>
-    <button type="button" onclick="tpFmt('underline')" title="underline"><u>U</u></button>
-    <button type="button" onclick="tpFmt('strikeThrough')" title="strike"><s>S</s></button>
-    <button type="button" onclick="tpBlock('H2')" title="heading">H2</button>
-    <button type="button" onclick="tpBlock('H3')" title="sub-heading">H3</button>
-    <button type="button" onclick="tpBlock('P')" title="normal text">¶</button>
-    <button type="button" onclick="tpFmt('insertUnorderedList')" title="bullet list">&bull; list</button>
-    <button type="button" onclick="tpFmt('insertOrderedList')" title="numbered list">1. list</button>
-    <button type="button" onclick="tpBlock('BLOCKQUOTE')" title="quote">&#10077;</button>
-    <button type="button" onclick="tpHighlight()" title="highlight">&#128397;</button>
-    <button type="button" onclick="tpFmt('removeFormat')" title="clear formatting">T&#824;</button>
-    <span style="margin-left:auto" class="tp-savestate" id="tp-savestate">saved</span>
-    <button type="button" class="btn btn-sm btn-primary" onclick="tpSave()">Save</button>
-  </div>
-  <div id="tp-pad" contenteditable="true">{{ topic.workpad | safe if topic.workpad else '' }}</div>
-</div>
-{% endcall %}
+{# ---- connected items (shared component) ---- #}
+{% with conn_entity_type='topic', conn_entity_id=topic.id %}
+  {% include '_connections.html' %}
+{% endwith %}
 
 {# ---- notes (shared module) ---- #}
 {% with entity_type='topic', entity_id=topic.id %}

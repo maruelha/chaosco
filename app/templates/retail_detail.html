@@ -112,6 +112,10 @@
 {% include '_teams_chat_links.html' %}
 {% include '_issue_message.html' %}
 
+{% with conn_entity_type='retail', conn_entity_id=row.retail_id %}
+  {% include '_connections.html' %}
+{% endwith %}
+
 {% with entity_type='retail', entity_id=row.retail_id %}
   {% include '_notes_section.html' %}
 {% endwith %}

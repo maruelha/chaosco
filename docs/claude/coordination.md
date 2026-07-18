@@ -238,7 +238,9 @@ hidden by default). `/topics/<id>` = the working page: editable meta
 archive into a collapsed section, reopenable), a screen-filling WORKPAD
 (contenteditable rich text — bold/italic/underline/strike, H2/H3, lists,
 quote, highlight; stored as HTML in topics.workpad; autosave on blur +
-every 30s + Ctrl+S), and the shared notes module. Inbox files into topics
+every 30s + Ctrl+S), and the shared notes module. Detail-page order
+[USER 2026-07-18]: meta → WORKPAD FIRST (the actual content) → next
+steps → links → notes. Inbox files into topics
 via the standard picker (search by title/category, active only). Dashboard
 card (green accent) shows active count. Tables: topics, topic_steps.
 Tests: tests/test_topics.py.
@@ -262,6 +264,28 @@ configured folder chosen deliberately over a download button. NOT
 covered (deliberate, small/recreatable): excel archive folder,
 report_export snapshots, jira XMLs, settings.local.yaml (credentials —
 keep off the external drive). Tests: tests/test_backup.py.
+
+## Entity connections (component) [USER 2026-07-18]
+
+Many-to-many links BETWEEN entities: topic ↔ defect / retail / ecom /
+spillover (any pair; most items have none — "it will not always have it").
+ONE direction-less row per pair (`entity_connections`, sides stored in
+canonical order + UNIQUE — connecting from either side is the same row).
+Labels resolved LIVE from the current tables (re-imports/renames stay
+fresh); the picker search REUSES `GET /inbox/targets`. Drop-in include
+(AJAX, zero route/context changes), DETAIL pages only, near the notes,
+COLLAPSED when empty (opens itself when connections exist):
+
+    {% with conn_entity_type='topic', conn_entity_id=topic.id %}
+      {% include '_connections.html' %}
+    {% endwith %}
+
+Routes: /connections/<etype>/<eid>/list.json|add, /connections/<id>/delete
+(Blueprint web_connections.py; storage db/entity_connections.py,
+CONNECTABLE_TYPES = topic/defect/retail/ecom/spillover — adding a type =
+one label branch + one URL entry + a search branch in /inbox/targets if
+missing). Currently on: Topic, Defect, Retail, ECOM, Spillover detail.
+Tests: tests/test_connections.py.
 
 ## Entity links (component)
 

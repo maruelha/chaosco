@@ -1,0 +1,103 @@
+{# Entity connections — drop-in component [USER 2026-07-18]: many-to-many
+   links between topics / defects / retail TCs / ECOM rows / spillover
+   items. DETAIL pages only, placed near the notes, COLLAPSED when empty.
+
+     {% with conn_entity_type='topic', conn_entity_id=topic.id %}
+       {% include '_connections.html' %}
+     {% endwith %}
+
+   Fully AJAX (routes app/web_connections.py); the picker search reuses
+   GET /inbox/targets. One include per page.
+#}
+<details class="ui-section ui-section--gray" id="cx-root"
+         data-etype="{{ conn_entity_type }}" data-eid="{{ conn_entity_id }}">
+  <summary>&#128279; Connected items
+    <span class="ui-section-count" id="cx-count">0</span>
+  </summary>
+  <div style="padding:0.6rem 1rem 0.9rem">
+    <div id="cx-list"><em style="color:#999; font-size:0.85rem">Loading…</em></div>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.6rem; align-items:center">
+      <select id="cx-type" style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px"
+              onchange="cxSearch()">
+        <option value="topic">Topic</option>
+        <option value="defect">Defect</option>
+        <option value="retail">Retail TC</option>
+        <option value="ecom">ECOM</option>
+        <option value="spillover">Spillover</option>
+      </select>
+      <input id="cx-q" type="text" placeholder="type to search, click a hit to connect…"
+             style="padding:5px 9px; border:1px solid #c9c9d4; border-radius:6px; flex:1; min-width:16rem"
+             oninput="cxSearch()">
+    </div>
+    <div id="cx-results" style="margin-top:0.4rem"></div>
+    <p id="cx-error" style="color:#c00; font-size:0.78rem; margin:0.3rem 0 0; display:none"></p>
+  </div>
+</details>
+
+<script>
+(function () {
+  const root = document.getElementById('cx-root');
+  const base = '/connections/' + root.dataset.etype + '/' + root.dataset.eid;
+  let cxTimer = null;
+
+  window.cxEsc = function (s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+  };
+
+  window.cxLoad = function () {
+    fetch(base + '/list.json').then(r => r.json()).then(items => {
+      const el = document.getElementById('cx-list');
+      document.getElementById('cx-count').textContent = items.length;
+      if (items.length) root.open = true;
+      if (!items.length) {
+        el.innerHTML = '<em style="color:#999; font-size:0.85rem">Nothing connected yet.</em>';
+        return;
+      }
+      el.innerHTML = items.map(c =>
+        '<div style="display:flex; align-items:center; gap:0.5rem; padding:2px 0">' +
+        '<span class="pill pill--gray" style="font-size:0.7rem">' + cxEsc(c.type_label) + '</span>' +
+        '<a href="' + c.url + '" style="font-size:0.9rem">' + cxEsc(c.label) + '</a>' +
+        '<span style="flex:1"></span>' +
+        '<button type="button" class="btn btn-sm" title="disconnect" onclick="cxDel(' + c.id + ')">&#10005;</button></div>'
+      ).join('');
+    });
+  };
+
+  window.cxSearch = function () {
+    clearTimeout(cxTimer);
+    cxTimer = setTimeout(function () {
+      const type = document.getElementById('cx-type').value;
+      const q = document.getElementById('cx-q').value.trim();
+      const out = document.getElementById('cx-results');
+      if (!q) { out.innerHTML = ''; return; }
+      fetch('/inbox/targets?type=' + encodeURIComponent(type) + '&q=' + encodeURIComponent(q))
+        .then(r => r.json()).then(hits => {
+          if (!hits.length) { out.innerHTML = '<small style="color:#aeaeb2">No results.</small>'; return; }
+          out.innerHTML = '<div style="display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto">'
+            + hits.map(h => '<button type="button" class="btn btn-sm" style="text-align:left"'
+                + ' onclick="cxAdd(\'' + type + '\', \'' + cxEsc(h.value) + '\')">' + cxEsc(h.label) + '</button>').join('')
+            + '</div>';
+        });
+    }, 280);
+  };
+
+  window.cxAdd = function (type, id) {
+    const body = new URLSearchParams({target_type: type, target_id: id});
+    fetch(base + '/add', {method: 'POST', body}).then(r => r.json()).then(d => {
+      const err = document.getElementById('cx-error');
+      if (!d.ok) { err.textContent = d.error; err.style.display = ''; return; }
+      err.style.display = 'none';
+      document.getElementById('cx-q').value = '';
+      document.getElementById('cx-results').innerHTML = '';
+      cxLoad();
+    });
+  };
+
+  window.cxDel = function (id) {
+    if (!confirm('Disconnect this item?')) return;
+    fetch('/connections/' + id + '/delete', {method: 'POST'}).then(() => cxLoad());
+  };
+
+  cxLoad();
+})();
+</script>

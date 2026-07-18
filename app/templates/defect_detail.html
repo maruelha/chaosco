@@ -104,6 +104,11 @@
   </form>
 </div>
 
+{# ---------------------------------------------------------------- Connected items (shared component) #}
+{% with conn_entity_type='defect', conn_entity_id=defect.defect_id %}
+  {% include '_connections.html' %}
+{% endwith %}
+
 {# ---------------------------------------------------------------- Section 3: notes (shared module) #}
 {% with entity_type='defect', entity_id=defect.defect_id %}
   {% include '_notes_section.html' %}

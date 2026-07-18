@@ -103,6 +103,10 @@
 {% include '_teams_chat_links.html' %}
 {% include '_issue_message.html' %}
 
+{% with conn_entity_type='spillover', conn_entity_id=row.spillover_id %}
+  {% include '_connections.html' %}
+{% endwith %}
+
 {% with entity_type='spillover', entity_id=row.spillover_id %}
   {% include '_notes_section.html' %}
 {% endwith %}
