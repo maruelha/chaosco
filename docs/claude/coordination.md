@@ -243,6 +243,26 @@ via the standard picker (search by title/category, active only). Dashboard
 card (green accent) shows active count. Tables: topics, topic_steps.
 Tests: tests/test_topics.py.
 
+## DB + uploads backup (Export & Backup card) [USER 2026-07-18]
+
+Section INSIDE the dashboard Export & Backup card (own card rejected —
+"a button somewhere", folded in after discussion). One click copies the
+SQLite DB to `backup_folder` (machine-specific — settings.local.yaml,
+e.g. the external drive) AND mirrors data/uploads incrementally to
+`<backup_folder>/uploads` (screenshots/PDFs — the DB only stores
+filenames; upload files are immutable per name, so one shared mirror
+serves every DB snapshot; deleted-in-app files linger — backup, not
+sync). Modes: overwrite (`chaosco_backup.db`, replaced) / dated
+(`chaosco_backup_<ts>.db`, new copy). sqlite3 backup API, NOT a raw file
+copy — consistent mid-write. "Last backup: … (N days ago)" reminder line
+(amber > 7 days; `last_backup()`); Marina may want a SCHEDULED backup
+later. Logic `app/backup.py`, route `POST /backup` in web_home. Design
+note: a browser page CANNOT open a native pick-any-folder dialog —
+configured folder chosen deliberately over a download button. NOT
+covered (deliberate, small/recreatable): excel archive folder,
+report_export snapshots, jira XMLs, settings.local.yaml (credentials —
+keep off the external drive). Tests: tests/test_backup.py.
+
 ## Entity links (component)
 
 Generic per-entity URL list (table `entity_links`), same idea as notes/

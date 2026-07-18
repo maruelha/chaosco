@@ -149,6 +149,12 @@ ecom_reporters:
   - 'Phalk'
   - 'Calvin'
 
+# DB backup target (dashboard "DB Backup" card) — machine-specific, so set
+# it in settings.local.yaml (gitignored), e.g.:
+#   backup_folder: 'E:\chaosco_backups'
+# Overwrite mode writes chaosco_backup.db; dated mode a new timestamped copy.
+backup_folder: ''
+
 # Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
 # (gitignored) — never here:
 #   email_user: 'you@gmx.de'

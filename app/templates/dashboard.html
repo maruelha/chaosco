@@ -62,11 +62,27 @@
   </div>
 
   <div class="action-card" style="border-left:3px solid #0e7490">
-    <h2>Export Reports</h2>
+    <h2>Export &amp; Backup</h2>
     <p>Save dated HTML &amp; PowerPoint snapshots of the Retail and Spillover reports to the export folder for automation pickup.</p>
     <button type="button" class="btn" id="export-reports-btn" onclick="runExportReports()">Export Reports</button>
     <a href="{{ url_for('email_report.email_page') }}" class="btn">&#128231; Email Reports</a>
     <div id="export-reports-result" style="margin-top:0.6rem;font-size:0.82rem;display:none"></div>
+    <div style="border-top:1px solid #e2e8f0;margin-top:0.8rem;padding-top:0.7rem">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:0.4rem">&#128190; DB backup</div>
+      <button type="button" class="btn btn-sm" onclick="runBackup('overwrite', this)"
+              title="replaces chaosco_backup.db in the backup folder (settings.local.yaml: backup_folder); screenshots/files are mirrored alongside">Overwrite copy</button>
+      <button type="button" class="btn btn-sm" onclick="runBackup('dated', this)"
+              title="writes a new chaosco_backup_&lt;timestamp&gt;.db; screenshots/files are mirrored alongside">New dated copy</button>
+      <div style="margin-top:0.45rem;font-size:0.78rem;{% if backup_info and backup_info.days_ago > 7 %}color:#b45309{% else %}color:#94a3b8{% endif %}">
+        {% if backup_info %}
+          Last backup: {{ backup_info.date }}
+          ({% if backup_info.days_ago == 0 %}today{% elif backup_info.days_ago == 1 %}yesterday{% else %}{{ backup_info.days_ago }} days ago{% endif %})
+        {% else %}
+          No backup yet — set <code>backup_folder</code> in settings.local.yaml.
+        {% endif %}
+      </div>
+      <div id="backup-result" style="margin-top:0.45rem;font-size:0.82rem;display:none"></div>
+    </div>
   </div>
 
   <div class="action-card">
@@ -151,6 +167,31 @@
 </div>
 
 <script>
+function runBackup(mode, btn) {
+  const result = document.getElementById('backup-result');
+  btn.disabled = true;
+  result.style.display = 'none';
+  const fd = new FormData();
+  fd.append('mode', mode);
+  fetch("{{ url_for('backup_db') }}", { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        result.style.cssText = 'margin-top:0.45rem;font-size:0.82rem;color:#166534;display:block';
+        result.innerHTML = '✓ Backup written: <code style="font-size:0.78rem">' + data.path + '</code>'
+          + '<br>Uploads mirrored: ' + data.uploads_new + ' new / ' + data.uploads_total + ' total files';
+      } else {
+        result.style.cssText = 'margin-top:0.6rem;font-size:0.82rem;color:#b91c1c;display:block';
+        result.textContent = '✗ ' + data.error;
+      }
+    })
+    .catch(err => {
+      result.style.cssText = 'margin-top:0.6rem;font-size:0.82rem;color:#b91c1c;display:block';
+      result.textContent = '✗ Request failed: ' + err;
+    })
+    .finally(() => { btn.disabled = false; });
+}
+
 function runExportReports() {
   const btn    = document.getElementById('export-reports-btn');
   const result = document.getElementById('export-reports-result');

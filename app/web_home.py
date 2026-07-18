@@ -17,6 +17,7 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
 from app import db_retail_tracker
+from app.backup import last_backup, run_backup
 from app.importer import run_import
 from app.report_exporter import export_all_reports
 from app.solman_sync import run_solman_sync
@@ -40,7 +41,8 @@ def dashboard():
                            shelf_count=shelf_count,
                            tracker_unresolved=tracker_unresolved,
                            active_topics=active_topics,
-                           prod_defect_count=prod_defect_count)
+                           prod_defect_count=prod_defect_count,
+                           backup_info=last_backup(_cfg))
 
 
 @app.route("/import", methods=["POST"])
@@ -65,6 +67,13 @@ def export_reports():
     finally:
         conn.close()
     return jsonify({"ok": True, "files": [str(p) for p in saved]})
+
+
+@app.route("/backup", methods=["POST"])
+def backup_db():
+    """Export & Backup card — copy DB + uploads to the configured folder."""
+    return jsonify(run_backup(_cfg, request.form.get("mode", ""),
+                              uploads_dir=_UPLOAD_FOLDER))
 
 
 # ---------------------------------------------------------------------------
