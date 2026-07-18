@@ -125,7 +125,7 @@
           <a href="{{ url_for('retail_list') }}?search_defect={{ d.defect_id | urlencode }}" class="blocked-tc-link">{{ d.blocked_tc_count }}</a>
           {% else %}—{% endif %}
         </td>
-        <td data-val="{{ d.channel or '' }}">{{ d.channel or '—' }}</td>
+        <td data-val="{{ (d.channel or '') | trim | upper }}">{{ d.channel | trim | upper if d.channel else '—' }}</td>
         <td data-val="{{ d.solman_status or '' }}"><span class="status-pill">{{ d.solman_status or '—' }}</span></td>
         <td data-val="{{ d.priority or '' }}">{{ d.priority or '—' }}</td>
         <td data-val="{{ d.assigned_to or '' }}" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ d.assigned_to or '' }}">{{ d.assigned_to or '—' }}</td>

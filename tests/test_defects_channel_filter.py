@@ -60,3 +60,5 @@ def test_defects_page_renders_collapsed_dropdown(client):
     assert 'value="Ecom"' not in html and 'value="ecom"' not in html
     assert '<option value="ECOM" selected' in html
     assert "8000001" in html and "8000002" in html and "8000003" not in html
+    # channel COLUMN also shows uppercase, raw casing not rendered
+    assert ">Ecom<" not in html and ">ecom<" not in html

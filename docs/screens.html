@@ -424,7 +424,7 @@
       <p class="screen-desc">Paginated list of all imported defects with inline filters. The default view hides statuses "Withdrawn" and "Confirmed" (configurable in settings.yaml).</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Defect ID · SolMan Name · Blocked TCs · Channel · Status · Priority · Assigned To · Date Reported · Prod · <strong>DTC O2C</strong> (inline checkbox) · <strong>Daily</strong> (inline checkbox)</span>
+        <span class="feat-value">Defect ID · SolMan Name · Blocked TCs · Channel (displayed uppercase since 2026-07-18; stored raw) · Status · Priority · Assigned To · Date Reported · Prod · <strong>DTC O2C</strong> (inline checkbox) · <strong>Daily</strong> (inline checkbox)</span>
         <span class="feat-label">Blocked TCs column</span>
         <span class="feat-value">Count of Retail test cases whose <code>defect_id_ref</code> references this defect. Computed as a subquery (LIKE match — not stored). Shows <code>—</code> when zero. When non-zero, displayed as a red badge link that opens the Retail list pre-filtered by that defect ID (<code>?search_defect=&lt;id&gt;</code>).</span>
         <span class="feat-label">Filters</span>
