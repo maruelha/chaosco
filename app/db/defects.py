@@ -73,9 +73,14 @@ def _build_record(row: dict, defect_id: str, today: str) -> dict:
 
 
 def get_filter_options(conn: sqlite3.Connection) -> dict:
-    """Return distinct channel and solman_status values for building filter dropdowns."""
+    """Return distinct channel and solman_status values for building filter dropdowns.
+
+    Channels are collapsed case-insensitively to ONE uppercase entry
+    ("ecom"/"Ecom"/"ECOM" → "ECOM") [USER 2026-07-18] — the Excel carries
+    mixed casings; list_defects matches the channel case-insensitively."""
     channels = [r[0] for r in conn.execute(
-        "SELECT DISTINCT channel FROM defects WHERE channel IS NOT NULL ORDER BY channel"
+        "SELECT DISTINCT UPPER(TRIM(channel)) FROM defects"
+        " WHERE channel IS NOT NULL AND TRIM(channel) != '' ORDER BY 1"
     ).fetchall()]
     statuses = [r[0] for r in conn.execute(
         "SELECT DISTINCT solman_status FROM defects WHERE solman_status IS NOT NULL ORDER BY solman_status"
@@ -112,7 +117,7 @@ def list_defects(
         sql += " AND d.defect_id LIKE ?"
         params.append(f"%{search}%")
     if channel:
-        sql += " AND d.channel = ?"
+        sql += " AND LOWER(TRIM(d.channel)) = LOWER(TRIM(?))"
         params.append(channel)
     if statuses:
         ph = ",".join("?" * len(statuses))

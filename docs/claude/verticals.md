@@ -43,7 +43,12 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 ## Key columns
 
 - `defects` — 21 cols incl. defect_id (PK), channel, solman_status, priority,
-  assigned_to, excel_row, first_seen, last_seen
+  assigned_to, excel_row, first_seen, last_seen. `channel` arrives in MIXED
+  casings from the Excel ("ecom"/"Ecom"/"Retail"…) — stored as-is; the
+  /defects channel filter collapses casings to one uppercase dropdown entry
+  and matches case-insensitively [USER 2026-07-18]
+  (`get_filter_options` + `list_defects` in db/defects.py; the impacted-
+  defects report queries were always `LOWER(TRIM(channel))`).
 - `defect_annotations` — description, business_impact, reach, retest_needs,
   next_step, action_needed, comments, dtco2c (0/1 = "MB follows up"),
   dtco2c_resp, daily (0/1 = discuss on DTC O2C Daily), updated_at
