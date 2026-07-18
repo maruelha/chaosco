@@ -207,6 +207,21 @@ def ecom_detail(ecom_id: int):
     )
 
 
+@bp.route("/<int:ecom_id>/comment", methods=["POST"])
+def ecom_comment_save(ecom_id: int):
+    """Shared Comments dialog on the board (_comment_history_dialog.html)."""
+    comment_history = request.form.get("comment_history", "").strip() or None
+    conn = _get_conn()
+    try:
+        row = db_ecom.get_ecom_by_id(conn, ecom_id)
+        if row is None:
+            return jsonify({"ok": False, "error": "unknown row"}), 404
+        db_ecom.set_ecom_comment_history(conn, row["jira_id"], comment_history)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "comment_history": comment_history or ""})
+
+
 @bp.route("/<int:ecom_id>/pull-orders", methods=["POST"])
 def ecom_pull_orders(ecom_id: int):
     """LEGACY — superseded by the shared ('jira', key) order address

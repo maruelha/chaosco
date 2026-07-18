@@ -111,6 +111,39 @@ def test_annotation_roundtrip_keyed_by_jira_id(client):
         conn.close()
 
 
+def test_board_comment_dialog_saves_history_and_keeps_other_fields(client):
+    # board renders the shared Comments dialog + per-row opener
+    html = client.get("/ecom/").get_data(as_text=True)
+    assert 'class="btn btn-sm js-open-cmt"' in html
+    assert 'id="dlg-cmt"' in html
+    assert '"/ecom"' in html                      # cmt_post_base for the JS
+
+    # pre-existing annotation fields must survive a comment-only save
+    conn = database.get_connection(client.db_path)
+    try:
+        db_ecom.upsert_ecom_annotation(conn, "S4ECOM-1153",
+                                       next_step="ping dev", action_needed=True)
+    finally:
+        conn.close()
+
+    d = client.post(f"/ecom/{client.row_id}/comment",
+                    data={"comment_history": "checked twice"}).get_json()
+    assert d == {"ok": True, "comment_history": "checked twice"}
+
+    conn = database.get_connection(client.db_path)
+    try:
+        row = db_ecom.get_ecom_by_id(conn, client.row_id)
+        assert row["comment_history"] == "checked twice"
+        assert row["next_step"] == "ping dev"
+        ann = conn.execute("SELECT action_needed FROM ecom_annotations").fetchone()
+        assert ann[0] == 1
+    finally:
+        conn.close()
+
+    assert client.post("/ecom/99999/comment",
+                       data={"comment_history": "x"}).status_code == 404
+
+
 def test_pull_orders_relinks_gatekeeper_rows_with_same_jira_id(client):
     conn = database.get_connection(client.db_path)
     try:

@@ -767,6 +767,8 @@
         <span class="feat-value">Rows with Jira data get a "Jira N ▸" button expanding inline: the <strong>Jira comments</strong> plus the <strong>gatekeeper notes</strong> (notes with entity <code>jira</code>, same key) — the ticket's history travels with it onto the ECOM board.</span>
         <span class="feat-label">Orders button</span>
         <span class="feat-value">Shared <code>_order_details.html</code> component — since 2026-07-16 addressed <code>entity_type='jira'</code>, <code>entity_id=jira_key</code>, so the Gatekeeper Check shows the SAME rows (connected, never copied).</span>
+        <span class="feat-label">Comments button (2026-07-18)</span>
+        <span class="feat-value">Per-row, like Retail/Spillover: the now-shared <code>_comment_history_dialog.html</code> component — imported <strong>Excel</strong> comment as read-only reference + your own comment history (<code>POST /ecom/&lt;id&gt;/comment</code>, keyed by jira_id, other annotation fields untouched). Retail's and Spillover's copied dialogs were replaced by the same include.</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>ecom</code> LEFT JOIN <code>ecom_annotations</code> (by jira_id) + note-count subquery + <code>jira_issues</code> keys for the chip</span>
       </div>

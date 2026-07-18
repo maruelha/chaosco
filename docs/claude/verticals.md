@@ -59,7 +59,13 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
   the GATEKEEPER notes (entity `jira`, same key — the shared history
   travels with the ticket) — plus live "Jira status" / "Jira assignee"
-  columns from the store ("—" until the ticket is imported).
+  columns from the store ("—" until the ticket is imported). Per-row
+  "Comments" button [USER 2026-07-18] = the SHARED
+  `_comment_history_dialog.html` component (imported Excel comment
+  read-only + own comment_history; POST `/ecom/<id>/comment` →
+  `set_ecom_comment_history`, only-this-field upsert keyed by jira_id) —
+  the same dialog Retail and Spillover use; their copied dialog+JS were
+  replaced by the include (`{% set cmt_post_base = '/<vertical>' %}`).
 - Status report `/ecom/report` [USER 2026-07-09]: SAME bucket definitions
   as Retail (one config — status_mappings.yaml; "Not Ready" = known
   exclusion, visible in the inline diagnostics section, no separate

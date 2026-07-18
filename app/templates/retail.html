@@ -248,31 +248,9 @@
   <input type="hidden" id="ann-id">
 </dialog>
 
-{# ---- Comment history popup ---- #}
-<dialog id="dlg-cmt">
-  <div class="dlg-header">
-    <div class="dlg-title">Comment history</div>
-    <div class="dlg-subtitle" id="cmt-row-name"></div>
-  </div>
-  <form id="frm-cmt" method="post">
-    <div class="dlg-body">
-      <div>
-        <div class="ref-label">Imported comment (read-only reference)</div>
-        <div class="ref-box" id="cmt-imported-ref"></div>
-      </div>
-      <div class="form-field">
-        <label for="cmt-history">Your comment history</label>
-        <textarea id="cmt-history" name="comment_history" rows="6"
-                  placeholder="Your clean, maintained version of the comment history…"></textarea>
-      </div>
-    </div>
-    <div class="dlg-footer">
-      <button type="button" class="btn" onclick="document.getElementById('dlg-cmt').close()">Cancel</button>
-      <button type="submit" class="btn btn-primary">Save</button>
-    </div>
-  </form>
-  <input type="hidden" id="cmt-id">
-</dialog>
+{# ---- Comment history popup (shared component) ---- #}
+{% set cmt_post_base = '/retail' %}
+{% include '_comment_history_dialog.html' %}
 
 {# ---- JavaScript ---- #}
 <script>
@@ -317,30 +295,8 @@
     annDlg.close();
   });
 
-  const cmtDlg = document.getElementById('dlg-cmt');
-  const cmtForm = document.getElementById('frm-cmt');
-  const cmtId   = document.getElementById('cmt-id');
-
-  document.querySelectorAll('.js-open-cmt').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tr = btn.closest('tr');
-      cmtId.value = tr.dataset.id;
-      document.getElementById('cmt-row-name').textContent     = tr.dataset.name;
-      document.getElementById('cmt-history').value            = tr.dataset.commenthistory;
-      document.getElementById('cmt-imported-ref').textContent = tr.dataset.importedcomment || '(none)';
-      cmtDlg.showModal();
-    });
-  });
-
-  cmtForm.addEventListener('submit', async e => {
-    e.preventDefault();
-    const id   = cmtId.value;
-    const resp = await fetch(`/retail/${id}/comment`, { method: 'POST', body: new FormData(cmtForm) });
-    const d    = await resp.json();
-    if (!d.ok) return;
-    document.querySelector(`tr[data-id="${id}"]`).dataset.commenthistory = d.comment_history;
-    cmtDlg.close();
-  });
+  // Comments dialog + open buttons live in _comment_history_dialog.html
+  // (shared component) — nothing to wire here.
 
   // ---- Filter dialogs ----
   const FILTER_NAMES = ['status', 'assigned_to', 'country', 'scenario'];
@@ -384,7 +340,7 @@
   });
 
   // Close on backdrop click
-  [annDlg, cmtDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
+  [annDlg, ...FILTER_NAMES.map(f => document.getElementById('dlg-filter-' + f))].forEach(dlg => {
     if (dlg) dlg.addEventListener('click', e => {
       if (e.target === dlg) {
         if (dlg.id.startsWith('dlg-filter-')) updateFilterBtn(dlg.id.replace('dlg-filter-', ''));

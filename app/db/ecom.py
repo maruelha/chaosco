@@ -306,6 +306,20 @@ def set_ecom_next_step(conn: sqlite3.Connection, jira_id: str,
         """, (jira_id, next_step or None, now))
 
 
+def set_ecom_comment_history(conn: sqlite3.Connection, jira_id: str,
+                             comment_history: str | None) -> None:
+    """Only-this-field upsert (used by the shared Comments dialog)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute("""
+            INSERT INTO ecom_annotations (jira_id, comment_history, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(jira_id) DO UPDATE SET
+                comment_history = excluded.comment_history,
+                updated_at      = excluded.updated_at
+        """, (jira_id, comment_history or None, now))
+
+
 def upsert_ecom_annotation(conn: sqlite3.Connection, jira_id: str,
                            next_step: str | None = None,
                            comment_history: str | None = None,

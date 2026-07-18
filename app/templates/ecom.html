@@ -76,7 +76,10 @@
   </thead>
   <tbody>
     {% for r in rows %}
-    <tr>
+    <tr data-id="{{ r.ecom_id }}"
+        data-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}"
+        data-commenthistory="{{ (r.comment_history or '') | e }}"
+        data-importedcomment="{{ (r.comment or '') | e }}">
       <td class="mono" style="font-size:0.78rem">{{ r.jira_id }}</td>
       <td class="mono" style="font-size:0.78rem">{{ r.test_case_id or "—" }}</td>
       <td><a href="{{ url_for('ecom.ecom_detail', ecom_id=r.ecom_id) }}">{{ r.testcase_name or "—" }}</a></td>
@@ -103,6 +106,8 @@
         <button type="button" class="btn btn-sm js-open-msg" title="build a standardized issue message"
                 data-entity-type="jira" data-entity-id="{{ r.jira_id }}"
                 data-msg-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}">&#9993;</button>
+        <button type="button" class="btn btn-sm js-open-cmt"
+                title="imported Excel comment + your comment history">Comments</button>
         {% if r.jira_id in jira_keys %}
         <button type="button" class="rt-cbtn" title="Jira comments + gatekeeper notes"
                 onclick="ecomJira(this)">Jira {{ (jira_comments.get(r.jira_id, [])|length) + (jira_notes.get(r.jira_id, [])|length) }} ▸</button>
@@ -142,6 +147,8 @@
 {% include '_order_details.html' %}
 {% include '_teams_chat_links.html' %}
 {% include '_issue_message.html' %}
+{% set cmt_post_base = '/ecom' %}
+{% include '_comment_history_dialog.html' %}
 
 <script>
 // ---- 📣 track-on-Sales-report toggle (delegated; same handler as gatekeeper) ----
