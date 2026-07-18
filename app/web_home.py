@@ -31,6 +31,7 @@ def dashboard():
         shelf_count       = database.count_shelf_items(conn)
         tracker_unresolved = db_retail_tracker.requirement_counts(conn)["unresolved"]
         active_topics     = database.count_active_topics(conn)
+        prod_defect_count = len(database.list_known_prod_defects(conn))
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
@@ -38,7 +39,8 @@ def dashboard():
                            to_deliver=to_deliver,
                            shelf_count=shelf_count,
                            tracker_unresolved=tracker_unresolved,
-                           active_topics=active_topics)
+                           active_topics=active_topics,
+                           prod_defect_count=prod_defect_count)
 
 
 @app.route("/import", methods=["POST"])

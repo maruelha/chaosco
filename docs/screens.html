@@ -259,7 +259,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar.</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · Export Reports (teal accent, + Email Reports link) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
+        <span class="feat-value">Order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · <strong>Known Prod Defects</strong> (2026-07-18, count badge — the register outlives the spillover work; the Spillover-page link stays too) · Export Reports (teal accent, + Email Reports link) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -1108,7 +1108,7 @@
       <span class="screen-url">GET /prod_defects</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Manually curated register of defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report.</p>
+      <p class="screen-desc">Manually curated register of defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report. Reachable from the Spillover page header AND (since 2026-07-18) an own dashboard card with count badge — the register outlives the spillover work.</p>
       <div class="features">
         <span class="feat-label">Columns</span>
         <span class="feat-value">Technical Key · Short Description · Scenario · Business Impact · Numbers · Next Steps</span>

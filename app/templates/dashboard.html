@@ -55,6 +55,12 @@
     <a href="{{ url_for('defects_list') }}" class="btn">View Defects</a>
   </div>
 
+  <div class="action-card">
+    <h2>Known Prod Defects {% if prod_defect_count %}<span class="notes-count-badge">{{ prod_defect_count }}</span>{% endif %}</h2>
+    <p>Hand-maintained register of known production defects — outlives the spillover work, also linked from the Spillover page.</p>
+    <a href="{{ url_for('prod_defects_list') }}" class="btn">View Known Prod Defects</a>
+  </div>
+
   <div class="action-card" style="border-left:3px solid #0e7490">
     <h2>Export Reports</h2>
     <p>Save dated HTML &amp; PowerPoint snapshots of the Retail and Spillover reports to the export folder for automation pickup.</p>

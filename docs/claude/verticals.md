@@ -252,7 +252,9 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   manual DTC O2C flag only fills in when the cell is blank; neither →
   Sales + amber "no MB/Sales decision" note on diagnostics.
 - Sign-off reports `/report/retail`, `/report/ecom`; production defects
-  `/prod_defects`
+  `/prod_defects` (hand-maintained `known_prod_defects` register — own
+  dashboard card with count badge since [USER 2026-07-18], because it
+  outlives the spillover work; the Spillover-header link stays)
 - PPT builders: `app/ppt_utils.py` (shared primitives), `app/ppt_retail.py`,
   `app/ppt_spillover.py`. Export Reports button (`POST /export-reports`,
   `app/report_exporter.py`) writes dated HTML + PPTX for both reports to
