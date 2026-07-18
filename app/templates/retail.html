@@ -215,6 +215,12 @@
         </td>
         <td class="rc-cmtbtn">
           <button type="button" class="btn btn-sm js-open-cmt">Comments</button>
+          {% if validations.get(row.retail_id) %}
+          <button type="button" class="btn btn-sm val-btn js-open-val" style="margin-top:0.3rem"
+                  title="row data doesn't line up — click for details"
+                  data-val='{{ validations[row.retail_id] | tojson }}'
+                  data-val-name="{{ row.test_case_id }} / {{ row.country }}">&#9888;</button>
+          {% endif %}
         </td>
       </tr>
     {% else %}
@@ -251,6 +257,9 @@
 {# ---- Comment history popup (shared component) ---- #}
 {% set cmt_post_base = '/retail' %}
 {% include '_comment_history_dialog.html' %}
+
+{# ---- Row-validation popup (shared component) ---- #}
+{% include '_row_validation_dialog.html' %}
 
 {# ---- JavaScript ---- #}
 <script>

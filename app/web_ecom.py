@@ -20,6 +20,7 @@ from app.db import jira as db_jira
 from app.jira_importer import run_jira_import
 from app.reporter import (compute_impacted_totals, compute_retail_report,
                           load_status_mappings, passed_family)
+from app.row_validations import validate_rows
 
 bp = Blueprint("ecom", __name__, url_prefix="/ecom")
 
@@ -60,6 +61,7 @@ def ecom_list():
         conn.close()
     return render_template(
         "ecom.html", rows=rows, distincts=distincts, jira_keys=jira_keys,
+        validations=validate_rows("ecom", rows, "ecom_id"),
         jira_info=jira_info, chats_by_entity=chats_by_entity,
         track_sales_keys=track_sales_keys,
         jira_comments=jira_comments, jira_notes=jira_notes,

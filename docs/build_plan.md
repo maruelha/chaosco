@@ -117,6 +117,12 @@ Last updated: 2026-07-14
    design (`app/db/search.py`) — FUTURE: topic search = add SQLite FTS5
    sources there; vectorize ONLY if FTS proves insufficient [discussion
    2026-07-10].
+4. ~~Row validations~~ ✅ DONE 2026-07-18: registry in
+   `app/row_validations.py` + shared `_row_validation_dialog.html` (red ⚠
+   on flagged rows, findings in popup); first rule "conditionally passed
+   needs reason_for_pass_with_reservation" on Retail + ECOM. FUTURE: more
+   rules = append to `RULES` there (one check function each); candidates
+   whenever Marina names them.
 
 ### Teams end-of-day review list (planned, placement open)
 

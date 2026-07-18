@@ -19,6 +19,7 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
 from app.ppt_retail import build_retail_ppt
 from app.reporter import (compute_impacted_totals, compute_retail_report,
                           load_status_mappings, passed_family)
+from app.row_validations import validate_rows
 
 
 def _get_impacted_defects(conn):
@@ -61,6 +62,7 @@ def retail_list():
         "retail.html",
         rows=rows,
         options=options,
+        validations=validate_rows("retail", rows, "retail_id"),
         chats_by_entity=chats_by_entity,
         statuses=statuses,
         assignees=assignees,

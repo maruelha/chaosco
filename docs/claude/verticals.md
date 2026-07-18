@@ -18,6 +18,22 @@ driven (`_HEADER_MAP` at the top of each importer, case/whitespace-insensitive).
 | Spillover | "Core South Spillover" | `app/spillover_importer.py` | `app/db/spillover.py` | `spillover` | `spillover_annotations` | `excel_row` (stable) |
 | Retail | "Retail" | `app/retail_importer.py` | `app/db/retail.py` | `retail` | `retail_annotations` | lower(test_case_id) \|\| "\|\|" \|\| lower(country) |
 
+## Row validations (app/row_validations.py) [USER 2026-07-18]
+
+Registry of per-row data-quality checks over the IMPORTED fields (pure
+logic, no SQL/Flask — mirrors issue_messages.py). Flagged rows get a small
+red ⚠ button on the board; clicking opens the shared
+`_row_validation_dialog.html` with the finding texts. **Adding a
+validation = one check function (row dict → problem text or None) + one
+`Rule(key, verticals, check)` in `RULES`** — the web layer
+(`validate_rows(vertical, rows, id_field)` passed as `validations`) and
+the dialog are generic, nothing else to touch; to put the button on a NEW
+board, pass `validations` from its list route + copy the 6-line button
+`{% if %}` + include the dialog once. Current rules: status
+"conditionally passed" (case-insensitive) requires
+`reason_for_pass_with_reservation` (retail + ecom). Validations only READ
+— never block imports, never write. Tests: tests/test_row_validations.py.
+
 `app/solman_sync.py` — targeted UPDATE of `defects.solman_status` +
 `assigned_to` from the "Data aggregated by Defect" SolMan export; skips
 Withdrawn/Confirmed defects. Route: `POST /solman-sync` (dashboard has no

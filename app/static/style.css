@@ -521,6 +521,9 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
   border-color: #ffc5c5;
 }
 .btn-danger:hover { background: #ffdede; border-color: #ffaaaa; }
+/* row-validation ⚠ button (_row_validation_dialog.html) */
+.val-btn { background:#fff0f0; color:#c1121f; border-color:#ffc5c5; font-weight:700; }
+.val-btn:hover { background:#ffdede; border-color:#ffaaaa; }
 .btn-delete {
   background: #ff3b30;
   color: #fff;

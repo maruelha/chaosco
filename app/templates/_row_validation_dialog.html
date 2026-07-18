@@ -1,0 +1,52 @@
+{# Row-validation dialog — shared component (2026-07-18).
+
+   Partner of app/row_validations.py: boards flag rows whose imported data
+   doesn't line up with a small red ⚠ button; this dialog shows the
+   finding texts on click.
+
+   Contract:
+   - include ONCE per page (no variables needed)
+   - route passes validations = validate_rows(vertical, rows, id_field)
+   - opener per flagged row:
+       {% if validations.get(row.<id>) %}
+       <button type="button" class="btn btn-sm val-btn js-open-val"
+               title="row data doesn't line up — click for details"
+               data-val='{{ validations[row.<id>] | tojson }}'
+               data-val-name="<row label>">&#9888;</button>
+       {% endif %}
+   Click handling is delegated — buttons may appear anywhere on the page.
+#}
+<dialog id="dlg-rowval">
+  <div class="dlg-header">
+    <div class="dlg-title">&#9888; Data check</div>
+    <div class="dlg-subtitle" id="rowval-name"></div>
+  </div>
+  <div class="dlg-body">
+    <ul id="rowval-list" style="margin:0; padding-left:1.2rem; display:flex; flex-direction:column; gap:0.5rem"></ul>
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn" onclick="document.getElementById('dlg-rowval').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  const dlg  = document.getElementById('dlg-rowval');
+  const list = document.getElementById('rowval-list');
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.js-open-val');
+    if (!btn) return;
+    document.getElementById('rowval-name').textContent = btn.dataset.valName || '';
+    list.innerHTML = '';
+    JSON.parse(btn.dataset.val || '[]').forEach(msg => {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      list.appendChild(li);
+    });
+    dlg.showModal();
+  });
+
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+}());
+</script>

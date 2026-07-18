@@ -108,6 +108,12 @@
                 data-msg-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}">&#9993;</button>
         <button type="button" class="btn btn-sm js-open-cmt"
                 title="imported Excel comment + your comment history">Comments</button>
+        {% if validations.get(r.ecom_id) %}
+        <button type="button" class="btn btn-sm val-btn js-open-val"
+                title="row data doesn't line up — click for details"
+                data-val='{{ validations[r.ecom_id] | tojson }}'
+                data-val-name="{{ r.jira_id }} — {{ r.test_case_id }} / {{ r.country }}">&#9888;</button>
+        {% endif %}
         {% if r.jira_id in jira_keys %}
         <button type="button" class="rt-cbtn" title="Jira comments + gatekeeper notes"
                 onclick="ecomJira(this)">Jira {{ (jira_comments.get(r.jira_id, [])|length) + (jira_notes.get(r.jira_id, [])|length) }} ▸</button>
@@ -149,6 +155,7 @@
 {% include '_issue_message.html' %}
 {% set cmt_post_base = '/ecom' %}
 {% include '_comment_history_dialog.html' %}
+{% include '_row_validation_dialog.html' %}
 
 <script>
 // ---- 📣 track-on-Sales-report toggle (delegated; same handler as gatekeeper) ----
