@@ -217,6 +217,24 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-07-18 ================= -->
+<h2 class="date">Added 2026-07-18</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Issue messages — TIBCO API now shows twice on the tibco message</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="im-tibco-dup">
+      <span><strong>Decide: keep or drop the API footer line for "Check in TIBCO"?</strong>
+      <span class="where">→ ✉️ builder dialog, "Check in TIBCO" special text</span><br>
+      The sentence now ends with the TIBCO API in brackets
+      (<em>…has reached tibco (api)</em>), and the footer line
+      <code>TIBCO: … · IIB: …</code> still appears below — so the TIBCO API
+      shows up twice for this one template. Try it in real messages: if the
+      footer feels redundant there, tell Claude and it gets dropped for
+      check_tibco only (other templates keep it).</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {
