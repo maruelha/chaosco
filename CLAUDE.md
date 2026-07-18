@@ -62,11 +62,18 @@ app/
   web_search.py     global 🔍 widget Blueprint (/search; source registry in
                     db/search.py — order numbers now, topics via FTS later)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
+  web_connections.py      entity-connections Blueprint (/connections/...,
+                    many-to-many topic↔defect/retail/ecom/spillover;
+                    storage db/entity_connections.py; include _connections.html)
+  row_validations.py      per-row data-check registry (⚠ button on boards;
+                    add a rule = one entry; include _row_validation_dialog.html)
+  reporters.py      expected ECOM reporter matching (config ecom_reporters)
+  backup.py         DB + uploads backup to backup_folder (dashboard card)
   database.py       facade over app/db/
   db/               core(schema) defects spillover retail notes planning
-                    reference topics entity_links email jira gatekeeper
-                    ecom next_steps order_archive inbox_autofile
-                    teams_chats message_types search
+                    reference topics entity_links entity_connections email
+                    jira gatekeeper ecom next_steps order_archive
+                    inbox_autofile teams_chats message_types search
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py
