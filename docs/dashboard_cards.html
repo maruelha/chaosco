@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>chaosco — Dashboard at a glance</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         background:#f8f9fa; max-width: 62rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.45rem; margin-bottom: 0.2rem; }
+  .subtitle { color:#6c757d; font-size:0.88rem; margin-bottom: 1.6rem; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(17.5rem, 1fr)); gap: 0.9rem; }
+  .card { background:#fff; border:1px solid #dee2e6; border-left:4px solid #c9c9d4;
+          border-radius:8px; padding:0.8rem 1rem; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  .card h2 { font-size:0.95rem; margin:0 0 0.3rem; }
+  .card p { font-size:0.82rem; color:#495057; margin:0; }
+  .card .url { font-family:Consolas, monospace; font-size:0.72rem; color:#2b6cb0; display:block; margin-top:0.45rem; }
+  .badge { display:inline-block; font-size:0.66rem; font-weight:700; background:#eef2f6; color:#475569;
+           border-radius:8px; padding:0.05em 0.5em; margin-left:0.3rem; vertical-align:middle; }
+  .a-blue   { border-left-color:#2b6cb0; }
+  .a-teal   { border-left-color:#0e7490; }
+  .a-amber  { border-left-color:#b45309; }
+  .a-green  { border-left-color:#16a34a; }
+  .a-purple { border-left-color:#7c3aed; }
+  .footer { margin-top:1.6rem; background:#fff; border:1px solid #dee2e6; border-radius:8px;
+            padding:0.8rem 1rem; font-size:0.82rem; color:#495057; }
+  code { background:#f1f3f5; border-radius:3px; padding:0 4px; font-size:0.85em; }
+</style>
+</head>
+<body>
+
+<h1>Dashboard at a glance</h1>
+<p class="subtitle">One mini-card per dashboard card, in the fixed card order (daily work first).
+Full per-screen detail: <code>docs/screens.html</code> · tables: <code>docs/database_schema.html</code> ·
+big picture: <code>docs/architecture.html</code>. Updated 2026-07-18.</p>
+
+<div class="grid">
+
+  <div class="card a-blue">
+    <h2>Inbox <span class="badge">count</span></h2>
+    <p>The daily capture pad. Paste notes and screenshots as they happen, tag them with Order/SolMan/Jira IDs or a route-to, then file each item to its destination — by hand or via ⚡ Auto-file.</p>
+    <span class="url">/inbox</span>
+  </div>
+
+  <div class="card">
+    <h2>Import DTC ROE Tracking</h2>
+    <p>One click: finds the newest Excel export, archives it, and upserts all enabled tabs (Defects · Spillover · Retail · ECOM) into the database. Idempotent — safe to run any time.</p>
+    <span class="url">POST /import</span>
+  </div>
+
+  <div class="card">
+    <h2>Core South Spillover</h2>
+    <p>The spillover items with your annotations (importance, next steps, comment history, sign-off fields). Opens on the "In report" view; feeds the Spillover Status Report.</p>
+    <span class="url">/spillover</span>
+  </div>
+
+  <div class="card">
+    <h2>Retail</h2>
+    <p>All Retail test-case rows with filters, inline next steps, the Comments dialog, and the ⚠ data check. Source for the Retail Status Report and the Requirements Tracker.</p>
+    <span class="url">/retail</span>
+  </div>
+
+  <div class="card">
+    <h2>ECOM Gatekeeper</h2>
+    <p>Sales-facing pre-handoff check on the Jira tickets: Active gatekeeping / Back with Sales sections, next steps, orders, reporter filter, and the 📄 Sales report (also per reporter).</p>
+    <span class="url">/ecom-gatekeeper</span>
+  </div>
+
+  <div class="card">
+    <h2>ECOM</h2>
+    <p>ECOM test cases from the Excel, joined live with the shared Jira store (status, assignee, comments). Comments dialog, reporter filter, ⚠ data checks, own status report.</p>
+    <span class="url">/ecom/</span>
+  </div>
+
+  <div class="card">
+    <h2>Defects</h2>
+    <p>All imported defects with search, channel filter (ECOM/RETAIL, casing-proof), status filters, blocked-test-case counts, and the annotation flags (action needed, DTC O2C, daily).</p>
+    <span class="url">/defects</span>
+  </div>
+
+  <div class="card">
+    <h2>Known Prod Defects <span class="badge">count</span></h2>
+    <p>Hand-maintained register of defects known to exist in production — outlives the spillover work; feeds the known-issues section of the sign-off report.</p>
+    <span class="url">/prod_defects</span>
+  </div>
+
+  <div class="card a-teal">
+    <h2>Export &amp; Backup</h2>
+    <p>Two jobs: dated HTML + PowerPoint snapshots of both status reports to <code>report_export/</code> (+ 📧 Email Reports), and the 💾 DB backup — database + screenshots to the external drive, with a last-backup reminder.</p>
+    <span class="url">POST /export-reports · POST /backup</span>
+  </div>
+
+  <div class="card">
+    <h2>Meeting Prep</h2>
+    <p>Topics to raise per meeting — filter by meeting, tick items off as discussed.</p>
+    <span class="url">/meeting-prep</span>
+  </div>
+
+  <div class="card a-amber">
+    <h2>Retail Requirements Tracker <span class="badge">unresolved</span></h2>
+    <p>Tracks that every Retail requirement is tested across countries — derived LIVE from Retail statuses, never stored as yes-marks. Board + payment-methods matrix + import &amp; admin.</p>
+    <span class="url">/retail-tracker/board</span>
+  </div>
+
+  <div class="card a-green">
+    <h2>Topics <span class="badge">active</span></h2>
+    <p>What you're actively working on: per topic a big formatted workpad (first!), next steps, links, connected defects/test cases/spillover items, and notes.</p>
+    <span class="url">/topics/</span>
+  </div>
+
+  <div class="card">
+    <h2>Follow-ups</h2>
+    <p>Per-person follow-up items with next-contact dates and notes.</p>
+    <span class="url">/followups</span>
+  </div>
+
+  <div class="card">
+    <h2>Links</h2>
+    <p>Useful-links store — filter by area/tool/tag, one-click copy. Inbox items can be routed here.</p>
+    <span class="url">/links</span>
+  </div>
+
+  <div class="card">
+    <h2>Contacts</h2>
+    <p>Contact directory (name, email, area, topic, tags) with notes per contact. Inbox items can be routed here.</p>
+    <span class="url">/contacts</span>
+  </div>
+
+  <div class="card a-purple">
+    <h2>Shelf <span class="badge">count</span></h2>
+    <p>Catch-all archive for notes that don't belong to a specific entity yet — the counterpart to Topics (Shelf = parked, Topic = active).</p>
+    <span class="url">/shelf</span>
+  </div>
+
+  <div class="card">
+    <h2>Encouragements <span class="badge">undelivered</span></h2>
+    <p>Positive observations about people, with a delivered flag — so appreciation actually gets said.</p>
+    <span class="url">/encouragements</span>
+  </div>
+
+  <div class="card">
+    <h2>CS Follow-Up Tracker</h2>
+    <p>Core South follow-up items by area and Jira ID, with next steps, owner, and notes.</p>
+    <span class="url">/cs_followups</span>
+  </div>
+
+  <div class="card">
+    <h2>To-Do</h2>
+    <p>Plain task list with priority, due date, owner, and notes.</p>
+    <span class="url">/todos</span>
+  </div>
+
+  <div class="card">
+    <h2>Teams Chats</h2>
+    <p>Registry of Teams chats &amp; channels — pin the important ones for the floating 💬 widget, attach any to Retail / ECOM / Gatekeeper / Spillover items.</p>
+    <span class="url">/teams-chats/</span>
+  </div>
+
+  <div class="card">
+    <h2>Message Types</h2>
+    <p>Reference for the ✉️ issue-message builder: message types with their TIBCO / IIB APIs and comments.</p>
+    <span class="url">/message-types</span>
+  </div>
+
+  <div class="card">
+    <h2>Enhancements <span class="badge">open</span></h2>
+    <p>Tracked improvement ideas for chaosco itself — captured from every page via the floating panel.</p>
+    <span class="url">/enhancements/page</span>
+  </div>
+
+</div>
+
+<div class="footer">
+  <strong>On every page, not on a card:</strong> the floating 🔍 order-number search ·
+  the floating 💬 pinned-chats widget · the ➕ Enhancements capture panel.
+  <br><em>Maintenance note: when a dashboard card is added/removed/renamed, update this file
+  together with docs/screens.html.</em>
+</div>
+
+</body>
+</html>

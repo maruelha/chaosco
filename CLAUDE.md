@@ -117,7 +117,9 @@ Print → Save as PDF is the manual fallback.
   you touch?" if unsure. ALSO: `docs/database_schema.html` whenever a
   table or column changes, and `docs/architecture.html` on structural
   changes (new module/layer/pattern) — both drifted badly once
-  [USER 2026-07-18] because they weren't on this list.
+  [USER 2026-07-18] because they weren't on this list. And
+  `docs/dashboard_cards.html` (mini dashboard overview) whenever a
+  dashboard card is added/removed/renamed.
 - Work in verifiable steps; the user confirms each before the next.
 - DB migrations: additive `ALTER TABLE` guarded by try/except in
   `app/db/core.py` (and each vertical's `init_schema`), safe to re-run.
