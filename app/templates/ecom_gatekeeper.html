@@ -7,8 +7,21 @@
   <div class="page-header-row">
     <h1>ECOM Gatekeeper Check</h1>
     <div class="page-header-actions">
+      <form method="get" action="{{ url_for('ecom_gatekeeper_list') }}" style="display:inline">
+        <select name="reporter" onchange="this.form.submit()"
+                title="filter the Jira sections by ticket reporter">
+          <option value="">All reporters</option>
+          {% for r in reporters %}
+          <option value="{{ r }}" {% if r == sel_reporter %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </form>
       <a href="{{ url_for('gatekeeper_sales_report') }}" class="btn" target="_blank"
          title="all tickets assigned to Marina, grouped in-gatekeeping / in-validation">📄 Sales report</a>
+      {% for r in reporters %}
+      <a href="{{ url_for('gatekeeper_sales_report', reporter=r) }}" class="btn" target="_blank"
+         title="Sales report with only {{ r }}'s tickets">📄 {{ r }}</a>
+      {% endfor %}
       <form method="post" action="{{ url_for('ecom_gatekeeper_import_jira') }}" style="display:inline">
         <button type="submit" class="btn btn-primary"
                 title="import the newest .xml from the Jira folder — refreshes status, assignee, acceptance criteria and comments">

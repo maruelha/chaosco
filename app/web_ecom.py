@@ -20,6 +20,7 @@ from app.db import jira as db_jira
 from app.jira_importer import run_jira_import
 from app.reporter import (compute_impacted_totals, compute_retail_report,
                           load_status_mappings, passed_family)
+from app.reporters import expected_reporters, short_reporter
 from app.row_validations import validate_rows
 
 bp = Blueprint("ecom", __name__, url_prefix="/ecom")
@@ -38,6 +39,8 @@ def ecom_list():
     countries = request.args.getlist("country")
     scenarios = request.args.getlist("scenario")
     q         = request.args.get("q", "").strip() or None
+    reporter  = request.args.get("reporter", "").strip()
+    reporters = expected_reporters(_cfg)
 
     conn = _get_conn()
     try:
@@ -47,6 +50,12 @@ def ecom_list():
         distincts = db_ecom.get_ecom_distincts(conn)
         jira_info = {i["jira_key"]: i for i in db_jira.list_jira_issues(conn)}
         jira_keys = set(jira_info)
+        # reporter filter [USER 2026-07-18]: match the ticket's Jira reporter
+        # ("Lastname, Firstname") against the expected short name
+        if reporter:
+            rows = [r for r in rows if short_reporter(
+                (jira_info.get(r["jira_id"]) or {}).get("reporter"),
+                reporters) == reporter]
         from app.db import teams_chats as db_tc
         chats_by_entity = db_tc.chats_by_entity(conn, "jira")
         from app.db import gatekeeper as db_gk
@@ -59,9 +68,14 @@ def ecom_list():
                       for r in rows if r["jira_id"] in jira_keys}
     finally:
         conn.close()
+    # data-check input: ecom rows + their ticket's reporter (the
+    # unexpected_reporter rule reads these injected keys)
+    val_rows = [dict(r, reporter=(jira_info.get(r["jira_id"]) or {}).get("reporter"),
+                     expected_reporters=reporters) for r in rows]
     return render_template(
         "ecom.html", rows=rows, distincts=distincts, jira_keys=jira_keys,
-        validations=validate_rows("ecom", rows, "ecom_id"),
+        validations=validate_rows("ecom", val_rows, "ecom_id"),
+        reporters=reporters, sel_reporter=reporter,
         jira_info=jira_info, chats_by_entity=chats_by_entity,
         track_sales_keys=track_sales_keys,
         jira_comments=jira_comments, jira_notes=jira_notes,

@@ -13,6 +13,7 @@ from flask import jsonify, redirect, render_template, request, send_from_directo
 from werkzeug.utils import secure_filename
 
 from app import database
+from app.reporters import expected_reporters, short_reporter
 from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
@@ -38,6 +39,14 @@ def ecom_gatekeeper_list():
             "SELECT jira_id FROM ecom WHERE jira_id IS NOT NULL")}
     finally:
         conn.close()
+
+    # reporter filter [USER 2026-07-18]: expected short names (config
+    # ecom_reporters) matched against the Jira "Lastname, Firstname" value
+    reporters = expected_reporters(_cfg)
+    sel_reporter = request.args.get("reporter", "").strip()
+    if sel_reporter:
+        jira_issues = [i for i in jira_issues if short_reporter(
+            i.get("reporter"), reporters) == sel_reporter]
 
     # work-context sections [USER 2026-07-12]: gatekeeper board = Sales-facing
     # work. Active = assigned to me & not in validation; Back with Sales =
@@ -69,6 +78,7 @@ def ecom_gatekeeper_list():
                        i.get("acceptance_criteria"), jira_comments[i["jira_key"]])
                    for i in jira_issues}
     return render_template("ecom_gatekeeper.html", rows=rows,
+                           reporters=reporters, sel_reporter=sel_reporter,
                            docs_s4_ids=docs_s4_ids,
                            docs_s4_jira=docs_s4_jira,
                            chats_by_entity=chats_by_entity,
@@ -136,6 +146,14 @@ def gatekeeper_sales_report():
     finally:
         conn.close()
 
+    # per-reporter report [USER 2026-07-18]: ?reporter=<short name> serves
+    # the same report with ONLY that reporter's tickets (all sections)
+    reporters = expected_reporters(_cfg)
+    sel_reporter = request.args.get("reporter", "").strip()
+    if sel_reporter:
+        issues = [i for i in issues if short_reporter(
+            i.get("reporter"), reporters) == sel_reporter]
+
     me = (_cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
     marina_statuses = {s.strip().lower() for s in _cfg.get(
         "jira_marina_statuses",
@@ -182,6 +200,8 @@ def gatekeeper_sales_report():
         total=len(shown),
         filter_options=filter_options,
         report_comments=report_comments,
+        reporters=reporters,
+        sel_reporter=sel_reporter,
         today=date.today().strftime("%Y-%m-%d"),
     )
 

@@ -121,22 +121,28 @@
 <body>
 
 <div class="toolbar">
-  <span class="toolbar-title">ECOM Sales Report</span>
+  <span class="toolbar-title">ECOM Sales Report{% if sel_reporter %} — {{ sel_reporter }}{% endif %}</span>
   <a href="{{ url_for('ecom_gatekeeper_list') }}" class="btn">← Gatekeeper</a>
+  <a href="{{ url_for('gatekeeper_sales_report') }}" class="btn{% if not sel_reporter %} btn-primary{% endif %}">All</a>
+  {% for r in reporters %}
+  <a href="{{ url_for('gatekeeper_sales_report', reporter=r) }}"
+     class="btn{% if sel_reporter == r %} btn-primary{% endif %}"
+     title="only {{ r }}'s tickets (server-side — print/download follow)">{{ r }}</a>
+  {% endfor %}
   <button class="btn" onclick="window.print()">Print</button>
   <button class="btn" onclick="downloadHtml()">Download HTML</button>
 </div>
 
 <div class="print-header">
-  <h1>ECOM Sales Report</h1>
+  <h1>ECOM Sales Report{% if sel_reporter %} — {{ sel_reporter }}{% endif %}</h1>
   <p>{{ today }} &nbsp;·&nbsp; {{ total }} ticket{{ 's' if total != 1 else '' }} — with Sales · with Marina · with MB</p>
 </div>
 
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · ECOM</div>
-    <div class="rh-title">ECOM Sales Report</div>
-    <div class="rh-date">{{ today }} · with Sales (tracked) · with Marina · with MB</div>
+    <div class="rh-title">ECOM Sales Report{% if sel_reporter %} — {{ sel_reporter }}{% endif %}</div>
+    <div class="rh-date">{{ today }} · with Sales (tracked) · with Marina · with MB{% if sel_reporter %} · reporter: {{ sel_reporter }}{% endif %}</div>
   </div>
   <div>
     <div class="rh-stat-val">{{ total }}</div>
@@ -351,7 +357,7 @@ function downloadHtml() {
   const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'ecom_sales_report_{{ today }}.html';
+  a.download = 'ecom_sales_report_{% if sel_reporter %}{{ sel_reporter | lower }}_{% endif %}{{ today }}.html';
   a.click();
 }
 </script>

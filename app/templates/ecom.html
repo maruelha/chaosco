@@ -49,6 +49,12 @@
     <option value="{{ s }}" {% if s in sel_scenarios %}selected{% endif %}>{{ s }}</option>
     {% endfor %}
   </select>
+  <select name="reporter" title="ticket reporter from the Jira store (Lastname, Firstname matched by short name)">
+    <option value="">All reporters</option>
+    {% for r in reporters %}
+    <option value="{{ r }}" {% if r == sel_reporter %}selected{% endif %}>{{ r }}</option>
+    {% endfor %}
+  </select>
   <input type="text" name="q" value="{{ q }}" placeholder="Search jira id / test case / name…"
          style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
   <button type="submit" class="btn btn-sm">Filter</button>

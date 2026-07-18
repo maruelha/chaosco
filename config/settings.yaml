@@ -140,6 +140,15 @@ jira_passed_statuses:
   - 'Done'
   - 'Closed'
 
+# Expected ECOM ticket reporters (short names, matched case-insensitively
+# as substrings of the Jira "Lastname, Firstname" reporter). Drives the
+# reporter filters on /ecom + /ecom-gatekeeper, the per-reporter Sales
+# report links, and the ⚠ data-check on ECOM rows whose ticket has a
+# reporter outside this list.
+ecom_reporters:
+  - 'Phalk'
+  - 'Calvin'
+
 # Email reports (GMX SMTP). Credentials belong ONLY in settings.local.yaml
 # (gitignored) — never here:
 #   email_user: 'you@gmx.de'

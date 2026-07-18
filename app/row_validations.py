@@ -15,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
+from app.reporters import short_reporter
+
 
 @dataclass(frozen=True)
 class Rule:
@@ -35,9 +37,23 @@ def _reason_for_conditional_pass(row: dict) -> str | None:
     return None
 
 
+def _unexpected_reporter(row: dict) -> str | None:
+    """The caller enriches ecom rows with the ticket's `reporter` (from the
+    jira store) and `expected_reporters` (config ecom_reporters). No
+    reporter (ticket not imported yet) = no finding."""
+    reporter = (row.get("reporter") or "").strip()
+    expected = row.get("expected_reporters") or []
+    if reporter and expected and short_reporter(reporter, expected) is None:
+        return (f'Ticket reporter "{reporter}" is not one of the expected '
+                f'reporters ({", ".join(expected)}) — check who raised it, '
+                f'or extend ecom_reporters in settings.yaml.')
+    return None
+
+
 RULES: list[Rule] = [
     Rule("reason_for_conditional_pass", ("retail", "ecom"),
          _reason_for_conditional_pass),
+    Rule("unexpected_reporter", ("ecom",), _unexpected_reporter),
 ]
 
 

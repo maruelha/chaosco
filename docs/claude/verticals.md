@@ -31,8 +31,13 @@ the dialog are generic, nothing else to touch; to put the button on a NEW
 board, pass `validations` from its list route + copy the 6-line button
 `{% if %}` + include the dialog once. Current rules: status
 "conditionally passed" (case-insensitive) requires
-`reason_for_pass_with_reservation` (retail + ecom). Validations only READ
-— never block imports, never write. Tests: tests/test_row_validations.py.
+`reason_for_pass_with_reservation` (retail + ecom);
+`unexpected_reporter` (ecom — ticket reporter outside config
+`ecom_reporters`, see the Sales-report section; the route injects
+`reporter`/`expected_reporters` into the row dicts — caller-injected keys
+are the pattern for data beyond the imported row). Validations only READ
+— never block imports, never write. Tests: tests/test_row_validations.py,
+tests/test_reporter_filters.py.
 
 `app/solman_sync.py` — targeted UPDATE of `defects.solman_status` +
 `assigned_to` from the "Data aggregated by Defect" SolMan export; skips
@@ -149,6 +154,18 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   reassigned; it only takes effect on the report once un-assigned.
   Editable 📣 call-out bullets on top (report_comments key 'sales';
   blank/empty hidden in print). Print (A4 landscape) + Download HTML.
+  **Per-reporter reports** [USER 2026-07-18]: `?reporter=<short name>`
+  serves the SAME report with only that reporter's tickets, SERVER-side
+  (print/download/filename follow; title gets "— Phalk"). Expected
+  reporters = config `ecom_reporters` (default Phalk + Calvin; matched
+  case-insensitively as substrings of the Jira "Lastname, Firstname"
+  value — helper `app/reporters.py`). Toolbar All/Phalk/Calvin switcher +
+  📄 links on the gatekeeper page header; the gatekeeper page and the
+  ECOM board each grew a reporter dropdown filter (GET `reporter` param).
+  An ECOM board row whose ticket has a reporter OUTSIDE the list gets a
+  ⚠ data-check finding (rule `unexpected_reporter` — the route injects
+  `reporter` + `expected_reporters` into the validation row dicts).
+  Tests: tests/test_reporter_filters.py.
 - Ticket detail page `/ecom-gatekeeper/ticket/<jira_key>`
   (`gatekeeper_ticket.html`): Jira card (status/assignee/epic/markets,
   open-in-Jira, extracted order numbers + source, acceptance criteria,
