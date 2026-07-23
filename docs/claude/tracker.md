@@ -68,7 +68,9 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   section summary is white-on-white (headings looked empty).
 - Payment methods `/retail-tracker/payment-methods` — per (country × method ×
   kind) AJAX check-off, "● test passed" hints, category editable only while
-  unknown, filters. 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY
+  unknown, filters (country dialog · Methods ▾ show/hide checklist
+  [USER 2026-07-23: all ticked by default, untick to hide] · category ·
+  method text). 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY
   (`POST /payment-methods/<id>/active`, `set_cpm_active`; `inactive_reason`
   column) — inactive rows leave ALL counting (compute_cpm skips them,
   cpm_counts counts active only) and live in a collapsed "Kicked out"

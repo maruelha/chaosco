@@ -325,10 +325,11 @@ def tracker_payment_methods():
     items = sorted(result["cpm"]["items"],
                    key=lambda r: (r["country"], r["method_name"]))
     fcountries = sorted({r["country"] for r in items})
+    fmethods = sorted({r["method_name"] for r in items}, key=str.lower)
     return render_template(
         "retail_tracker_payment.html",
         items=items, summary=result["cpm"]["summary"],
-        tab4_tests=tab4_tests, fcountries=fcountries,
+        tab4_tests=tab4_tests, fcountries=fcountries, fmethods=fmethods,
         inactive_items=inactive_items,
         as_of=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )

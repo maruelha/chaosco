@@ -43,6 +43,8 @@
 <div class="pm-filterbar">
   <button type="button" class="pm-fbtn" id="pm-country-btn"
           onclick="document.getElementById('pm-country-dlg').showModal()">Country ▾</button>
+  <button type="button" class="pm-fbtn" id="pm-methods-btn"
+          onclick="document.getElementById('pm-methods-dlg').showModal()">Methods ▾</button>
   <select id="pm-cat" onchange="pmApply()">
     <option value="">All categories</option>
     <option value="card">Card</option>
@@ -63,6 +65,23 @@
   <div class="btn-row">
     <button type="button" class="btn btn-primary" onclick="pmApply(); document.getElementById('pm-country-dlg').close()">Apply</button>
     <button type="button" class="btn" onclick="document.querySelectorAll('.pm-country-cb').forEach(c => c.checked = false); pmApply(); document.getElementById('pm-country-dlg').close()">Clear</button>
+  </div>
+</dialog>
+
+<dialog id="pm-methods-dlg" class="pm-dlg">
+  <strong>Show / hide payment methods</strong>
+  <p style="color:#666; font-size:0.82rem; margin:0.3rem 0 0">
+    Untick a method to hide its rows (all countries).
+  </p>
+  <div style="margin:0.6rem 0">
+    {% for m in fmethods %}
+    <label><input type="checkbox" class="pm-method-cb" value="{{ m|lower }}" checked> {{ m }}</label>
+    {% endfor %}
+  </div>
+  <div class="btn-row">
+    <button type="button" class="btn btn-primary" onclick="pmApply(); document.getElementById('pm-methods-dlg').close()">Apply</button>
+    <button type="button" class="btn" onclick="document.querySelectorAll('.pm-method-cb').forEach(c => c.checked = true); pmApply()">All on</button>
+    <button type="button" class="btn" onclick="document.querySelectorAll('.pm-method-cb').forEach(c => c.checked = false); pmApply()">All off</button>
   </div>
 </dialog>
 
@@ -170,11 +189,13 @@ const PM_BASE = "{{ url_for('retail_tracker.tracker_payment_methods') }}";
 
 function pmApply() {
   const picked = [...document.querySelectorAll(".pm-country-cb:checked")].map(c => c.value);
+  const hiddenMethods = [...document.querySelectorAll(".pm-method-cb:not(:checked)")].map(c => c.value);
   const cat = document.getElementById("pm-cat").value;
   const method = document.getElementById("pm-method").value.trim().toLowerCase();
   let shown = 0, hidden = 0;
   document.querySelectorAll("tr.pm-row").forEach(tr => {
     const ok = (picked.length === 0 || picked.includes(tr.dataset.country))
+      && !hiddenMethods.includes(tr.dataset.method)
       && (!cat || tr.dataset.cat === cat)
       && (!method || tr.dataset.method.includes(method));
     tr.style.display = ok ? "" : "none";
@@ -183,6 +204,9 @@ function pmApply() {
   const btn = document.getElementById("pm-country-btn");
   btn.classList.toggle("pm-fbtn--active", picked.length > 0);
   btn.textContent = picked.length ? `Country (${picked.length}) ▾` : "Country ▾";
+  const mbtn = document.getElementById("pm-methods-btn");
+  mbtn.classList.toggle("pm-fbtn--active", hiddenMethods.length > 0);
+  mbtn.textContent = hiddenMethods.length ? `Methods (${hiddenMethods.length} off) ▾` : "Methods ▾";
   document.getElementById("pm-info").textContent =
     hidden ? `${shown} shown · ${hidden} hidden by filter` : "";
 }
