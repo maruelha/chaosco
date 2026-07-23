@@ -235,6 +235,25 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-07-23 ================= -->
+<h2 class="date">Added 2026-07-23</h2>
+
+<div class="box b-red">
+  <div class="box-head">Payment methods — comments may sit on the WRONG row (data check)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="pm-comment-shift">
+      <span><strong>Read through the Comment column on the payment-methods page once
+      and fix any comment that clearly belongs to the row above.</strong>
+      <span class="where">→ Retail Tracker → Payment methods</span><br>
+      The shifting bug (browser restored comment texts one row too low after a
+      kick-out reload) is fixed as of 2026-07-23 — but any comment that was
+      re-saved while it sat on the wrong row is now stored wrong in the
+      database. The fix stops NEW shifts; it cannot repair old ones. Kicked-out
+      rows keep their own comments too, so check the "Kicked out" section as
+      well.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

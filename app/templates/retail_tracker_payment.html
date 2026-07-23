@@ -136,7 +136,11 @@
         {% elif r.ready %}<span class="pill pill--ready">ready</span>
         {% elif r.unknown_category %}<span class="pill pill--red">category?</span>{% endif %}
       </td>
-      <td><input type="text" class="pm-comment" value="{{ r.user_comment or '' }}"
+      {# unique name + autocomplete=off: the browser restores form values across
+         reloads by POSITION for unnamed inputs — after a kick-out removes a row,
+         every comment would shift one row down #}
+      <td><input type="text" class="pm-comment" name="pm-comment-{{ r.id }}" autocomplete="off"
+                 value="{{ r.user_comment or '' }}"
                  placeholder="comment…" onblur="pmComment(this)"></td>
       <td style="color:#999; font-size:0.76rem">{{ r.comment or "" }}</td>
       <td style="text-align:center">
@@ -236,7 +240,8 @@ function pmKickOut(btn) {
   if (!reason.trim()) { alert("A reason is required."); return; }
   const body = new URLSearchParams({active: "0", reason: reason.trim()});
   fetch(`${PM_BASE}/${tr.dataset.id}/active`, {method: "POST", body})
-    .then(r => { if (!r.ok) throw new Error(); location.reload(); })
+    // replace, not reload: reload restores typed form values into shifted rows
+    .then(r => { if (!r.ok) throw new Error(); location.replace(location.href); })
     .catch(() => alert("Kick-out failed — try again."));
 }
 
@@ -244,7 +249,7 @@ function pmReactivate(btn) {
   const tr = btn.closest("tr");
   const body = new URLSearchParams({active: "1"});
   fetch(`${PM_BASE}/${tr.dataset.id}/active`, {method: "POST", body})
-    .then(r => { if (!r.ok) throw new Error(); location.reload(); })
+    .then(r => { if (!r.ok) throw new Error(); location.replace(location.href); })
     .catch(() => alert("Reactivating failed — try again."));
 }
 

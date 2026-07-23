@@ -117,7 +117,8 @@
             {% if i.done %}✓ {% endif %}{{ i.progress_count }}/{{ i.required if i.required is not none else "?" }}{% if over %} ★{% endif %}</span>
           {% endif %}
         </td>
-        <td><input type="text" class="rt-comment" value="{{ i.user_comment or '' }}"
+        <td><input type="text" class="rt-comment" name="rt-comment-{{ i.id }}" autocomplete="off"
+                   value="{{ i.user_comment or '' }}"
                    placeholder="comment…" onblur="rtComment(this)"></td>
         <td style="text-align:right; white-space:nowrap">
           <button type="button" class="rt-cbtn" title="edit requirement text / scenario / required"
@@ -220,7 +221,8 @@
           {% if r.done %}<span class="pill pill--green">done</span>
           {% elif r.ready %}<span class="pill" style="background:#e0f2fe; color:#0e7490">ready to check</span>{% endif %}
         </td>
-        <td><input type="text" class="rt-comment" value="{{ r.user_comment or '' }}"
+        <td><input type="text" class="rt-comment" name="rt4-comment-{{ r.id }}" autocomplete="off"
+                   value="{{ r.user_comment or '' }}"
                    placeholder="{{ r.comment or 'comment…' }}" onblur="rt4Comment(this)"></td>
       </tr>
       {% endfor %}
@@ -289,7 +291,8 @@
           <strong>{{ p.passed_countries|length }}</strong>
           <button type="button" class="rt-cbtn" onclick="rtToggle(this)">countries ▸</button>
         </td>
-        <td><input type="text" class="rt-comment" value="{{ p.comment or '' }}"
+        <td><input type="text" class="rt-comment" name="rt-park-comment-{{ p.id }}" autocomplete="off"
+                   value="{{ p.comment or '' }}"
                    placeholder="comment…" onblur="rtParkComment(this)"></td>
         <td style="text-align:right">
           <form method="post" action="{{ url_for('retail_tracker.tracker_unpark', item_id=p.id) }}">
