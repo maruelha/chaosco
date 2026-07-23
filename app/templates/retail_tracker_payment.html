@@ -160,15 +160,22 @@
   </summary>
   <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
     Excluded from the matrix and all counting. Take one back in and it counts
-    again (the reason is cleared).
+    again (the reason is cleared). Reasons matching
+    "<em>{{ env_blocked_phrase }}</em>" get their own list.
   </p>
+  {% for group_label, group in [
+       ("⛔ Not able to test in testenvironment", inactive_env),
+       ("Other reasons", inactive_other)] %}
+  {% if group %}
+  <h3 style="margin:0.9rem 1rem 0.3rem; font-size:0.92rem; color:#555">
+    {{ group_label }} <span class="rt-count">{{ group|length }}</span></h3>
   <table class="pm-table">
     <thead>
       <tr><th>Country</th><th>Payment method</th><th>Category</th>
           <th>Why kicked out</th><th style="width:8rem"></th></tr>
     </thead>
     <tbody>
-      {% for r in inactive_items %}
+      {% for r in group %}
       <tr data-id="{{ r.id }}" style="color:#8e8e93">
         <td style="font-weight:600">{{ r.country }}</td>
         <td>{{ r.method_name }}</td>
@@ -181,6 +188,8 @@
       {% endfor %}
     </tbody>
   </table>
+  {% endif %}
+  {% endfor %}
 </details>
 {% endif %}
 
@@ -235,7 +244,11 @@ function pmRefreshRow(tr) {
 function pmKickOut(btn) {
   const tr = btn.closest("tr");
   const name = tr.children[1].textContent.trim();
-  const reason = window.prompt(`Kick out "${name}" (${tr.dataset.country})?\nWhy is it not applicable? (required)`);
+  // prefilled with the standard phrase so those land in their own kicked-out
+  // list — overwrite it for any other reason
+  const reason = window.prompt(
+    `Kick out "${name}" (${tr.dataset.country})?\nWhy is it not applicable? (required)`,
+    {{ env_blocked_phrase|tojson }});
   if (reason === null) return;                       // cancelled
   if (!reason.trim()) { alert("A reason is required."); return; }
   const body = new URLSearchParams({active: "0", reason: reason.trim()});

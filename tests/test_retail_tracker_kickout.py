@@ -89,6 +89,39 @@ def test_kick_out_route_requires_reason(db_path, monkeypatch):
     assert "Kicked out" in html and "duplicate of Visa" in html
 
 
+@pytest.mark.parametrize("reason,expected", [
+    ("not able to test in testenvironment",      True),
+    ("Not able to test in test environment!",    True),   # spacing/case/punct.
+    ("NOT ABLE TO TEST IN THE TESTENVIRONMENT",  True),
+    ("not offered in HR anymore",                False),
+    ("duplicate of Visa",                        False),
+    ("",                                         False),
+    (None,                                       False),
+])
+def test_kickout_env_blocked_matching(reason, expected):
+    assert web_rt._kickout_env_blocked(reason) is expected
+
+
+def test_kicked_out_page_splits_env_blocked_from_other(db_path, monkeypatch):
+    monkeypatch.setattr(web_rt, "_db_path", db_path)
+    conn = database.get_connection(db_path)
+    try:
+        env_id = _cpm(conn)
+        other_id = _cpm(conn, method="Visa")
+        db.set_cpm_active(conn, env_id, False, "not able to test in testenvironment")
+        db.set_cpm_active(conn, other_id, False, "duplicate of AMEX")
+    finally:
+        conn.close()
+
+    html = app.test_client().get("/retail-tracker/payment-methods") \
+        .get_data(as_text=True)
+    assert "Not able to test in testenvironment" in html
+    assert "Other reasons" in html
+    # env-blocked list renders before the other-reasons list
+    assert html.index("Not able to test in testenvironment") \
+        < html.index("Other reasons")
+
+
 @pytest.mark.parametrize("label,expected", [
     ("1. Retail Sale – e. suspend",                 "Till transactions"),
     ("1. Retail Sale – f. retrieve",                "Till transactions"),

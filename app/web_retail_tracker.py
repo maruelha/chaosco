@@ -6,6 +6,7 @@ through db_retail_tracker.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -310,6 +311,17 @@ def missing_delete(item_id: int):
     return redirect(url_for("retail_tracker.tracker_board") + "#missing-tests")
 
 
+# Kicked-out grouping [USER 2026-07-23]: reasons matching "not able to test
+# in testenvironment" get their own list under Kicked out. Matched on the
+# letters only, so spacing/case variants ("test environment") still hit.
+_ENV_BLOCKED_PHRASE = "not able to test in testenvironment"
+
+
+def _kickout_env_blocked(reason: str | None) -> bool:
+    key = re.sub(r"[^a-z]", "", (reason or "").lower())
+    return "notabletotest" in key and "testenvironment" in key
+
+
 @bp.route("/payment-methods")
 def tracker_payment_methods():
     """Tab-4 management: per (country x method x test kind) manual check-off.
@@ -326,11 +338,17 @@ def tracker_payment_methods():
                    key=lambda r: (r["country"], r["method_name"]))
     fcountries = sorted({r["country"] for r in items})
     fmethods = sorted({r["method_name"] for r in items}, key=str.lower)
+    inactive_env = [r for r in inactive_items
+                    if _kickout_env_blocked(r["inactive_reason"])]
+    inactive_other = [r for r in inactive_items
+                      if not _kickout_env_blocked(r["inactive_reason"])]
     return render_template(
         "retail_tracker_payment.html",
         items=items, summary=result["cpm"]["summary"],
         tab4_tests=tab4_tests, fcountries=fcountries, fmethods=fmethods,
         inactive_items=inactive_items,
+        inactive_env=inactive_env, inactive_other=inactive_other,
+        env_blocked_phrase=_ENV_BLOCKED_PHRASE,
         as_of=datetime.now().strftime("%Y-%m-%d %H:%M"),
     )
 

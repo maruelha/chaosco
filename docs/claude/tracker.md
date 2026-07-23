@@ -74,7 +74,11 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   (`POST /payment-methods/<id>/active`, `set_cpm_active`; `inactive_reason`
   column) — inactive rows leave ALL counting (compute_cpm skips them,
   cpm_counts counts active only) and live in a collapsed "Kicked out"
-  section with the reason + "↩ Take back in" (clears the reason)
+  section with the reason + "↩ Take back in" (clears the reason). The
+  section is split into TWO lists [USER 2026-07-23]: "Not able to test in
+  testenvironment" (reason matched via `_kickout_env_blocked`, letters-only
+  so spacing/case variants hit; kick-out prompt is prefilled with the
+  phrase) and "Other reasons"
 - Import & admin `/retail-tracker/` — re-runnable import, add-requirement
   form (manual rows, born unresolved), unresolved-test manual picks + "→
   Clarify" per row + free-text "⏳ Expect" input [USER 2026-07-11]: link a
