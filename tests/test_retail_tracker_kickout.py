@@ -89,6 +89,50 @@ def test_kick_out_route_requires_reason(db_path, monkeypatch):
     assert "Kicked out" in html and "duplicate of Visa" in html
 
 
+def test_bulk_kick_out_and_take_back_in(db_path, monkeypatch):
+    monkeypatch.setattr(web_rt, "_db_path", db_path)
+    conn = database.get_connection(db_path)
+    try:
+        ids = [_cpm(conn), _cpm(conn, method="Visa"), _cpm(conn, method="Maestro")]
+    finally:
+        conn.close()
+    client = app.test_client()
+
+    # kicking out needs a reason, and at least one id
+    assert client.post("/retail-tracker/payment-methods/bulk-active",
+                       data={"ids": f"{ids[0]},{ids[1]}", "active": "0",
+                             "reason": " "}).status_code == 400
+    assert client.post("/retail-tracker/payment-methods/bulk-active",
+                       data={"ids": "", "active": "0",
+                             "reason": "x"}).status_code == 400
+
+    resp = client.post("/retail-tracker/payment-methods/bulk-active",
+                       data={"ids": f"{ids[0]},{ids[1]}", "active": "0",
+                             "reason": "not able to test in testenvironment"})
+    assert resp.get_json() == {"ok": True, "count": 2}
+
+    conn = database.get_connection(db_path)
+    try:
+        inactive = {r["id"]: r for r in db.list_cpm(conn, inactive_only=True)}
+        assert set(inactive) == {ids[0], ids[1]}
+        assert all(r["inactive_reason"] == "not able to test in testenvironment"
+                   for r in inactive.values())
+    finally:
+        conn.close()
+
+    # mass take-back-in clears the reasons again
+    resp = client.post("/retail-tracker/payment-methods/bulk-active",
+                       data={"ids": f"{ids[0]},{ids[1]}", "active": "1"})
+    assert resp.get_json() == {"ok": True, "count": 2}
+    conn = database.get_connection(db_path)
+    try:
+        assert db.list_cpm(conn, inactive_only=True) == []
+        assert all(r["active"] == 1 and r["inactive_reason"] is None
+                   for r in db.list_cpm(conn))
+    finally:
+        conn.close()
+
+
 @pytest.mark.parametrize("reason,expected", [
     ("not able to test in testenvironment",      True),
     ("Not able to test in test environment!",    True),   # spacing/case/punct.

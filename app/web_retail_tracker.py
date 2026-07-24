@@ -383,6 +383,27 @@ def tracker_cpm_active(cpm_id: int):
     return jsonify({"ok": True})
 
 
+@bp.route("/payment-methods/bulk-active", methods=["POST"])
+def tracker_cpm_bulk_active():
+    """Mass kick-out / take-back-in [USER 2026-07-24]: comma-separated ids,
+    one reason for all (mandatory when kicking out, like the single route)."""
+    active = request.form.get("active") == "1"
+    reason = request.form.get("reason", "").strip()
+    ids = [int(x) for x in request.form.get("ids", "").split(",")
+           if x.strip().isdigit()]
+    if not ids:
+        return jsonify({"ok": False, "error": "no rows selected"}), 400
+    if not active and not reason:
+        return jsonify({"ok": False, "error": "a reason is required to kick out"}), 400
+    conn = _get_conn()
+    try:
+        for cpm_id in ids:
+            db.set_cpm_active(conn, cpm_id, active, reason or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "count": len(ids)})
+
+
 @bp.route("/payment-methods/<int:cpm_id>/check", methods=["POST"])
 def tracker_cpm_check(cpm_id: int):
     kind = request.form.get("kind", "")

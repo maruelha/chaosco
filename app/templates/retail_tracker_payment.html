@@ -52,6 +52,8 @@
     <option value="unknown">Unknown</option>
   </select>
   <input type="text" id="pm-method" placeholder="Filter payment method…" oninput="pmApply()">
+  <button type="button" class="pm-fbtn" id="pm-bulk-kick" disabled
+          onclick="pmBulkKick()">🚫 Kick out selected</button>
   <span id="pm-info" style="color:#888; font-size:0.82rem"></span>
 </div>
 
@@ -88,6 +90,8 @@
 <table class="pm-table">
   <thead>
     <tr>
+      <th style="width:2rem"><input type="checkbox" id="pm-selall"
+          title="select / deselect all visible rows" onchange="pmSelAll(this)"></th>
       <th>Country</th><th>Payment method</th><th>Category</th>
       <th>Sale covered?</th><th>Return covered?</th>
       <th style="text-align:center">Status</th>
@@ -103,6 +107,7 @@
     <tr class="pm-row{% if r.done %} pm-done{% endif %}" data-id="{{ r.id }}"
         data-country="{{ r.country }}" data-cat="{{ r.category or 'unknown' }}"
         data-method="{{ r.method_name|lower }}">
+      <td><input type="checkbox" class="pm-sel" onchange="pmSelCount()"></td>
       <td style="font-weight:600">{{ r.country }}</td>
       <td>{{ r.method_name }}</td>
       <td>
@@ -171,12 +176,14 @@
     {{ group_label }} <span class="rt-count">{{ group|length }}</span></h3>
   <table class="pm-table">
     <thead>
-      <tr><th>Country</th><th>Payment method</th><th>Category</th>
+      <tr><th style="width:2rem"></th>
+          <th>Country</th><th>Payment method</th><th>Category</th>
           <th>Why kicked out</th><th style="width:8rem"></th></tr>
     </thead>
     <tbody>
       {% for r in group %}
       <tr data-id="{{ r.id }}" style="color:#8e8e93">
+        <td><input type="checkbox" class="pm-back-sel" onchange="pmBackCount()"></td>
         <td style="font-weight:600">{{ r.country }}</td>
         <td>{{ r.method_name }}</td>
         <td>{{ r.category or "unknown" }}</td>
@@ -190,6 +197,10 @@
   </table>
   {% endif %}
   {% endfor %}
+  <div class="btn-row" style="margin:0.7rem 1rem 0.9rem">
+    <button type="button" class="btn btn-sm" id="pm-bulk-back" disabled
+            onclick="pmBulkBack()">↩ Take back in selected</button>
+  </div>
 </details>
 {% endif %}
 
@@ -199,6 +210,8 @@
 
 <script>
 const PM_BASE = "{{ url_for('retail_tracker.tracker_payment_methods') }}";
+const PM_ENV_PHRASE = {{ env_blocked_phrase|tojson }};
+const PM_FILTER_KEY = "pm-filters";
 
 function pmApply() {
   const picked = [...document.querySelectorAll(".pm-country-cb:checked")].map(c => c.value);
@@ -212,8 +225,15 @@ function pmApply() {
       && (!cat || tr.dataset.cat === cat)
       && (!method || tr.dataset.method.includes(method));
     tr.style.display = ok ? "" : "none";
+    // a filtered-away row must not stay selected — mass kick-out only ever
+    // hits rows the user can see
+    if (!ok) tr.querySelector(".pm-sel").checked = false;
     ok ? shown++ : hidden++;
   });
+  pmSelCount();
+  // filters survive the reloads (kick-out, category save, take back in)
+  sessionStorage.setItem(PM_FILTER_KEY,
+    JSON.stringify({picked, hiddenMethods, cat, method}));
   const btn = document.getElementById("pm-country-btn");
   btn.classList.toggle("pm-fbtn--active", picked.length > 0);
   btn.textContent = picked.length ? `Country (${picked.length}) ▾` : "Country ▾";
@@ -248,7 +268,7 @@ function pmKickOut(btn) {
   // list — overwrite it for any other reason
   const reason = window.prompt(
     `Kick out "${name}" (${tr.dataset.country})?\nWhy is it not applicable? (required)`,
-    {{ env_blocked_phrase|tojson }});
+    PM_ENV_PHRASE);
   if (reason === null) return;                       // cancelled
   if (!reason.trim()) { alert("A reason is required."); return; }
   const body = new URLSearchParams({active: "0", reason: reason.trim()});
@@ -266,6 +286,52 @@ function pmReactivate(btn) {
     .catch(() => alert("Reactivating failed — try again."));
 }
 
+function pmSelCount() {
+  const n = document.querySelectorAll(".pm-sel:checked").length;
+  const btn = document.getElementById("pm-bulk-kick");
+  btn.disabled = n === 0;
+  btn.textContent = n ? `🚫 Kick out selected (${n})` : "🚫 Kick out selected";
+}
+
+function pmSelAll(cb) {
+  document.querySelectorAll("tr.pm-row").forEach(tr => {
+    if (tr.style.display !== "none") tr.querySelector(".pm-sel").checked = cb.checked;
+  });
+  pmSelCount();
+}
+
+function pmBulkKick() {
+  const ids = [...document.querySelectorAll(".pm-sel:checked")]
+    .map(c => c.closest("tr").dataset.id);
+  if (!ids.length) return;
+  const reason = window.prompt(
+    `Kick out the ${ids.length} selected rows?\nWhy not applicable? (required — same reason for all)`,
+    PM_ENV_PHRASE);
+  if (reason === null) return;
+  if (!reason.trim()) { alert("A reason is required."); return; }
+  const body = new URLSearchParams({ids: ids.join(","), active: "0", reason: reason.trim()});
+  fetch(`${PM_BASE}/bulk-active`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error(); location.replace(location.href); })
+    .catch(() => alert("Mass kick-out failed — try again."));
+}
+
+function pmBackCount() {
+  const n = document.querySelectorAll(".pm-back-sel:checked").length;
+  const btn = document.getElementById("pm-bulk-back");
+  btn.disabled = n === 0;
+  btn.textContent = n ? `↩ Take back in selected (${n})` : "↩ Take back in selected";
+}
+
+function pmBulkBack() {
+  const ids = [...document.querySelectorAll(".pm-back-sel:checked")]
+    .map(c => c.closest("tr").dataset.id);
+  if (!ids.length) return;
+  const body = new URLSearchParams({ids: ids.join(","), active: "1"});
+  fetch(`${PM_BASE}/bulk-active`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error(); location.replace(location.href); })
+    .catch(() => alert("Mass take-back-in failed — try again."));
+}
+
 function pmComment(input) {
   const tr = input.closest("tr");
   const body = new URLSearchParams({user_comment: input.value});
@@ -275,5 +341,21 @@ function pmComment(input) {
                  setTimeout(() => input.style.borderColor = "", 800); })
     .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
 }
+
+// restore the last filter state of this tab (kick-out / category save /
+// take-back-in reload the page and used to reset every filter)
+(function pmRestoreFilters() {
+  let s = null;
+  try { s = JSON.parse(sessionStorage.getItem(PM_FILTER_KEY) || "null"); }
+  catch (e) { /* corrupt state — start clean */ }
+  if (!s) return;
+  document.querySelectorAll(".pm-country-cb")
+    .forEach(c => c.checked = (s.picked || []).includes(c.value));
+  document.querySelectorAll(".pm-method-cb")
+    .forEach(c => c.checked = !(s.hiddenMethods || []).includes(c.value));
+  document.getElementById("pm-cat").value = s.cat || "";
+  document.getElementById("pm-method").value = s.method || "";
+  pmApply();
+})();
 </script>
 {% endblock %}

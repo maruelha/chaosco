@@ -70,7 +70,11 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   kind) AJAX check-off, "● test passed" hints, category editable only while
   unknown, filters (country dialog · Methods ▾ show/hide checklist
   [USER 2026-07-23: all ticked by default, untick to hide] · category ·
-  method text). 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY
+  method text; filter state survives reloads via sessionStorage
+  [USER 2026-07-24]). Mass actions [USER 2026-07-24]: row checkboxes +
+  select-all-visible, "Kick out selected" (one reason for all, filtered-away
+  rows auto-deselected) and "Take back in selected" in the kicked-out
+  section — both `POST /payment-methods/bulk-active` (ids comma-separated). 🚫 kick-out per row [USER 2026-07-09]: reason MANDATORY
   (`POST /payment-methods/<id>/active`, `set_cpm_active`; `inactive_reason`
   column) — inactive rows leave ALL counting (compute_cpm skips them,
   cpm_counts counts active only) and live in a collapsed "Kicked out"
