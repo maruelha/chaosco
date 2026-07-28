@@ -224,6 +224,9 @@ def tracker_board():
         missing_tests = db.list_missing_tests(conn)
         clarify_items = db.list_clarify(conn)
         parked_tests = db.list_parked_tests(conn)
+        # ids the dashboard carries — drives the ⏳ expected pill (names may be
+        # missing without the test being absent, so keep the two apart)
+        dashboard_ids = db.get_retail_test_ids(conn)
         # display names with original casing (test_name on the row is normalized)
         display_names = {}
         for t in db.get_retail_test_options(conn):
@@ -244,7 +247,7 @@ def tracker_board():
             i["scenario_group"] = _scenario_group(i["scenario_label"])
             # resolved to a future test id the dashboard does not carry yet
             # -> amber "expected" pill, self-heals when the import brings it
-            i["expected"] = bool(i["test_case_id"]) and i["test_case_id"] not in display_names
+            i["expected"] = bool(i["test_case_id"]) and i["test_case_id"] not in dashboard_ids
             i["display_test_name"] = (display_names.get(i["test_case_id"])
                                       or i["test_name"] or "")
             targets_keyed = {t.strip().casefold() for t in (i["targets"] or [])}

@@ -90,7 +90,13 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   as resolved, amber "⏳ expected" pill on the board, `counts.expected`
   line; NO stored state — derived live, self-heals when the import brings
   the test; used for the 4 cross-store exchange tests GKPMU000057-60,
-  where GKPMU000058 deliberately feeds TWO requirements), coverage check (passed tests not linked to any
+  where GKPMU000058 deliberately feeds TWO requirements. The pill asks
+  `test_case_id in db.get_retail_test_ids(conn)` — ids only. It used to test
+  membership of the NAME lookup (`get_retail_test_options`, which filters
+  `testcase_name IS NOT NULL`), so a Retail tab importing ids but no names
+  pilled EVERY board row while `counts.expected` stayed small — board and
+  counts box disagreeing is the tell [USER 2026-07-28]. Names stay
+  name-based, but only for `display_test_name`), coverage check (passed tests not linked to any
   requirement) with reverse assignment (`POST /coverage/assign`,
   `assign_test_to_unresolved` — refuses already-resolved rows; one test per
   requirement, rethink is backlog item 6 in build_plan) and Park button

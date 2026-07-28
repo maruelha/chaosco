@@ -18,6 +18,16 @@ driven (`_HEADER_MAP` at the top of each importer, case/whitespace-insensitive).
 | Spillover | "Core South Spillover" | `app/spillover_importer.py` | `app/db/spillover.py` | `spillover` | `spillover_annotations` | `excel_row` (stable) |
 | Retail | "Retail" | `app/retail_importer.py` | `app/db/retail.py` | `retail` | `retail_annotations` | lower(test_case_id) \|\| "\|\|" \|\| lower(country) |
 
+**Header aliases.** A header may appear under more than one spelling across
+workbook versions — map both to the same field. Retail's `testcase_name`
+accepts `Testcase Name` and `Test Case Description` [USER 2026-07-29]. Two
+rules keep aliases safe: `_OUTPUT_FIELDS` is de-duplicated (`dict.fromkeys`),
+and a field already claimed by an earlier header makes later aliases count as
+unmapped — otherwise a workbook carrying BOTH spellings renames two columns
+to the same name and the row loop reads a pandas Series instead of a value.
+Symptom of a silently dropped name column: every Retail Requirements Board
+row shows the amber "⏳ expected" pill (see `docs/claude/tracker.md`).
+
 ## Row validations (app/row_validations.py) [USER 2026-07-18]
 
 Registry of per-row data-quality checks over the IMPORTED fields (pure

@@ -708,3 +708,15 @@ def get_retail_test_options(conn: sqlite3.Connection) -> list[dict]:
     return _rows_to_dicts(conn.execute(
         "SELECT DISTINCT test_case_id, testcase_name FROM retail"
         " WHERE testcase_name IS NOT NULL ORDER BY testcase_name"))
+
+
+def get_retail_test_ids(conn: sqlite3.Connection) -> set[str]:
+    """Every test id the dashboard carries — the ⏳ expected check.
+
+    Deliberately NOT filtered on testcase_name: a Retail tab that imports ids
+    but no names (renamed/empty "Testcase Name" column) used to empty the
+    options lookup and pill every board row [USER 2026-07-28]. Same query as
+    the "expected" count in requirement_counts, so board and counts agree.
+    """
+    return {r[0] for r in conn.execute(
+        "SELECT DISTINCT test_case_id FROM retail WHERE test_case_id IS NOT NULL")}

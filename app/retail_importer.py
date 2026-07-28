@@ -23,6 +23,9 @@ _HEADER_MAP: dict[str, str] = {
     "test case":                                 "test_case_id",           # match key
     "country":                                   "country",                # match key
     "testcase name":                             "testcase_name",
+    # same column, renamed in a later workbook version [USER 2026-07-29] —
+    # both spellings carry the "ID_Name" shape build_name_lookup relies on
+    "test case description":                     "testcase_name",
     "testcase scenario":                         "testcase_scenario",
     "status":                                    "status",
     "assigned to":                               "assigned_to",
@@ -44,7 +47,11 @@ _HEADER_MAP: dict[str, str] = {
     "concatenate":                               "__ignored__",
 }
 
-_OUTPUT_FIELDS = [v for v in _HEADER_MAP.values() if not v.startswith("__")]
+# dict.fromkeys: two headers may be aliases of ONE field (see "test case
+# description") — the field must still appear exactly once, or the row loop
+# would select a duplicated column and read a Series instead of a value
+_OUTPUT_FIELDS = list(dict.fromkeys(
+    v for v in _HEADER_MAP.values() if not v.startswith("__")))
 
 _DEFAULT_SHEET = "Retail"
 
@@ -101,7 +108,14 @@ def parse_retail(cfg: dict, xlsx_path: Path | None = None) -> dict:
         field = _HEADER_MAP.get(norm)
         if field is None:
             unmapped.append(raw)
-        elif field != "__ignored__":
+        elif field == "__ignored__":
+            pass
+        elif field in col_rename.values():
+            # an alias whose field a previous header already filled (a workbook
+            # carrying BOTH spellings) — first one wins, renaming this one too
+            # would leave two identically named columns
+            unmapped.append(raw)
+        else:
             col_rename[raw] = field
 
     df = df.rename(columns=col_rename)

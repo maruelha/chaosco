@@ -78,3 +78,30 @@ def test_self_heals_when_import_brings_the_test(client):
     assert "Ex X Store Even" in board             # dashboard name took over
     # the pass counts immediately: requirement done 1/1
     assert "✓ 1/1" in board.replace("\n", " ")
+
+
+def test_no_pill_when_dashboard_test_has_no_name(client):
+    """A Retail tab that imports ids but no testcase_name (renamed/empty
+    "Testcase Name" column) must NOT pill every row [USER 2026-07-28].
+    The pill asks "is the id in the dashboard", not "does it have a name".
+    """
+    client.post(f"/retail-tracker/requirements/{client.req_id}/resolve",
+                data={"test_case_id": "GKPMU000059"})
+    conn = database.get_connection(client.db_path)
+    try:
+        with conn:
+            conn.execute(
+                "INSERT INTO retail (match_key, test_case_id, testcase_name,"
+                " country, status) VALUES ('k', 'GKPMU000059', NULL,"
+                " 'Germany', 'Passed')")
+        assert db.requirement_counts(conn)["expected"] == 0
+        assert db.get_retail_test_ids(conn) == {"GKPMU000059"}
+        # the name-based lookup is empty — that must not drive the pill
+        assert db.get_retail_test_options(conn) == []
+    finally:
+        conn.close()
+
+    board = client.get("/retail-tracker/board").get_data(as_text=True)
+    assert "⏳ expected" not in board          # board agrees with the counts box
+    assert "GKPMU000059" in board
+    assert "x store ex even" in board          # falls back to the tracker name

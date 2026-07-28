@@ -164,6 +164,39 @@ def test_retail_parse_flags_incomplete_keys(retail_xlsx):
     assert "Concatenate" not in out["unmapped_headers"]  # recognised + ignored
 
 
+def test_retail_accepts_test_case_description_alias(tmp_path):
+    """A later workbook renamed "Testcase Name" to "Test Case Description"
+    [USER 2026-07-29]. Same column, same "ID_Name" content — it must still
+    land in testcase_name, or the whole board pills as "expected".
+    """
+    xlsx = _wb(tmp_path / "renamed.xlsx", "Retail",
+               ["Test Case", "Country", "Test Case Description", "Status"], [
+                   ["GKPMU000005", "Germany", "GKPMU000005_Sale of the Book", "Passed"],
+               ])
+    out = parse_retail({"retail_sheet_name": "Retail",
+                        "downloads_folder": ".", "filename_stem": "x"},
+                       xlsx_path=xlsx)
+    assert out["unmapped_headers"] == []
+    assert out["rows"][0]["testcase_name"] == "GKPMU000005_Sale of the Book"
+    assert "testcase_name" not in out["missing_fields"]
+
+
+def test_retail_both_name_spellings_does_not_duplicate_the_column(tmp_path):
+    """A workbook carrying BOTH spellings must not produce two columns named
+    testcase_name — pandas would then hand the row loop a Series, not a value.
+    First header wins; the second is reported as unmapped.
+    """
+    xlsx = _wb(tmp_path / "both.xlsx", "Retail",
+               ["Test Case", "Country", "Testcase Name", "Test Case Description"], [
+                   ["GKPMU000005", "Germany", "GKPMU000005_Real", "GKPMU000005_Other"],
+               ])
+    out = parse_retail({"retail_sheet_name": "Retail",
+                        "downloads_folder": ".", "filename_stem": "x"},
+                       xlsx_path=xlsx)
+    assert out["rows"][0]["testcase_name"] == "GKPMU000005_Real"
+    assert "Test Case Description" in out["unmapped_headers"]
+
+
 def test_retail_upsert_key_is_case_insensitive(retail_xlsx, conn):
     rows = parse_retail({"retail_sheet_name": "Retail",
                          "downloads_folder": ".", "filename_stem": "x"},

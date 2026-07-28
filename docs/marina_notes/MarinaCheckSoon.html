@@ -254,6 +254,36 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-07-29 ================= -->
+<h2 class="date">Added 2026-07-29</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Other computer: why is the Testcase Name column not importing?</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="other-pc-testcase-name">
+      <span><strong>On the other computer, open the Retail tab in the Excel and
+      check the header of the test-name column &mdash; it must read exactly
+      <code>Testcase Name</code>.</strong>
+      <span class="where">&#8594; Retail Requirements Tracker &#8594; Import &amp; admin</span><br>
+      The false &#9203; expected pills on the board are fixed (2026-07-29) &mdash;
+      the pill now checks the test ID, not the test name. But the underlying
+      cause is still there: on that machine the <code>testcase_name</code>
+      column looks empty in the database. That does not break the board any
+      more, but it DOES leave the dropdown in "Unresolved &mdash; pick the
+      dashboard test" empty, so you cannot link a requirement to a test by
+      hand there. If the Excel header was renamed, the importer silently drops
+      the column (it only matches <code>testcase name</code>). Re-import after
+      fixing the header. Note the Retail card cannot show you this &mdash; it
+      displays only the Test Case ID, never the name.<br>
+      <strong>Update 2026-07-29:</strong> the importer now also accepts
+      <code>Test Case Description</code> as a name column, so if that was the
+      rename it simply works after a re-import &mdash; no Excel change needed.
+      Run <code>python -m app.retail_importer</code> there to see the
+      <code>WARN unmapped columns</code> line if it is still a different
+      spelling.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {
