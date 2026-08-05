@@ -141,6 +141,66 @@ New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
   </div>
 </div>
 
+<!-- 7 -->
+<div class="box b-green">
+  <div class="box-head">7 · Report History — no more pasting into the Excel tabs</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s7a">
+      <span>Open <a href="http://127.0.0.1:8010/report-history/" target="_blank">/report-history</a>
+      (or the new <strong>History</strong> button on any report toolbar).
+      <span class="expect">Switcher Retail / ECOM / Manual Retail / Manual ECOM; Retail already shows
+      the 36 old dates (21.05.–23.07.) with an "excel" pill — imported from the ReportRetail tab.
+      (Other computer: press "⤓ Import from Excel tabs" once after pulling.)</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7b">
+      <span>Click <strong>⤓ Import from Excel tabs</strong> again.
+      <span class="expect">Green message "retail: 36 line(s) (1 without a readable date skipped)" —
+      re-running is safe, existing dates just update.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7c">
+      <span>Send a report email (or your next real one) with e.g. Retail + ECOM ticked.
+      <span class="expect">Success banner ends with "History saved for &lt;date&gt;: retail, ecom" —
+      new rows appear on the history page with an "email" pill, under the DATE from the email form.
+      Sending the same date again replaces the rows.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s7d">
+      <span>Try <strong>Copy as TSV</strong> on the history page and paste into Excel.
+      <span class="expect">Whole table with headers — ready for a chart.</span></span></label>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="box b-purple">
+  <div class="box-head">8 · 🔍 Search — now finds Jira + notes order numbers</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s8a">
+      <span>Search an order number that only lives in a Jira ticket's acceptance criteria
+      (e.g. <code>320985216</code> from S4ECOM-1241).
+      <span class="expect">New group <strong>Jira tickets</strong> with an "AC: …" or "Comment: …"
+      snippet; click lands on the gatekeeper ticket page. Before today this search found nothing.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s8b">
+      <span>Search a word/number you know is in one of your notes or an inbox item.
+      <span class="expect">New group <strong>Notes</strong> — label shows where the note lives
+      ("· Inbox", "· MB ROE Defects", …), click navigates there.</span></span></label>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="box b-slate">
+  <div class="box-head">9 · Small changes: rename · wider API fields · Store No.</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s9a">
+      <span>Dashboard + defects list.
+      <span class="expect">Card and page now say <strong>MB ROE Defects</strong> (URLs unchanged).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s9b">
+      <span>Open <a href="http://127.0.0.1:8010/message-types" target="_blank">Message Types</a>.
+      <span class="expect">TIBCO API + IIB API fields ~⅓ wider — the API names should be readable now.
+      If still too tight, say so and they grow again.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s9c">
+      <span>Open a Bulgarian retail test case, e.g. search GKPMU000061 on the
+      <a href="http://127.0.0.1:8010/retail" target="_blank">Retail board</a> → Details.
+      <span class="expect">New read-only field <strong>Store No.</strong> = "BGBR"; on other test
+      cases it shows "—" (optional, fine if empty).</span></span></label>
+  </div>
+</div>
+
 <div class="box b-red">
   <div class="box-head">Also waiting for you (MarinaCheckSoon)</div>
   <div class="box-body">
@@ -148,7 +208,7 @@ New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
     clarify the <strong>CDI0000MU34 duplicates</strong> with the team (Excel rows 144–149 as example) ·
     the <strong>"FInland" typo</strong> · <code>settings.local.yaml</code> <code>imports:</code> block on the
     other computer · the Retail report's "Manual test cases" missing-category wording.
-    Suite now at 301 tests.
+    Suite now at 308 tests.
   </div>
 </div>
 
