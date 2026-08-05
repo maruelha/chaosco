@@ -201,6 +201,24 @@ New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
   </div>
 </div>
 
+<!-- 10 -->
+<div class="box b-amber">
+  <div class="box-head">10 · Bug fixes: meeting-prep note shift · encouragements name</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s10a">
+      <span>On <a href="http://127.0.0.1:8010/meeting-prep" target="_blank">Meeting Prep</a>:
+      add a note to the top item, then mark it ✓ Discussed.
+      <span class="expect">The item disappears (planned view) and the note does NOT show up in the
+      next row's note fields anymore. (Cause was the browser restoring typed text by position
+      on reload — the page now navigates instead of reloading.)</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s10b">
+      <span>On <a href="http://127.0.0.1:8010/encouragements" target="_blank">Encouragements</a>:
+      add an encouragement and Save.
+      <span class="expect">Green "saved" banner, the new card is in the list — and the Person
+      field is EMPTY again (the list below stays filtered to that person).</span></span></label>
+  </div>
+</div>
+
 <div class="box b-red">
   <div class="box-head">Also waiting for you (MarinaCheckSoon)</div>
   <div class="box-body">
@@ -208,7 +226,7 @@ New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
     clarify the <strong>CDI0000MU34 duplicates</strong> with the team (Excel rows 144–149 as example) ·
     the <strong>"FInland" typo</strong> · <code>settings.local.yaml</code> <code>imports:</code> block on the
     other computer · the Retail report's "Manual test cases" missing-category wording.
-    Suite now at 308 tests.
+    Suite now at 311 tests.
   </div>
 </div>
 

@@ -139,7 +139,7 @@
           <button class="btn btn-sm js-note-edit">Edit</button>
         </div>
         <div class="mp-note-edit js-note-editor" style="display:none">
-          <textarea class="mp-note-textarea js-note-textarea" rows="2">{{ item.note or '' }}</textarea>
+          <textarea class="mp-note-textarea js-note-textarea" rows="2" autocomplete="off">{{ item.note or '' }}</textarea>
           <div class="mp-note-btns">
             <button class="btn btn-sm btn-primary js-note-save">Save</button>
             <button class="btn btn-sm js-note-cancel">Cancel</button>
@@ -160,7 +160,7 @@
         <div class="mp-notes-list js-mp-notes-list">Loading…</div>
         <div class="mp-note-add-row">
           <textarea class="mp-note-textarea js-mp-note-input" rows="2"
-                    placeholder="Add a note…"></textarea>
+                    autocomplete="off" placeholder="Add a note…"></textarea>
           <button class="btn btn-sm btn-primary js-mp-note-save">Save note</button>
         </div>
       </td>
@@ -198,7 +198,11 @@
       const fd = new FormData();
       fd.append('status', status);
       const resp = await fetch(`/meeting-prep/${id}/status`, { method: 'POST', body: fd });
-      if ((await resp.json()).ok) location.reload();
+      // replace(), NOT reload(): after a reload the browser restores typed
+      // form values BY POSITION — when the discussed row disappears from the
+      // filtered view, a typed note would reappear in the NEXT row's
+      // textarea (and could be saved to the wrong item) [USER 2026-08-05]
+      if ((await resp.json()).ok) window.location.replace(window.location.href);
     });
   });
 

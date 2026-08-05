@@ -221,6 +221,25 @@ Gatekeeper order numbers actually live.
   deliberately unimported — only Store No. was requested.
 - Tests: `test_retail_imports_store_no`; suite 308 green.
 
+## Bonus 4 — two form-state bug fixes (same session)
+
+- **Meeting prep — note appeared on the next row after "✓ Discussed"**:
+  server data was always correct (verified — notes are id-keyed); the
+  cause was `location.reload()` after the status change. Browsers restore
+  typed form values BY POSITION on reload, so with the discussed row gone
+  from the (default planned) view, the typed note text reappeared in the
+  NEXT row's textarea — and saving there would have written it to the
+  wrong item. Fix: `window.location.replace(window.location.href)` (a
+  navigation, no form restoration) + `autocomplete="off"` on the note
+  textareas. Rule for the future: prefer location.replace over
+  location.reload after row-removing actions.
+- **Encouragements — name stuck in the Person field after save**: the add
+  form pre-filled the field from the person FILTER (which the post-save
+  redirect sets to the added person). Prefill removed — the filter still
+  shows the person's list below, the form starts clean.
+- Tests: `tests/test_form_state_fixes.py` (3 — incl. a markup-contract pin
+  on replace-not-reload); suite 311 green.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

@@ -18,9 +18,12 @@
     <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.75rem;align-items:flex-end">
       <div style="flex:1;min-width:200px">
         <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:4px">Person *</label>
+        {# no prefill from the person filter — after saving, the name stayed
+           stuck in the field [USER 2026-08-05]; the filter itself keeps
+           showing the person's list below #}
         <input type="text" name="person_name" list="people-list" class="form-control"
                placeholder="Type a name or pick from list…" required autocomplete="off"
-               value="{{ person.name if person else '' }}">
+               value="">
         <datalist id="people-list">
           {% for p in people %}
           <option value="{{ p.name }}">
