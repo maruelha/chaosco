@@ -48,8 +48,15 @@ board, pass `validations` from its list route + copy the 6-line button
 `ecom_reporters`, see the Sales-report section; the route injects
 `reporter`/`expected_reporters` into the row dicts — caller-injected keys
 are the pattern for data beyond the imported row). Validations only READ
-— never block imports, never write. Tests: tests/test_row_validations.py,
-tests/test_reporter_filters.py.
+— never block imports, never write. Since 2026-08-05 the
+reason_for_conditional_pass rule also covers manual_retail/manual_ecom,
+AND the same registry runs at IMPORT TIME (`importer.data_check_rows`
+over the parsed rows of retail/ecom/manual verticals): findings render as
+a red "⚠ Data checks" block per section on the import report — rows are
+imported anyway, the block just names them (excel row + tc/country or
+jira id). Skiplogged rows are excluded (own report line). Tests:
+tests/test_row_validations.py, tests/test_reporter_filters.py,
+tests/test_import_data_checks.py.
 
 `app/solman_sync.py` — targeted UPDATE of `defects.solman_status` +
 `assigned_to` from the "Data aggregated by Defect" SolMan export; skips

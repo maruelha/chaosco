@@ -17,7 +17,28 @@ from app.ecom_importer import parse_ecom
 from app.manual_importer import parse_manual
 from app.read_defects import ParseError, _find_latest_xlsx, parse_defects
 from app.retail_importer import parse_retail
+from app.row_validations import validate_row
 from app.spillover_importer import parse_spillover
+
+
+def data_check_rows(vertical: str, rows: list[dict]) -> list[dict]:
+    """Read-only data-quality findings over freshly parsed rows [USER
+    2026-08-05] — same rule registry as the boards' ⚠ buttons (first case:
+    "conditionally passed" needs the reason column filled). Shown on the
+    import report; NEVER blocks the import. Skiplogged rows are excluded
+    (they have their own report line)."""
+    findings: list[dict] = []
+    for row in rows:
+        if row.get("_skip_reason"):
+            continue
+        problems = validate_row(vertical, row)
+        if not problems:
+            continue
+        parts = [row.get("jira_id"), row.get("test_case_id"), row.get("country")]
+        label = " / ".join(p for p in parts if p) or "(no id)"
+        findings.append({"excel_row": row.get("excel_row"),
+                         "label": label, "problems": problems})
+    return findings
 
 
 def _write_skiplog(skipped_rows: list[dict], skiplog_folder: Path, label: str = "defects") -> Path:
@@ -116,6 +137,7 @@ def run_import(cfg: dict) -> dict:
             "inserted": 0, "updated": 0,
             "skipped_blank_key": 0,
             "skiplog_path": None,
+            "data_checks": [],
         },
         "ecom": {
             "enabled": ecom_enabled,
@@ -124,6 +146,7 @@ def run_import(cfg: dict) -> dict:
             "inserted": 0, "updated": 0,
             "skipped_missing_jira_id": 0,
             "skiplog_path": None,
+            "data_checks": [],
         },
     }
     for vertical in db_manual.TABLES:
@@ -134,6 +157,7 @@ def run_import(cfg: dict) -> dict:
             "inserted": 0, "updated": 0,
             "skipped_blank_key": 0, "skipped_duplicate": 0,
             "skiplog_path": None,
+            "data_checks": [],
         }
 
     # 1. Locate file
@@ -193,6 +217,8 @@ def run_import(cfg: dict) -> dict:
         except ParseError as exc:
             result["retail"]["error"] = str(exc)
             result["retail"]["ok"] = False
+        else:
+            result["retail"]["data_checks"] = data_check_rows("retail", retail_rows)
 
     ecom_rows = None
     if ecom_enabled:
@@ -202,6 +228,8 @@ def run_import(cfg: dict) -> dict:
         except ParseError as exc:
             result["ecom"]["error"] = str(exc)
             result["ecom"]["ok"] = False
+        else:
+            result["ecom"]["data_checks"] = data_check_rows("ecom", ecom_rows)
 
     manual_rows: dict[str, list | None] = {v: None for v in db_manual.TABLES}
     for vertical in db_manual.TABLES:
@@ -216,6 +244,9 @@ def run_import(cfg: dict) -> dict:
         except ParseError as exc:
             result[vertical]["error"] = str(exc)
             result[vertical]["ok"] = False
+        else:
+            result[vertical]["data_checks"] = data_check_rows(
+                vertical, manual_rows[vertical])
 
     # 4. DB writes — single connection for all importers
     skiplog_folder = Path(cfg["skiplog_folder"])

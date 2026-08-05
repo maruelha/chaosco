@@ -51,7 +51,8 @@ def _unexpected_reporter(row: dict) -> str | None:
 
 
 RULES: list[Rule] = [
-    Rule("reason_for_conditional_pass", ("retail", "ecom"),
+    Rule("reason_for_conditional_pass",
+         ("retail", "ecom", "manual_retail", "manual_ecom"),
          _reason_for_conditional_pass),
     Rule("unexpected_reporter", ("ecom",), _unexpected_reporter),
 ]

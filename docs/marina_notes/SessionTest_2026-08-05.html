@@ -216,6 +216,11 @@ New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
       add an encouragement and Save.
       <span class="expect">Green "saved" banner, the new card is in the list — and the Person
       field is EMPTY again (the list below stays filtered to that person).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s10c">
+      <span>Run the import and look at the ECOM section of the result screen.
+      <span class="expect">New red <strong>⚠ Data checks</strong> block naming 3 rows that are
+      "conditionally passed" without a reason in column S (rows 4/12/14 — S4ECOM-1492/-1258/-1230).
+      Same check runs for Retail + both manual tabs; rows import anyway.</span></span></label>
   </div>
 </div>
 

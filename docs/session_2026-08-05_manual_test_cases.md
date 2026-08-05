@@ -240,6 +240,18 @@ Gatekeeper order numbers actually live.
 - Tests: `tests/test_form_state_fixes.py` (3 — incl. a markup-contract pin
   on replace-not-reload); suite 311 green.
 
+## Bonus 5 — conditionally-passed check on the import report
+
+- The boards' ⚠ rule ("conditionally passed" needs the reason column
+  filled) now ALSO runs at import time, for Retail, ECOM, Manual Retail
+  and Manual ECOM (`importer.data_check_rows`, same rule registry).
+  Findings show as a red "⚠ Data checks" block in the section on the
+  import report — rows import anyway, the block names them (excel row +
+  identifiers). Rule verticals extended to the manual tables.
+- Real data: 3 ECOM rows flagged immediately (rows 4/12/14 — S4ECOM-1492,
+  -1258, -1230, conditionally passed without reason).
+- Tests: `tests/test_import_data_checks.py`; suite 314 green.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

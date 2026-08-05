@@ -1,6 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Import Result — Test Coordination{% endblock %}
 
+{# ⚠ Data checks [USER 2026-08-05] — read-only findings from the boards'
+   rule registry (row_validations), run over the freshly parsed rows.
+   First case: "conditionally passed" without a reason in column S. #}
+{% macro data_checks(section) %}
+{% if section.data_checks %}
+<div class="result-row">
+  <span class="result-label">⚠ Data checks</span>
+  <span class="result-value">
+    <span class="pill pill--red">{{ section.data_checks | length }} row(s)</span>
+    — imported anyway, fix in the tracking Excel:
+    {% for f in section.data_checks %}
+    <br>Row {{ f.excel_row }} — <strong>{{ f.label }}</strong>: {{ f.problems | join(' · ') }}
+    {% endfor %}
+  </span>
+</div>
+{% endif %}
+{% endmacro %}
+
 {% block content %}
 <div class="page-header">
   <h1>Import Result</h1>
@@ -148,6 +166,7 @@
       {% if r.retail.skiplog_path %}{{ r.retail.skiplog_path }}{% else %}none{% endif %}
     </span>
   </div>
+  {{ data_checks(r.retail) }}
   {% endif %}
 </div>
 
@@ -183,6 +202,7 @@
       {% if r.ecom.skiplog_path %}{{ r.ecom.skiplog_path }}{% else %}none{% endif %}
     </span>
   </div>
+  {{ data_checks(r.ecom) }}
   {% endif %}
 </div>
 
@@ -222,6 +242,7 @@
       {% if m.skiplog_path %}{{ m.skiplog_path }}{% else %}none{% endif %}
     </span>
   </div>
+  {{ data_checks(m) }}
   {% endif %}
 </div>
 {% endfor %}
