@@ -116,6 +116,7 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             sales_file                       TEXT,
             execution_started                TEXT,
             execution_completed              TEXT,
+            store_no                         TEXT,
             order_number                     TEXT,
             old_order_numbers                TEXT,
             defect_id_ref                    TEXT,
@@ -365,6 +366,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     for col in ("action_needed INTEGER DEFAULT 0",):
         try:
             conn.execute(f"ALTER TABLE retail_annotations ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    for col in ("store_no TEXT",):  # Excel "Store No." column [USER 2026-08-05]
+        try:
+            conn.execute(f"ALTER TABLE retail ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists

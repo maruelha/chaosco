@@ -48,7 +48,7 @@ class NoteEntity:
 
 REGISTRY: dict[str, NoteEntity] = {
     "defect": NoteEntity(
-        "Defects", "defects_list", "defect_detail", "defect_id",
+        "MB ROE Defects", "defects_list", "defect_detail", "defect_id",
         database.get_defect,
         lambda r: r["defect_id"] + (f" — {r['solman_name']}" if r.get("solman_name") else ""),
     ),

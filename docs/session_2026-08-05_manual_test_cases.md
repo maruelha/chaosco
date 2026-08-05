@@ -207,6 +207,20 @@ Gatekeeper order numbers actually live.
   (S4ECOM-1241) is now found. Tests extended in `tests/test_search.py`;
   suite 307 green. Docs: screens.html search-widget card.
 
+## Bonus 3 — three small UI/import changes (same session)
+
+- **"Defects" renamed to "MB ROE Defects"** everywhere in the UI: page
+  title + h1, dashboard card, notes breadcrumb (web_notes REGISTRY). The
+  Excel sheet name and all URLs/endpoints are unchanged.
+- **Message-types card**: TIBCO API + IIB API columns widened 16 → 21.5rem
+  (~⅓) so the API names are readable.
+- **Retail "Store No." imported**: header map + `retail.store_no` column
+  (additive migration in db/core.py) + optional row on the Retail detail
+  page. Real data: 4 Bulgarian rows carry "BGBR". The Retail tab's OTHER
+  new columns (Sales Status, old defect ids, bare "Order number") remain
+  deliberately unimported — only Store No. was requested.
+- Tests: `test_retail_imports_store_no`; suite 308 green.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

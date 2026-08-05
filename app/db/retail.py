@@ -21,7 +21,7 @@ _RETAIL_MUTABLE = [
     "test_case_id", "country",
     "testcase_name", "testcase_scenario", "status", "assigned_to",
     "key_user_responsible", "evidence_in_sharepoint", "sales_file",
-    "execution_started", "execution_completed", "order_number",
+    "execution_started", "execution_completed", "store_no", "order_number",
     "old_order_numbers", "defect_id_ref", "s4_sales_order",
     "s4_billing_documents", "s4_journal_invoice_entry", "delivery_note",
     "comment", "reason_for_pass_with_reservation", "excel_row",

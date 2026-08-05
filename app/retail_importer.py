@@ -34,6 +34,7 @@ _HEADER_MAP: dict[str, str] = {
     "sales file":                                "sales_file",
     "execution started":                         "execution_started",
     "execution completed":                       "execution_completed",
+    "store no.":                                 "store_no",
     "order number/transaction number":            "order_number",
     "old order numbers/transaction numbers":      "old_order_numbers",
     "defect id (if applicable)":                 "defect_id_ref",

@@ -164,6 +164,25 @@ def test_retail_parse_flags_incomplete_keys(retail_xlsx):
     assert "Concatenate" not in out["unmapped_headers"]  # recognised + ignored
 
 
+def test_retail_imports_store_no(tmp_path, conn):
+    """New "Store No." column [USER 2026-08-05] — imported, optional."""
+    xlsx = _wb(tmp_path / "r.xlsx", "Retail",
+               RETAIL_HEADER[:5] + ["Store No."], [
+                   ["GKPMU000005", "Germany", "n", "Passed", "AB", "4711"],
+                   ["GKPMU000005", "Poland", "n", "Passed", "AB", ""],
+               ])
+    out = parse_retail({"retail_sheet_name": "Retail",
+                        "downloads_folder": ".", "filename_stem": "x"},
+                       xlsx_path=xlsx)
+    assert "Store No." not in out["unmapped_headers"]
+    assert out["rows"][0]["store_no"] == "4711"
+    assert out["rows"][1]["store_no"] == ""
+    database.upsert_retail_rows(conn, out["rows"], today="2026-08-05")
+    vals = {r[0]: r[1] for r in conn.execute(
+        "SELECT country, store_no FROM retail")}
+    assert vals == {"Germany": "4711", "Poland": None}
+
+
 def test_retail_accepts_test_case_description_alias(tmp_path):
     """A later workbook renamed "Testcase Name" to "Test Case Description"
     [USER 2026-07-29]. Same column, same "ID_Name" content — it must still
