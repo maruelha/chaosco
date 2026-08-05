@@ -185,6 +185,46 @@
   </div>
   {% endif %}
 </div>
+
+{# --- Manual Test Cases (Retail + ECOM) --- #}
+{% for key, label in [("manual_retail", "Manual Test Cases | Retail"),
+                      ("manual_ecom",   "Manual Test Cases | ECOM")] %}
+{% set m = r[key] %}
+<h2 style="margin-top:1.5rem">{{ label }}</h2>
+<div class="result-box{% if m.error %} result-box--error{% endif %}">
+  {% if not m.enabled %}
+  <div class="result-row">
+    <span class="result-label">Status</span>
+    <span class="result-value"><span class="pill pill--gray">Disabled</span> in config</span>
+  </div>
+  {% elif m.error %}
+  <div class="result-row">
+    <span class="result-label">Error</span>
+    <span class="result-value">{{ m.error }}</span>
+  </div>
+  {% else %}
+  <div class="result-row">
+    <span class="result-label">Inserted</span>
+    <span class="result-value">{{ m.inserted }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Updated</span>
+    <span class="result-value">{{ m.updated }}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skipped</span>
+    <span class="result-value">{{ m.skipped_blank_key }} incomplete key (test case + country)
+      {% if m.skipped_duplicate %} · <span class="pill pill--red">{{ m.skipped_duplicate }} duplicate test case+country in file</span> — data defect in the Excel, see skip log{% else %} · 0 duplicates{% endif %}</span>
+  </div>
+  <div class="result-row">
+    <span class="result-label">Skip log</span>
+    <span class="result-value mono">
+      {% if m.skiplog_path %}{{ m.skiplog_path }}{% else %}none{% endif %}
+    </span>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
 {% endif %}
 
 <div class="btn-row">

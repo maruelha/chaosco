@@ -17,6 +17,8 @@ driven (`_HEADER_MAP` at the top of each importer, case/whitespace-insensitive).
 | Defects | "Defects" | `app/read_defects.py` | `app/db/defects.py` | `defects` | `defect_annotations` | `defect_id` (TEXT PK) |
 | Spillover | "Core South Spillover" | `app/spillover_importer.py` | `app/db/spillover.py` | `spillover` | `spillover_annotations` | `excel_row` (stable) |
 | Retail | "Retail" | `app/retail_importer.py` | `app/db/retail.py` | `retail` | `retail_annotations` | lower(test_case_id) \|\| "\|\|" \|\| lower(country) |
+| Manual Retail | "Manual Test Cases \| Retail" | `app/manual_importer.py` | `app/db/manual_tests.py` | `manual_retail` | — (none yet) | like Retail — ONE line per tc+country |
+| Manual ECOM | "Manual Test Cases \| ECOM" | `app/manual_importer.py` | `app/db/manual_tests.py` | `manual_ecom` | — (none yet) | like Retail — NOT jira_id (blank in the data) |
 
 **Header aliases.** A header may appear under more than one spelling across
 workbook versions — map both to the same field. Retail's `testcase_name`
@@ -125,6 +127,45 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   file's `imports:` block replaces the base one, so new tabs go in BOTH.
 - Extra columns vs Retail: `jira_id`, `description_change` (display; feeds
   the external coverage tool). Tests: `tests/test_ecom_importer.py`.
+
+## Manual Test Cases verticals (2026-08-05)
+
+- ONE importer module (`app/manual_importer.py`, `parse_manual(cfg,
+  vertical)`) + ONE storage module (`app/db/manual_tests.py`) for BOTH tabs
+  — separate header maps (the tabs are siblings, not identical), separate
+  tables `manual_retail` / `manual_ecom` (rule 1). The pipe in the sheet
+  names is deliberate: the workbook still contains two older EMPTY stub
+  tabs WITHOUT the pipe, which must stay ignored.
+- Tab shapes: `| Retail` ≈ Retail tab + `store_no`/`sales_status` (+ a bare
+  duplicate "Order number" column, deliberately unmapped); `| ECOM` ≈ ECOM
+  tab (`jira_id`, `description_change`) but jira_id is BLANK in the data —
+  so BOTH verticals match by test case + country like Retail. **ONE line
+  per tc+country [USER 2026-08-05]**: the real ECOM tab repeats CDI0000MU34
+  ("Settlement File Validation") up to 7× per country as fully identical
+  rows — Marina judged that a DATA DEFECT in the workbook (she clarifies
+  with the team). First occurrence wins; further in-file occurrences go to
+  the skiplog ("duplicate test case+country in file") and show as a red
+  count on the import screen (real data: 116 of 179 ECOM rows imported).
+- Blank Excel header cells (pandas "Unnamed: N") are ignored, not
+  "unmapped". `imports.manual_retail` / `imports.manual_ecom` in
+  settings.yaml — REMEMBER: a local `imports:` override replaces the whole
+  block, add the entries there too. No annotations tables yet (lists are
+  read-only, no notes/detail pages/row validations in v1).
+- **Pages** (built 2026-08-05): ONE Blueprint `app/web_manual_tests.py`
+  for both streams — `/manual/<stream>` list (dropdown filters + free
+  search; ECOM shows Jira ID column, Retail Key User) and
+  `/manual/<stream>/report` = the simple Retail pattern assembled from the
+  shared `_report_blocks.html` macros. Defects section
+  (`get_manual_defects_impacted`): defect referenced in the tab's
+  `defect_id_ref` AND Defects-tab channel matches (retail/ecom,
+  case-insensitive); same counting/MB-Sales rules as Retail; referenced
+  defects of another/blank channel render as a red ⚠ box
+  (`get_manual_offchannel_defect_refs`) — never silently dropped.
+  Actions: Copy-TSV · Download HTML (standalone via
+  `emailer.standalone_html`) · Save to Excel (sheets "Manual Retail" /
+  "Manual ECOM" via shared `app/report_log.py`). Two dashboard cards.
+  Tests: `tests/test_manual_importer.py` (incl. FIELDS↔importer drift
+  guard) + `tests/test_manual_pages.py`.
 
 ## Shared Jira store (trial-verified 2026-07-11 against the real export)
 
@@ -264,7 +305,13 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Retail Status Report `/retail/report` (buckets from
   `config/status_mappings.yaml` via `app/reporter.py`; Save to Excel appends
   `output/retail_report_log.xlsx`; Download HTML/PPT), diagnostics
-  `/retail/report/diagnostics`. Defect section counts IMPACTED test cases
+  `/retail/report/diagnostics`. Since 2026-08-05 the page body is assembled
+  from the shared `_report_blocks.html` macros (bucket tiles, breakdown,
+  defects table, inline diagnostics, comments, copy/save script) and
+  Save-to-Excel goes through the shared `app/report_log.py` (one sheet per
+  report in the log workbook) — the same blocks/writer serve the ECOM
+  save-excel and the Manual Test Cases reports; `retail_report_download.html`
+  stays a deliberately separate standalone rendering. Defect section counts IMPACTED test cases
   [USER 2026-07-06]: TC references the defect AND has not passed yet (passed
   family = the passed_with_dtc bucket, one definition via
   `reporter.passed_family`); passed refs stay visible muted "(+N passed)"

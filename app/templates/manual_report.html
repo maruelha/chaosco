@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "_report_blocks.html" as blocks %}
+{% block title %}{{ label }} Report — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ label }} Report</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('manual_tests.manual_list', stream=stream) }}" class="btn">← {{ label }}</a>
+      <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
+      <a href="{{ url_for('manual_tests.manual_report_download', stream=stream) }}" class="btn">Download HTML</a>
+      <button type="button" class="btn" id="btn-excel">Save to Excel</button>
+    </div>
+  </div>
+  <p class="list-meta">Computed live · {{ today }} · {{ report.total_rows }} test cases · same bucket definitions as the Retail report</p>
+</div>
+
+{{ blocks.bucket_overview(report.buckets) }}
+
+{{ blocks.breakdown(report.buckets) }}
+
+{% set impacted_intro %}
+  Only defects <strong>referenced in the tab's "Defect ID" column</strong> AND
+  carrying the <strong>{{ channel_label }}</strong> channel on the Defects tab
+  appear here. <strong>Impacted</strong> = manual test cases referencing the
+  defect that have not passed yet. MB = the Excel's "Sales or DTC" column says
+  DTC (manual DTC O2C flag as blank-cell fallback; neither → Sales) — same
+  rules as the Retail report.
+{% endset %}
+{{ blocks.impacted_defects(
+     title=label ~ " Defects — referenced & active (excl. Confirmed & Withdrawn)",
+     intro=impacted_intro,
+     defects=impacted_defects,
+     mb_total=mb_total, sales_total=sales_total, impacted_total=impacted_total,
+     empty_text="No referenced " ~ channel_label ~ " defects yet — the Defect ID column of the tab is empty so far.") }}
+
+{# ---- Off-channel references (data check — never silently dropped) ---- #}
+{% if offchannel_refs %}
+<h2 class="rr-section-title" style="margin-top:2rem">⚠ Referenced defects outside the {{ channel_label }} channel</h2>
+<div class="result-box result-box--error">
+  <div class="result-row">
+    <span class="result-label">Excluded above</span>
+    <span class="result-value">
+      {% for d in offchannel_refs %}
+      <span class="pill pill--red">{{ d.defect_id }} — channel: {{ d.channel or '(blank)' }} · {{ d.ref_count }} ref{{ 's' if d.ref_count != 1 }}</span>
+      {% endfor %}
+      — referenced in the tab's Defect ID column but the Defects tab puts them in another channel; check the Excel.
+    </span>
+  </div>
+</div>
+{% endif %}
+
+{{ blocks.diagnostics_inline(report) }}
+
+{{ blocks.additional_comments(report_comments) }}
+
+{{ blocks.report_scripts(report.buckets, today,
+     url_for("manual_tests.manual_report_save_excel", stream=stream)) }}
+{% endblock %}

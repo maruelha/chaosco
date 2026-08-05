@@ -300,8 +300,13 @@
         </tr>
         <tr>
           <td>app/reporter.py</td>
-          <td>Reads <code>status_mappings.yaml</code> · bucket counting for the Retail AND ECOM status reports · impacted-defect totals</td>
+          <td>Reads <code>status_mappings.yaml</code> · bucket counting for ALL bucket status reports (Retail, ECOM, Manual Retail/ECOM) · impacted-defect totals</td>
           <td>Write to DB · know about routes</td>
+        </tr>
+        <tr>
+          <td>app/report_log.py</td>
+          <td>Shared report-log workbook writer — appends one dated bucket row to the report's own sheet ("Retail", "ECOM", …) of <code>output/retail_report_log.xlsx</code>. Every bucket report's Save-to-Excel route calls it; the per-report copies were folded in 2026-08-05.</td>
+          <td>Write to DB · define Flask routes</td>
         </tr>
         <tr>
           <td>Pure-logic helpers: issue_messages.py · row_validations.py · reporters.py · retail_tracker_counting.py · backup.py</td>
@@ -447,6 +452,7 @@
         <li><strong>⚠ Row validations</strong> — <code>_row_validation_dialog.html</code> + rule registry <code>row_validations.py</code></li>
         <li><strong>Entity links</strong> (per-entity URLs) and <strong>Entity connections</strong> (many-to-many topic ↔ defect / retail / ecom / spillover, detail pages, collapsed when empty)</li>
         <li><strong>Global 🔍 search</strong> — floating widget on every page, source registry in <code>db/search.py</code></li>
+        <li><strong>Status-report blocks</strong> — <code>_report_blocks.html</code> Jinja macros (bucket tiles · in-progress breakdown · impacted-defects table · inline diagnostics · Additional bullets · copy/save-Excel script). The shared body of the "simple report" family: a report page imports the file, calls the sections it needs, and adds its own extras around them (e.g. the Retail-only universe strip). Retail uses it today; the Manual Retail / Manual ECOM reports build on it.</li>
       </ul>
     </div>
 
@@ -563,10 +569,11 @@
       <tbody>
         <tr><td>app/web.py</td><td>Assembler — imports route modules, initialises schemas, registers Blueprints; entry point</td></tr>
         <tr><td>app/web_core.py</td><td>Shared Flask app object + web plumbing (no routes)</td></tr>
-        <tr><td>app/web_*.py</td><td>Feature route modules + Blueprints (home/defects/spillover/retail/reports/planning/reference · notes/tracker/topics/email/teams/ecom/next-steps/entity-links/connections/issue-msg/search)</td></tr>
+        <tr><td>app/web_*.py</td><td>Feature route modules + Blueprints (home/defects/spillover/retail/reports/planning/reference · notes/tracker/topics/email/teams/ecom/manual-tests/next-steps/entity-links/connections/issue-msg/search)</td></tr>
         <tr><td>app/database.py + app/db/</td><td>Facade + the storage package — ALL SQL, one module per area</td></tr>
         <tr><td>app/importer.py + *_importer.py + read_defects.py</td><td>Excel import pipeline (Defects · Spillover · Retail · ECOM · tracker seed); jira_importer.py = Jira XML → shared store; solman_sync.py; archiver.py</td></tr>
-        <tr><td>app/reporter.py</td><td>Bucket counting (Retail + ECOM reports) from status_mappings.yaml</td></tr>
+        <tr><td>app/reporter.py</td><td>Bucket counting (all bucket status reports) from status_mappings.yaml</td></tr>
+        <tr><td>app/report_log.py</td><td>Shared writer for the report log workbook (one sheet per report, dated rows)</td></tr>
         <tr><td>app/ppt_utils.py / ppt_retail.py / ppt_spillover.py</td><td>PowerPoint builders (shared primitives + one builder per report)</td></tr>
         <tr><td>app/report_exporter.py</td><td>Dated HTML + PPTX snapshots of both reports to report_export/ (works)</td></tr>
         <tr><td>app/issue_messages.py · row_validations.py · reporters.py · backup.py</td><td>Pure-logic helpers: ✉️ message assembly · ⚠ data-check rules · expected-reporter matching · DB + uploads backup</td></tr>

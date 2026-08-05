@@ -4,12 +4,14 @@ Credentials are NEVER in code or in the repo: `email_user` / `email_password`
 (+ optional `email_smtp_host`, `email_smtp_port`) belong in the gitignored
 `config/settings.local.yaml`. Recipients live in the DB (app.db.email).
 
-The three attachable reports (chosen per send via checkboxes):
+The attachable reports (chosen per send via checkboxes):
     spillover — rendered like the Export Reports snapshot
     retail    — rendered like the Export Reports snapshot
     board     — the Requirements Board, rendered server-side and made
                 standalone (CSS inlined, scripts/chrome stripped) the same
                 way the board's Download HTML button does client-side
+    ecom / manual_retail / manual_ecom — the live report pages rendered
+                through the app and made standalone the same way
 """
 from __future__ import annotations
 
@@ -32,6 +34,8 @@ REPORT_CHOICES = [
     ("retail", "Retail Status Report"),
     ("board", "Retail Requirements Board"),
     ("ecom", "ECOM Status Report"),
+    ("manual_retail", "Manual Test Cases Retail Report"),
+    ("manual_ecom", "Manual Test Cases ECOM Report"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -124,6 +128,11 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         resp = flask_app.test_client().get("/ecom/report")
         out.append((f"ecom_report_{day}.html",
                     standalone_html(resp.get_data(as_text=True))))
+    for stream in ("retail", "ecom"):
+        if f"manual_{stream}" in reports:
+            resp = flask_app.test_client().get(f"/manual/{stream}/report")
+            out.append((f"manual_{stream}_report_{day}.html",
+                        standalone_html(resp.get_data(as_text=True))))
     return out
 
 

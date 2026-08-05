@@ -1,0 +1,279 @@
+{# Shared status-report building blocks — the "simple report" family:
+   Retail, Manual Retail, Manual ECOM (ECOM may adopt them later).
+   Each macro is one section of the report page; a report template imports
+   this file and calls the sections it needs, adding its own extras
+   (e.g. the Retail-only test-case-universe strip) around them. #}
+
+{% macro bucket_overview(buckets) %}
+<h2 class="rr-section-title">Overview</h2>
+<div class="rr-bucket-grid rr-bucket-grid--top">
+
+  <div class="rr-bucket">
+    <div class="rr-bucket-number">{{ buckets.back_with_sales }}</div>
+    <div class="rr-bucket-label">Back with Sales</div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--dtc">
+    <div class="rr-bucket-number">{{ buckets.with_dtc }}</div>
+    <div class="rr-bucket-label">With DTC</div>
+    <div class="rr-bucket-sub">
+      <span>{{ buckets.in_progress_with_dtc }} in progress</span>
+      <span>{{ buckets.passed_with_dtc }} passed</span>
+    </div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--inprog">
+    <div class="rr-bucket-number">{{ buckets.in_progress_with_dtc }}</div>
+    <div class="rr-bucket-label">In Progress with DTC</div>
+  </div>
+
+  <div class="rr-bucket rr-bucket--passed">
+    <div class="rr-bucket-number">{{ buckets.passed_with_dtc }}</div>
+    <div class="rr-bucket-label">Passed with DTC</div>
+  </div>
+
+</div>
+{% endmacro %}
+
+
+{% macro breakdown(buckets, note="informational — does not reconcile to In Progress with DTC") %}
+<h2 class="rr-section-title">In-Progress Breakdown <span class="rr-informational">({{ note }})</span></h2>
+<div class="rr-bucket-grid rr-bucket-grid--breakdown">
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ buckets.incoming_gatekeeper }}</div>
+    <div class="rr-breakdown-label">Incoming (Gatekeeper)</div>
+    <div class="rr-breakdown-owner">Jose</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ buckets.ready_for_validation }}</div>
+    <div class="rr-breakdown-label">Ready for validation</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ buckets.in_progress }}</div>
+    <div class="rr-breakdown-label">In Progress</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ buckets.in_clarification }}</div>
+    <div class="rr-breakdown-label">In Clarification</div>
+    <div class="rr-breakdown-owner">Key users</div>
+  </div>
+
+  <div class="rr-breakdown-card">
+    <div class="rr-breakdown-number">{{ buckets.blocked }}</div>
+    <div class="rr-breakdown-label">Blocked</div>
+    <div class="rr-breakdown-owner">Tech team</div>
+  </div>
+
+</div>
+{% endmacro %}
+
+
+{# intro is trusted template-authored HTML (may contain <strong>). #}
+{% macro impacted_defects(title, intro, defects, mb_total, sales_total,
+                          impacted_total, empty_text, summary_cards=true) %}
+<h2 class="rr-section-title" style="margin-top:2rem">{{ title }}</h2>
+<p style="font-size:.82rem;color:#6e6e73;margin:-.25rem 0 .75rem">
+  {{ intro | safe }}
+</p>
+
+{% if defects %}
+<table class="rr-diag-table" style="width:100%;margin-bottom:.5rem">
+  <thead>
+    <tr>
+      <th>Defect ID</th>
+      <th>Solman Name</th>
+      <th>Assigned To</th>
+      <th>Date Reported</th>
+      <th>Status</th>
+      <th style="text-align:right">Impacted — MB</th>
+      <th style="text-align:right">Impacted — Sales</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for d in defects %}
+    <tr{% if not d.impacted_tc_count %} style="color:#aaa"{% endif %}>
+      <td><a href="{{ url_for('defect_detail', defect_id=d.defect_id) }}">{{ d.defect_id }}</a></td>
+      <td>{{ d.solman_name or '—' }}</td>
+      <td>{{ d.assigned_to or '—' }}</td>
+      <td>{{ d.date_reported or '—' }}</td>
+      <td>{{ d.solman_status or '—' }}</td>
+      <td style="text-align:right">
+        {% if d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if d.dtco2c and d.passed_tc_count %}<span style="color:#aaa;font-size:.78rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
+      </td>
+      <td style="text-align:right">
+        {% if not d.dtco2c and d.impacted_tc_count %}<strong>{{ d.impacted_tc_count }}</strong>{% else %}—{% endif %}
+        {% if not d.dtco2c and d.passed_tc_count %}<span style="color:#aaa;font-size:.78rem"> (+{{ d.passed_tc_count }} passed)</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr style="border-top:2px solid #ccc;font-weight:600">
+      <td colspan="5" style="text-align:right;padding-right:.75rem">Total impacted TCs</td>
+      <td style="text-align:right">{{ mb_total }}</td>
+      <td style="text-align:right">{{ sales_total }}</td>
+    </tr>
+    <tr style="font-size:.8rem;color:#555">
+      <td colspan="5" style="text-align:right;padding-right:.75rem">Combined total</td>
+      <td colspan="2" style="text-align:right"><strong>{{ impacted_total }}</strong></td>
+    </tr>
+  </tfoot>
+</table>
+
+{% if summary_cards %}
+{# ---- Impacted summary cards ---- #}
+<div style="display:flex;gap:1rem;margin-bottom:1.5rem">
+  <div class="rr-breakdown-card" style="flex:1">
+    <div class="rr-breakdown-number">{{ mb_total }}</div>
+    <div class="rr-breakdown-label">Impacted — MB</div>
+    <div class="rr-breakdown-owner">Our follow-up</div>
+  </div>
+  <div class="rr-breakdown-card" style="flex:1">
+    <div class="rr-breakdown-number">{{ sales_total }}</div>
+    <div class="rr-breakdown-label">Impacted — Sales</div>
+    <div class="rr-breakdown-owner">Sales follow-up</div>
+  </div>
+  <div class="rr-breakdown-card" style="flex:1">
+    <div class="rr-breakdown-number">{{ impacted_total }}</div>
+    <div class="rr-breakdown-label">Total Impacted by Defects</div>
+    <div class="rr-breakdown-owner">still open — passed TCs excluded</div>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<p class="rr-diag-none">{{ empty_text }}</p>
+{% endif %}
+{% endmacro %}
+
+
+{# Inline diagnostics box (the ECOM-report style — no separate page). #}
+{% macro diagnostics_inline(report) %}
+{% if report.diagnostics.unmapped_known or report.diagnostics.unknown %}
+<h2 class="rr-section-title" style="margin-top:2rem">Statuses outside all buckets</h2>
+<div class="result-box{% if report.diagnostics.unknown %} result-box--error{% endif %}">
+  {% if report.diagnostics.unmapped_known %}
+  <div class="result-row">
+    <span class="result-label">Known exclusions</span>
+    <span class="result-value">
+      {% for status, count in report.diagnostics.unmapped_known.items() %}
+      <span class="pill pill--gray">{{ status }}: {{ count }}</span>
+      {% endfor %}
+      — expected, not in any bucket (e.g. not started yet)
+    </span>
+  </div>
+  {% endif %}
+  {% if report.diagnostics.unknown %}
+  <div class="result-row">
+    <span class="result-label">⚠ Unknown statuses</span>
+    <span class="result-value">
+      {% for status, count in report.diagnostics.unknown.items() %}
+      <span class="pill pill--red">{{ status }}: {{ count }}</span>
+      {% endfor %}
+      — not in the master list; add them to <span class="mono">config/status_mappings.yaml</span>
+    </span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{% macro additional_comments(report_comments) %}
+{% set visible_comments = report_comments | selectattr('comment') | list %}
+{% if visible_comments %}
+<h2 class="rr-section-title" style="margin-top:2rem">Additional</h2>
+<ul style="margin:0 0 1.5rem;padding-left:1.5rem;display:flex;flex-direction:column;gap:0.35rem">
+  {% for c in visible_comments %}
+  <li style="font-size:0.87rem;color:#3a3a3c;line-height:1.55">{{ c.comment }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+
+{# Copy-to-clipboard TSV + Save-to-Excel wiring for #btn-copy / #btn-excel.
+   save_url must be resolved by the caller (url_for of its save-excel route). #}
+{% macro report_scripts(buckets, today, save_url) %}
+<script>
+(function () {
+  const b = {{ buckets | tojson }};
+  const today = {{ today | tojson }};
+
+  // One header row + one value row so Excel gets headers above numbers.
+  const topHeaders = [
+    'Date',
+    'Back with Sales',
+    'With DTC',
+    'In Progress with DTC',
+    'Passed with DTC',
+    'Incoming (Gatekeeper)',
+    'Ready for validation',
+    'In Progress',
+    'In Clarification',
+    'Blocked',
+  ];
+  const topValues = [
+    today,
+    b.back_with_sales,
+    b.with_dtc,
+    b.in_progress_with_dtc,
+    b.passed_with_dtc,
+    b.incoming_gatekeeper,
+    b.ready_for_validation,
+    b.in_progress,
+    b.in_clarification,
+    b.blocked,
+  ];
+
+  const tsv = topHeaders.join('\t') + '\n' + topValues.join('\t');
+
+  document.getElementById('btn-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(tsv);
+      const btn = document.getElementById('btn-copy');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    } catch (e) {
+      alert('Copy failed: ' + e.message);
+    }
+  });
+
+  document.getElementById('btn-excel').addEventListener('click', async () => {
+    const dateVal = window.prompt('Date for this row:', today);
+    if (dateVal === null) return;
+
+    const btn = document.getElementById('btn-excel');
+    const orig = btn.textContent;
+    btn.textContent = 'Saving…';
+    btn.disabled = true;
+    const fd = new FormData();
+    fd.append('date', dateVal.trim() || today);
+    try {
+      const resp = await fetch({{ save_url | tojson }}, { method: 'POST', body: fd });
+      const d = await resp.json();
+      if (d.ok) {
+        btn.textContent = '✓ Saved!';
+        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+      } else {
+        btn.textContent = orig;
+        btn.disabled = false;
+        alert('Save failed: ' + d.error);
+      }
+    } catch (e) {
+      btn.textContent = orig;
+      btn.disabled = false;
+      alert('Save failed: ' + e.message);
+    }
+  });
+}());
+</script>
+{% endmacro %}

@@ -8,7 +8,7 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-07-14
+Last updated: 2026-08-05
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
@@ -48,6 +48,27 @@ Last updated: 2026-07-14
 ---
 
 ## Part 1 — Feature work by module
+
+### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+
+Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
+
+1. ~~Shared report component~~ ✅ DONE 2026-08-05: `_report_blocks.html`
+   macros + `app/report_log.py` (one report-log writer, sheet per report);
+   Retail report refactored onto them, pixel-identical.
+2. ~~Importers + tables~~ ✅ DONE 2026-08-05: `app/manual_importer.py` +
+   `app/db/manual_tests.py` (`manual_retail` / `manual_ecom`). ONE line per
+   test case + country [USER]; in-file duplicates skiplogged (workbook
+   defect, see MarinaCheckSoon — CDI0000MU34).
+3. ~~List + report pages + dashboard cards~~ ✅ DONE 2026-08-05: Blueprint
+   `web_manual_tests.py`, defects = referenced-in-tab AND channel match,
+   off-channel refs in red ⚠ box.
+4. ~~Email checkboxes~~ ✅ DONE 2026-08-05 (step ④): two new entries in
+   `emailer.REPORT_CHOICES` + standalone attachments.
+5. **Later / if needed**: notes + annotations (next step / comments) on
+   manual rows · detail pages · ⚠ row validations (conditionally-passed
+   rule) · PPT export · revisit the one-line-per-tc+country rule if the
+   team says the MU34 repeats are intentional.
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 

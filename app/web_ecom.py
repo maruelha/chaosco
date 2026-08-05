@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-import openpyxl
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from app import database
@@ -18,6 +17,7 @@ from app.config_loader import load_config
 from app.db import ecom as db_ecom
 from app.db import jira as db_jira
 from app.jira_importer import run_jira_import
+from app.report_log import append_report_row
 from app.reporter import (compute_impacted_totals, compute_retail_report,
                           load_status_mappings, passed_family)
 from app.reporters import expected_reporters, short_reporter
@@ -142,13 +142,6 @@ def ecom_report_download():
     }
 
 
-_ECOM_REPORT_HEADERS = [
-    "Date", "Back with Sales", "With DTC", "In Progress with DTC",
-    "Passed with DTC", "Incoming (Gatekeeper)", "Ready for validation",
-    "In Progress", "In Clarification", "Blocked",
-]
-
-
 @bp.route("/report/save-excel", methods=["POST"])
 def ecom_report_save_excel():
     """Append one dated row to the ECOM sheet of the report log workbook
@@ -161,30 +154,10 @@ def ecom_report_save_excel():
         finally:
             conn.close()
         save_date = request.form.get("date") or date.today().isoformat()
-
-        xlsx_path = Path(_cfg.get("retail_report_xlsx", "output/retail_report_log.xlsx"))
-        xlsx_path.parent.mkdir(parents=True, exist_ok=True)
-        wb = (openpyxl.load_workbook(xlsx_path) if xlsx_path.exists()
-              else openpyxl.Workbook())
-        if not xlsx_path.exists() and "Sheet" in wb.sheetnames:
-            del wb["Sheet"]
-        ws = wb["ECOM"] if "ECOM" in wb.sheetnames else wb.create_sheet("ECOM")
-        if ws.cell(1, 1).value is None:
-            for col, header in enumerate(_ECOM_REPORT_HEADERS, 1):
-                ws.cell(row=1, column=col).value = header
-        b = report["buckets"]
-        next_row = ws.max_row + 1
-        for col, val in enumerate([
-            save_date, b["back_with_sales"], b["with_dtc"],
-            b["in_progress_with_dtc"], b["passed_with_dtc"],
-            b["incoming_gatekeeper"], b["ready_for_validation"],
-            b["in_progress"], b["in_clarification"], b["blocked"],
-        ], 1):
-            ws.cell(row=next_row, column=col).value = val
-        wb.save(xlsx_path)
+        path = append_report_row(_cfg, report, save_date, "ECOM")
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)})
-    return jsonify({"ok": True, "path": str(xlsx_path), "date": save_date})
+    return jsonify({"ok": True, "path": path, "date": save_date})
 
 
 @bp.route("/<int:ecom_id>", methods=["GET", "POST"])

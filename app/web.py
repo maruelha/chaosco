@@ -64,6 +64,14 @@ from app.web_ecom import bp as _ecom_bp
 _db_ecom.init_schema(_db_path)
 app.register_blueprint(_ecom_bp)
 
+# Manual Test Cases verticals (2026-08-05) — manual_retail + manual_ecom
+# tables from the two "Manual Test Cases | …" tabs; one Blueprint for both
+# streams (/manual/retail, /manual/ecom — list + simple status report).
+from app.db import manual_tests as _db_manual
+from app.web_manual_tests import bp as _manual_bp
+_db_manual.init_schema(_db_path)
+app.register_blueprint(_manual_bp)
+
 # Next-step archive (generic component, 2026-07-10) — registry-driven.
 from app.db import next_steps as _db_ns
 from app.web_next_steps import bp as _ns_bp

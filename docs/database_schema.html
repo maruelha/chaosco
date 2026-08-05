@@ -256,6 +256,8 @@
     <li><a href="#spillover">spillover</a></li>
     <li><a href="#retail">retail</a></li>
     <li><a href="#ecom">ecom</a></li>
+    <li><a href="#manual_retail">manual_retail</a></li>
+    <li><a href="#manual_ecom">manual_ecom</a></li>
 
     <li class="group-label">User-Authored Annotations</li>
     <li><a href="#defect_annotations">defect_annotations</a></li>
@@ -1267,6 +1269,92 @@
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: MANUAL TEST CASES VERTICALS -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Manual Test Cases verticals — the two "Manual Test Cases | …" tabs (2026-08-05)</div>
+
+  <div class="table-card" id="manual_retail">
+    <div class="table-card-header">
+      <span class="tname">manual_retail</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "Manual Test Cases | Retail" tab (the pipe is part of the sheet name — an older EMPTY stub tab without the pipe is ignored). Match key = lower(test_case_id) || '||' || lower(country), like Retail — ONE line per test case + country [USER 2026-08-05]; in-file duplicates are a data defect, skipped to the skiplog and counted on the import screen. Schema in app/db/manual_tests.py (one module for both tables), importer app/manual_importer.py. No annotations table yet — read-only + notes.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">manual_retail_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part ("Test Case" column)</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part</td></tr>
+        <tr><td class="col-name">testcase_name</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Test Case Description" (alias "Testcase name" accepted)</td></tr>
+        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Report input — same buckets as Retail (status_mappings.yaml)</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">key_user_responsible</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_started</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_completed</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">store_no</td><td class="col-type">TEXT</td><td></td><td class="note-text">New column on this tab (empty so far)</td></tr>
+        <tr><td class="col-name">sales_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">New column on this tab (empty so far)</td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Order number /Transaction number"; the tab's bare duplicate "Order number" column is deliberately unmapped</td></tr>
+        <tr><td class="col-name">old_order_numbers</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">defect_id_ref</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Defect ID (if applicable)" — will feed the Manual Retail report's defects section (referenced AND Retail-channel)</td></tr>
+        <tr><td class="col-name">old_defect_ids</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_sales_order</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_billing_documents</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_journal_invoice_entry</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">delivery_note</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">reason_for_pass_with_reservation</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(tc)||'||'||lower(country) — the upsert key; first in-file occurrence wins</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='manual_retail' (planned with the list pages)</div>
+  </div>
+
+  <div class="table-card" id="manual_ecom">
+    <div class="table-card-header">
+      <span class="tname">manual_ecom</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Rows from the "Manual Test Cases | ECOM" tab. SAME match key as manual_retail (test case + country, ONE line each [USER 2026-08-05]) — the tab's Jira ID column is blank in the real data, so unlike the ECOM board it can NOT carry the match; jira_id is stored as a plain field. The real tab repeats CDI0000MU34 ("Settlement File Validation") up to 7× per country as identical rows — judged a DATA DEFECT in the workbook (Marina clarifies with the team); the repeats are skipped to the skiplog and counted red on the import screen (116 rows imported of 179).</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">manual_ecom_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part ("Test Case ID" column)</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part</td></tr>
+        <tr><td class="col-name">testcase_name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Mostly per-partner Settlement File Validation</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Report input — same buckets as Retail (status_mappings.yaml)</td></tr>
+        <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Plain imported field — blank in the real data, NOT the match key</td></tr>
+        <tr><td class="col-name">description_change</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_started</td><td class="col-type">TEXT</td><td></td><td class="note-text">"date execution started" (alias "execution started" accepted)</td></tr>
+        <tr><td class="col-name">order_number</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">old_order_numbers</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">defect_id_ref</td><td class="col-type">TEXT</td><td></td><td class="note-text">Will feed the Manual ECOM report's defects section (referenced AND ecom-channel)</td></tr>
+        <tr><td class="col-name">old_defect_ids</td><td class="col-type">TEXT</td><td></td><td class="note-text">Header not on the real tab (yet) — stays empty</td></tr>
+        <tr><td class="col-name">s4_sales_order</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_billing_documents</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">s4_journal_invoice_entry</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">delivery_note</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Delivery Note (for TradeCo)"</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">"comments" column</td></tr>
+        <tr><td class="col-name">reason_for_pass_with_reservation</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(tc)||'||'||lower(country) — the upsert key; first in-file occurrence wins</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='manual_ecom' (planned with the list pages)</div>
   </div>
 </div>
 

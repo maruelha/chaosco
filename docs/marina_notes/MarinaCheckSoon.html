@@ -284,6 +284,48 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-08-05 ================= -->
+<h2 class="date">Added 2026-08-05</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Manual Test Cases verticals — two decisions once they are live</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="manual-local-imports">
+      <span><strong>Both computers: if <code>settings.local.yaml</code> has its own
+      <code>imports:</code> block, add the two new entries there too.</strong>
+      <span class="where">&#8594; config/settings.local.yaml</span><br>
+      The local override replaces the whole <code>imports:</code> block (merge is
+      per top-level key), so machines with a local block would silently skip the
+      new <code>Manual Test Cases | Retail</code> / <code>| ECOM</code> tabs.</span></label>
+    <label class="task"><input type="checkbox" data-k="manual-ecom-mu34-dups">
+      <span><strong>Clarify with the team: CDI0000MU34 appears up to 7× per country
+      on the Manual Test Cases | ECOM tab — identical rows.</strong>
+      <span class="where">&#8594; Excel tab "Manual Test Cases | ECOM", e.g. rows 144&ndash;149 (Austria)</span><br>
+      63 duplicate rows in total (Austria 6&times;, Poland 7&times;, Croatia 1&times; &hellip;) —
+      possibly meant as one row per settlement file, but nothing in the rows
+      differentiates them. You judged it a workbook defect: the import keeps
+      ONE line per test case + country and skiplogs the rest (red counter on
+      the import screen). If the team says the repeats are intentional, they
+      should differentiate the rows (e.g. partner in the scenario) — then tell
+      Claude and the import rule gets revisited.</span></label>
+    <label class="task"><input type="checkbox" data-k="manual-ecom-finland-typo">
+      <span><strong>Country typo on the Manual ECOM tab: "FInland" (capital I) on 6
+      rows next to "Finland".</strong>
+      <span class="where">&#8594; Excel tab "Manual Test Cases | ECOM", Country column</span><br>
+      Until fixed in the Excel, Finland shows up as TWO countries in filters
+      and future reports.</span></label>
+    <label class="task"><input type="checkbox" data-k="manual-missing-category">
+      <span><strong>Retail report universe strip: decide what happens to the
+      "Manual test cases" missing category.</strong>
+      <span class="where">&#8594; /retail/report + config/settings.yaml
+      (<code>retail_missing_categories</code>, <code>retail_total_test_cases</code>)</span><br>
+      Once the manual tabs are imported and have their own reports, the Retail
+      report still says manual test cases are NOT tracked ("Additional test
+      cases on top of total"). Keep, reword, or drop the bullet &mdash; and check
+      whether the 646 total needs a rethink.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

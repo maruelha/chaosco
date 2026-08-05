@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ label }} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ label }}</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+      <a href="{{ url_for('manual_tests.manual_report', stream=stream) }}" class="btn btn-primary">Report</a>
+    </div>
+  </div>
+  <p class="list-meta">Imported read-only from the "Manual Test Cases | {{ 'Retail' if stream == 'retail' else 'ECOM' }}" tab — one line per test case + country</p>
+</div>
+
+{# ---- Filters + Search (simple GET selects) ---- #}
+<form method="get" action="{{ url_for('manual_tests.manual_list', stream=stream) }}" class="filters-bar">
+  <div class="filter-group">
+    <label for="f-status">Status</label>
+    <select id="f-status" name="status">
+      <option value="">All</option>
+      {% for v in options.statuses %}
+      <option value="{{ v }}" {% if v == sel_status %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-country">Country</label>
+    <select id="f-country" name="country">
+      <option value="">All</option>
+      {% for v in options.countries %}
+      <option value="{{ v }}" {% if v == sel_country %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-scenario">Scenario</label>
+    <select id="f-scenario" name="scenario">
+      <option value="">All</option>
+      {% for v in options.scenarios %}
+      <option value="{{ v }}" {% if v == sel_scenario %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-search">Search</label>
+    <input type="text" id="f-search" name="search" value="{{ search }}" class="filter-input"
+           placeholder="test case / name / defect / order…">
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Filter</button>
+  </div>
+  {% if sel_status or sel_country or sel_scenario or search %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('manual_tests.manual_list', stream=stream) }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<p class="list-meta">{{ rows | length }} item{{ 's' if rows | length != 1 else '' }}</p>
+
+{# ---- Table ---- #}
+<div class="spillover-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th class="sc-row num">#</th>
+        <th class="rc-tcid">Test Case</th>
+        <th class="rc-country">Country</th>
+        <th class="rc-scenario">Scenario</th>
+        <th class="rc-status">Status</th>
+        <th class="rc-assignee">Assigned to</th>
+        {% if stream == 'retail' %}
+        <th class="rc-keyuser">Key User</th>
+        {% else %}
+        <th class="rc-keyuser">Jira ID</th>
+        {% endif %}
+        <th class="rc-order">Order #</th>
+        <th class="rc-defect">Defect ID</th>
+        <th>Execution started</th>
+        <th>Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="sc-row num">{{ row.excel_row }}</td>
+        <td class="rc-tcid">{{ row.test_case_id or '—' }}</td>
+        <td class="rc-country">{{ row.country or '—' }}</td>
+        <td class="rc-scenario" title="{{ row.testcase_scenario | e }}">
+          {% if row.testcase_scenario %}
+            {{ row.testcase_scenario[:60] }}{% if row.testcase_scenario | length > 60 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        <td class="rc-status"><span class="status-pill">{{ row.status or '—' }}</span></td>
+        <td class="rc-assignee">{{ row.assigned_to or '—' }}</td>
+        {% if stream == 'retail' %}
+        <td class="rc-keyuser">{{ row.key_user_responsible or '—' }}</td>
+        {% else %}
+        <td class="rc-keyuser">{{ row.jira_id or '—' }}</td>
+        {% endif %}
+        <td class="rc-order">{{ row.order_number or '—' }}</td>
+        <td class="rc-defect">{{ row.defect_id_ref or '—' }}</td>
+        <td>{{ row.execution_started or '—' }}</td>
+        <td title="{{ (row.comment or '') | e }}">
+          {% if row.comment %}
+            {{ row.comment[:50] }}{% if row.comment | length > 50 %}…{% endif %}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

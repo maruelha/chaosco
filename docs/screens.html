@@ -800,6 +800,44 @@
     </div>
   </div>
 
+  <!-- Manual Test Cases List (both streams) -->
+  <div class="screen-card" id="manual-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Manual Test Cases List (Retail / ECOM)</span>
+      <span class="screen-url">GET /manual/&lt;stream&gt; (stream = retail | ecom)</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Read-only list of one "Manual Test Cases | …" tab (2026-08-05). ONE Blueprint (<code>web_manual_tests.py</code>) serves both streams; unknown streams 404. One line per test case + country — in-file duplicates are skiplogged at import (workbook defect, see MarinaCheckSoon).</p>
+      <div class="features">
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">Status / Country / Scenario dropdowns + free search (test case, name, defect ref, order number), GET-based with Clear.</span>
+        <span class="feat-label">Columns</span>
+        <span class="feat-value"># (Excel row) · Test Case · Country · Scenario · Status · Assigned to · Key User (retail) / Jira ID (ecom) · Order # · Defect ID · Execution started · Comment.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>manual_retail</code> / <code>manual_ecom</code> (read-only, no annotations yet)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Test Cases Reports -->
+  <div class="screen-card" id="manual-report">
+    <div class="screen-card-header">
+      <span class="screen-title">Manual Test Cases Report (Retail / ECOM)</span>
+      <span class="screen-url">GET /manual/&lt;stream&gt;/report</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">The simple Retail-report pattern, instantiated per stream from the shared <code>_report_blocks.html</code> macros (2026-08-05). Same bucket definitions as Retail/ECOM (one <code>status_mappings.yaml</code>).</p>
+      <div class="features">
+        <span class="feat-label">Sections</span>
+        <span class="feat-value">Bucket overview · In-Progress breakdown · Defects table + summary cards (ONLY defects referenced in the tab's Defect ID column AND matching the stream's channel [USER 2026-08-05]) · ⚠ off-channel referenced defects (red box — excluded refs never vanish silently) · inline diagnostics · Additional bullets.</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value">Copy-TSV · Download HTML (standalone via <code>emailer.standalone_html</code>, no extra template) · Save to Excel (sheets "Manual Retail" / "Manual ECOM" in the shared report log workbook via <code>app/report_log.py</code>).</span>
+        <span class="feat-label">Email</span>
+        <span class="feat-value">Checkboxes 5+6 on /email-report (step ④).</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ECOM Detail -->
   <div class="screen-card" id="ecom-detail">
     <div class="screen-card-header">
@@ -1668,7 +1706,7 @@
       <p class="screen-desc">Send the status reports as standalone-HTML attachments via GMX SMTP. Linked from the dashboard Export card. Credentials (<code>email_user</code>/<code>email_password</code>) live ONLY in gitignored <code>settings.local.yaml</code> — the page shows setup instructions and disables Send until configured.</p>
       <div class="features">
         <span class="feat-label">Reports to attach</span>
-        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09; board and ECOM rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
+        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05; board, ECOM and both manual reports rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
         <span class="feat-label">Message</span>
         <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.").</span>
         <span class="feat-label">Recipients</span>

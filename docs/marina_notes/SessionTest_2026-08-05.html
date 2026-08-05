@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-05</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-05</h1>
+<p class="hint">Everything built in the 05.08. session (Manual Test Cases verticals),
+as a click-through checklist. Ticks are remembered by this browser. Links assume the
+app runs at <a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>).
+New on startup: the <code>manual_retail</code> + <code>manual_ecom</code> tables
+(created automatically) and the <code>/manual/…</code> routes. The newest workbook
+(<code>…ROE(46).xlsx</code>) is already in the project <code>Download</code> folder.
+<strong>Other computer:</strong> if its <code>settings.local.yaml</code> has an own
+<code>imports:</code> block, add the two <code>manual_*</code> entries there first.</div>
+
+<!-- 1 -->
+<div class="box b-blue">
+  <div class="box-head">1 · Import — two new sections on the result screen</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Run the import from the dashboard (Import DTC ROE Tracking).
+      <span class="expect">The result screen shows two new sections "Manual Test Cases | Retail"
+      (34 rows) and "Manual Test Cases | ECOM".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Look at the ECOM manual section's Skipped line.
+      <span class="expect">A red pill: <strong>63 duplicate test case+country in file</strong> —
+      that's the CDI0000MU34 workbook defect you're clarifying with the team
+      (rows listed in the skip log CSV). 116 rows imported.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-teal">
+  <div class="box-head">2 · Dashboard — two new cards</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>On the <a href="http://127.0.0.1:8010/" target="_blank">dashboard</a>, find the cards
+      <strong>Manual Test Cases Retail</strong> and <strong>Manual Test Cases ECOM</strong>
+      (next to the ECOM card).
+      <span class="expect">Each has "View List" + "Report" buttons.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-amber">
+  <div class="box-head">3 · List pages — read-only boards with filters</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open <a href="http://127.0.0.1:8010/manual/retail" target="_blank">/manual/retail</a>.
+      <span class="expect">34 items; columns incl. Key User; everything "Ready for Validation".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Open <a href="http://127.0.0.1:8010/manual/ecom" target="_blank">/manual/ecom</a>.
+      <span class="expect">116 items; a <strong>Jira ID</strong> column instead of Key User (empty for now —
+      the tab has no Jira IDs yet).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>Try the filters: pick a Country, then a Scenario, then type e.g. <code>MU05</code>
+      into Search; Clear afterwards.
+      <span class="expect">Table narrows accordingly; Clear returns to all rows. Known workbook typo:
+      the ECOM country dropdown shows BOTH "FInland" and "Finland" until the Excel is fixed.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-green">
+  <div class="box-head">4 · The two new reports — simple Retail pattern</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Open <a href="http://127.0.0.1:8010/manual/retail/report" target="_blank">/manual/retail/report</a>
+      and <a href="http://127.0.0.1:8010/manual/ecom/report" target="_blank">/manual/ecom/report</a>.
+      <span class="expect">Same look as the Retail report: bucket tiles + In-Progress breakdown.
+      Today everything sits in "Ready for validation" (34 / 116). Defects section shows the
+      empty-state text — no test case references a defect yet.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Click <strong>Copy to clipboard</strong> and paste into Excel/Notepad.
+      <span class="expect">Two TSV rows: headers + today's bucket numbers.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Click <strong>Save to Excel</strong> on both reports, then open
+      <code>output/retail_report_log.xlsx</code>.
+      <span class="expect">Two NEW sheets "Manual Retail" and "Manual ECOM", each with a dated row —
+      next to the existing Retail/ECOM sheets.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4d">
+      <span>Click <strong>Download HTML</strong> on one report and open the file.
+      <span class="expect">Standalone snapshot — no buttons, opens fine without the app running.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-purple">
+  <div class="box-head">5 · Retail report — must look EXACTLY as before</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Open the <a href="http://127.0.0.1:8010/retail/report" target="_blank">Retail Status Report</a>
+      and give it a skeptical look; also press Save to Excel once.
+      <span class="expect">Pixel-identical to before (it is now built from the shared report blocks
+      under the hood). Save still appends to the "Retail" sheet as always.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-slate">
+  <div class="box-head">6 · Email Reports — two new checkboxes</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span>Open <a href="http://127.0.0.1:8010/email-report/" target="_blank">Email Reports</a>.
+      <span class="expect">Six report checkboxes now — "Manual Test Cases Retail Report" and
+      "Manual Test Cases ECOM Report" are new.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span>Optional: send yourself a test mail with only the two manual reports ticked.
+      <span class="expect">Two attachments <code>manual_retail_report_…html</code> /
+      <code>manual_ecom_report_…html</code>, both open standalone.</span></span></label>
+  </div>
+</div>
+
+<div class="box b-red">
+  <div class="box-head">Also waiting for you (MarinaCheckSoon)</div>
+  <div class="box-body">
+    Four new checkboxes in <a href="MarinaCheckSoon.html">MarinaCheckSoon</a>:
+    clarify the <strong>CDI0000MU34 duplicates</strong> with the team (Excel rows 144–149 as example) ·
+    the <strong>"FInland" typo</strong> · <code>settings.local.yaml</code> <code>imports:</code> block on the
+    other computer · the Retail report's "Manual test cases" missing-category wording.
+    Suite now at 301 tests.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0805-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

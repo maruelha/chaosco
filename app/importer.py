@@ -12,7 +12,9 @@ from pathlib import Path
 
 from app import archiver, database
 from app.db import ecom as db_ecom
+from app.db import manual_tests as db_manual
 from app.ecom_importer import parse_ecom
+from app.manual_importer import parse_manual
 from app.read_defects import ParseError, _find_latest_xlsx, parse_defects
 from app.retail_importer import parse_retail
 from app.spillover_importer import parse_spillover
@@ -78,6 +80,10 @@ def run_import(cfg: dict) -> dict:
     spillover_enabled = spl_cfg.get("enabled", False)
     retail_enabled    = ret_cfg.get("enabled", False)
     ecom_enabled      = eco_cfg.get("enabled", False)
+    # the two Manual Test Cases tabs share one importer/storage module,
+    # parameterised by vertical — handled as a loop below
+    manual_cfgs = {v: imports.get(v, {}) for v in db_manual.TABLES}
+    manual_enabled = {v: c.get("enabled", False) for v, c in manual_cfgs.items()}
 
     result: dict = {
         "ok": False,
@@ -120,6 +126,15 @@ def run_import(cfg: dict) -> dict:
             "skiplog_path": None,
         },
     }
+    for vertical in db_manual.TABLES:
+        result[vertical] = {
+            "enabled": manual_enabled[vertical],
+            "ok": not manual_enabled[vertical],   # disabled counts as ok
+            "error": None,
+            "inserted": 0, "updated": 0,
+            "skipped_blank_key": 0, "skipped_duplicate": 0,
+            "skiplog_path": None,
+        }
 
     # 1. Locate file
     raw_folder = cfg.get("downloads_folder")
@@ -188,11 +203,27 @@ def run_import(cfg: dict) -> dict:
             result["ecom"]["error"] = str(exc)
             result["ecom"]["ok"] = False
 
+    manual_rows: dict[str, list | None] = {v: None for v in db_manual.TABLES}
+    for vertical in db_manual.TABLES:
+        if not manual_enabled[vertical]:
+            continue
+        man_parse_cfg = {**cfg}
+        if manual_cfgs[vertical].get("sheet_name"):
+            man_parse_cfg[f"{vertical}_sheet_name"] = manual_cfgs[vertical]["sheet_name"]
+        try:
+            manual_rows[vertical] = parse_manual(
+                man_parse_cfg, vertical, xlsx_path=xlsx_path)["rows"]
+        except ParseError as exc:
+            result[vertical]["error"] = str(exc)
+            result[vertical]["ok"] = False
+
     # 4. DB writes — single connection for all importers
     skiplog_folder = Path(cfg["skiplog_folder"])
     db_path = Path(cfg["database_path"])
     if ecom_enabled:
         db_ecom.init_schema(db_path)   # own vertical schema (not in core init_db)
+    if any(manual_enabled.values()):
+        db_manual.init_schema(db_path)
     conn = database.init_db(db_path)
     try:
         if defects_rows is not None:
@@ -268,6 +299,29 @@ def run_import(cfg: dict) -> dict:
                     "skipped_missing_jira_id": upsert["skipped_missing_jira_id"],
                     "skiplog_path":            str(skiplog_path) if skiplog_path else None,
                 })
+
+        for vertical in db_manual.TABLES:
+            if manual_rows[vertical] is None:
+                continue
+            try:
+                upsert = db_manual.upsert_manual_rows(
+                    conn, vertical, manual_rows[vertical], today)
+            except Exception as exc:
+                result[vertical]["error"] = f"Database write failed: {exc}"
+                result[vertical]["ok"] = False
+            else:
+                skiplog_path = None
+                if upsert["skipped_rows"]:
+                    skiplog_path = _write_skiplog(
+                        upsert["skipped_rows"], skiplog_folder, vertical)
+                result[vertical].update({
+                    "ok": True,
+                    "inserted":          upsert["inserted"],
+                    "updated":           upsert["updated"],
+                    "skipped_blank_key": upsert["skipped_blank_key"],
+                    "skipped_duplicate": upsert["skipped_duplicate"],
+                    "skiplog_path":      str(skiplog_path) if skiplog_path else None,
+                })
     finally:
         conn.close()
 
@@ -276,5 +330,6 @@ def run_import(cfg: dict) -> dict:
         and result["spillover"]["ok"]
         and result["retail"]["ok"]
         and result["ecom"]["ok"]
+        and all(result[v]["ok"] for v in db_manual.TABLES)
     )
     return result

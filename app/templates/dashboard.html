@@ -50,6 +50,20 @@
   </div>
 
   <div class="action-card">
+    <h2>Manual Test Cases Retail</h2>
+    <p>Manual test cases from the "Manual Test Cases | Retail" tab — read-only list plus a simple status report (same buckets as Retail, defects from the Defects tab).</p>
+    <a href="{{ url_for('manual_tests.manual_list', stream='retail') }}" class="btn">View List</a>
+    <a href="{{ url_for('manual_tests.manual_report', stream='retail') }}" class="btn btn-primary">Report</a>
+  </div>
+
+  <div class="action-card">
+    <h2>Manual Test Cases ECOM</h2>
+    <p>Manual test cases from the "Manual Test Cases | ECOM" tab — read-only list plus a simple status report (same buckets, ecom-channel defects).</p>
+    <a href="{{ url_for('manual_tests.manual_list', stream='ecom') }}" class="btn">View List</a>
+    <a href="{{ url_for('manual_tests.manual_report', stream='ecom') }}" class="btn btn-primary">Report</a>
+  </div>
+
+  <div class="action-card">
     <h2>Defects</h2>
     <p>View, search and filter all imported defects.</p>
     <a href="{{ url_for('defects_list') }}" class="btn">View Defects</a>

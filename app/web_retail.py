@@ -6,9 +6,7 @@ app.web_core; endpoint names and URLs are unchanged from the old monolith.
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 
-import openpyxl
 from flask import jsonify, redirect, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
@@ -17,6 +15,7 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
 from app.ppt_retail import build_retail_ppt
+from app.report_log import append_report_row
 from app.reporter import (compute_impacted_totals, compute_retail_report,
                           load_status_mappings, passed_family)
 from app.row_validations import validate_rows
@@ -144,68 +143,12 @@ def retail_status_report():
     )
 
 
-_RETAIL_REPORT_HEADERS = [
-    "Date",
-    "Back with Sales",
-    "With DTC",
-    "In Progress with DTC",
-    "Passed with DTC",
-    "Incoming (Gatekeeper)",
-    "Ready for validation",
-    "In Progress",
-    "In Clarification",
-    "Blocked",
-]
-
-
-def _append_retail_report_to_excel(report: dict, today: str) -> str:
-    """Append one data row to the retail report Excel log. Returns the file path."""
-    xlsx_path = Path(_cfg.get("retail_report_xlsx", "output/retail_report_log.xlsx"))
-    xlsx_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if xlsx_path.exists():
-        wb = openpyxl.load_workbook(xlsx_path)
-    else:
-        wb = openpyxl.Workbook()
-        # Remove the default blank sheet openpyxl creates
-        if "Sheet" in wb.sheetnames:
-            del wb["Sheet"]
-
-    if "Retail" not in wb.sheetnames:
-        ws = wb.create_sheet("Retail")
-    else:
-        ws = wb["Retail"]
-
-    if ws.cell(1, 1).value is None:
-        for col, header in enumerate(_RETAIL_REPORT_HEADERS, 1):
-            ws.cell(row=1, column=col).value = header
-
-    b = report["buckets"]
-    next_row = ws.max_row + 1
-    for col, val in enumerate([
-        today,
-        b["back_with_sales"],
-        b["with_dtc"],
-        b["in_progress_with_dtc"],
-        b["passed_with_dtc"],
-        b["incoming_gatekeeper"],
-        b["ready_for_validation"],
-        b["in_progress"],
-        b["in_clarification"],
-        b["blocked"],
-    ], 1):
-        ws.cell(row=next_row, column=col).value = val
-
-    wb.save(xlsx_path)
-    return str(xlsx_path)
-
-
 @app.route("/retail/report/save-excel", methods=["POST"])
 def retail_report_save_excel():
     try:
         report     = _get_retail_report()
         save_date  = request.form.get("date") or date.today().isoformat()
-        path       = _append_retail_report_to_excel(report, save_date)
+        path       = append_report_row(_cfg, report, save_date, "Retail")
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)})
     return jsonify({"ok": True, "path": path, "date": save_date})

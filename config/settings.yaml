@@ -29,6 +29,16 @@ imports:
   ecom:
     enabled: true
     sheet_name: "ECOM"
+  # The pipe in the sheet names is deliberate — the workbook ALSO contains
+  # two older, empty stub tabs WITHOUT the pipe, which must stay ignored.
+  # NOTE: a local settings.local.yaml with its own imports: block replaces
+  # this whole section — add these two entries there too on such machines.
+  manual_retail:
+    enabled: true
+    sheet_name: "Manual Test Cases | Retail"
+  manual_ecom:
+    enabled: true
+    sheet_name: "Manual Test Cases | ECOM"
 
 # Defect statuses hidden from the default list view.
 defects_hidden_statuses:
