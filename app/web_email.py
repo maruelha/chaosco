@@ -144,5 +144,22 @@ def send():
     except Exception as exc:
         return redirect(url_for("email_report.email_page",
                                 error=f"Sending failed: {exc}"))
+
+    # Auto-save the sent bucket numbers under the email date [USER 2026-08-05]
+    # — a failed snapshot must never turn a successful send into an error.
+    history_note = ""
+    try:
+        from app.report_history_importer import snapshot_reports
+        conn = _get_conn()
+        try:
+            saved = snapshot_reports(conn, reports, day)
+        finally:
+            conn.close()
+        if saved:
+            history_note = f" History saved for {day}: {', '.join(saved)}."
+    except Exception as exc:
+        history_note = f" (History NOT saved: {exc})"
+
     return redirect(url_for("email_report.email_page",
-                            result=f"Sent {len(attachments)} report(s) to {len(recipients)} recipient(s)."))
+                            result=f"Sent {len(attachments)} report(s) to "
+                                   f"{len(recipients)} recipient(s).{history_note}"))

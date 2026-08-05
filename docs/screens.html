@@ -838,6 +838,27 @@
     </div>
   </div>
 
+  <!-- Report History -->
+  <div class="screen-card" id="report-history">
+    <div class="screen-card-header">
+      <span class="screen-title">Report History</span>
+      <span class="screen-url">GET /report-history/?report=retail|ecom|manual_retail|manual_ecom</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Development of the reported bucket numbers over time (2026-08-05) — replaces hand-copying the Copy-TSV rows into the workbook's ReportRetail/ReportECOM tabs. One row per reported date, the app's bucket columns, newest first, source pill (email / excel).</p>
+      <div class="features">
+        <span class="feat-label">Filled by</span>
+        <span class="feat-value">(1) Automatically on every report EMAIL SEND — the ticked bucket reports are saved under the email page's DATE (same date resent → row replaced). (2) "⤓ Import from Excel tabs" button — pulls the workbook tab lines in (updates existing dates, never deletes; unreadable dates + unknown columns reported in the result message).</span>
+        <span class="feat-label">Switcher</span>
+        <span class="feat-value">Retail / ECOM / Manual Retail / Manual ECOM buttons on top; History buttons on all four report toolbars jump here.</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value">Copy as TSV (whole table, e.g. for a chart in Excel).</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>report_history</code> (db/report_history.py; tab parsing + email snapshot in report_history_importer.py)</span>
+      </div>
+    </div>
+  </div>
+
   <!-- ECOM Detail -->
   <div class="screen-card" id="ecom-detail">
     <div class="screen-card-header">
@@ -1708,7 +1729,7 @@
         <span class="feat-label">Reports to attach</span>
         <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05; board, ECOM and both manual reports rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
         <span class="feat-label">Message</span>
-        <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.").</span>
+        <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.") — and since 2026-08-05 it is ALSO the date under which the sent bucket numbers land in <code>report_history</code> (automatic on every successful send; failures never block the mail, the result banner says whether history was saved).</span>
         <span class="feat-label">Recipients</span>
         <span class="feat-value">Managed in table <code>report_recipients</code>: add / set active-inactive / delete; active ones pre-ticked per send.</span>
         <span class="feat-label">Quick select &amp; mailing lists</span>

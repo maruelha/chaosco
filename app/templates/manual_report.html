@@ -8,6 +8,7 @@
     <h1>{{ label }} Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('manual_tests.manual_list', stream=stream) }}" class="btn">← {{ label }}</a>
+      <a href="{{ url_for('report_history.history_page', report='manual_' ~ stream) }}" class="btn">History</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
       <a href="{{ url_for('manual_tests.manual_report_download', stream=stream) }}" class="btn">Download HTML</a>
       <button type="button" class="btn" id="btn-excel">Save to Excel</button>

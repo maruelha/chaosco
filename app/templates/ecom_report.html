@@ -7,6 +7,7 @@
     <h1>ECOM Status Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('ecom.ecom_list') }}" class="btn">← ECOM</a>
+      <a href="{{ url_for('report_history.history_page', report='ecom') }}" class="btn">History</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
       <a href="{{ url_for('ecom.ecom_report_download') }}" class="btn">Download HTML</a>
       <button type="button" class="btn" id="btn-excel">Save to Excel</button>

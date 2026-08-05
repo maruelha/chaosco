@@ -65,10 +65,17 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    off-channel refs in red ⚠ box.
 4. ~~Email checkboxes~~ ✅ DONE 2026-08-05 (step ④): two new entries in
    `emailer.REPORT_CHOICES` + standalone attachments.
-5. **Later / if needed**: notes + annotations (next step / comments) on
+5. ~~Report history~~ ✅ DONE 2026-08-05: `report_history` table (all four
+   bucket reports) — auto-saved on every report email under the email's
+   date + "Import from Excel tabs" button pulling the workbook's
+   ReportRetail/ReportECOM lines; `/report-history` page with switcher,
+   History buttons on the report toolbars. Retires the manual
+   paste-into-Excel-tab step.
+6. **Later / if needed**: notes + annotations (next step / comments) on
    manual rows · detail pages · ⚠ row validations (conditionally-passed
    rule) · PPT export · revisit the one-line-per-tc+country rule if the
-   team says the MU34 repeats are intentional.
+   team says the MU34 repeats are intentional · trend chart on the
+   history page.
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 

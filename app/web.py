@@ -72,6 +72,13 @@ from app.web_manual_tests import bp as _manual_bp
 _db_manual.init_schema(_db_path)
 app.register_blueprint(_manual_bp)
 
+# Report history (2026-08-05) — auto-saved on report email sends + the
+# workbook Report-tab import button; /report-history with switcher.
+from app.db import report_history as _db_hist
+from app.web_report_history import bp as _hist_bp
+_db_hist.init_schema(_db_path)
+app.register_blueprint(_hist_bp)
+
 # Next-step archive (generic component, 2026-07-10) — registry-driven.
 from app.db import next_steps as _db_ns
 from app.web_next_steps import bp as _ns_bp

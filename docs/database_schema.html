@@ -258,6 +258,7 @@
     <li><a href="#ecom">ecom</a></li>
     <li><a href="#manual_retail">manual_retail</a></li>
     <li><a href="#manual_ecom">manual_ecom</a></li>
+    <li><a href="#report_history">report_history</a></li>
 
     <li class="group-label">User-Authored Annotations</li>
     <li><a href="#defect_annotations">defect_annotations</a></li>
@@ -1355,6 +1356,24 @@
       </tbody>
     </table>
     <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='manual_ecom' (planned with the list pages)</div>
+  </div>
+
+  <div class="table-card" id="report_history">
+    <div class="table-card-header">
+      <span class="tname">report_history</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">One row per bucket report + reported date [USER 2026-08-05] — replaces the hand-maintained ReportRetail/ReportECOM workbook tabs. Written (1) automatically on every report EMAIL SEND for the ticked bucket reports, dated with the email page's date (source 'email'), and (2) by the history page's "⤓ Import from Excel tabs" button, which pulls the workbook tab lines in (source 'excel', re-runnable — corrected cells update). Same (report, date) written again → row REPLACED, never deleted. Storage app/db/report_history.py; parsing/snapshot app/report_history_importer.py; page /report-history.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">report</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">retail · ecom · manual_retail · manual_ecom</td></tr>
+        <tr><td class="col-name">report_date</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">ISO (tab dates 21.05.2026 are normalised)</td></tr>
+        <tr><td class="col-name">back_with_sales … blocked</td><td class="col-type">INTEGER</td><td></td><td class="note-text">The app's 9 bucket columns (same order as the Excel log); tab columns that aren't app buckets (Total from Sales, Sense check, Waiting for SF creation, combined In Progress/In Clarification) are deliberately ignored, blanks stored as NULL</td></tr>
+        <tr><td class="col-name">source</td><td class="col-type">TEXT</td><td></td><td class="note-text">'email' | 'excel' — shown as a pill on the history page</td></tr>
+        <tr><td class="col-name">saved_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 

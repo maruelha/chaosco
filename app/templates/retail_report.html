@@ -8,6 +8,7 @@
     <h1>Retail Status Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+      <a href="{{ url_for('report_history.history_page', report='retail') }}" class="btn">History</a>
       <a href="{{ url_for('retail_report_diagnostics') }}" class="btn">Diagnostics</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
       <a href="{{ url_for('retail_report_download') }}" class="btn">Download HTML</a>

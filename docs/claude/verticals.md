@@ -167,6 +167,30 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   Tests: `tests/test_manual_importer.py` (incl. FIELDS↔importer drift
   guard) + `tests/test_manual_pages.py`.
 
+## Report history (2026-08-05)
+
+- `report_history` table: one row per bucket report (retail / ecom /
+  manual_retail / manual_ecom) + reported date, in the APP's 9 bucket
+  columns. Replaces hand-pasting the Copy-TSV rows into the workbook's
+  ReportRetail / ReportECOM tabs [USER: "why should I copy something to
+  excel that can be automatically saved"].
+- Filled two ways: (1) **email send** — `web_email.send()` calls
+  `snapshot_reports()` after a successful send for the TICKED bucket
+  reports, dated with the email page's date; a snapshot failure never
+  blocks the mail (result banner reports it). Same date resent → row
+  replaced. (2) **"⤓ Import from Excel tabs"** button on `/report-history`
+  — `import_report_tabs()` parses the workbook tabs (label row found by
+  the "date" cell; 21.05.2026 + datetime cells; description rows skipped;
+  non-bucket columns like "Total number of test cases" / "Sense check" /
+  "Waiting for SF creation" / combined "In Progress / In Clarification"
+  ignored) and upserts per date, source 'excel' — re-runnable.
+- Page `/report-history` with report switcher, newest first, source pill,
+  Copy-TSV; History buttons on all four report toolbars. Config
+  `report_history_tabs` (defaults ReportRetail/ReportECOM). Modules:
+  `app/db/report_history.py` (SQL) + `app/report_history_importer.py`
+  (parsing + snapshot) + `app/web_report_history.py` (Blueprint). Tests:
+  `tests/test_report_history.py`.
+
 ## Shared Jira store (trial-verified 2026-07-11 against the real export)
 
 - Real-file trial (gatekeeper search, 8 tickets, 27 comments): parser OK

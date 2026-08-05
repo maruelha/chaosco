@@ -162,6 +162,32 @@ module section) · `MarinaCheckSoon.html` (4 new checkboxes). Click-through
 checklist: `docs/marina_notes/SessionTest_2026-08-05.html`. Final suite:
 301 tests green.
 
+## Bonus — Report history (same session, after the ①–⑤ plan)
+
+Marina's goal: stop hand-pasting the report numbers into the workbook's
+ReportRetail / ReportECOM tabs — save them automatically instead.
+
+- **`report_history` table** (app/db/report_history.py): one row per
+  bucket report + reported date, the app's 9 bucket columns, source
+  ('email' | 'excel'), REPLACE on same (report, date).
+- **Email send** now auto-saves the ticked bucket reports under the email
+  page's date (snapshot failure never blocks the mail).
+- **`/report-history` page**: switcher over the four reports, dates newest
+  first, source pill, Copy-TSV, and the **"⤓ Import from Excel tabs"**
+  button that pulls the workbook tab lines in (upsert per date,
+  re-runnable — 36 real Retail dates 21.05.–23.07. imported on this
+  machine; ECOM tab has headers but no data; 1 Retail line skipped for an
+  unreadable date). History buttons on all four report toolbars.
+- Tab parser handles the real layout: junk header row, label row found via
+  the "date" cell, description row skipped, 21.05.2026 + datetime cells,
+  non-bucket columns ignored (Total from Sales, Sense check, Waiting for
+  SF creation, combined In Progress/In Clarification).
+- Tests: `tests/test_report_history.py` (6) — suite 307 green. Docs:
+  database_schema.html, screens.html (new card + email card), verticals.md
+  (new section), build_plan.md.
+- **Marina can now stop maintaining the ReportRetail/ReportECOM tabs** —
+  the import button remains for catching up any lines colleagues still add.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

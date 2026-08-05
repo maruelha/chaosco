@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Report History — Test Coordination{% endblock %}
+
+{% set col_labels = {
+  "back_with_sales": "Back with Sales",
+  "with_dtc": "With DTC",
+  "in_progress_with_dtc": "In Progress w/ DTC",
+  "passed_with_dtc": "Passed w/ DTC",
+  "incoming_gatekeeper": "Incoming (GK)",
+  "ready_for_validation": "Ready for validation",
+  "in_progress": "In Progress",
+  "in_clarification": "In Clarification",
+  "blocked": "Blocked",
+} %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Report History — {{ labels[report] }}</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+      <button type="button" class="btn" id="btn-copy">Copy as TSV</button>
+      <form method="post" action="{{ url_for('report_history.import_tabs') }}" style="display:inline">
+        <input type="hidden" name="report" value="{{ report }}">
+        <button type="submit" class="btn">⤓ Import from Excel tabs</button>
+      </form>
+    </div>
+  </div>
+  <p class="list-meta">One row per reported date — saved automatically on every report email
+    (under the email's date) · the import button pulls the workbook's ReportRetail / ReportECOM
+    lines in (updates existing dates, never deletes).</p>
+</div>
+
+{% if result %}<div class="result-box"><div class="result-row"><span class="result-value">{{ result }}</span></div></div>{% endif %}
+{% if error %}<div class="result-box result-box--error"><div class="result-row"><span class="result-value">{{ error }}</span></div></div>{% endif %}
+
+{# ---- Report switcher ---- #}
+<div class="filters-bar" style="gap:.4rem">
+  {% for key in reports %}
+  <a href="{{ url_for('report_history.history_page', report=key) }}"
+     class="btn{% if key == report %} btn-primary{% endif %}">{{ labels[key] }}</a>
+  {% endfor %}
+</div>
+
+<p class="list-meta">{{ rows | length }} date{{ 's' if rows | length != 1 else '' }}</p>
+
+<div class="spillover-scroll">
+  <table id="hist-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        {% for f in bucket_fields %}<th style="text-align:right">{{ col_labels[f] }}</th>{% endfor %}
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ row.report_date }}</td>
+        {% for f in bucket_fields %}
+        <td style="text-align:right">{{ row[f] if row[f] is not none else '—' }}</td>
+        {% endfor %}
+        <td>
+          {% if row.source == 'email' %}<span class="pill pill--gray">email</span>
+          {% elif row.source == 'excel' %}<span class="pill pill--gray">excel</span>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="{{ bucket_fields | length + 2 }}" style="color:#aeaeb2">
+        No history yet — send a report email (rows appear automatically) or use
+        "⤓ Import from Excel tabs" for the old lines.
+      </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+(function () {
+  const headers = ['Date', {{ bucket_fields | map('string') | list | tojson }}].flat();
+  const rows = {{ rows | tojson }};
+  const fields = {{ bucket_fields | tojson }};
+  const lines = [headers.join('\t')];
+  rows.forEach(r => {
+    lines.push([r.report_date, ...fields.map(f => r[f] ?? '')].join('\t'));
+  });
+  document.getElementById('btn-copy').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(lines.join('\n'));
+      const btn = document.getElementById('btn-copy');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    } catch (e) { alert('Copy failed: ' + e.message); }
+  });
+}());
+</script>
+{% endblock %}
