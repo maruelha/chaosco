@@ -43,6 +43,24 @@ def _url_for_hit(hit_type: str, hit_id) -> str | None:
     return None
 
 
+def _note_hit_url(entity_type: str, entity_id) -> tuple[str | None, str | None]:
+    """(url, where-label) for a note hit — inbox items go to the inbox,
+    everything else to its entity page via the notes REGISTRY."""
+    if entity_type == "input":
+        try:
+            return url_for("inbox"), "Inbox"
+        except Exception:
+            return None, None
+    from app.web_notes import REGISTRY, _urls
+    ent = REGISTRY.get(entity_type)
+    if ent is None:
+        return None, None
+    try:
+        return _urls(ent, entity_type, entity_id)["detail_url"], ent.list_label
+    except Exception:
+        return None, None
+
+
 @bp.route("/orders.json")
 def orders_json():
     q = request.args.get("q", "").strip()
@@ -57,6 +75,12 @@ def orders_json():
     for g in groups:
         hits = []
         for h in g["hits"]:
+            if h["type"] == "note":
+                url, where = _note_hit_url(h["entity_type"], h["entity_id"])
+                if url:
+                    hits.append({"label": f"{h['label']} · {where}",
+                                 "match": h["match"], "url": url})
+                continue
             url = _url_for_hit(h["type"], h["id"])
             if url:
                 hits.append({"label": h["label"], "match": h["match"], "url": url})

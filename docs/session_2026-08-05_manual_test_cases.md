@@ -188,6 +188,25 @@ ReportRetail / ReportECOM tabs — save them automatically instead.
 - **Marina can now stop maintaining the ReportRetail/ReportECOM tabs** —
   the import button remains for catching up any lines colleagues still add.
 
+## Bonus 2 — 🔍 search covers Jira tickets + notes (same session)
+
+Marina's question: "in my search for order numbers I don't check the
+Gatekeeper page, do I?" — correct: the manually pinned order-details lines
+were searched, but NOT the Jira acceptance criteria / comments where
+Gatekeeper order numbers actually live.
+
+- New search sources in `db/search.py`: **Jira tickets** (AC + comment
+  bodies, HTML stripped, snippet with AC:/Comment: prefix, one hit per
+  ticket → gatekeeper ticket page) and **Notes incl. Inbox** (heading +
+  body; URL via the notes REGISTRY, inbox items → /inbox, unknown entity
+  types dropped in the web layer).
+- Decided NOT searched: manual test cases (no order numbers there
+  [Marina]), topics (unsure she'd use it — skipped for now), meeting prep
+  (covered indirectly via defects + notes).
+- Verified on real data: an order number living only in a Jira AC
+  (S4ECOM-1241) is now found. Tests extended in `tests/test_search.py`;
+  suite 307 green. Docs: screens.html search-widget card.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

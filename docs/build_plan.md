@@ -71,11 +71,16 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    ReportRetail/ReportECOM lines; `/report-history` page with switcher,
    History buttons on the report toolbars. Retires the manual
    paste-into-Excel-tab step.
-6. **Later / if needed**: notes + annotations (next step / comments) on
+6. ~~Search coverage~~ ✅ DONE 2026-08-05: 🔍 now also searches Jira
+   tickets (AC + comments — the real home of Gatekeeper order numbers)
+   and notes incl. inbox. Skipped by decision: manual tabs (no orders),
+   topics (unsure), meeting prep (covered indirectly).
+7. **Later / if needed**: notes + annotations (next step / comments) on
    manual rows · detail pages · ⚠ row validations (conditionally-passed
    rule) · PPT export · revisit the one-line-per-tc+country rule if the
    team says the MU34 repeats are intentional · trend chart on the
-   history page.
+   history page · topics as a search source if workpads turn out to hold
+   order numbers.
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 

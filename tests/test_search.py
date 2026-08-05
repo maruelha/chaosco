@@ -3,15 +3,17 @@
 What must hold:
 - one query hits ALL the places an order number lives: order_details lines
   (with the pinned entity resolved) + the imported cells of spillover,
-  retail, ecom, defects
-- every hit maps to a working detail URL; orphaned order_details lines are
-  dropped, never 500
+  retail, ecom, defects + (2026-08-05) Jira acceptance criteria/comments
+  and notes incl. the inbox
+- every hit maps to a working detail URL; orphaned order_details lines and
+  notes on unknown entity types are dropped, never 500
 - queries under 3 characters are refused
 """
 import pytest
 
 from app import database
 from app.db import ecom as db_ecom
+from app.db import jira as db_jira
 from app.db import search as db_search
 import app.web_search as web_search
 from app.web import app
@@ -22,6 +24,7 @@ def client(tmp_path, monkeypatch):
     db_path = tmp_path / "search.db"
     database.init_db(db_path).close()
     db_ecom.init_schema(db_path)
+    db_jira.init_schema(db_path)
     monkeypatch.setattr(web_search, "_db_path", db_path)
     conn = database.get_connection(db_path)
     try:
@@ -51,6 +54,27 @@ def client(tmp_path, monkeypatch):
         database.add_order_detail(conn, "ecom_gatekeeper", "424242")
         orphan = database.list_order_details(conn, "ecom_gatekeeper", "424242")[0]
         database.update_order_detail(conn, orphan["id"], "", "102-4711", "")
+        with conn:
+            # Jira: order number in the AC checklist + in a comment body
+            conn.execute("INSERT INTO jira_issues (jira_key, summary,"
+                         " acceptance_criteria, first_seen, last_seen) VALUES"
+                         " ('S4ECOM-77', 'Ticket 77',"
+                         " 'DE Order Number : 102-4711 done', 'd', 'd')")
+            conn.execute("INSERT INTO jira_issues (jira_key, summary,"
+                         " first_seen, last_seen) VALUES"
+                         " ('S4ECOM-78', 'Ticket 78', 'd', 'd')")
+            conn.execute("INSERT INTO jira_comments (jira_key, body) VALUES"
+                         " ('S4ECOM-78', '<p>see order <b>102-4711</b> in prod</p>')")
+            # Notes: one on a defect, one inbox item, one on an unknown type
+            conn.execute("INSERT INTO notes (entity_type, entity_id, created_at,"
+                         " heading, note) VALUES ('defect', 'D-1', 'd',"
+                         " 'order broken', 'customer order 102-4711 stuck')")
+            conn.execute("INSERT INTO notes (entity_type, entity_id, created_at,"
+                         " heading, note) VALUES ('input', 'inbox', 'd', '',"
+                         " 'check 102-4711 tomorrow')")
+            conn.execute("INSERT INTO notes (entity_type, entity_id, created_at,"
+                         " heading, note) VALUES ('ghost_type', '1', 'd', 'x',"
+                         " 'also 102-4711')")
     finally:
         conn.close()
     c = app.test_client()
@@ -65,12 +89,22 @@ def test_search_hits_every_source(client):
                   db_search.search_order_number(conn, "102-4711")}
     finally:
         conn.close()
-    assert set(groups) == {"Order details", "Spillover", "Retail", "ECOM", "Defects"}
+    assert set(groups) == {"Order details", "Spillover", "Retail", "ECOM",
+                           "Defects", "Jira tickets", "Notes"}
     assert groups["Order details"][0]["label"] == "Spill A"
     assert "[Return] 102-4711 — credit memo check" == groups["Order details"][0]["match"]
     assert groups["Retail"][0]["label"] == "T1 / Germany"
     assert groups["ECOM"][0]["match"] == "555-000 · 102-4711"
     assert groups["Defects"][0]["label"].startswith("D-1")
+
+    jira = {h["id"]: h for h in groups["Jira tickets"]}
+    assert jira["S4ECOM-77"]["match"].startswith("AC: ")
+    assert "102-4711" in jira["S4ECOM-77"]["match"]
+    assert jira["S4ECOM-78"]["match"].startswith("Comment: ")
+    assert "<b>" not in jira["S4ECOM-78"]["match"]        # HTML stripped
+
+    assert len(groups["Notes"]) == 3                       # ghost dropped in web layer
+    assert any(h["entity_type"] == "input" for h in groups["Notes"])
 
 
 def test_route_returns_urls_and_min_length(client):
@@ -84,6 +118,14 @@ def test_route_returns_urls_and_min_length(client):
     assert by_group["Defects"][0]["url"] == "/defects/D-1"
     assert by_group["Spillover"][0]["url"].startswith("/spillover/")
     assert by_group["ECOM"][0]["url"].startswith("/ecom/")
+    jira_urls = [h["url"] for h in by_group["Jira tickets"]]
+    assert all(u.startswith("/ecom-gatekeeper/ticket/") for u in jira_urls)
+    note_hits = by_group["Notes"]
+    assert len(note_hits) == 2                         # ghost entity type dropped
+    labels = " | ".join(h["label"] for h in note_hits)
+    assert "Inbox" in labels                           # inbox item labelled + linked
+    assert any(h["url"] == "/inbox" for h in note_hits)
+    assert any(h["url"] == "/defects/D-1" for h in note_hits)
 
     d = client.get("/search/orders.json?q=zzz-nothing").get_json()
     assert d["ok"] and d["groups"] == []

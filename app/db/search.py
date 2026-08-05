@@ -10,11 +10,24 @@ Returns plain dicts grouped by source; the web layer maps (type, id) → URL.
 """
 from __future__ import annotations
 
+import re
 import sqlite3
 
 from app.db.core import _rows_to_dicts
 
 _MIN_QUERY_LEN = 3
+
+
+def _snippet(text: str | None, q: str, ctx: int = 35) -> str:
+    """Plain-text snippet around the first hit of q (HTML stripped)."""
+    plain = re.sub(r"<[^>]+>", " ", text or "")
+    plain = re.sub(r"\s+", " ", plain).strip()
+    i = plain.lower().find(q.lower())
+    if i < 0:
+        return plain[:80]
+    start, end = max(0, i - ctx), i + len(q) + ctx
+    return (("…" if start > 0 else "") + plain[start:end]
+            + ("…" if end < len(plain) else ""))
 
 
 def search_order_number(conn: sqlite3.Connection, q: str) -> list[dict]:
@@ -103,5 +116,40 @@ def search_order_number(conn: sqlite3.Connection, q: str) -> list[dict]:
         for r in _rows_to_dicts(conn.execute(
             "SELECT defect_id, solman_name, order_number FROM defects"
             " WHERE order_number LIKE ? LIMIT 20", (like,)))])
+
+    # -- 6. Jira tickets — acceptance criteria + comment bodies (2026-08-05).
+    # This is where Gatekeeper/ECOM order numbers actually live (testers fill
+    # the AC checklist / write them into comments); one hit per ticket.
+    jira_hits: dict[str, dict] = {}
+    for r in _rows_to_dicts(conn.execute(
+            "SELECT jira_key, summary, acceptance_criteria FROM jira_issues"
+            " WHERE acceptance_criteria LIKE ? LIMIT 20", (like,))):
+        jira_hits[r["jira_key"]] = {
+            "type": "jira", "id": r["jira_key"],
+            "label": f"{r['jira_key']} — {r['summary'] or ''}".rstrip(" —"),
+            "match": "AC: " + _snippet(r["acceptance_criteria"], q)}
+    for r in _rows_to_dicts(conn.execute(
+            "SELECT c.jira_key, i.summary, c.body FROM jira_comments c"
+            " LEFT JOIN jira_issues i ON i.jira_key = c.jira_key"
+            " WHERE c.body LIKE ? LIMIT 20", (like,))):
+        if r["jira_key"] in jira_hits:
+            continue
+        jira_hits[r["jira_key"]] = {
+            "type": "jira", "id": r["jira_key"],
+            "label": f"{r['jira_key']} — {r['summary'] or ''}".rstrip(" —"),
+            "match": "Comment: " + _snippet(r["body"], q)}
+    _add("Jira tickets", list(jira_hits.values())[:20])
+
+    # -- 7. Notes — heading + body, Inbox included (2026-08-05). The web
+    # layer resolves entity_type/entity_id to a URL via the notes REGISTRY
+    # (inbox = entity_type 'input'); unknown entity types are dropped there.
+    _add("Notes", [
+        {"type": "note", "id": r["id"],
+         "entity_type": r["entity_type"], "entity_id": r["entity_id"],
+         "label": (r["heading"] or "").strip() or "(no heading)",
+         "match": _snippet(r["note"], q)}
+        for r in _rows_to_dicts(conn.execute(
+            "SELECT id, entity_type, entity_id, heading, note FROM notes"
+            " WHERE heading LIKE ? OR note LIKE ? LIMIT 20", (like, like)))])
 
     return groups
