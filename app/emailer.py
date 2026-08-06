@@ -36,6 +36,7 @@ REPORT_CHOICES = [
     ("ecom", "ECOM Status Report"),
     ("manual_retail", "Manual Test Cases Retail Report"),
     ("manual_ecom", "Manual Test Cases ECOM Report"),
+    ("known_prod_defects", "Known Production Issues"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -133,6 +134,10 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
             resp = flask_app.test_client().get(f"/manual/{stream}/report")
             out.append((f"manual_{stream}_report_{day}.html",
                         standalone_html(resp.get_data(as_text=True))))
+    if "known_prod_defects" in reports:
+        resp = flask_app.test_client().get("/prod_defects")
+        out.append((f"known_prod_defects_{day}.html",
+                    standalone_html(resp.get_data(as_text=True))))
     return out
 
 

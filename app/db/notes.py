@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect"}
 
 # Incoming buckets [USER 2026-07-16]: the inbox route_to dropdown pushes an
 # item to (module, 'incoming') — sorted manually on that module's page,
@@ -246,6 +246,10 @@ def file_inbox_item(
         target_exists = conn.execute(
             "SELECT 1 FROM shelf WHERE id = ?", (target_id,)
         ).fetchone() is not None
+    elif target_type == "prod_defect":
+        target_exists = conn.execute(
+            "SELECT 1 FROM known_prod_defects WHERE id = ?", (target_id,)
+        ).fetchone() is not None
     if not target_exists:
         return False
     with conn:
@@ -381,6 +385,16 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
         ))
         return [{"value": str(r["id"]),
                  "label": f"{r['with_whom'] or '—'} — {r['topic'] or ''}".rstrip(" —")}
+                for r in rows]
+    elif target_type == "prod_defect":
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, scenario, short_description, technical_key FROM known_prod_defects"
+            " WHERE scenario LIKE ? OR short_description LIKE ? OR technical_key LIKE ?"
+            " ORDER BY scenario LIMIT 20",
+            (like, like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": f"{r['scenario'] or '—'} — {r['short_description'] or ''}".rstrip(" —")}
                 for r in rows]
     return []
 

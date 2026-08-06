@@ -259,7 +259,7 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar. Compact one-pager version: <code>docs/dashboard_cards.html</code> (one mini-card per dashboard card — keep in sync when cards change).</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · <strong>Known Prod Defects</strong> (2026-07-18, count badge — the register outlives the spillover work; the Spillover-page link stays too) · <strong>Export &amp; Backup</strong> (teal accent — report exports, Email Reports link, and the DB-backup section folded in 2026-07-18) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
+        <span class="feat-value">Order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · <strong>Known Production Issues</strong> (renamed 2026-08-06 from "Known Prod Defects"; count badge — the register outlives the spillover work; the Spillover-page link stays too) · <strong>Export &amp; Backup</strong> (teal accent — report exports, Email Reports link, and the DB-backup section folded in 2026-07-18) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -279,7 +279,7 @@
       <span class="screen-url">GET /inbox</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, Test Learning, Follow-up, or Shelf) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
+      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, ECOM, Gatekeeper ticket, Test Learning, Follow-up, Shelf, Topic, Contact, Link, or Known Prod Issue [added 2026-08-06]) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
       <div class="features">
         <span class="feat-label">Add item</span>
         <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
@@ -1147,7 +1147,7 @@
         <span class="feat-label">Filter</span>
         <span class="feat-value">Only rows where <code>area</code> is "ecom" or "omni"</span>
         <span class="feat-label">Extra section</span>
-        <span class="feat-value">Known Production Defects — all rows from <code>known_prod_defects</code>, shown at the bottom</span>
+        <span class="feat-value">Known Production Issues — all rows from <code>known_prod_defects</code>, shown at the bottom</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + <code>known_prod_defects</code></span>
       </div>
@@ -1157,26 +1157,32 @@
 
 
 <!-- ================================================================ -->
-<!-- PRODUCTION DEFECTS -->
+<!-- KNOWN PRODUCTION ISSUES -->
 <!-- ================================================================ -->
 <div class="section s-prod">
-  <div class="section-heading">Production Defects</div>
+  <div class="section-heading">Known Production Issues</div>
 
   <!-- List -->
   <div class="screen-card" id="prod-defects-list">
     <div class="screen-card-header">
-      <span class="screen-title">Prod Defects — List</span>
+      <span class="screen-title">Known Production Issues — List</span>
       <span class="screen-url">GET /prod_defects</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Manually curated register of defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report. Reachable from the Spillover page header AND (since 2026-07-18) an own dashboard card with count badge — the register outlives the spillover work.</p>
+      <p class="screen-desc">Manually curated register of defects, limitations, risks and accepted defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report. Reachable from the Spillover page header AND an own dashboard card with count badge — the register outlives the spillover work. Renamed from "Known Production Defects" [USER 2026-08-06] — UI text only, URLs/endpoints/table/column names unchanged (same precedent as the MB ROE Defects rename).</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Technical Key · Short Description · Scenario · Business Impact · Numbers · Next Steps</span>
+        <span class="feat-value">Channel · Scenario · Short Description · Biz Impact · How to handle · Confluence (References/Next Steps moved detail-only)</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">Channel (ECOM/Retail) and Scenario (fixed list, <code>prod_defect_scenarios</code> in settings.yaml) dropdowns, GET-based</span>
+        <span class="feat-label">Confluence link</span>
+        <span class="feat-value">Top of the page — the TRAN space "Core South and ROE SIT defects" page, URL from <code>prod_defects_confluence_url</code> in settings.yaml</span>
+        <span class="feat-label">Note count</span>
+        <span class="feat-value">Edit button shows "Edit (N)" when the row has notes, matching the other boards</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">+ New</span> · Click row → Detail screen</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · Click row → Detail screen</span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>known_prod_defects</code></span>
+        <span class="feat-value"><code>known_prod_defects</code> (note_count via subquery on <code>notes</code>)</span>
       </div>
     </div>
   </div>
@@ -1184,14 +1190,14 @@
   <!-- Detail -->
   <div class="screen-card" id="prod-defect-detail">
     <div class="screen-card-header">
-      <span class="screen-title">Prod Defects — Detail / New</span>
+      <span class="screen-title">Known Production Issues — Detail / New</span>
       <span class="screen-url">GET/POST /prod_defects/new &nbsp;·&nbsp; /prod_defects/&lt;id&gt;</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Create or edit a production defect entry. The same template handles both new and existing records. Existing records carry the shared Notes section (entity type <code>prod_defect</code>) below the form — new entries get it after the first save.</p>
+      <p class="screen-desc">Create or edit a production issue entry. The same template handles both new and existing records. Existing records carry the shared Notes section (entity type <code>prod_defect</code>) below the form — new entries get it after the first save.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
-        <span class="feat-value">Technical Key · Short Description · Scenario · Description · Business Impact · Numbers · References · Next Steps · Comments · Confluence link</span>
+        <span class="feat-value">Channel (ECOM/Retail) · Type (Defect/Limitation/Risk/Accepted Defect) · Scenario (fixed dropdown — a legacy free-text value not in the list stays selectable as "&lt;value&gt; (current)", never silently lost) · Short Description · Description ("what the defect is") · Sub-case ("which specific sub-case of the scenario it happens in") · Business Impact · How to detect ("how Operations can find these cases in the system") · How to handle · Numbers · References · Next Steps · Comments · Confluence link — all added 2026-08-06 except Numbers/References/Next Steps/Comments/Confluence (pre-existing)</span>
         <span class="feat-label">Actions</span>
         <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation) · <span class="pill pill-action">+ Add note</span> (generic notes module, with attachments)</span>
         <span class="feat-label">Flash</span>
@@ -1727,7 +1733,7 @@
       <p class="screen-desc">Send the status reports as standalone-HTML attachments via GMX SMTP. Linked from the dashboard Export card. Credentials (<code>email_user</code>/<code>email_password</code>) live ONLY in gitignored <code>settings.local.yaml</code> — the page shows setup instructions and disables Send until configured.</p>
       <div class="features">
         <span class="feat-label">Reports to attach</span>
-        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05; board, ECOM and both manual reports rendered server-side and made standalone: CSS inlined, scripts stripped).</span>
+        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05) &middot; Known Production Issues (added 2026-08-06; renders <code>/prod_defects</code> server-side and makes it standalone). All non-Spillover/Retail reports rendered server-side and made standalone: CSS inlined, scripts stripped. <code>?reports=&lt;key&gt;</code> on the page URL pre-ticks just that report (e.g. the Known Production Issues page's own "✉ Send via email" button) — with no query param, everything stays ticked as before.</span>
         <span class="feat-label">Message</span>
         <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.") — and since 2026-08-05 it is ALSO the date under which the sent bucket numbers land in <code>report_history</code> (automatic on every successful send; failures never block the mail, the result banner says whether history was saved).</span>
         <span class="feat-label">Recipients</span>

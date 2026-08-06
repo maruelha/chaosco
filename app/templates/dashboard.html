@@ -70,9 +70,9 @@
   </div>
 
   <div class="action-card">
-    <h2>Known Prod Defects {% if prod_defect_count %}<span class="notes-count-badge">{{ prod_defect_count }}</span>{% endif %}</h2>
-    <p>Hand-maintained register of known production defects — outlives the spillover work, also linked from the Spillover page.</p>
-    <a href="{{ url_for('prod_defects_list') }}" class="btn">View Known Prod Defects</a>
+    <h2>Known Production Issues {% if prod_defect_count %}<span class="notes-count-badge">{{ prod_defect_count }}</span>{% endif %}</h2>
+    <p>Hand-maintained register of known production defects, limitations, risks and accepted defects — outlives the spillover work, also linked from the Spillover page.</p>
+    <a href="{{ url_for('prod_defects_list') }}" class="btn">View Known Production Issues</a>
   </div>
 
   <div class="action-card" style="border-left:3px solid #0e7490">

@@ -974,7 +974,7 @@
     <div class="table-card-header">
       <span class="tname">known_prod_defects</span>
       <span class="badge badge-planning">Planning</span>
-      <span class="tdesc">Manually curated register of defects known to exist in production — used for sign-off discussions.</span>
+      <span class="tdesc">Manually curated register of production issues (defects, limitations, risks, accepted defects) — used for sign-off discussions. UI renamed "Known Production Issues" [USER 2026-08-06]; table/column names unchanged. Inbox filing target since 2026-08-06 (entity type <code>prod_defect</code>, same as its notes).</span>
     </div>
     <table>
       <thead>
@@ -986,16 +986,22 @@
         <tr><td class="col-name">short_description</td><td class="col-type">TEXT</td><td></td><td class="note-text">One-line summary</td></tr>
         <tr><td class="col-name">numbers</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related order / document numbers</td></tr>
         <tr><td class="col-name">biz_impact</td><td class="col-type">TEXT</td><td></td><td class="note-text">Business impact description</td></tr>
-        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Detailed defect description</td></tr>
-        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Affected test scenario(s)</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Detailed defect description — WHAT it is</td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Fixed dropdown since 2026-08-06 (<code>prod_defect_scenarios</code> in settings.yaml); a legacy value not in the list stays selectable as "&lt;value&gt; (current)"</td></tr>
         <tr><td class="col-name">refs</td><td class="col-type">TEXT</td><td></td><td class="note-text">Related references / links</td></tr>
         <tr><td class="col-name">next_steps</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Added via ALTER TABLE</td></tr>
         <tr><td class="col-name">confluence</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Confluence page link. Added via ALTER TABLE.</td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — ECOM | Retail; optional, never backfilled/forced on existing rows</td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — Defect | Limitation | Risk | Accepted Defect</td></tr>
+        <tr><td class="col-name">sub_case</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — which specific sub-case of the scenario it happens in (e.g. "several items in one order row, GWC applied")</td></tr>
+        <tr><td class="col-name">how_to_detect</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — how Operations can find these cases in the system</td></tr>
+        <tr><td class="col-name">how_to_handle</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — what to do about it</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
+    <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='prod_defect' (registry label "Known Production Issues")</div>
   </div>
 
   <!-- links -->

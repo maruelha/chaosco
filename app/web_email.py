@@ -34,10 +34,15 @@ def email_page():
     finally:
         conn.close()
     texts = emailer.default_texts()
+    # ?reports=key pre-ticks just that report (e.g. linked from a single
+    # page's "Send via email" button) [USER 2026-08-06]; with no query
+    # param at all, everything stays ticked as before.
+    requested = request.args.getlist("reports")
+    checked_reports = set(requested) if requested else {k for k, _ in emailer.REPORT_CHOICES}
     return render_template(
         "email_report.html",
         recipients=recipients, mailing_lists=mailing_lists,
-        report_choices=emailer.REPORT_CHOICES,
+        report_choices=emailer.REPORT_CHOICES, checked_reports=checked_reports,
         configured=emailer.smtp_settings(_cfg) is not None,
         sender=_cfg.get("email_user", ""),
         today=texts["date"], subject=texts["subject"], body=texts["body"],

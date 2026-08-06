@@ -100,9 +100,9 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda r: f"{r['jira_key']} — {r.get('summary') or ''}".rstrip(" —"), str,
     ),
     "prod_defect": NoteEntity(
-        "Known Production Defects", "prod_defects_list", "prod_defect_detail", "record_id",
+        "Known Production Issues", "prod_defects_list", "prod_defect_detail", "record_id",
         lambda c, i: database.get_known_prod_defect(c, int(i)),
-        lambda r: r.get("scenario") or r.get("short_description") or f"Production defect #{r['id']}", int,
+        lambda r: r.get("scenario") or r.get("short_description") or f"Production issue #{r['id']}", int,
     ),
     "cs_followup": NoteEntity(
         "CS Follow-Up Tracker", "cs_followup_list", "cs_followup_detail", "followup_id",

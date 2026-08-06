@@ -34,7 +34,8 @@ ecom (added 2026-07-10, search by jira id / test case / name),
 ecom_gatekeeper (2026-07-11, legacy — no picker option anymore),
 jira = "Gatekeeper ticket" (2026-07-11, the current gatekeeper; search by
 jira key / solman id / summary), test_learning, followup, shelf, topic,
-contact, link.
+contact, link, prod_defect = "Known Prod Issue" (2026-08-06, search by
+scenario / short description / technical key).
 
 **Inbox delete**: per-item Delete button (confirm dialog) → POST
 /inbox/<id>/delete removes the note, its attachment rows AND the uploaded
@@ -112,9 +113,19 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 
 - `shelf` — catch-all store; list/detail/combine; inbox files into it
 - `links`, `contacts`, `encouragements`/`encouragement_people`,
-  `test_learnings`, `test_limitations`, `known_prod_defects` (detail page
-  carries the shared notes section since 2026-07-13; registry key
-  `prod_defect`)
+  `test_learnings`, `test_limitations`, `known_prod_defects` — UI renamed
+  "Known Production Issues" [USER 2026-08-06]; detail page carries the
+  shared notes section since 2026-07-13; registry key `prod_defect`,
+  also an inbox filing target since 2026-08-06. New 2026-08-06 fields:
+  `channel` (ECOM/Retail), `type` (Defect/Limitation/Risk/Accepted
+  Defect), `sub_case` (which sub-case of the scenario), `how_to_detect`
+  (how Ops finds it), `how_to_handle`; `scenario` became a fixed dropdown
+  (`prod_defect_scenarios` in settings.yaml, legacy values stay visible
+  as "(current)"). List page: Channel/Scenario filters, note count on
+  Edit, Confluence link at the top (`prod_defects_confluence_url`),
+  `⬇ Download HTML` + `✉ Send via email` (7th entry in
+  `emailer.REPORT_CHOICES`; the Email Reports page now supports
+  `?reports=<key>` to pre-tick just one report).
 - `ecom_gatekeeper` — inline-editable pre-handoff table; notes + order
   details; future handover re-points order_details to the ECOM vertical
 - `order_details` — generic per-entity order log

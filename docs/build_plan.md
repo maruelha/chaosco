@@ -143,6 +143,21 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 2. ~~Status-report filter~~ ✅ DONE 2026-07-09: All / In report / Not in
    report + green-✓ Report column (follows `spillover_report_selection`).
 
+### Known Production Issues (`/prod_defects`) — done ad-hoc
+
+1. ~~Rename + rebuild~~ ✅ DONE 2026-08-06 [USER]: renamed from "Known
+   Production Defects" (UI text only, same precedent as MB ROE Defects —
+   URLs/table/columns unchanged). Session doc:
+   `docs/session_2026-08-06_known_prod_issues.md`. New fields: `channel`
+   (ECOM/Retail), `type` (Defect/Limitation/Risk/Accepted Defect),
+   `sub_case`, `how_to_detect`, `how_to_handle`; `scenario` became a fixed
+   dropdown (`prod_defect_scenarios` config, legacy values preserved as
+   "(current)"). List: Channel/Scenario columns + filters, note count on
+   Edit, Confluence link at the top. Inbox filing target `prod_defect`
+   added. `⬇ Download HTML` + `✉ Send via email` (7th `emailer.
+   REPORT_CHOICES` entry; `/email-report?reports=<key>` pre-tick).
+   Tests: `tests/test_prod_defects.py` (10); suite 339 green.
+
 ### Cross-vertical components — done ad-hoc
 
 1. ~~Next-step archive~~ ✅ DONE 2026-07-10: "↻ New next step" archives +

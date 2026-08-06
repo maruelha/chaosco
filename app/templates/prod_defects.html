@@ -1,44 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Known Production Defects{% endblock %}
+{% block title %}Known Production Issues{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div class="page-header-row">
     <div>
-      <h1>Known Production Defects</h1>
-      <p class="page-subtitle">Defects that will not be fixed before production</p>
+      <h1>Known Production Issues</h1>
+      <p class="page-subtitle">Defects, limitations, risks and accepted defects that will not be fixed before production</p>
     </div>
     <div class="page-header-actions">
       <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
+      <a href="{{ url_for('email_report.email_page', reports='known_prod_defects') }}" class="btn" title="pick recipients and send this page">✉ Send via email</a>
+      <a href="{{ url_for('prod_defects_download') }}" class="btn">⬇ Download HTML</a>
       <a href="{{ url_for('prod_defect_new') }}" class="btn btn-primary">+ Add New</a>
     </div>
   </div>
+  {% if confluence_url %}
+  <p class="page-subtitle"><a href="{{ confluence_url }}" target="_blank" rel="noopener">Core South and ROE SIT defects related to existing production issues (Confluence) ↗</a></p>
+  {% endif %}
 </div>
+
+<form method="get" action="{{ url_for('prod_defects_list') }}" class="filters-bar">
+  <div class="filter-group">
+    <label for="f-channel">Channel</label>
+    <select id="f-channel" name="channel" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for c in channels %}
+      <option value="{{ c }}" {% if c == sel_channel %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="f-scenario">Scenario</label>
+    <select id="f-scenario" name="scenario" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for s in scenarios %}
+      <option value="{{ s }}" {% if s == sel_scenario %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if sel_channel or sel_scenario %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('prod_defects_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
 
 <div class="table-wrap" style="overflow-x:auto">
   <table style="min-width:1100px">
     <thead>
       <tr>
-        <th style="width:200px">Scenario</th>
+        <th style="width:90px">Channel</th>
+        <th style="width:150px">Scenario</th>
         <th style="width:170px">Short Description</th>
         <th style="width:160px">Biz Impact</th>
-        <th style="width:130px">References</th>
-        <th style="width:160px">Next Steps</th>
+        <th style="width:170px">How to handle</th>
         <th style="width:140px">Confluence</th>
-        <th style="width:88px"></th>
+        <th style="width:100px"></th>
       </tr>
     </thead>
     <tbody id="kpd-tbody">
     {% for row in rows %}
       <tr data-id="{{ row.id }}">
+        <td>{{ row.channel or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
         <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.short_description or '' }}</td>
         <td class="kpd-truncate" title="{{ row.biz_impact | e }}">{{ row.biz_impact or '' }}</td>
-        <td>{{ row.refs or '' }}</td>
-        <td class="kpd-truncate" title="{{ row.next_steps | e }}">{{ row.next_steps or '' }}</td>
+        <td class="kpd-truncate" title="{{ row.how_to_handle | e }}">{{ row.how_to_handle or '' }}</td>
         <td>{{ row.confluence or '' }}</td>
         <td class="kpd-actions">
-          <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit</a>
+          <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
           <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
         </td>
       </tr>

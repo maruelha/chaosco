@@ -159,6 +159,30 @@ ecom_reporters:
   - 'Phalk'
   - 'Calvin'
 
+# Known Production Issues — fixed scenario list [USER 2026-08-06]. A
+# row's existing value stays visible even if it's not in this list (shown
+# as an extra "(current)" option) — nothing is silently lost or forced.
+prod_defect_scenarios:
+  - "SFDC"
+  - "SFS"
+  - "CNC"
+  - "Return to DC"
+  - "Return in Store"
+  - "Exchange to DC"
+  - "Exchange in Store"
+  - "GWC"
+  - "Return/Exchange after GWC"
+  - "Giftcard Sale"
+  - "Split shipment"
+  - "Cancellation"
+  - "Retail Sale"
+  - "Retail Return"
+  - "Retail Exchange"
+  - "other"
+
+# Confluence page linked at the top of the Known Production Issues page.
+prod_defects_confluence_url: 'https://confluence.tools.3stripes.net/spaces/TRAN/pages/1551867694/Core+South+and+ROE+SIT+defects+related+to+existing+production+issues'
+
 # DB backup target (dashboard "DB Backup" card) — machine-specific, so set
 # it in settings.local.yaml (gitignored), e.g.:
 #   backup_folder: 'E:\chaosco_backups'

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}{% if is_new %}New Production Defect{% else %}{{ record.scenario or record.short_description or 'Production Defect' }}{% endif %}{% endblock %}
+{% block title %}{% if is_new %}New Production Issue{% else %}{{ record.scenario or record.short_description or 'Production Issue' }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="breadcrumb">
-  <a href="{{ url_for('prod_defects_list') }}">Known Production Defects</a>
+  <a href="{{ url_for('prod_defects_list') }}">Known Production Issues</a>
   <span>›</span>
   <span>{% if is_new %}New Entry{% else %}{{ record.scenario or record.short_description or ('ID ' ~ record.id) }}{% endif %}</span>
 </div>
 
 <div class="page-header">
   <div class="page-header-row">
-    <h1>{% if is_new %}New Production Defect{% else %}Edit Production Defect{% endif %}</h1>
+    <h1>{% if is_new %}New Production Issue{% else %}Edit Production Issue{% endif %}</h1>
     {% if not is_new %}
     <div class="page-header-actions">
       <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
@@ -28,8 +28,36 @@
     <div class="form-stack">
 
       <div class="form-field">
+        <label for="f-channel">Channel</label>
+        <select id="f-channel" name="channel">
+          <option value="" {% if not record.channel %}selected{% endif %}>—</option>
+          {% for c in channels %}
+          <option value="{{ c }}" {% if record.channel == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="f-type">Type</label>
+        <select id="f-type" name="type">
+          <option value="" {% if not record.type %}selected{% endif %}>—</option>
+          {% for t in types %}
+          <option value="{{ t }}" {% if record.type == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
         <label for="f-scenario">Scenario</label>
-        <textarea id="f-scenario" name="scenario" rows="3">{{ record.scenario or '' }}</textarea>
+        <select id="f-scenario" name="scenario">
+          <option value="" {% if not record.scenario %}selected{% endif %}>—</option>
+          {% if record.scenario and record.scenario not in scenarios %}
+          <option value="{{ record.scenario }}" selected>{{ record.scenario }} (current)</option>
+          {% endif %}
+          {% for s in scenarios %}
+          <option value="{{ s }}" {% if record.scenario == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
       </div>
 
       <div class="form-field">
@@ -38,13 +66,28 @@
       </div>
 
       <div class="form-field">
-        <label for="f-description">Description</label>
+        <label for="f-description">Description <span class="field-hint">what the defect is</span></label>
         <textarea id="f-description" name="description" rows="5">{{ record.description or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-subcase">Sub-case <span class="field-hint">which specific sub-case of the scenario it happens in</span></label>
+        <textarea id="f-subcase" name="sub_case" rows="3">{{ record.sub_case or '' }}</textarea>
       </div>
 
       <div class="form-field">
         <label for="f-bizimpact">Business Impact</label>
         <textarea id="f-bizimpact" name="biz_impact" rows="3">{{ record.biz_impact or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-howtodetect">How to detect <span class="field-hint">how Operations can find these cases in the system</span></label>
+        <textarea id="f-howtodetect" name="how_to_detect" rows="3">{{ record.how_to_detect or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-howtohandle">How to handle</label>
+        <textarea id="f-howtohandle" name="how_to_handle" rows="3">{{ record.how_to_handle or '' }}</textarea>
       </div>
 
       <div class="form-field">

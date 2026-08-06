@@ -153,10 +153,25 @@ def combine_shelf_items(
 
 
 
-def list_known_prod_defects(conn: sqlite3.Connection) -> list[dict]:
-    return _rows_to_dicts(conn.execute(
-        "SELECT * FROM known_prod_defects ORDER BY created_at DESC"
-    ))
+def list_known_prod_defects(conn: sqlite3.Connection,
+                            channel: str | None = None,
+                            scenario: str | None = None) -> list[dict]:
+    sql = """
+        SELECT k.*,
+               (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'prod_defect'
+                  AND n.entity_id = CAST(k.id AS TEXT)) AS note_count
+        FROM known_prod_defects k
+        WHERE 1=1
+    """
+    params: list = []
+    if channel:
+        sql += " AND k.channel = ?"
+        params.append(channel)
+    if scenario:
+        sql += " AND k.scenario = ?"
+        params.append(scenario)
+    sql += " ORDER BY k.created_at DESC"
+    return _rows_to_dicts(conn.execute(sql, params))
 
 
 def get_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> dict | None:
@@ -177,16 +192,24 @@ def create_known_prod_defect(
     next_steps: str | None,
     comments: str | None,
     confluence: str | None,
+    channel: str | None = None,
+    type_: str | None = None,
+    sub_case: str | None = None,
+    how_to_detect: str | None = None,
+    how_to_handle: str | None = None,
 ) -> dict:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         cur = conn.execute(
             """INSERT INTO known_prod_defects
                (short_description, scenario, description, biz_impact,
-                numbers, refs, next_steps, comments, confluence, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                numbers, refs, next_steps, comments, confluence,
+                channel, type, sub_case, how_to_detect, how_to_handle,
+                created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (short_description, scenario, description, biz_impact,
-             numbers, refs, next_steps, comments, confluence, now, now),
+             numbers, refs, next_steps, comments, confluence,
+             channel, type_, sub_case, how_to_detect, how_to_handle, now, now),
         )
         new_id = cur.lastrowid
     return get_known_prod_defect(conn, new_id)
@@ -204,16 +227,25 @@ def update_known_prod_defect(
     next_steps: str | None,
     comments: str | None,
     confluence: str | None,
+    channel: str | None = None,
+    type_: str | None = None,
+    sub_case: str | None = None,
+    how_to_detect: str | None = None,
+    how_to_handle: str | None = None,
 ) -> dict | None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
         conn.execute(
             """UPDATE known_prod_defects SET
                short_description=?, scenario=?, description=?, biz_impact=?,
-               numbers=?, refs=?, next_steps=?, comments=?, confluence=?, updated_at=?
+               numbers=?, refs=?, next_steps=?, comments=?, confluence=?,
+               channel=?, type=?, sub_case=?, how_to_detect=?, how_to_handle=?,
+               updated_at=?
                WHERE id=?""",
             (short_description, scenario, description, biz_impact,
-             numbers, refs, next_steps, comments, confluence, now, record_id),
+             numbers, refs, next_steps, comments, confluence,
+             channel, type_, sub_case, how_to_detect, how_to_handle,
+             now, record_id),
         )
     return get_known_prod_defect(conn, record_id)
 

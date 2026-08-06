@@ -145,12 +145,27 @@ def defect_toggle_daily(defect_id: str):
 
 @app.route("/prod_defects")
 def prod_defects_list():
+    channel = request.args.get("channel", "").strip()
+    scenario = request.args.get("scenario", "").strip()
     conn = _get_conn()
     try:
-        rows = database.list_known_prod_defects(conn)
+        rows = database.list_known_prod_defects(
+            conn, channel=channel or None, scenario=scenario or None)
     finally:
         conn.close()
-    return render_template("prod_defects.html", rows=rows)
+    return render_template(
+        "prod_defects.html", rows=rows,
+        channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
+        sel_channel=channel, sel_scenario=scenario,
+        confluence_url=_cfg.get("prod_defects_confluence_url", ""))
+
+
+_PROD_DEFECT_TYPES = ["Defect", "Limitation", "Risk", "Accepted Defect"]
+_PROD_DEFECT_CHANNELS = ["ECOM", "Retail"]
+
+
+def _prod_defect_scenarios() -> list[str]:
+    return _cfg.get("prod_defect_scenarios", [])
 
 
 @app.route("/prod_defects/new", methods=["GET", "POST"])
@@ -170,11 +185,18 @@ def prod_defect_new():
                 next_steps=_f("next_steps"),
                 comments=_f("comments"),
                 confluence=_f("confluence"),
+                channel=_f("channel"),
+                type_=_f("type"),
+                sub_case=_f("sub_case"),
+                how_to_detect=_f("how_to_detect"),
+                how_to_handle=_f("how_to_handle"),
             )
         finally:
             conn.close()
         return redirect(url_for("prod_defect_detail", record_id=row["id"], saved="1"))
-    return render_template("prod_defect_detail.html", record={}, is_new=True, saved=False)
+    return render_template("prod_defect_detail.html", record={}, is_new=True, saved=False,
+                           scenarios=_prod_defect_scenarios(), types=_PROD_DEFECT_TYPES,
+                           channels=_PROD_DEFECT_CHANNELS)
 
 
 @app.route("/prod_defects/<int:record_id>", methods=["GET", "POST"])
@@ -197,6 +219,11 @@ def prod_defect_detail(record_id: int):
                 next_steps=_f("next_steps"),
                 comments=_f("comments"),
                 confluence=_f("confluence"),
+                channel=_f("channel"),
+                type_=_f("type"),
+                sub_case=_f("sub_case"),
+                how_to_detect=_f("how_to_detect"),
+                how_to_handle=_f("how_to_handle"),
             )
         notes = database.list_notes(conn, "prod_defect", str(record_id))
         attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
@@ -206,7 +233,23 @@ def prod_defect_detail(record_id: int):
         return redirect(url_for("prod_defect_detail", record_id=record_id, saved="1"))
     saved = request.args.get("saved") == "1"
     return render_template("prod_defect_detail.html", record=record, is_new=False, saved=saved,
-                           notes=notes, attachments_by_note=attachments_by_note)
+                           notes=notes, attachments_by_note=attachments_by_note,
+                           scenarios=_prod_defect_scenarios(), types=_PROD_DEFECT_TYPES,
+                           channels=_PROD_DEFECT_CHANNELS)
+
+
+@app.route("/prod_defects/download")
+def prod_defects_download():
+    """Dated standalone snapshot of the full list (no filters applied) —
+    same mechanism as the report Download HTML buttons."""
+    from app.emailer import standalone_html
+    resp = app.test_client().get(url_for("prod_defects_list"))
+    today = date.today().isoformat()
+    return standalone_html(resp.get_data(as_text=True)), 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="known_prod_defects_{today}.html"',
+    }
 
 
 @app.route("/prod_defects/<int:record_id>/delete", methods=["POST"])

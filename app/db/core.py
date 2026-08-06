@@ -357,7 +357,14 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
-    for col in ("comments TEXT", "confluence TEXT"):
+    for col in ("comments TEXT", "confluence TEXT",
+                # Known Production Issues [USER 2026-08-06]: channel/type
+                # classify the entry; sub_case = the specific sub-case of
+                # the scenario it happens in; how_to_detect = how Ops finds
+                # these cases in the system; how_to_handle = what to do
+                # about it. channel is optional, never backfilled/forced.
+                "channel TEXT", "type TEXT",
+                "sub_case TEXT", "how_to_detect TEXT", "how_to_handle TEXT"):
         try:
             conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()
