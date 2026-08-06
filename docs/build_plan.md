@@ -443,6 +443,17 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
 > app still boots, its dashboard card / search source / notes entity simply
 > disappear. Steps ordered by value-per-effort; each is shippable alone with
 > the 318-test suite as tripwire. Review details: chat session 2026-08-06.
+>
+> **Model guidance per step [2026-08-06]:** Sonnet is fine for the
+> careful-but-mechanical steps — 7, 8, 9 and the inline-style sweep in 13
+> (self-contained instructions + "Done when" checks + test tripwire).
+> Prefer Fable/Opus for the judgment-heavy ones: **10** (registry design —
+> everything else plugs into this shape), **12** (schema split, migration
+> correctness on a live DB on two machines), and the `web_reference.py`
+> breakup in **13**. Step 11 is in between: Sonnet OK, but run the full
+> suite after each module, no batching. If a Sonnet session goes sideways
+> (repeated test failures, "simplifying" things), switch to Fable for that
+> step instead of pushing through — the step boundaries make that clean.
 
 ### Refactoring step 7 — Shared plumbing (kill the 15× duplication)
 
