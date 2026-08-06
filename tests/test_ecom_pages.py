@@ -82,6 +82,24 @@ def test_list_renders_with_jira_chip_only_when_in_store(client):
     assert "ecomJira" in html and "first comment" in html
 
 
+def test_filter_form_submit_with_empty_all_options_keeps_rows(client):
+    """[USER 2026-08-06] the filter form's "All …" options submit value="" —
+    getlist turned that into [''] and IN ('') matched nothing, so ANY use of
+    the Filter button emptied the table until a full page reload."""
+    # the exact query string a real Filter click sends with everything on All
+    html = client.get("/ecom/?status=&country=&scenario=&reporter=&q=") \
+        .get_data(as_text=True)
+    assert "S4ECOM-1153" in html
+
+    # one real selection + the siblings' empty values still filters correctly
+    html = client.get("/ecom/?status=Not+Ready&country=&scenario=&reporter=&q=") \
+        .get_data(as_text=True)
+    assert "S4ECOM-1153" in html
+    html = client.get("/ecom/?status=Passed&country=&scenario=&reporter=&q=") \
+        .get_data(as_text=True)
+    assert "S4ECOM-1153" not in html
+
+
 def test_detail_shows_jira_section_or_hint(client):
     url = f"/ecom/{client.row_id}"
     html = client.get(url).get_data(as_text=True)

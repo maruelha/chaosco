@@ -35,9 +35,12 @@ def _get_conn():
 
 @bp.route("/")
 def ecom_list():
-    statuses  = request.args.getlist("status")
-    countries = request.args.getlist("country")
-    scenarios = request.args.getlist("scenario")
+    # the form's "All …" options submit value="" — getlist would turn that
+    # into [''] (truthy!) and the SQL IN ('') matched nothing, so ANY use of
+    # the Filter button emptied the table [USER 2026-08-06]. Drop empties.
+    statuses  = [v for v in request.args.getlist("status") if v]
+    countries = [v for v in request.args.getlist("country") if v]
+    scenarios = [v for v in request.args.getlist("scenario") if v]
     q         = request.args.get("q", "").strip() or None
     reporter  = request.args.get("reporter", "").strip()
     reporters = expected_reporters(_cfg)
