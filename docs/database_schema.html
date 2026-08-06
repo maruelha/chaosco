@@ -1567,7 +1567,7 @@
     <div class="table-card-header">
       <span class="tname">country_payment_methods</span>
       <span class="badge badge-authored">Authored</span>
-      <span class="tdesc">Tab-4 matrix: one row per (country × payment method). Kicked-out rows (active=0, mandatory inactive_reason) leave ALL counting.</span>
+      <span class="tdesc">Tab-4 matrix: one row per (country × payment method). Kicked-out rows (active=0, mandatory inactive_reason) leave ALL counting. Since 2026-08-06 rows can also be added manually (the Excel tab-4 turned out incomplete) — see origin/source/tender_type_code.</span>
     </div>
     <table>
       <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
@@ -1575,6 +1575,9 @@
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
         <tr><td class="col-name">country / method_name</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">UNIQUE(country, method_name)</td></tr>
         <tr><td class="col-name">category</td><td class="col-type">TEXT</td><td></td><td class="note-text">card · voucher · NULL (= unknown, editable inline while unknown)</td></tr>
+        <tr><td class="col-name">tender_type_code</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — voucher/unknown only; card is always fixed "ZPSP" (template-derived, never stored here)</td></tr>
+        <tr><td class="col-name">source</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — free-text provenance, inline-editable; existing rows backfilled once to "Iuliia analysis" when the column was created</td></tr>
+        <tr><td class="col-name">origin</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — 'excel' (default) | 'manual'; manual rows are never pruned by a re-import and flip to 'excel' if the Excel later grows the same (country, method_name) — source/tender_type_code survive the takeover</td></tr>
         <tr><td class="col-name">active</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">0 = kicked out ("🚫", reason mandatory)</td></tr>
         <tr><td class="col-name">inactive_reason</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Cleared by "↩ Take back in"</td></tr>
         <tr><td class="col-name">comment / user_comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">Imported vs. your blur-saved comment</td></tr>

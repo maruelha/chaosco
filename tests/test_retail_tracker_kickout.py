@@ -1,10 +1,17 @@
-"""Payment-method kick-out + board scenario groups (2026-07-09).
+"""Payment-method kick-out + board scenario groups (2026-07-09), plus
+manual voucher lines + tender type code (2026-08-06).
 
 The rules a bug would silently break:
 - kicking out REQUIRES a reason; the row leaves counting entirely and the
   active counts; reactivating clears the reason and counts again
 - scenario grouping: till transactions win over the "1. Retail Sale" batch
   that textually contains them; unmatched headings land in "Other"
+- manual payment-method lines (origin='manual') are NEVER pruned by
+  delete_cpm_not_in; if the Excel later grows the same (country,
+  method_name), upsert_cpm_rows takes it over (origin -> 'excel') but
+  keeps the user's source + tender_type_code
+- card is always ZPSP (template-derived, never stored); voucher/unknown
+  rows carry their own tender_type_code
 """
 import pytest
 
@@ -181,3 +188,182 @@ def test_kicked_out_page_splits_env_blocked_from_other(db_path, monkeypatch):
 ])
 def test_scenario_group_mapping(label, expected):
     assert web_rt._scenario_group(label) == expected
+
+
+# ---------------------------------------------------------------------------
+# Manual voucher lines + tender type code [USER 2026-08-06]
+# ---------------------------------------------------------------------------
+
+def test_add_cpm_manual_creates_origin_manual_row(db_path):
+    conn = database.get_connection(db_path)
+    try:
+        cpm_id = db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher",
+                                   "ZVCH", "Marina 2026-08-06")
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["origin"] == "manual"
+        assert row["category"] == "voucher"
+        assert row["tender_type_code"] == "ZVCH"
+        assert row["source"] == "Marina 2026-08-06"
+        assert row["active"] == 1
+    finally:
+        conn.close()
+
+
+def test_add_cpm_manual_rejects_duplicate(db_path):
+    conn = database.get_connection(db_path)
+    try:
+        db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher", None, "src")
+        with pytest.raises(ValueError):
+            db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher", None, "src2")
+        # the existing Excel row is also a duplicate target
+        _cpm(conn, country="Croatia", method="AMEX")
+        with pytest.raises(ValueError):
+            db.add_cpm_manual(conn, "Croatia", "AMEX", "card", None, "src")
+    finally:
+        conn.close()
+
+
+def test_delete_cpm_not_in_skips_manual_rows(db_path):
+    conn = database.get_connection(db_path)
+    try:
+        excel_id = _cpm(conn, country="Croatia", method="AMEX")
+        manual_id = db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher",
+                                      None, "src")
+        # a re-import parse that no longer contains EITHER row
+        removed = db.delete_cpm_not_in(conn, set())
+        assert removed == 1  # only the excel-origin row
+        remaining = {r["id"] for r in db.list_cpm(conn)}
+        assert remaining == {manual_id}
+    finally:
+        conn.close()
+
+
+def test_upsert_takes_over_manual_row_keeps_source_and_tender_code(db_path):
+    conn = database.get_connection(db_path)
+    try:
+        cpm_id = db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher",
+                                   "ZVCH", "Marina 2026-08-06")
+        db.upsert_cpm_rows(conn, [
+            {"country": "Malta", "method_name": "MyVoucher", "category": "voucher",
+             "excel_row": 42, "comment": "now in the Excel too"},
+        ])
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["origin"] == "excel"
+        assert row["source"] == "Marina 2026-08-06"          # untouched
+        assert row["tender_type_code"] == "ZVCH"              # untouched
+        assert row["excel_row"] == 42
+        assert row["comment"] == "now in the Excel too"
+        # now the importer's prune WOULD remove it if absent from the parse
+        removed = db.delete_cpm_not_in(conn, set())
+        assert removed == 1
+        assert db.list_cpm(conn) == []
+    finally:
+        conn.close()
+
+
+def test_set_cpm_tender_code_and_source(db_path):
+    conn = database.get_connection(db_path)
+    try:
+        cpm_id = _cpm(conn, category="voucher")
+        db.set_cpm_tender_code(conn, cpm_id, "ZVCH")
+        db.set_cpm_source(conn, cpm_id, "Iuliia analysis")
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["tender_type_code"] == "ZVCH"
+        assert row["source"] == "Iuliia analysis"
+        db.set_cpm_tender_code(conn, cpm_id, "")
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["tender_type_code"] is None
+    finally:
+        conn.close()
+
+
+def test_cpm_add_route_success_and_validation(db_path, monkeypatch):
+    monkeypatch.setattr(web_rt, "_db_path", db_path)
+    client = app.test_client()
+
+    # missing required field -> redirect with error flag, nothing created
+    resp = client.post("/retail-tracker/payment-methods/add",
+                       data={"country": "Malta", "method_name": "MyVoucher"})
+    assert resp.status_code == 302 and "cpmerr=missing" in resp.location
+    conn = database.get_connection(db_path)
+    try:
+        assert db.list_cpm(conn) == []
+    finally:
+        conn.close()
+
+    resp = client.post("/retail-tracker/payment-methods/add",
+                       data={"country": "Malta", "method_name": "MyVoucher",
+                             "category": "voucher", "tender_type_code": "ZVCH",
+                             "source": "Marina 2026-08-06"})
+    assert resp.status_code == 302 and "cpmadded=1" in resp.location
+    conn = database.get_connection(db_path)
+    try:
+        rows = db.list_cpm(conn)
+        assert len(rows) == 1 and rows[0]["origin"] == "manual"
+    finally:
+        conn.close()
+
+    # duplicate -> redirect with dup flag, no second row
+    resp = client.post("/retail-tracker/payment-methods/add",
+                       data={"country": "Malta", "method_name": "MyVoucher",
+                             "source": "again"})
+    assert resp.status_code == 302 and "cpmerr=dup" in resp.location
+    conn = database.get_connection(db_path)
+    try:
+        assert len(db.list_cpm(conn)) == 1
+    finally:
+        conn.close()
+
+
+def test_cpm_tender_code_and_source_routes(db_path, monkeypatch):
+    monkeypatch.setattr(web_rt, "_db_path", db_path)
+    conn = database.get_connection(db_path)
+    try:
+        cpm_id = _cpm(conn, category="voucher")
+    finally:
+        conn.close()
+    client = app.test_client()
+
+    assert client.post(f"/retail-tracker/payment-methods/{cpm_id}/tender-code",
+                       data={"tender_type_code": "ZVCH"}).get_json()["ok"]
+    assert client.post(f"/retail-tracker/payment-methods/{cpm_id}/source",
+                       data={"source": "Iuliia analysis"}).get_json()["ok"]
+
+    conn = database.get_connection(db_path)
+    try:
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["tender_type_code"] == "ZVCH"
+        assert row["source"] == "Iuliia analysis"
+    finally:
+        conn.close()
+
+
+def test_card_row_renders_fixed_zpsp_voucher_renders_input(db_path, monkeypatch):
+    monkeypatch.setattr(web_rt, "_db_path", db_path)
+    conn = database.get_connection(db_path)
+    try:
+        _cpm(conn, country="Croatia", method="AMEX", category="card")
+        db.add_cpm_manual(conn, "Malta", "MyVoucher", "voucher", "ZVCH", "src")
+    finally:
+        conn.close()
+
+    html = app.test_client().get("/retail-tracker/payment-methods").get_data(as_text=True)
+    assert "ZPSP" in html
+    assert 'name="pm-tendercode-' in html
+    assert "manual" in html  # the origin pill on the manually added row
+
+
+def test_source_backfill_on_column_creation(tmp_path):
+    """The first-ever init_schema on a fresh DB creates the source column
+    with no pre-existing rows — nothing to backfill, no crash. Rows added
+    afterwards are NOT auto-labelled."""
+    p = tmp_path / "backfill.db"
+    database.init_db(p).close()
+    db.init_schema(p)
+    conn = database.get_connection(p)
+    try:
+        cpm_id = _cpm(conn)  # inserted directly, bypassing add_cpm_manual
+        row = {r["id"]: r for r in db.list_cpm(conn)}[cpm_id]
+        assert row["source"] is None
+    finally:
+        conn.close()

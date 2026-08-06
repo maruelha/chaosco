@@ -9,6 +9,14 @@
 </div>
 <p style="color:#666; font-size:0.85rem; margin:-0.4rem 0 0.6rem">As of <strong>{{ as_of }}</strong></p>
 
+{% if request.args.get('cpmadded') %}
+<div class="saved-banner">&#10003;&nbsp; Payment method added.</div>
+{% elif request.args.get('cpmerr') == 'dup' %}
+<div class="saved-banner saved-banner--error">That country + payment method already exists.</div>
+{% elif request.args.get('cpmerr') == 'missing' %}
+<div class="saved-banner saved-banner--error">Country, payment method and source are required.</div>
+{% endif %}
+
 <p style="color:#555; max-width:64rem">
   The four fixed tests below pass <em>once per country</em> — but a pass cannot say which
   payment methods the run actually used. When a test is green (shown as
@@ -54,8 +62,46 @@
   <input type="text" id="pm-method" placeholder="Filter payment method…" oninput="pmApply()">
   <button type="button" class="pm-fbtn" id="pm-bulk-kick" disabled
           onclick="pmBulkKick()">🚫 Kick out selected</button>
+  <button type="button" class="pm-fbtn" onclick="document.getElementById('pm-add-dlg').showModal()">➕ Add payment method</button>
   <span id="pm-info" style="color:#888; font-size:0.82rem"></span>
 </div>
+
+<dialog id="pm-add-dlg" class="pm-dlg">
+  <strong>Add payment method</strong>
+  <p style="color:#666; font-size:0.82rem; margin:0.3rem 0 0.6rem">
+    For a country + method the Excel tab-4 was missing — mainly vouchers.
+    Source is required so provenance is never ambiguous.
+  </p>
+  <form method="post" action="{{ url_for('retail_tracker.tracker_cpm_add') }}"
+        style="display:flex; flex-direction:column; gap:0.6rem">
+    <label>Country
+      <input type="text" name="country" list="pm-add-countries" required style="width:100%">
+      <datalist id="pm-add-countries">
+        {% for c in fcountries %}<option value="{{ c }}">{% endfor %}
+      </datalist>
+    </label>
+    <label>Payment method
+      <input type="text" name="method_name" required style="width:100%">
+    </label>
+    <label>Category
+      <select name="category" style="width:100%">
+        <option value="voucher" selected>voucher</option>
+        <option value="card">card</option>
+        <option value="">unknown</option>
+      </select>
+    </label>
+    <label>Tender type code <span style="color:#999">(voucher only — card is always ZPSP)</span>
+      <input type="text" name="tender_type_code" style="width:100%">
+    </label>
+    <label>Source <span style="color:#c00">*</span>
+      <input type="text" name="source" required placeholder="e.g. Iuliia analysis" style="width:100%">
+    </label>
+    <div class="btn-row">
+      <button type="submit" class="btn btn-primary">Add</button>
+      <button type="button" class="btn" onclick="document.getElementById('pm-add-dlg').close()">Cancel</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="pm-country-dlg" class="pm-dlg">
   <strong>Filter by country</strong>
@@ -93,10 +139,12 @@
       <th style="width:2rem"><input type="checkbox" id="pm-selall"
           title="select / deselect all visible rows" onchange="pmSelAll(this)"></th>
       <th>Country</th><th>Payment method</th><th>Category</th>
+      <th>Tender type code</th>
       <th>Sale covered?</th><th>Return covered?</th>
       <th style="text-align:center">Status</th>
       <th style="min-width:14rem">Comment (e.g. what was NOT tested)</th>
       <th>Excel note</th>
+      <th>Source</th>
       <th style="width:2.5rem"></th>
     </tr>
   </thead>
@@ -109,7 +157,9 @@
         data-method="{{ r.method_name|lower }}">
       <td><input type="checkbox" class="pm-sel" onchange="pmSelCount()"></td>
       <td style="font-weight:600">{{ r.country }}</td>
-      <td>{{ r.method_name }}</td>
+      <td>{{ r.method_name }}
+        {% if r.origin == "manual" %}<span class="pill pill--gray" title="added manually — not from the Excel tab">manual</span>{% endif %}
+      </td>
       <td>
         {% if r.unknown_category %}
         {# category editable ONLY while unknown — once set, only the checks change #}
@@ -122,6 +172,13 @@
           </select>
         </form>
         {% else %}{{ r.category }}{% endif %}
+      </td>
+      <td>
+        {% if r.category == "card" %}ZPSP
+        {% else %}<input type="text" class="pm-tendercode" name="pm-tendercode-{{ r.id }}" autocomplete="off"
+                          value="{{ r.tender_type_code or '' }}"
+                          placeholder="code…" onblur="pmTenderCode(this)">
+        {% endif %}
       </td>
       {% for kind in [sale_kind, return_kind] %}
       <td>
@@ -148,6 +205,9 @@
                  value="{{ r.user_comment or '' }}"
                  placeholder="comment…" onblur="pmComment(this)"></td>
       <td style="color:#999; font-size:0.76rem">{{ r.comment or "" }}</td>
+      <td><input type="text" class="pm-source" name="pm-source-{{ r.id }}" autocomplete="off"
+                 value="{{ r.source or '' }}"
+                 placeholder="source…" onblur="pmSource(this)"></td>
       <td style="text-align:center">
         <button type="button" class="btn btn-sm" title="kick out — not applicable, with a reason why"
                 onclick="pmKickOut(this)">🚫</button>
@@ -336,6 +396,26 @@ function pmComment(input) {
   const tr = input.closest("tr");
   const body = new URLSearchParams({user_comment: input.value});
   fetch(`${PM_BASE}/${tr.dataset.id}/comment`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+
+function pmTenderCode(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({tender_type_code: input.value});
+  fetch(`${PM_BASE}/${tr.dataset.id}/tender-code`, {method: "POST", body})
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = "#1a7f37";
+                 setTimeout(() => input.style.borderColor = "", 800); })
+    .catch(() => { input.style.borderColor = "#c00"; alert("Saving failed — try again."); });
+}
+
+function pmSource(input) {
+  const tr = input.closest("tr");
+  const body = new URLSearchParams({source: input.value});
+  fetch(`${PM_BASE}/${tr.dataset.id}/source`, {method: "POST", body})
     .then(r => { if (!r.ok) throw new Error();
                  input.style.borderColor = "#1a7f37";
                  setTimeout(() => input.style.borderColor = "", 800); })

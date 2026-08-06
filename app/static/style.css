@@ -960,6 +960,13 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
   color: #3a3a3c;
 }
 
+/* --------------------------------------------------------------- saved banner variant (error) */
+.saved-banner--error {
+  background: #fff5f5;
+  border-color: #f1a9a0;
+  color: #a10d19;
+}
+
 /* --------------------------------------------------------------- meeting prep */
 .mp-add-form { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
 .mp-select { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }

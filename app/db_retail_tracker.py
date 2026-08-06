@@ -134,11 +134,27 @@ def init_schema(db_path: Path) -> None:
             "ALTER TABLE retail_requirements ADD COLUMN source TEXT NOT NULL DEFAULT 'excel'",
             # why a payment method was kicked out (active=0) [USER 2026-07-09]
             "ALTER TABLE country_payment_methods ADD COLUMN inactive_reason TEXT",
+            # voucher tender type code [USER 2026-08-06] — card is always
+            # ZPSP (derived at display time, never stored here); this
+            # column only ever holds a value for voucher/unknown rows
+            "ALTER TABLE country_payment_methods ADD COLUMN tender_type_code TEXT",
+            # 'excel' rows belong to the importer (pruned on re-import,
+            # taken over on re-match); 'manual' rows are user-authored
+            # voucher lines the Excel tab was missing [USER 2026-08-06]
+            "ALTER TABLE country_payment_methods ADD COLUMN origin TEXT NOT NULL DEFAULT 'excel'",
         ):
             try:
                 conn.execute(ddl)
             except sqlite3.OperationalError:
                 pass  # already exists
+        # source: free-text provenance [USER 2026-08-06]. Backfilled to
+        # 'Iuliia analysis' ONLY the first time this column is created —
+        # rows added afterwards (Excel or manual) set their own source.
+        try:
+            conn.execute("ALTER TABLE country_payment_methods ADD COLUMN source TEXT")
+            conn.execute("UPDATE country_payment_methods SET source = 'Iuliia analysis'")
+        except sqlite3.OperationalError:
+            pass  # already exists
         conn.commit()
     finally:
         conn.close()
@@ -390,7 +406,10 @@ def get_targets_by_requirement(conn: sqlite3.Connection) -> dict[int, list[str]]
 
 def upsert_cpm_rows(conn: sqlite3.Connection, rows: list[dict]) -> dict:
     """Upsert by (country, method_name). A manually set category is never
-    overwritten with NULL by a re-run (the Excel's category cells are messy)."""
+    overwritten with NULL by a re-run (the Excel's category cells are messy).
+    A row that was added manually and now also appears in the Excel is
+    taken over by the import [USER 2026-08-06]: origin flips to 'excel',
+    but the user's source and tender_type_code are left untouched."""
     inserted = updated = 0
     now = _now()
     with conn:
@@ -412,8 +431,8 @@ def upsert_cpm_rows(conn: sqlite3.Connection, rows: list[dict]) -> dict:
             else:
                 keep_cat = existing[1] if r["category"] is None else r["category"]
                 conn.execute(
-                    "UPDATE country_payment_methods SET category=?, excel_row=?, comment=?"
-                    " WHERE id=?",
+                    "UPDATE country_payment_methods SET category=?, excel_row=?,"
+                    " comment=?, origin='excel' WHERE id=?",
                     (keep_cat, r["excel_row"], r["comment"], existing[0]),
                 )
                 updated += 1
@@ -467,9 +486,12 @@ def cpm_counts(conn: sqlite3.Connection) -> dict:
 def delete_cpm_not_in(conn: sqlite3.Connection,
                       keys: set[tuple[str, str]]) -> int:
     """Remove tab-4 rows no longer in the parse (e.g. the excluded 'Offline
-    Transactions' rows). Their overrides go too. Returns # removed."""
+    Transactions' rows). Their overrides go too. Manual rows (the Excel tab
+    was incomplete [USER 2026-08-06]) are user-authored and never pruned.
+    Returns # removed."""
     stale = [row[0] for row in conn.execute(
-                 "SELECT id, country, method_name FROM country_payment_methods")
+                 "SELECT id, country, method_name FROM country_payment_methods"
+                 " WHERE origin != 'manual'")
              if (row[1], row[2]) not in keys]
     with conn:
         for cpm_id in stale:
@@ -490,6 +512,47 @@ def set_cpm_user_comment(conn: sqlite3.Connection, cpm_id: int,
     with conn:
         conn.execute("UPDATE country_payment_methods SET user_comment=? WHERE id=?",
                      (user_comment or None, cpm_id))
+
+
+def set_cpm_tender_code(conn: sqlite3.Connection, cpm_id: int,
+                        tender_type_code: str | None) -> None:
+    """Voucher tender type code [USER 2026-08-06] — card's ZPSP is fixed
+    and rendered by the template, never stored here."""
+    with conn:
+        conn.execute("UPDATE country_payment_methods SET tender_type_code=? WHERE id=?",
+                     (tender_type_code or None, cpm_id))
+
+
+def set_cpm_source(conn: sqlite3.Connection, cpm_id: int,
+                   source: str | None) -> None:
+    with conn:
+        conn.execute("UPDATE country_payment_methods SET source=? WHERE id=?",
+                     (source or None, cpm_id))
+
+
+def add_cpm_manual(conn: sqlite3.Connection, country: str, method_name: str,
+                   category: str | None, tender_type_code: str | None,
+                   source: str) -> int:
+    """User-authored payment-method line [USER 2026-08-06] — the Excel
+    tab-4 turned out incomplete. origin='manual' keeps it out of the
+    importer's prune; if the Excel later grows this same (country,
+    method_name), upsert_cpm_rows takes it over (origin flips to 'excel',
+    source/tender_type_code survive). Raises ValueError on a duplicate
+    (country, method_name) — the UNIQUE constraint's business meaning."""
+    existing = conn.execute(
+        "SELECT id FROM country_payment_methods WHERE country=? AND method_name=?",
+        (country, method_name)).fetchone()
+    if existing is not None:
+        raise ValueError(f'"{method_name}" already exists for {country}')
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO country_payment_methods"
+            " (country, method_name, category, active, tender_type_code,"
+            " source, origin, created_at)"
+            " VALUES (?,?,?,1,?,?,'manual',?)",
+            (country, method_name, category or None, tender_type_code or None,
+             source, _now()))
+    return cur.lastrowid
 
 
 def set_cpm_check(conn: sqlite3.Connection, cpm_id: int, test_kind: str,

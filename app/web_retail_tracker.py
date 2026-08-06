@@ -441,3 +441,51 @@ def tracker_cpm_comment(cpm_id: int):
     finally:
         conn.close()
     return jsonify({"ok": True})
+
+
+@bp.route("/payment-methods/<int:cpm_id>/tender-code", methods=["POST"])
+def tracker_cpm_tender_code(cpm_id: int):
+    """Voucher tender type code [USER 2026-08-06] — card's ZPSP is fixed
+    in the template and never reaches this route."""
+    conn = _get_conn()
+    try:
+        db.set_cpm_tender_code(conn, cpm_id,
+                               request.form.get("tender_type_code", "").strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/payment-methods/<int:cpm_id>/source", methods=["POST"])
+def tracker_cpm_source(cpm_id: int):
+    conn = _get_conn()
+    try:
+        db.set_cpm_source(conn, cpm_id,
+                          request.form.get("source", "").strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/payment-methods/add", methods=["POST"])
+def tracker_cpm_add():
+    """Manual voucher (or card) line [USER 2026-08-06] — the Excel tab-4
+    turned out incomplete. Source is required for a manually added row so
+    provenance is never ambiguous."""
+    country = request.form.get("country", "").strip()
+    method_name = request.form.get("method_name", "").strip()
+    category = request.form.get("category", "").strip() or None
+    if category not in (None, "card", "voucher"):
+        category = None
+    tender_type_code = request.form.get("tender_type_code", "").strip() or None
+    source = request.form.get("source", "").strip()
+    if not (country and method_name and source):
+        return redirect(url_for("retail_tracker.tracker_payment_methods") + "?cpmerr=missing")
+    conn = _get_conn()
+    try:
+        db.add_cpm_manual(conn, country, method_name, category, tender_type_code, source)
+    except ValueError:
+        return redirect(url_for("retail_tracker.tracker_payment_methods") + "?cpmerr=dup")
+    finally:
+        conn.close()
+    return redirect(url_for("retail_tracker.tracker_payment_methods") + "?cpmadded=1")

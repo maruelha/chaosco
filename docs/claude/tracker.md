@@ -45,8 +45,16 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   shown on the board with live per-country passes + inline comment
 - `requirement_country_targets` — named specific-country targets
 - `country_payment_methods` — tab-4 matrix + user_comment;
-  `tracker_tab4_tests` — the four fixed tests; `cpm_checks` — manual
-  per-method confirmations; `tracker_missing_tests` — red alarm list
+  `tender_type_code` (voucher/unknown only — card is ZPSP, derived at
+  display time, never stored), `source` (free-text provenance, backfilled
+  to "Iuliia analysis" once when the column was created), `origin`
+  ('excel' | 'manual' [USER 2026-08-06] — the Excel tab-4 turned out
+  incomplete; manual rows are user-authored voucher/card lines the
+  importer never prunes; if the Excel later grows the same country +
+  method, the import takes it over — origin flips to 'excel', source and
+  tender_type_code survive); `tracker_tab4_tests` — the four fixed tests;
+  `cpm_checks` — manual per-method confirmations; `tracker_missing_tests`
+  — red alarm list
 
 ## Screens
 
@@ -82,7 +90,17 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   section is split into TWO lists [USER 2026-07-23]: "Not able to test in
   testenvironment" (reason matched via `_kickout_env_blocked`, letters-only
   so spacing/case variants hit; kick-out prompt is prefilled with the
-  phrase) and "Other reasons"
+  phrase) and "Other reasons". **Tender type code + Source columns +
+  manual add [USER 2026-08-06]:** card rows show fixed non-editable
+  "ZPSP"; voucher/unknown rows get an inline-editable tender type code
+  (`POST .../tender-code`). Source is inline-editable on every row
+  (`POST .../source`). "➕ Add payment method" dialog
+  (`POST /payment-methods/add`, `add_cpm_manual`) creates a manual line
+  for a country + method the Excel was missing — country/method/source
+  required, source required so provenance is never ambiguous; rejects a
+  duplicate (country, method) with a red banner. Manually added rows show
+  a gray "manual" pill next to the method name and behave like any other
+  row everywhere else (counting, checks, kick-out, comment).
 - Import & admin `/retail-tracker/` — re-runnable import, add-requirement
   form (manual rows, born unresolved), unresolved-test manual picks + "→
   Clarify" per row + free-text "⏳ Expect" input [USER 2026-07-11]: link a
