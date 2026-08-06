@@ -233,8 +233,8 @@
   </div>
   <div class="result-row">
     <span class="result-label">Skipped</span>
-    <span class="result-value">{{ m.skipped_blank_key }} incomplete key (test case + country)
-      {% if m.skipped_duplicate %} · <span class="pill pill--red">{{ m.skipped_duplicate }} duplicate test case+country in file</span> — data defect in the Excel, see skip log{% else %} · 0 duplicates{% endif %}</span>
+    <span class="result-value">{{ m.skipped_blank_key }} incomplete key ({{ m.key_label }})
+      {% if m.skipped_duplicate %} · <span class="pill pill--red">{{ m.skipped_duplicate }} duplicate {{ m.key_label }} in file</span> — data defect in the Excel, see skip log{% else %} · 0 duplicates{% endif %}</span>
   </div>
   <div class="result-row">
     <span class="result-label">Skip log</span>

@@ -7,9 +7,12 @@ one shared parse routine. NOTE: the workbook also still contains two older
 EMPTY stub tabs WITHOUT the pipe in the name ("Manual Test Cases Retail") —
 the sheet names below deliberately target the pipe versions only.
 
-Match key for BOTH verticals = test case + country (like Retail). The ECOM
-tab's Jira ID column is stored as a plain field — it is blank in the real
-data, so it cannot carry the match (unlike the ECOM board).
+Match key per vertical (db.manual_tests.KEY_FIELDS): Retail = test case +
+country (like the Retail tab); ECOM = the Testcase Scenario alone
+[USER 2026-08-06] — the tab repeats test case + country per partner shop
+and the scenario column differentiates. The ECOM tab's Jira ID column is
+stored as a plain field — it is blank in the real data, so it cannot carry
+the match (unlike the ECOM board).
 
 Usage:
     python -m app.manual_importer            # parses both tabs, prints rows
@@ -24,6 +27,7 @@ from pathlib import Path
 import pandas as pd
 
 from app.config_loader import load_config
+from app.db.manual_tests import KEY_FIELDS
 from app.read_defects import ParseError, _clean, _find_latest_xlsx, _normalise_header
 
 # ---------------------------------------------------------------------------
@@ -178,7 +182,7 @@ def parse_manual(cfg: dict, vertical: str, xlsx_path: Path | None = None) -> dic
         if all(row[f] == "" for f in fields):
             continue  # fully blank — ignore silently
 
-        has_key = bool(row.get("test_case_id")) and bool(row.get("country"))
+        has_key = all(row.get(f) for f in KEY_FIELDS[vertical])
         row["_skip_reason"] = "" if has_key else "incomplete key"
         rows.append(row)
 

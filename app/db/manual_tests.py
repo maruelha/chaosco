@@ -2,8 +2,12 @@
 
 One module, two tables (each Excel tab keeps its own table per architecture
 rule 1; the code path is shared, the table name is the parameter). Match key
-for BOTH = lower(test_case_id) || '||' || lower(country), like Retail — the
-ECOM tab's jira_id is a plain imported field, blank in the real data.
+per vertical (KEY_FIELDS): manual_retail = lower(test_case_id) || '||' ||
+lower(country), like Retail; manual_ecom = the Testcase Scenario ALONE
+[USER 2026-08-06] — the tab repeats the same test case + country once per
+partner shop, and the scenario column is the workbook's own uniqueness
+column. The ECOM tab's jira_id is a plain imported field, blank in the
+real data.
 
 No annotations tables yet — the list pages are read-only + notes (generic
 notes table, entity types 'manual_retail' / 'manual_ecom').
@@ -39,6 +43,21 @@ FIELDS: dict[str, list[str]] = {
 
 TABLES = tuple(FIELDS)
 
+# Match-key fields per vertical [USER 2026-08-06]. manual_ecom deliberately
+# keys on ONE column (scenario) — one edited column can break row identity,
+# three can; the scenario carries the country/partner in its text and is
+# unique per row in the real workbook (verified against ROE(49), 179/179).
+KEY_FIELDS: dict[str, list[str]] = {
+    "manual_retail": ["test_case_id", "country"],
+    "manual_ecom":   ["testcase_scenario"],
+}
+
+# Human wording for skiplog reasons + the import screen.
+KEY_LABEL: dict[str, str] = {
+    "manual_retail": "test case+country",
+    "manual_ecom":   "scenario",
+}
+
 
 def _check_vertical(vertical: str) -> None:
     if vertical not in FIELDS:
@@ -66,27 +85,36 @@ def init_schema(db_path: Path) -> None:
                         last_seen TEXT
                     )
                 """)
+            # Migration [USER 2026-08-06]: manual_ecom moved from a
+            # test case||country key to scenario-only, and the workbook's
+            # scenario texts were rewritten at the same time — old rows can
+            # never match again, so they are dropped once ('||' only occurs
+            # in old-format keys) and the next import re-fills the table.
+            # No user-authored data lives here. Idempotent.
+            conn.execute("DELETE FROM manual_ecom WHERE match_key LIKE '%||%'")
     finally:
         conn.close()
 
 
-def _match_key(test_case_id: str, country: str) -> str:
+def _match_key(vertical: str, row: dict) -> str:
     return "||".join(
-        re.sub(r"\s+", " ", str(p or "")).strip().lower()
-        for p in (test_case_id, country)
+        re.sub(r"\s+", " ", str(row.get(f, "") or "")).strip().lower()
+        for f in KEY_FIELDS[vertical]
     )
 
 
 def upsert_manual_rows(conn: sqlite3.Connection, vertical: str,
                        rows: list[dict], today: str) -> dict:
-    """Match-key upsert. Never deletes. Returns counts + skipped rows.
+    """Match-key upsert (KEY_FIELDS per vertical). Never deletes. Returns
+    counts + skipped rows.
 
-    ONE line per test case + country [USER 2026-08-05]: the real ECOM tab
-    repeats CDI0000MU34 up to 7x per country as identical rows — Marina
-    judged that a data DEFECT in the workbook (to be clarified with the
-    team). The first occurrence wins; further occurrences within the same
-    file go to the skiplog (reason "duplicate test case+country in file")
-    and are counted as skipped_duplicate on the import screen.
+    ONE line per match key: rows repeating the key within the same file are
+    a data DEFECT in the workbook. The first occurrence wins; further
+    occurrences go to the skiplog (reason "duplicate <key label> in file")
+    and are counted as skipped_duplicate on the import screen. History:
+    the 2026-08-05 CDI0000MU34 repeats turned out to be per-partner rows —
+    since 2026-08-06 the scenario column differentiates them and carries
+    the manual_ecom key on its own.
     """
     _check_vertical(vertical)
     fields = FIELDS[vertical]
@@ -122,12 +150,11 @@ def upsert_manual_rows(conn: sqlite3.Connection, vertical: str,
                 skipped_rows.append({**row, "reason": row["_skip_reason"]})
                 continue
 
-            mk = _match_key(row.get("test_case_id", "") or "",
-                            row.get("country", "") or "")
+            mk = _match_key(vertical, row)
             if mk in seen_this_file:
                 n_duplicate += 1
                 skipped_rows.append(
-                    {**row, "reason": "duplicate test case+country in file"})
+                    {**row, "reason": f"duplicate {KEY_LABEL[vertical]} in file"})
                 continue
             seen_this_file.add(mk)
             is_new = mk not in existing_keys

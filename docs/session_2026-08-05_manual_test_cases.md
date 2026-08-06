@@ -252,6 +252,26 @@ Gatekeeper order numbers actually live.
   -1258, -1230, conditionally passed without reason).
 - Tests: `tests/test_import_data_checks.py`; suite 314 green.
 
+## Follow-up 2026-08-06 — MU34 "duplicates" resolved: scenario-only key
+
+The team's answer on the repeated CDI0000MU34 rows: they are INTENTIONAL —
+one row per partner shop. A colleague filled the **Testcase Scenario**
+column as the differentiator (rewriting ALL scenario texts, e.g.
+"Settlement File Validation Zalando" → "ALLL.AT_ Zalando"). Verified
+against ROE(49): 179 rows, scenario unique per row on its own; the
+"FInland" typo is also fixed there.
+
+Marina's decision: **manual_ecom keys on the scenario ALONE** (one column
+that can break row identity instead of three); manual_retail stays on
+test case + country, untouched. Implemented as `KEY_FIELDS`/`KEY_LABEL`
+per vertical in `app/db/manual_tests.py` + a one-time idempotent
+migration in `init_schema` that deletes old-format `manual_ecom` keys
+(they contain `||`; the rewritten scenario texts could never match
+again). Expect on first restart + import: manual ECOM board briefly
+empty, then 179 inserted, duplicate counter 0. Import-screen wording is
+now key-label-driven ("duplicate scenario in file"). Tests: suite 317
+green (3 net-new in `test_manual_importer.py` incl. the migration).
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

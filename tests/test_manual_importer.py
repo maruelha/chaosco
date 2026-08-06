@@ -1,8 +1,10 @@
 """Manual Test Cases importers — Excel fixture in, exact DB rows out.
 
 The rules a bug would silently break:
-- both tabs match by test_case + country (Retail rule — the ECOM tab's
-  Jira ID is blank in the real data and must NOT carry the match)
+- match key per vertical: manual_retail = test_case + country (Retail
+  rule), manual_ecom = the Testcase Scenario ALONE [USER 2026-08-06] —
+  the ECOM tab repeats test case + country per partner shop, and its
+  Jira ID is blank in the real data and must NOT carry the match
 - real header quirks still map: trailing newlines, newline mid-header,
   space before '/', blank header columns (pandas "Unnamed: N"), the bare
   duplicate "Order number" column on the Retail tab
@@ -122,15 +124,88 @@ def test_parse_ecom_maps_real_headers(tmp_path):
     assert row["execution_started"] == ""                    # "date execution started"
 
 
-def test_ecom_blank_jira_id_is_fine_key_is_tc_plus_country(tmp_path, db_path):
+def test_ecom_blank_jira_id_is_fine_key_is_scenario(tmp_path, db_path):
     conn = database.get_connection(db_path)
     try:
         xlsx = _wb(tmp_path / "t.xlsx", ECOM_SHEET, ECOM_HEADER, [
-            _ecom_row(country="Austria"), _ecom_row(country="Belgium")])
+            _ecom_row(country="Austria", scenario="ALLL.AT_ Zalando"),
+            _ecom_row(country="Belgium", scenario="ALLL.BE_ Zalando")])
         r = db_manual.upsert_manual_rows(
             conn, "manual_ecom",
             parse_manual({}, "manual_ecom", xlsx_path=xlsx)["rows"], "2026-08-05")
         assert (r["inserted"], r["updated"], r["skipped_blank_key"]) == (2, 0, 0)
+    finally:
+        conn.close()
+
+
+def test_ecom_same_tc_country_different_scenarios_all_import(tmp_path, db_path):
+    """The 2026-08-06 fix: the real tab repeats CDI0000MU34 within one
+    country once per partner shop — the scenario column differentiates,
+    so all rows import (no more duplicate skiplogging)."""
+    conn = database.get_connection(db_path)
+    try:
+        xlsx = _wb(tmp_path / "t.xlsx", ECOM_SHEET, ECOM_HEADER, [
+            _ecom_row(tc="CDI0000MU34", country="Austria",
+                      scenario="ALLL.AT_ Zalando"),
+            _ecom_row(tc="CDI0000MU34", country="Austria",
+                      scenario="ALLL.AT_ Best Secret"),
+            _ecom_row(tc="CDI0000MU34", country="Austria",
+                      scenario="ALLL.AT_ Otto"),
+        ])
+        r = db_manual.upsert_manual_rows(
+            conn, "manual_ecom",
+            parse_manual({}, "manual_ecom", xlsx_path=xlsx)["rows"], "2026-08-06")
+        assert (r["inserted"], r["skipped_duplicate"]) == (3, 0)
+        assert len(db_manual.get_manual_rows(conn, "manual_ecom")) == 3
+    finally:
+        conn.close()
+
+
+def test_ecom_blank_scenario_is_incomplete_key(tmp_path, db_path):
+    """Scenario carries the manual_ecom key on its own — a blank one goes
+    to the skiplog, never inserted (Retail is unaffected: its key check
+    stays test case + country, covered elsewhere)."""
+    conn = database.get_connection(db_path)
+    try:
+        xlsx = _wb(tmp_path / "t.xlsx", ECOM_SHEET, ECOM_HEADER,
+                   [_ecom_row(scenario="")])
+        r = db_manual.upsert_manual_rows(
+            conn, "manual_ecom",
+            parse_manual({}, "manual_ecom", xlsx_path=xlsx)["rows"], "2026-08-06")
+        assert r["skipped_blank_key"] == 1
+        assert r["skipped_rows"][0]["reason"] == "incomplete key"
+        assert db_manual.get_manual_rows(conn, "manual_ecom") == []
+    finally:
+        conn.close()
+
+
+def test_migration_drops_old_format_ecom_keys_keeps_retail(tmp_path, db_path):
+    """init_schema drops manual_ecom rows still keyed test case||country
+    (the scenario texts were rewritten in the workbook, so those rows can
+    never match again). manual_retail keys legitimately contain '||' and
+    must survive. Idempotent."""
+    conn = database.get_connection(db_path)
+    try:
+        xr = _wb(tmp_path / "r.xlsx", RETAIL_SHEET, RETAIL_HEADER,
+                 [_retail_row()])
+        db_manual.upsert_manual_rows(
+            conn, "manual_retail",
+            parse_manual({}, "manual_retail", xlsx_path=xr)["rows"], "2026-08-05")
+        conn.execute(
+            "INSERT INTO manual_ecom (test_case_id, country, match_key,"
+            " first_seen, last_seen) VALUES (?,?,?,?,?)",
+            ("CDI0000MU34", "Austria", "cdi0000mu34||austria",
+             "2026-08-05", "2026-08-05"))
+        conn.commit()
+    finally:
+        conn.close()
+
+    db_manual.init_schema(db_path)
+
+    conn = database.get_connection(db_path)
+    try:
+        assert db_manual.get_manual_rows(conn, "manual_ecom") == []
+        assert len(db_manual.get_manual_rows(conn, "manual_retail")) == 1
     finally:
         conn.close()
 
@@ -196,10 +271,11 @@ def test_same_tc_and_country_may_live_in_both_tables(tmp_path, db_path):
         conn.close()
 
 
-def test_duplicate_tc_country_rows_skip_to_skiplog_one_line_wins(tmp_path, db_path):
-    """ONE line per test case + country [USER 2026-08-05]: the real ECOM tab
-    repeats CDI0000MU34 within a country — judged a data DEFECT in the
-    workbook. First occurrence wins; the rest are counted + skiplogged."""
+def test_duplicate_key_rows_skip_to_skiplog_one_line_wins(tmp_path, db_path):
+    """ONE line per match key: rows repeating the key within a file are a
+    data DEFECT in the workbook. First occurrence wins; the rest are
+    counted + skiplogged. For manual_ecom the key is the scenario
+    [USER 2026-08-06]."""
     conn = database.get_connection(db_path)
     try:
         rows3 = [_ecom_row(tc="CDI0000MU34", country="Austria",
@@ -209,7 +285,7 @@ def test_duplicate_tc_country_rows_skip_to_skiplog_one_line_wins(tmp_path, db_pa
             conn, "manual_ecom",
             parse_manual({}, "manual_ecom", xlsx_path=xlsx1)["rows"], "2026-08-05")
         assert (r1["inserted"], r1["updated"], r1["skipped_duplicate"]) == (1, 0, 2)
-        assert r1["skipped_rows"][0]["reason"] == "duplicate test case+country in file"
+        assert r1["skipped_rows"][0]["reason"] == "duplicate scenario in file"
 
         # re-import: still one row, duplicates still skipped, no growth
         xlsx2 = _wb(tmp_path / "v2.xlsx", ECOM_SHEET, ECOM_HEADER, rows3)

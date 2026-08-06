@@ -1325,16 +1325,16 @@
     <div class="table-card-header">
       <span class="tname">manual_ecom</span>
       <span class="badge badge-imported">Imported</span>
-      <span class="tdesc">Rows from the "Manual Test Cases | ECOM" tab. SAME match key as manual_retail (test case + country, ONE line each [USER 2026-08-05]) — the tab's Jira ID column is blank in the real data, so unlike the ECOM board it can NOT carry the match; jira_id is stored as a plain field. The real tab repeats CDI0000MU34 ("Settlement File Validation") up to 7× per country as identical rows — judged a DATA DEFECT in the workbook (Marina clarifies with the team); the repeats are skipped to the skiplog and counted red on the import screen (116 rows imported of 179).</span>
+      <span class="tdesc">Rows from the "Manual Test Cases | ECOM" tab. Match key = the Testcase Scenario ALONE [USER 2026-08-06] — the tab repeats the same test case + country once per partner shop, and the scenario column is the differentiator (e.g. "ALLL.AT_ Zalando"; unique per row in ROE(49), 179/179). One deliberately narrow key: only one editable column can break row identity. The tab's Jira ID column is blank in the real data, so unlike the ECOM board it can NOT carry the match; jira_id is stored as a plain field. In-file repeats of the key stay skiplogged + counted red on the import screen. Migration 2026-08-06 (init_schema, idempotent): rows still keyed test case||country are deleted — the workbook's scenario texts were rewritten at the same time, so old rows could never match again; the next import re-fills the table.</span>
     </div>
     <table>
       <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td class="col-name">manual_ecom_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part ("Test Case ID" column)</td></tr>
-        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">Match-key part</td></tr>
+        <tr><td class="col-name">test_case_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Test Case ID" column — NOT the match key since 2026-08-06</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">NOT the match key since 2026-08-06</td></tr>
         <tr><td class="col-name">testcase_name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
-        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">Mostly per-partner Settlement File Validation</td></tr>
+        <tr><td class="col-name">testcase_scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">THE match key [USER 2026-08-06] — per-partner strings like "ALLL.AT_ Zalando"; blank scenario = incomplete key (skiplog)</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Report input — same buckets as Retail (status_mappings.yaml)</td></tr>
         <tr><td class="col-name">assigned_to</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">jira_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Plain imported field — blank in the real data, NOT the match key</td></tr>
@@ -1351,7 +1351,7 @@
         <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">"comments" column</td></tr>
         <tr><td class="col-name">reason_for_pass_with_reservation</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
-        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(tc)||'||'||lower(country) — the upsert key; first in-file occurrence wins</td></tr>
+        <tr><td class="col-name">match_key</td><td class="col-type">TEXT</td><td><span class="tag tag-uq">UNIQUE</span></td><td class="note-text">lower(testcase_scenario) — the upsert key since 2026-08-06 (was tc||country); first in-file occurrence wins</td></tr>
         <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">last_seen</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>

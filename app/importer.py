@@ -156,6 +156,7 @@ def run_import(cfg: dict) -> dict:
             "error": None,
             "inserted": 0, "updated": 0,
             "skipped_blank_key": 0, "skipped_duplicate": 0,
+            "key_label": db_manual.KEY_LABEL[vertical],
             "skiplog_path": None,
             "data_checks": [],
         }

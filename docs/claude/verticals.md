@@ -18,7 +18,7 @@ driven (`_HEADER_MAP` at the top of each importer, case/whitespace-insensitive).
 | Spillover | "Core South Spillover" | `app/spillover_importer.py` | `app/db/spillover.py` | `spillover` | `spillover_annotations` | `excel_row` (stable) |
 | Retail | "Retail" | `app/retail_importer.py` | `app/db/retail.py` | `retail` | `retail_annotations` | lower(test_case_id) \|\| "\|\|" \|\| lower(country) |
 | Manual Retail | "Manual Test Cases \| Retail" | `app/manual_importer.py` | `app/db/manual_tests.py` | `manual_retail` | — (none yet) | like Retail — ONE line per tc+country |
-| Manual ECOM | "Manual Test Cases \| ECOM" | `app/manual_importer.py` | `app/db/manual_tests.py` | `manual_ecom` | — (none yet) | like Retail — NOT jira_id (blank in the data) |
+| Manual ECOM | "Manual Test Cases \| ECOM" | `app/manual_importer.py` | `app/db/manual_tests.py` | `manual_ecom` | — (none yet) | lower(testcase_scenario) ALONE [USER 2026-08-06] — NOT jira_id (blank in the data) |
 
 **Header aliases.** A header may appear under more than one spelling across
 workbook versions — map both to the same field. Retail's `testcase_name`
@@ -145,14 +145,20 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   tabs WITHOUT the pipe, which must stay ignored.
 - Tab shapes: `| Retail` ≈ Retail tab + `store_no`/`sales_status` (+ a bare
   duplicate "Order number" column, deliberately unmapped); `| ECOM` ≈ ECOM
-  tab (`jira_id`, `description_change`) but jira_id is BLANK in the data —
-  so BOTH verticals match by test case + country like Retail. **ONE line
-  per tc+country [USER 2026-08-05]**: the real ECOM tab repeats CDI0000MU34
-  ("Settlement File Validation") up to 7× per country as fully identical
-  rows — Marina judged that a DATA DEFECT in the workbook (she clarifies
-  with the team). First occurrence wins; further in-file occurrences go to
-  the skiplog ("duplicate test case+country in file") and show as a red
-  count on the import screen (real data: 116 of 179 ECOM rows imported).
+  tab (`jira_id`, `description_change`) but jira_id is BLANK in the data.
+  **Match key per vertical** (`db.manual_tests.KEY_FIELDS`): Retail =
+  test case + country like the Retail tab; **ECOM = the Testcase Scenario
+  ALONE [USER 2026-08-06]** — the tab repeats the same tc+country once per
+  partner shop (the 2026-08-05 CDI0000MU34 "duplicates" were per-partner
+  rows; the team then filled the scenario column as the differentiator,
+  e.g. "ALLL.AT_ Zalando", unique per row in ROE(49): 179/179). One
+  deliberately narrow key = only one editable column can break row
+  identity. ONE line per key stays enforced: in-file repeats go to the
+  skiplog ("duplicate scenario in file" / "duplicate test case+country in
+  file") and show as a red count on the import screen. Migration
+  2026-08-06 in `init_schema`: old-format `manual_ecom` keys (contain
+  `||`) are deleted once — the scenario texts were rewritten in the
+  workbook, so those rows could never match again; next import re-fills.
 - Blank Excel header cells (pandas "Unnamed: N") are ignored, not
   "unmapped". `imports.manual_retail` / `imports.manual_ecom` in
   settings.yaml — REMEMBER: a local `imports:` override replaces the whole
