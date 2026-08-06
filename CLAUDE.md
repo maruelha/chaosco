@@ -3,7 +3,10 @@
 Marina's personal UAT coordination toolkit for a retail SAP S/4 migration.
 Reads a shared Excel workbook (`DTC_UAT_testtracking_ROE.xlsx`), serves a local
 Flask UI at `http://127.0.0.1:8010`. Four workstreams: Retail, Core South,
-ECOM, Omni. **Start:** `run_web.bat` (or `python -m app.web`).
+ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
+`.venv`, gitignored). Since 2026-08-06 prefer the venv for everything:
+`.venv\Scripts\python -m app.web` / `.venv\Scripts\python -m pytest`
+(fall back to global `python` only if `.venv` doesn't exist yet).
 
 ## Deep-dive docs (read the one relevant to the task)
 

@@ -551,8 +551,8 @@
   <h2>How to start the app</h2>
   <div class="card">
     <ul>
-      <li><strong>Windows (normal use):</strong> double-click <code>run_web.bat</code> — kills any existing process on port 8010, then starts Flask</li>
-      <li><strong>Command line:</strong> <code>python -m app.web</code> from the project root</li>
+      <li><strong>Windows (normal use):</strong> double-click <code>run_web.bat</code> — creates the project venv (<code>.venv</code>, first run only, gitignored), installs the pinned requirements into it, kills any existing process on port 8010, then starts Flask from the venv (2026-08-06: previously installed into the GLOBAL Python, which could downgrade other apps' packages on every start)</li>
+      <li><strong>Command line:</strong> <code>.venv\Scripts\python -m app.web</code> from the project root (all helper .bat files use the venv too, falling back to global <code>python</code> only if <code>.venv</code> doesn't exist yet)</li>
       <li><strong>URL:</strong> <code>http://127.0.0.1:8010</code></li>
       <li><strong>Database:</strong> auto-created at <code>data/test_coordination.db</code> on first start via <code>database.init_db()</code></li>
     </ul>

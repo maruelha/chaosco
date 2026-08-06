@@ -11,15 +11,19 @@ back to the Excel.
 
 ## Quick start
 
-Double-click **`run_web.bat`** — it installs dependencies, frees port 8010,
-and opens `http://127.0.0.1:8010`.
+Double-click **`run_web.bat`** — it creates the project virtual environment
+(`.venv`, first run only), installs the pinned dependencies into it, frees
+port 8010, and opens `http://127.0.0.1:8010`.
 
 Manually:
 
 ```
-pip install -r requirements.txt
-python -m app.web
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m app.web
 ```
+
+The `.venv` is gitignored — each machine builds its own via the bat file.
 
 ## What's inside
 

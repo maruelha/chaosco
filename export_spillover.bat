@@ -1,3 +1,5 @@
 @echo off
 cd /d "%~dp0"
-python "%~dp0scripts\export_spillover_annotations.py"
+set PY=python
+if exist ".venv\Scripts\python.exe" set PY=.venv\Scripts\python.exe
+%PY% "%~dp0scripts\export_spillover_annotations.py"
