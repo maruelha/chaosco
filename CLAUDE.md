@@ -37,6 +37,13 @@ ECOM, Omni. **Start:** `run_web.bat` (or `python -m app.web`).
 6. **Tests are the safety net:** `python -m pytest` (fast, <5s) must be green
    before any commit. New logic (importers, counting, services) gets tests
    first; UI is verified by eye + the route smoke test.
+7. **Portable SQL [USER 2026-08-06]:** SQLite is a stepping stone — a later
+   move to a hosted Postgres (e.g. Supabase) must stay simple. New or touched
+   SQL must be Postgres-compatible: `ON CONFLICT DO UPDATE/NOTHING` is fine;
+   NO `INSERT OR IGNORE/REPLACE`, NO `COLLATE NOCASE`, never rely on SQLite's
+   case-insensitive `LIKE` (use `LOWER(col) LIKE LOWER(?)`), one datetime
+   format only (`isoformat(timespec="seconds")` — no SQL-side
+   `datetime('now')`, it's UTC while Python writes local time).
 
 ## How to add a new module (the tracker is the reference implementation)
 

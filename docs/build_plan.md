@@ -8,7 +8,7 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-08-05
+Last updated: 2026-08-06
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
@@ -430,3 +430,130 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
 - Generic CRUD repository for the simple entities (links, contacts, todos, …)
   — only worth it when the NEXT simple entity gets added; don't do it for
   elegance alone (review recommendation).
+
+---
+
+## Part 2b — Modular-architecture retrofit (from the 2026-08-06 code review)
+
+> Goal [USER 2026-08-06]: reuse instead of duplication; feature modules run
+> independently around a shared kernel (dashboard + cross-cutting services
+> like order search plug features in via registries, features never import
+> each other); ONE shared look (style.css/_macros/base.html carry the whole
+> UI). End-state test after step 10: unregister one feature in `web.py` →
+> app still boots, its dashboard card / search source / notes entity simply
+> disappear. Steps ordered by value-per-effort; each is shippable alone with
+> the 318-test suite as tripwire. Review details: chat session 2026-08-06.
+
+### Refactoring step 7 — Shared plumbing (kill the 15× duplication)
+
+- ONE `_cfg` + `_get_conn`: every web module imports them from `web_core`
+  (currently re-defined in 15 modules; config exists as 15 copies).
+- `_rows_to_dicts` imported from `db/core` everywhere (verbatim copies live
+  in `db/jira.py`, `db_retail_tracker.py`).
+- Break the circular facade imports: `db/ecom.py`, `db/jira.py`,
+  `db_retail_tracker.py` import `app.database` only for `get_connection` —
+  change to `from app.db.core import get_connection` (3 one-liners).
+- Fix cross-module reach-ins: `web_search.py` imports `web_notes.REGISTRY`
+  + private `_urls` → move the notes registry to a neutral module both can
+  import. `web_reference.py` deferred-imports parsing helpers from
+  `jira_importer` (5 sites) → extract `extract_order_numbers` /
+  `extract_ac_order_pairs` into a pure text-utils module.
+- Replace the `assert` guard in `db/jira.py:94` with a `ValueError`;
+  fix the `database.init_schema` name collision (7 modules export
+  `init_schema`, last star-import wins silently).
+- **Done when:** `_get_conn` is defined exactly once; no web module imports
+  another web module's internals; the facade exports no colliding names.
+
+### Refactoring step 8 — One importer engine
+
+- Generalize `manual_importer`'s `_SPECS` pattern (sheet name, header map,
+  key fields per vertical) into ONE shared parse routine for defects /
+  retail / ecom / spillover / manual (~250 duplicated lines deleted;
+  ecom & spillover currently ~74% verbatim copies of retail).
+- This automatically gives ecom + spillover the header-alias first-wins
+  guard that only retail/manual have today (latent silent-garbage bug).
+- Delete the dead duplicate paths: `spillover_importer.run_spillover_import`
+  + its private skiplog writer; unused `parse_manual_retail/_ecom` wrappers.
+- Guard `_write_skiplog` inside `run_import`'s per-tab try/except so a full
+  disk / bad skiplog folder can't 500 an otherwise-successful import.
+- **Done when:** one parse routine, per-vertical specs only; all importer
+  tests green incl. new alias-guard tests for ecom + spillover.
+
+### Refactoring step 9 — Shared report + annotation toolkit
+
+- ONE `_report_context` / report-download / save-excel helper parameterized
+  by vertical (currently 2–3 near-identical copies across `web_retail`,
+  `web_ecom`, `web_manual_tests`).
+- `gather_attachments` (emailer) checks `resp.status_code` before attaching
+  — today a 500 error page gets mailed to stakeholders as "the report".
+- ONE single-field annotation-save helper (5+ near-identical savers in
+  `web_spillover` / `web_retail`); shared query-flag banner helper for the
+  `saved / note_added / …` blocks re-typed in every detail route.
+- **Done when:** the duplicates are deleted and a broken report page fails
+  the email send loudly instead of attaching the error page.
+
+### Refactoring step 10 — Registries for the cross-cutting services
+
+- Search: `db/search.py`'s hardcoded 7-block function becomes a source
+  registry — each feature registers its search source (SQL + URL builder).
+- Dashboard: card registry — each feature registers its card(s); the home
+  template renders the registry.
+- Email reports: each `REPORT_CHOICES` entry carries its render URL /
+  attachment builder (no hardcoded branch list in `gather_attachments`).
+- Notes: registry entries contributed by feature modules at registration,
+  endpoint strings validated at startup (typos currently fail silently).
+- `base.html` widgets (search 🔍, chats 💬, enhancements) become pluggable
+  includes so a deployment without a feature doesn't carry dead fetches.
+- **Done when:** the end-state test above passes (unregister one feature →
+  everything else keeps working, its entries vanish).
+
+### Refactoring step 11 — Blueprint conversion of the legacy seven
+
+- Convert `web_home/defects/spillover/retail/reports/planning/reference`
+  from flat `@app.route` to Blueprints like the other 15 modules.
+  Endpoint names change → sweep `url_for` in templates + notes registry;
+  route-smoke suite is the tripwire (this was deliberately skipped in
+  step 4 to avoid breaking ~40 templates — do it template-sweep-first now).
+- **Done when:** every feature is a Blueprint; one route pattern app-wide.
+
+### Refactoring step 12 — Schema ownership split
+
+- Move each feature's tables out of `db/core.py`'s 26-table `executescript`
+  into the owning module's `init_schema` (14 newer modules already work this
+  way). `core` keeps only genuinely shared infra (notes/attachments if kept
+  central, connection helper, migration helper).
+- Consolidate the 21 scattered try/except `ALTER TABLE` migrations behind
+  one shared migration helper in `db/core`.
+- **Done when:** "feature = blueprint + storage module + own schema +
+  templates" holds for every feature; a feature's files can be copied into
+  a new app without carrying foreign DDL.
+
+### Refactoring step 13 — Break up `web_reference.py` + UI consistency sweep
+
+- Split the 1,064-line grab-bag: shelf / contacts / links / prod defects /
+  encouragements / learnings / limitations → small feature modules;
+  gatekeeper pages → the jira/gatekeeper vertical; `report_comments` →
+  the shared report toolkit (it is called by exporter + emailer).
+  Also move the 3 raw SQL statements in `web_reference.py` into `db/ecom.py`.
+- Inline-style sweep [USER 2026-08-06: one shared look]: migrate the ~980
+  inline `style="…"` attributes into `style.css` component classes, worst
+  pages first (`inbox.html` 65 · `retail_tracker_board.html` 57 ·
+  `retail_report_diagnostics.html` 52 · `ecom_gatekeeper.html` 51);
+  extract `base.html`'s ~200 lines of inline widget JS into `static/`.
+- **Done when:** no module is a multi-feature grab-bag; the app's look is
+  controlled solely by `style.css` (inline styles ≈ 0).
+
+### Cross-cutting rules (apply during every step above)
+
+- **Portable SQL [USER 2026-08-06, standing]:** new/touched SQL must stay
+  Postgres-compatible — no `INSERT OR IGNORE` (use `ON CONFLICT DO
+  NOTHING`), no `COLLATE NOCASE`, case-insensitive matching via `LOWER()`
+  not SQLite's `LIKE` default, one datetime format
+  (`isoformat(timespec="seconds")`, no SQL-side `datetime('now')` UTC mix).
+  Candidate CLAUDE.md rule — add on Marina's go.
+- **Foreign tables only via the owning db module's functions** — features
+  may share data, never write their own SQL against another feature's
+  tables (also fix the 4 stray statements in `jira_importer.py`).
+- Test hygiene when convenient: a `tests/conftest.py` (tmp DB + config
+  patch before `app.web` import) removes the real-DB touch at import time
+  and the ~30 hand-rolled fixtures.
