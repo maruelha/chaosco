@@ -272,6 +272,18 @@ empty, then 179 inserted, duplicate counter 0. Import-screen wording is
 now key-label-driven ("duplicate scenario in file"). Tests: suite 317
 green (3 net-new in `test_manual_importer.py` incl. the migration).
 
+## Follow-up 2026-08-06 — "Test type" filter on both manual list pages
+
+Both manual list pages get a **Test type** dropdown (All / Settlement
+file related / Other) alongside Status/Country/Scenario — splits by
+whether the test case NAME contains "settlement file"
+(case-insensitive; `db.manual_tests.SETTLEMENT_NAME_MARKER`), independent
+of the scenario column (which for ECOM now carries the per-partner text,
+not the "Settlement File" wording). `get_manual_rows` gained
+`settlement_filter` ("settlement" | "other" | None); the route validates
+the query param, falling back to no filter on anything else. Tests in
+`tests/test_manual_pages.py`; suite 318 green.
+
 ## Notes / watch-outs
 
 - `settings.local.yaml` overrides merge PER TOP-LEVEL KEY: a local

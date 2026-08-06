@@ -75,12 +75,20 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    tickets (AC + comments — the real home of Gatekeeper order numbers)
    and notes incl. inbox. Skipped by decision: manual tabs (no orders),
    topics (unsure), meeting prep (covered indirectly).
-7. **Later / if needed**: notes + annotations (next step / comments) on
+7. ~~Revisit the MU34 "duplicate" rule~~ ✅ DONE 2026-08-06: the team
+   confirmed the repeats are intentional (one row per partner shop); the
+   Testcase Scenario column now differentiates them, so `manual_ecom`
+   keys on the scenario ALONE (`manual_retail` unchanged on tc+country).
+   One-time migration drops old-format `manual_ecom` keys.
+8. ~~"Test type" filter~~ ✅ DONE 2026-08-06: Status/Country/Scenario
+   dropdowns on both manual list pages gained a Test type filter
+   (Settlement file related / Other), matched on the test case NAME
+   ("settlement file", case-insensitive) — independent of the scenario
+   column.
+9. **Later / if needed**: notes + annotations (next step / comments) on
    manual rows · detail pages · ⚠ row validations (conditionally-passed
-   rule) · PPT export · revisit the one-line-per-tc+country rule if the
-   team says the MU34 repeats are intentional · trend chart on the
-   history page · topics as a search source if workpads turn out to hold
-   order numbers.
+   rule) · PPT export · trend chart on the history page · topics as a
+   search source if workpads turn out to hold order numbers.
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 

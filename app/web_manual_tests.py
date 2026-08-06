@@ -47,10 +47,13 @@ def manual_list(stream: str):
         return render_template("404.html", defect_id=stream), 404
     vertical = spec["vertical"]
 
-    sel_status   = request.args.get("status", "")
-    sel_country  = request.args.get("country", "")
-    sel_scenario = request.args.get("scenario", "")
-    search       = request.args.get("search", "").strip()
+    sel_status     = request.args.get("status", "")
+    sel_country    = request.args.get("country", "")
+    sel_scenario   = request.args.get("scenario", "")
+    search         = request.args.get("search", "").strip()
+    sel_settlement = request.args.get("settlement", "")
+    if sel_settlement not in ("settlement", "other"):
+        sel_settlement = ""
 
     conn = _get_conn()
     try:
@@ -60,6 +63,7 @@ def manual_list(stream: str):
             countries=[sel_country] if sel_country else None,
             scenarios=[sel_scenario] if sel_scenario else None,
             search=search or None,
+            settlement_filter=sel_settlement or None,
         )
         options = db_manual.get_manual_filter_options(conn, vertical)
     finally:
@@ -70,6 +74,7 @@ def manual_list(stream: str):
         stream=stream, label=spec["label"], rows=rows, options=options,
         sel_status=sel_status, sel_country=sel_country,
         sel_scenario=sel_scenario, search=search,
+        sel_settlement=sel_settlement,
     )
 
 

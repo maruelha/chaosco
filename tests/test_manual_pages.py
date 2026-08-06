@@ -79,6 +79,32 @@ def test_list_filters(client):
     assert "CDI0000MU02" in html and "CDI0000MU03" not in html
 
 
+def test_settlement_filter_splits_by_test_case_name(client, tmp_path):
+    """[USER 2026-08-06] "Test type" filter: name contains "settlement
+    file" (case-insensitive) vs. not — independent of the scenario column."""
+    conn = database.get_connection(client.db_path)
+    try:
+        rows = [
+            {**_row("CDI0000MZ01", "Sweden"),
+             "testcase_name": "CDI0000MZ01_Settlement File Validation"},
+            {**_row("CDI0000MZ02", "Sweden"),
+             "testcase_name": "CDI0000MZ02_Audit of Store Cash reconciliation"},
+        ]
+        db_manual.upsert_manual_rows(conn, "manual_retail", rows, "2026-08-06")
+        conn.commit()
+    finally:
+        conn.close()
+
+    html = client.get("/manual/retail?settlement=settlement").get_data(as_text=True)
+    assert "CDI0000MZ01" in html and "CDI0000MZ02" not in html
+
+    html = client.get("/manual/retail?settlement=other").get_data(as_text=True)
+    assert "CDI0000MZ02" in html and "CDI0000MZ01" not in html
+
+    html = client.get("/manual/retail?settlement=bogus").get_data(as_text=True)
+    assert "CDI0000MZ01" in html and "CDI0000MZ02" in html  # unknown value -> no filter
+
+
 def test_defects_rule_referenced_and_channel_match(client):
     conn = database.get_connection(client.db_path)
     try:

@@ -807,10 +807,10 @@
       <span class="screen-url">GET /manual/&lt;stream&gt; (stream = retail | ecom)</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Read-only list of one "Manual Test Cases | …" tab (2026-08-05). ONE Blueprint (<code>web_manual_tests.py</code>) serves both streams; unknown streams 404. One line per test case + country — in-file duplicates are skiplogged at import (workbook defect, see MarinaCheckSoon).</p>
+      <p class="screen-desc">Read-only list of one "Manual Test Cases | …" tab (2026-08-05). ONE Blueprint (<code>web_manual_tests.py</code>) serves both streams; unknown streams 404. Match key per vertical: Retail = test case + country; ECOM = Testcase Scenario alone (2026-08-06, the tab repeats test case + country once per partner shop) — in-file duplicates of the key are skiplogged at import (see MarinaCheckSoon history).</p>
       <div class="features">
         <span class="feat-label">Filters</span>
-        <span class="feat-value">Status / Country / Scenario dropdowns + free search (test case, name, defect ref, order number), GET-based with Clear.</span>
+        <span class="feat-value">Status / Country / Scenario / Test type dropdowns + free search (test case, name, defect ref, order number), GET-based with Clear. Test type (added 2026-08-06) splits by whether the test case NAME contains "settlement file" (case-insensitive) — Settlement file related / Other.</span>
         <span class="feat-label">Columns</span>
         <span class="feat-value"># (Excel row) · Test Case · Country · Scenario · Status · Assigned to · Key User (retail) / Jira ID (ecom) · Order # · Defect ID · Execution started · Comment.</span>
         <span class="feat-label">Table source</span>

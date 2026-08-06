@@ -185,6 +185,12 @@ def upsert_manual_rows(conn: sqlite3.Connection, vertical: str,
     }
 
 
+# "Settlement file related" filter [USER 2026-08-06]: split by whether the
+# test case NAME (not scenario) mentions "settlement file" — e.g.
+# "CDI0000MU01_Settlement File Validation" — case-insensitive substring.
+SETTLEMENT_NAME_MARKER = "settlement file"
+
+
 def get_manual_rows(
     conn: sqlite3.Connection,
     vertical: str,
@@ -192,9 +198,12 @@ def get_manual_rows(
     countries: list[str] | None = None,
     scenarios: list[str] | None = None,
     search: str | None = None,
+    settlement_filter: str | None = None,
 ) -> list[dict]:
     """List rows with optional AND-combined filters + free search
-    (test case / name / defect ref / order number)."""
+    (test case / name / defect ref / order number). settlement_filter:
+    "settlement" (name contains "settlement file") | "other" (does not) |
+    None (no filter)."""
     _check_vertical(vertical)
     sql = f"""
         SELECT m.*,
@@ -218,6 +227,12 @@ def get_manual_rows(
         sql += (" AND (m.test_case_id LIKE ? OR m.testcase_name LIKE ?"
                 " OR m.defect_id_ref LIKE ? OR m.order_number LIKE ?)")
         params.extend([f"%{search}%"] * 4)
+    if settlement_filter == "settlement":
+        sql += " AND LOWER(COALESCE(m.testcase_name, '')) LIKE ?"
+        params.append(f"%{SETTLEMENT_NAME_MARKER}%")
+    elif settlement_filter == "other":
+        sql += " AND LOWER(COALESCE(m.testcase_name, '')) NOT LIKE ?"
+        params.append(f"%{SETTLEMENT_NAME_MARKER}%")
 
     sql += " ORDER BY m.excel_row"
     return _rows_to_dicts(conn.execute(sql, params))

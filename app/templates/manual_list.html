@@ -43,6 +43,14 @@
     </select>
   </div>
   <div class="filter-group">
+    <label for="f-settlement">Test type</label>
+    <select id="f-settlement" name="settlement">
+      <option value="">All</option>
+      <option value="settlement" {% if sel_settlement == "settlement" %}selected{% endif %}>Settlement file related</option>
+      <option value="other" {% if sel_settlement == "other" %}selected{% endif %}>Other</option>
+    </select>
+  </div>
+  <div class="filter-group">
     <label for="f-search">Search</label>
     <input type="text" id="f-search" name="search" value="{{ search }}" class="filter-input"
            placeholder="test case / name / defect / order…">
@@ -51,7 +59,7 @@
     <label>&nbsp;</label>
     <button type="submit" class="btn btn-primary">Filter</button>
   </div>
-  {% if sel_status or sel_country or sel_scenario or search %}
+  {% if sel_status or sel_country or sel_scenario or search or sel_settlement %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('manual_tests.manual_list', stream=stream) }}" class="btn">Clear</a>
