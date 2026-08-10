@@ -33,6 +33,8 @@ def dashboard():
         tracker_unresolved = db_retail_tracker.requirement_counts(conn)["unresolved"]
         active_topics     = database.count_active_topics(conn)
         prod_defect_count = len(database.list_known_prod_defects(conn))
+        from app.db import retrofits as db_retrofits
+        retrofit_count    = db_retrofits.retrofit_counts(conn)["total"]
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
@@ -42,6 +44,7 @@ def dashboard():
                            tracker_unresolved=tracker_unresolved,
                            active_topics=active_topics,
                            prod_defect_count=prod_defect_count,
+                           retrofit_count=retrofit_count,
                            backup_info=last_backup(_cfg))
 
 

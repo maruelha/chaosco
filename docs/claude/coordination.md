@@ -101,13 +101,35 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 `promises` (planned) = what Marina promised OTHERS. Do not consolidate.
 
 
-- `meeting_prep` — per-meeting agenda topics; overall_topic ordering; agenda
-  export `/meeting-prep/agenda`; DTC O2C Daily agenda
-  `/meeting-prep/dtco2c-daily` (planned topics + daily-flagged defects +
-  DTC O2C followups); source_entity link badges
+- `meeting_prep` — per-meeting agenda topics; overall_topic ordering;
+  source_entity link badges. Three reports [USER 2026-08-10 for the first
+  two]:
+  - `/meeting-prep/agenda?meeting=…` — plain sorted topic list, NO defects
+    and NO follow-ups. Offered per meeting type (block under the page
+    header) and for the current filter.
+  - `/meeting-prep/worksheet?meeting=…` — same list plus a comment box per
+    topic. Self-contained on purpose (no external fonts/fetches): saves the
+    comments to JSON, loads them back (match by topic id, fall back to
+    topic text) and downloads the page WITH the typed comments (textarea
+    values are copied into the clone's text content first, else they are
+    lost). Same per-meeting availability.
+  - `/meeting-prep/dtco2c-daily` — the full DTC O2C version: planned topics
+    + daily-flagged defects + DTC O2C followups.
+  All three (and the clipboard copy) use **bullets, never numbering**
+  [USER 2026-08-10].
 - `todos`, `followups` (lightweight per-person chase list + detail page),
   `cs_followups` (richer, CS sign-off), `enhancements` (global floating
   panel on every page + `/enhancements/page`)
+- `retrofits` [USER 2026-08-10] — coming system changes per channel
+  (ECOM | Retail), status Confirmed | Potential ("might still come"),
+  optional `topic_id` link for the background. Own module
+  `app/db/retrofits.py` + Blueprint `app/web_retrofits.py` (`/retrofits/`),
+  dashboard card. Rendered at the BOTTOM of both status reports via the
+  `retrofits()` macro in `_report_blocks.html` (and an inline copy in the
+  standalone `retail_report_download.html`) — the section shows even when
+  empty, because its caveat "further retrofits may still be announced" is
+  the actual point. The topic title is resolved in a separate query, NOT a
+  JOIN, so retrofits stay readable without the topics table.
 
 ## Reference entities (app/db/reference.py + app/web_reference.py)
 

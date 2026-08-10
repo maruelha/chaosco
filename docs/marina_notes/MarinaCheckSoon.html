@@ -333,6 +333,46 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<div class="box b-blue">
+  <div class="box-head">10.08 — while you were out: 3 things to confirm, 1 bug found</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="mailed-retail-defects-bug">
+      <span><strong>&#9888; Bug found and fixed: every EMAILED Retail report was
+      saying "No active Retail defects found"</strong> &mdash; even when the live
+      report listed them.
+      <span class="where">&#8594; app/emailer.py <code>render_retail_html</code></span><br>
+      The email attachment is rendered by its own function, which never passed the
+      impacted-defects data to the template &mdash; so the section silently rendered
+      its empty state. The live page and the Download HTML button were always
+      correct; only the emailed copy was wrong. Fixed + regression test.
+      <strong>Worth a glance at your last sent reports</strong> to see whether
+      anyone drew the wrong conclusion from them.</span></label>
+
+    <label class="task"><input type="checkbox" data-k="retrofit-status-naming">
+      <span><strong>Retrofits: is "Confirmed / Potential" the split you meant?</strong>
+      <span class="where">&#8594; /retrofits/</span><br>
+      You said "not to forget potentially still coming retrofits". I read that two
+      ways and covered both: each retrofit has a status &mdash; <em>Confirmed</em>
+      (it is coming) or <em>Potential</em> (might still come) &mdash; AND the report
+      section carries a standing caveat that the list may not be complete. If you
+      only meant the caveat, say so and I'll drop the status field.</span></label>
+
+    <label class="task"><input type="checkbox" data-k="retrofit-fields-enough">
+      <span><strong>Retrofits: are the fields enough?</strong>
+      <span class="where">&#8594; /retrofits/</span><br>
+      Channel, Title, Description ("what it means for testing"), Status, Expected
+      (free text like "CW34"), and an optional link to a Topic. No notes section
+      and no detail page yet &mdash; deliberate for v1, tell me if you want them.</span></label>
+
+    <label class="task"><input type="checkbox" data-k="clipboard-bullets">
+      <span><strong>Clipboard copy now uses bullets too.</strong>
+      <span class="where">&#8594; /meeting-prep &rarr; "Copy to clipboard"</span><br>
+      You asked for no numbering on the two reports; I applied the same to the
+      clipboard copy so pasted agendas match. Easy to put numbers back there if
+      you'd rather keep them for pasting into mails.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

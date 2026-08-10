@@ -110,6 +110,13 @@ app.register_blueprint(_im_bp)
 from app.web_search import bp as _search_bp
 app.register_blueprint(_search_bp)
 
+# Retrofits (2026-08-10) — coming system changes per channel; rendered at the
+# bottom of the ECOM + Retail status reports, optionally linked to a Topic.
+from app.db import retrofits as _db_retrofits
+from app.web_retrofits import bp as _retrofits_bp
+_db_retrofits.init_schema(_db_path)
+app.register_blueprint(_retrofits_bp)
+
 
 if __name__ == "__main__":
     import threading

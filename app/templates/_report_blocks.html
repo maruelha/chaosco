@@ -186,6 +186,62 @@
 {% endmacro %}
 
 
+{# Retrofits at the bottom of a channel report [USER 2026-08-10].
+   Confirmed first, then "potentially still coming" — the point of the section
+   is that the reader must not assume the list is final. Rendered even when
+   empty so the standing caveat is always visible. #}
+{% macro retrofits(items, channel_label, retrofits_url=None) %}
+{% set confirmed = items | selectattr('status', 'equalto', 'Confirmed') | list %}
+{% set potential = items | selectattr('status', 'equalto', 'Potential') | list %}
+<h2 class="rr-section-title" style="margin-top:2rem">Retrofits — {{ channel_label }}</h2>
+<p style="font-size:.82rem;color:#6e6e73;margin:-.25rem 0 .75rem">
+  System changes still coming for {{ channel_label }}. <strong>This list reflects
+  what is known today</strong> — further retrofits may still be announced, and
+  anything already tested may need a re-test once they land.
+</p>
+
+{% if confirmed or potential %}
+<table class="rr-diag-table" style="width:100%;margin-bottom:1.25rem">
+  <thead>
+    <tr>
+      <th style="width:8rem">Status</th>
+      <th>Retrofit</th>
+      <th>What it means</th>
+      <th style="width:9rem">Expected</th>
+      <th style="width:11rem">More information</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in confirmed + potential %}
+    <tr{% if r.status == 'Potential' %} style="color:#8a6d3b"{% endif %}>
+      <td>
+        {% if r.status == 'Potential' %}
+        <span class="pill pill--amber">Potential</span>
+        {% else %}
+        <span class="pill pill--green">Confirmed</span>
+        {% endif %}
+      </td>
+      <td style="font-weight:500">{{ r.title }}</td>
+      <td>{{ r.description or '—' }}</td>
+      <td>{{ r.expected or '—' }}</td>
+      <td>
+        {% if r.topic_id and r.topic_title %}
+        <a href="{{ url_for('topics.topic_detail', topic_id=r.topic_id) }}">{{ r.topic_title }}</a>
+        {% else %}—{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="rr-diag-none" style="margin-bottom:1.25rem">
+  No retrofits recorded for {{ channel_label }} yet{% if retrofits_url %} —
+  <a href="{{ retrofits_url }}">add them here</a>{% endif %}.
+</p>
+{% endif %}
+{% endmacro %}
+
+
 {% macro additional_comments(report_comments) %}
 {% set visible_comments = report_comments | selectattr('comment') | list %}
 {% if visible_comments %}

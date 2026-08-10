@@ -101,11 +101,28 @@ def render_spillover_html(conn: sqlite3.Connection, today: str) -> str:
 
 
 def render_retail_html(conn: sqlite3.Connection, cfg: dict, today: str) -> str:
+    """Same content as GET /retail/report/download.
+
+    The impacted-defects context used to be missing here, so every EMAILED
+    Retail report claimed "No active Retail defects found" while the live page
+    listed them [fixed 2026-08-10]. Keep this in sync with
+    web_retail.retail_report_download."""
+    from app.db import retrofits as db_retrofits
+    from app.reporter import compute_impacted_totals, passed_family
+    mappings = load_status_mappings()
     status_counts = database.get_retail_status_counts(conn)
-    report = compute_retail_report(status_counts, load_status_mappings())
+    report = compute_retail_report(status_counts, mappings)
+    impacted_defects = database.get_retail_defects_impacted(
+        conn, passed_family(mappings))
+    totals = compute_impacted_totals(impacted_defects)
     return render_template(
         "retail_report_download.html", report=report, today=today,
+        impacted_defects=impacted_defects,
+        impacted_total=totals["total"],
+        mb_total=totals["mb"],
+        sales_total=totals["sales"],
         report_comments=database.list_report_comments(conn, "retail"),
+        retrofits=db_retrofits.list_retrofits(conn, channel="Retail"),
         total_test_cases=cfg.get("retail_total_test_cases", 646),
         missing_categories=cfg.get("retail_missing_categories", []))
 

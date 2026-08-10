@@ -258,6 +258,7 @@ tbody tr:hover td { background: #f5f7ff; }
 .pill--green  { background: #e3f9e5; color: #1a7f37; }
 .pill--gray   { background: #f0f0f5; color: #6e6e73; }
 .pill--red    { background: #fff0f0; color: #c00; }
+.pill--amber  { background: #fef3c7; color: #92400e; }
 
 .status-pill {
   display: inline-block;
@@ -973,6 +974,22 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .mp-topic-input { flex: 1; min-width: 200px; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
 
 .mp-export-btns { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+
+/* per-meeting report launcher (Agenda / Worksheet) */
+.mp-reports {
+  border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa;
+  padding: 0.75rem 1rem 0.6rem; margin-bottom: 1.25rem;
+  display: inline-block; min-width: 22rem;
+}
+.mp-reports-label {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: #888; display: block; margin-bottom: 0.4rem;
+}
+.mp-reports-table { border-collapse: collapse; }
+.mp-reports-table td { padding: 3px 0.75rem 3px 0; vertical-align: middle; }
+.mp-reports-meeting { font-size: 0.85rem; font-weight: 500; color: #3a3a3c; white-space: nowrap; }
+.mp-reports-meeting--all { color: #888; font-style: italic; }
+.mp-reports-hint { font-size: 0.74rem; color: #aaa; margin: 0.45rem 0 0; }
 .mp-quick-form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 0.75rem 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; }
 .mp-quick-label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
 
@@ -1020,6 +1037,21 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .pill--grey { background: #f0f0f0; color: #555; border: 1px solid #ddd; border-radius: 10px; padding: 2px 8px; font-size: 0.78rem; }
 .pill--blue { background: #e8f0ff; color: #2c5fb3; border: 1px solid #b8d0f5; border-radius: 10px; padding: 2px 8px; font-size: 0.78rem; }
 .list-empty { color: #888; font-style: italic; margin-top: 2rem; }
+
+/* --------------------------------------------------------------- retrofits */
+.rf-form { display: flex; flex-direction: column; gap: 0.7rem; padding: 0.8rem 1rem; }
+.rf-form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }
+.rf-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.rf-field > span { font-size: 0.75rem; font-weight: 600; color: #555; }
+.rf-field input, .rf-field select {
+  padding: 0.4rem 0.6rem; border: 1px solid #c9c9d4; border-radius: 6px; font-size: 0.88rem;
+}
+.rf-field--narrow { min-width: 10rem; }
+.rf-field--wide { flex: 1; min-width: 18rem; }
+.rf-field--wide input { width: 100%; }
+.rf-field--submit { flex-direction: row; gap: 0.4rem; }
+.rf-table td { vertical-align: middle; }
+.rf-edit-row > td { background: #f8f9fa; }
 
 /* --------------------------------------------------------------- enhancements widget */
 #enh-widget { position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }

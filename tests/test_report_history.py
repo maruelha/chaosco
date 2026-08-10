@@ -56,6 +56,8 @@ def db_path(tmp_path, monkeypatch):
     database.init_db(p).close()
     db_manual.init_schema(p)
     db_hist.init_schema(p)
+    from app.db import retrofits as db_retrofits
+    db_retrofits.init_schema(p)   # Retail/ECOM reports render the retrofits section
     monkeypatch.setattr(web_hist, "_db_path", p)
     monkeypatch.setattr(web_email, "_db_path", p)
     return p

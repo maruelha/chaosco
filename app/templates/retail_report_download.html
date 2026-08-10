@@ -49,6 +49,15 @@
     .def-table td { padding: 0.35rem 0.6rem; border-bottom: 1px solid #f0f0f5; vertical-align: top; }
     .def-table tfoot td { border-bottom: none; }
 
+    /* retrofits (2026-08-10) */
+    .rf-note { font-size: 0.78rem; color: #6e6e73; margin: -0.35rem 0 0.6rem; }
+    .rf-pill {
+      display: inline-block; padding: 0.1rem 0.5rem; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+    }
+    .rf-pill--confirmed { background: #e3f9e5; color: #1a7f37; }
+    .rf-pill--potential { background: #fef3c7; color: #92400e; }
+
     /* PDF / print ---------------------------------------------------------- */
     @page { size: A4; margin: 2cm; }
     @media print {
@@ -229,6 +238,45 @@
   <li style="font-size:0.85rem;color:#3a3a3c;line-height:1.55">{{ c.comment }}</li>
   {% endfor %}
 </ul>
+{% endif %}
+
+{# ---- Retrofits [USER 2026-08-10] — same content as the live report, in the
+       standalone document's own styles (this template has no shared CSS) ---- #}
+{% set rf_confirmed = (retrofits or []) | selectattr('status', 'equalto', 'Confirmed') | list %}
+{% set rf_potential = (retrofits or []) | selectattr('status', 'equalto', 'Potential') | list %}
+<h2>Retrofits — Retail</h2>
+<p class="rf-note">
+  System changes still coming for Retail. <strong>This list reflects what is
+  known today</strong> — further retrofits may still be announced, and anything
+  already tested may need a re-test once they land.
+</p>
+{% if rf_confirmed or rf_potential %}
+<table class="def-table">
+  <thead>
+    <tr>
+      <th style="width:6rem">Status</th>
+      <th>Retrofit</th>
+      <th>What it means</th>
+      <th style="width:7rem">Expected</th>
+      <th style="width:9rem">More information</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rf_confirmed + rf_potential %}
+    <tr>
+      <td>
+        <span class="rf-pill rf-pill--{{ 'potential' if r.status == 'Potential' else 'confirmed' }}">{{ r.status }}</span>
+      </td>
+      <td style="font-weight:600">{{ r.title }}</td>
+      <td>{{ r.description or '—' }}</td>
+      <td>{{ r.expected or '—' }}</td>
+      <td>{{ r.topic_title or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="font-size:.82rem;color:#aeaeb2;margin-bottom:1.25rem">No retrofits recorded for Retail yet.</p>
 {% endif %}
 
 </body>

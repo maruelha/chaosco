@@ -110,6 +110,7 @@ def _report_context(conn) -> dict:
     report = compute_retail_report(db_ecom.get_ecom_status_counts(conn), mappings)
     defects = db_ecom.get_ecom_defects_impacted(conn, passed_family(mappings))
     totals = compute_impacted_totals(defects)
+    from app.db import retrofits as db_retrofits
     return {
         "report": report,
         "impacted_defects": defects,
@@ -117,6 +118,7 @@ def _report_context(conn) -> dict:
         "mb_total": totals["mb"],
         "sales_total": totals["sales"],
         "report_comments": database.list_report_comments(conn, "ecom"),
+        "retrofits": db_retrofits.list_retrofits(conn, channel="ECOM"),
         "today": date.today().isoformat(),
     }
 

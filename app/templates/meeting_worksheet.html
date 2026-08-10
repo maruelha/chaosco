@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Worksheet{% if meeting_filter %} — {{ meeting_filter }}{% endif %}</title>
+  <style>
+    /* Self-contained on purpose: this page is meant to be SAVED to disk and
+       used offline in the meeting — no external fonts, no server calls. */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+      background: #e8eaed;
+      min-height: 100vh;
+      padding: 3rem 1.5rem 5rem;
+      color: #1e293b;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .doc {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 8px rgba(0,0,0,.06), 0 16px 48px rgba(0,0,0,.1);
+      overflow: hidden;
+    }
+    .doc-stripe { height: 5px; background: linear-gradient(90deg, #047857 0%, #10b981 50%, #6ee7b7 100%); }
+
+    .doc-header { background: #0f172a; padding: 2.5rem 3rem 2.25rem; }
+    .doc-kicker {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 0.22em;
+      text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 0.85rem;
+    }
+    .doc-title {
+      font-size: 1.85rem; font-weight: 800; color: #fff;
+      letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 1.5rem;
+    }
+    .doc-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+    .doc-meta-date  { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+    .doc-meta-sep   { color: rgba(255,255,255,0.2); font-size: 0.7rem; }
+    .doc-meta-badge {
+      display: inline-block; background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
+      padding: 0.18rem 0.65rem; font-size: 0.67rem; font-weight: 600;
+      color: rgba(255,255,255,0.55); letter-spacing: 0.03em;
+    }
+
+    .doc-body { padding: 2.25rem 3rem 2.5rem; }
+
+    .hint {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;
+      padding: 0.7rem 1rem; font-size: 0.8rem; color: #166534;
+      line-height: 1.55; margin-bottom: 1.75rem;
+    }
+
+    .ws-section { margin-bottom: 2rem; }
+    .section-header {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding-bottom: 0.65rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 0.9rem;
+    }
+    .section-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .section-name { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+    .section-tally { margin-left: auto; font-size: 0.78rem; color: #94a3b8; font-weight: 500; }
+
+    .dot--cs-retail   { background: #2563eb; }
+    .dot--cs-ecom     { background: #0891b2; }
+    .dot--cs-general  { background: #7c3aed; }
+    .dot--roe-retail  { background: #16a34a; }
+    .dot--roe-ecom    { background: #0d9488; }
+    .dot--roe-general { background: #059669; }
+    .dot--orga        { background: #d97706; }
+    .dot--ai          { background: #9333ea; }
+    .dot--other       { background: #94a3b8; }
+
+    .ws-item { padding: 0.75rem 0 0.9rem; border-bottom: 1px solid #f1f5f9; }
+    .ws-item:last-child { border-bottom: none; }
+    .ws-topic-row { display: flex; align-items: baseline; gap: 0.85rem; margin-bottom: 0.45rem; }
+    .ws-bullet { font-size: 1rem; line-height: 1; color: #94a3b8; min-width: 0.9rem; text-align: center; flex-shrink: 0; }
+    .ws-topic  { font-size: 0.95rem; color: #1e293b; line-height: 1.6; font-weight: 500; }
+    .ws-note   { font-size: 0.8rem; color: #94a3b8; margin-left: 1.75rem; margin-bottom: 0.35rem; font-style: italic; }
+    .ws-comment {
+      display: block; width: calc(100% - 1.75rem); margin-left: 1.75rem;
+      min-height: 3.2rem; resize: vertical;
+      font-family: inherit; font-size: 0.86rem; line-height: 1.55; color: #1e293b;
+      border: 1px solid #e2e8f0; border-radius: 7px; padding: 0.5rem 0.7rem;
+      background: #fcfdfe;
+    }
+    .ws-comment:focus { outline: none; border-color: #10b981; background: #fff; }
+    .ws-comment::placeholder { color: #cbd5e1; }
+
+    .doc-footer {
+      border-top: 1px solid #f1f5f9; padding: 1.1rem 3rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: #fafbfc; gap: 1rem; flex-wrap: wrap;
+    }
+    .doc-footer-note { font-size: 0.68rem; color: #cbd5e1; letter-spacing: 0.02em; }
+    .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .toolbar-btn {
+      padding: 0.38rem 0.9rem; background: #fff; border: 1px solid #e2e8f0;
+      border-radius: 6px; font-size: 0.75rem; font-weight: 500; color: #64748b;
+      cursor: pointer; font-family: inherit; transition: background 0.12s, border-color 0.12s;
+    }
+    .toolbar-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+    .toolbar-btn--primary { background: #047857; border-color: #047857; color: #fff; }
+    .toolbar-btn--primary:hover { background: #065f46; border-color: #065f46; }
+    .ws-status { font-size: 0.72rem; color: #047857; font-weight: 600; }
+
+    .no-items { padding: 2.5rem 3rem; color: #94a3b8; font-style: italic; font-size: 0.9rem; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .doc { box-shadow: none; border-radius: 0; max-width: none; }
+      .doc-stripe, .doc-header, .section-dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      .ws-comment { border-color: #cbd5e1; background: #fff; }
+      .ws-item, .ws-section { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="doc">
+
+  <div class="doc-stripe"></div>
+
+  <div class="doc-header">
+    <div class="doc-kicker">Meeting Worksheet</div>
+    <div class="doc-title">{% if meeting_filter %}{{ meeting_filter }}{% else %}All meetings{% endif %}</div>
+    <div class="doc-meta">
+      <span class="doc-meta-date">{{ today }}</span>
+      <span class="doc-meta-sep">·</span>
+      <span class="doc-meta-badge">{{ items | length }} topic{{ 's' if items | length != 1 }}</span>
+      {% if status_filter and status_filter != 'planned' %}
+      <span class="doc-meta-sep">·</span>
+      <span class="doc-meta-badge">{{ status_filter | capitalize }}</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if items %}
+  {% set topic_map = [
+    ('CS Retail',   'cs-retail'),
+    ('CS ECOM',     'cs-ecom'),
+    ('CS General',  'cs-general'),
+    ('ROE Retail',  'roe-retail'),
+    ('ROE ECOM',    'roe-ecom'),
+    ('ROE General', 'roe-general'),
+    ('Orga',        'orga'),
+    ('AI',          'ai'),
+    ('Other',       'other'),
+  ] %}
+
+  <div class="doc-body">
+
+    <p class="hint no-print">
+      Type your comments straight into the boxes. <strong>Save comments (JSON)</strong>
+      writes them to a small file; <strong>Load comments (JSON)</strong> reads them back
+      into this page later. <strong>Download HTML</strong> saves this whole page
+      <em>including</em> what you typed — the saved copy keeps working offline.
+    </p>
+
+    {% for ot, css in topic_map %}
+      {% set grp = items | selectattr('overall_topic', 'equalto', ot) | list %}
+      {% if grp %}
+      <div class="ws-section">
+        <div class="section-header">
+          <span class="section-dot dot--{{ css }}"></span>
+          <span class="section-name">{{ ot }}</span>
+          <span class="section-tally">{{ grp | length }}</span>
+        </div>
+        {% for item in grp %}
+        <div class="ws-item">
+          <div class="ws-topic-row">
+            <span class="ws-bullet">&bull;</span>
+            <span class="ws-topic">{{ item.topic }}</span>
+          </div>
+          {% if item.note %}<div class="ws-note">{{ item.note }}</div>{% endif %}
+          <textarea class="ws-comment" rows="2" autocomplete="off"
+                    data-id="{{ item.id }}"
+                    data-topic="{{ item.topic | e }}"
+                    data-ot="{{ ot }}"
+                    placeholder="Comments…"></textarea>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% set untagged = [] %}
+    {% for item in items %}{% if not item.overall_topic %}{% set _ = untagged.append(item) %}{% endif %}{% endfor %}
+    {% if untagged %}
+    <div class="ws-section">
+      <div class="section-header">
+        <span class="section-dot dot--other"></span>
+        <span class="section-name">Other</span>
+        <span class="section-tally">{{ untagged | length }}</span>
+      </div>
+      {% for item in untagged %}
+      <div class="ws-item">
+        <div class="ws-topic-row">
+          <span class="ws-bullet">&bull;</span>
+          <span class="ws-topic">{{ item.topic }}</span>
+        </div>
+        {% if item.note %}<div class="ws-note">{{ item.note }}</div>{% endif %}
+        <textarea class="ws-comment" rows="2" autocomplete="off"
+                  data-id="{{ item.id }}"
+                  data-topic="{{ item.topic | e }}"
+                  data-ot=""
+                  placeholder="Comments…"></textarea>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+  {% else %}
+  <p class="no-items">No items match the current filter.</p>
+  {% endif %}
+
+  <div class="doc-footer">
+    <span class="doc-footer-note no-print">{{ today }}</span>
+    <div class="toolbar no-print">
+      <span class="ws-status" id="ws-status"></span>
+      <button class="toolbar-btn toolbar-btn--primary" onclick="wsSaveJson()">&#128190; Save comments (JSON)</button>
+      <button class="toolbar-btn" onclick="document.getElementById('ws-file').click()">&#128193; Load comments (JSON)</button>
+      <button class="toolbar-btn" onclick="wsDownloadHtml()">&#8659; Download HTML</button>
+      <button class="toolbar-btn" onclick="window.print()">Print</button>
+      <input type="file" id="ws-file" accept="application/json,.json" style="display:none"
+             onchange="wsLoadJson(this)">
+    </div>
+  </div>
+
+</div>
+
+<script>
+var WS_MEETING = {{ (meeting_filter or "All meetings") | tojson }};
+var WS_STATUS  = {{ (status_filter or "") | tojson }};
+var WS_DATE    = {{ today_iso | tojson }};
+var WS_SLUG    = {{ ((meeting_filter or "meeting") | replace(" ", "_") | replace("&", "and")) | tojson }};
+
+function wsBoxes() {
+  return Array.prototype.slice.call(document.querySelectorAll('.ws-comment'));
+}
+
+function wsFlash(msg) {
+  var el = document.getElementById('ws-status');
+  if (!el) return;
+  el.textContent = msg;
+  setTimeout(function () { el.textContent = ''; }, 4000);
+}
+
+function wsDownload(blob, filename) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function wsSaveJson() {
+  var data = {
+    meeting: WS_MEETING,
+    status: WS_STATUS,
+    date: WS_DATE,
+    saved_at: new Date().toISOString().slice(0, 19),
+    comments: wsBoxes().map(function (t) {
+      return {
+        id: t.dataset.id,
+        topic: t.dataset.topic,
+        overall_topic: t.dataset.ot || '',
+        comment: t.value
+      };
+    })
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+  wsDownload(blob, 'worksheet_' + WS_SLUG + '_' + WS_DATE + '.json');
+  var filled = data.comments.filter(function (c) { return c.comment.trim(); }).length;
+  wsFlash('✓ Saved ' + filled + ' comment(s)');
+}
+
+function wsLoadJson(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (e) {
+    var data;
+    try {
+      data = JSON.parse(e.target.result);
+    } catch (err) {
+      alert('That file is not valid JSON.');
+      input.value = '';
+      return;
+    }
+    var list = (data && data.comments) || [];
+    if (!list.length) {
+      alert('No comments found in that file.');
+      input.value = '';
+      return;
+    }
+    // match by topic id first (survives re-ordering and edited wording),
+    // fall back to the topic text for files saved from an older list
+    var byId = {}, byTopic = {};
+    list.forEach(function (c) {
+      if (c.id) byId[String(c.id)] = c.comment || '';
+      if (c.topic) byTopic[c.topic] = c.comment || '';
+    });
+    var matched = 0;
+    wsBoxes().forEach(function (t) {
+      var val = byId[String(t.dataset.id)];
+      if (val === undefined) val = byTopic[t.dataset.topic];
+      if (val !== undefined && val !== '') { t.value = val; matched++; }
+    });
+    var unmatched = list.filter(function (c) { return (c.comment || '').trim(); }).length - matched;
+    wsFlash('✓ Loaded ' + matched + ' comment(s)' +
+            (unmatched > 0 ? ' · ' + unmatched + ' had no matching topic' : ''));
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function wsDownloadHtml() {
+  // textarea .value is NOT part of the serialized HTML — copy what was typed
+  // into the clone's text content so the saved file opens with the comments in
+  var clone = document.documentElement.cloneNode(true);
+  var live = wsBoxes();
+  var copies = clone.querySelectorAll('.ws-comment');
+  Array.prototype.forEach.call(copies, function (t, i) {
+    t.textContent = live[i] ? live[i].value : '';
+  });
+  var html = '<!DOCTYPE html>\n' + clone.outerHTML;
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  wsDownload(blob, 'worksheet_' + WS_SLUG + '_' + WS_DATE + '.html');
+  wsFlash('✓ Page downloaded');
+}
+</script>
+</body>
+</html>

@@ -75,6 +75,12 @@
     <a href="{{ url_for('prod_defects_list') }}" class="btn">View Known Production Issues</a>
   </div>
 
+  <div class="action-card">
+    <h2>Retrofits {% if retrofit_count %}<span class="notes-count-badge">{{ retrofit_count }}</span>{% endif %}</h2>
+    <p>System changes still coming for ECOM / Retail — confirmed and potential. Shown at the bottom of both status reports; each can link to a Topic for the background.</p>
+    <a href="{{ url_for('retrofits.retrofits_list') }}" class="btn">View Retrofits</a>
+  </div>
+
   <div class="action-card" style="border-left:3px solid #0e7490">
     <h2>Export &amp; Backup</h2>
     <p>Save dated HTML &amp; PowerPoint snapshots of the Retail and Spillover reports to the export folder for automation pickup.</p>

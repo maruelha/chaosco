@@ -12,6 +12,39 @@
   </div>
 </div>
 
+{# ---- Reports per meeting [USER 2026-08-10] ----
+   Agenda = the plain sorted topic list (no defects, no follow-ups — those
+   only exist on the DTC O2C Daily Agenda above).
+   Worksheet = the same list with a comment box per topic, saveable offline. #}
+<div class="mp-reports">
+  <span class="mp-reports-label">Reports</span>
+  <table class="mp-reports-table">
+    <tbody>
+      {% for m in meetings %}
+      <tr>
+        <td class="mp-reports-meeting">{{ m }}</td>
+        <td>
+          <a href="{{ url_for('meeting_prep_agenda', meeting=m, status='planned') }}"
+             target="_blank" class="btn btn-sm">&#128196; Agenda</a>
+          <a href="{{ url_for('meeting_prep_worksheet', meeting=m, status='planned') }}"
+             target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
+        </td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td class="mp-reports-meeting mp-reports-meeting--all">All meetings</td>
+        <td>
+          <a href="{{ url_for('meeting_prep_agenda', status='planned') }}"
+             target="_blank" class="btn btn-sm">&#128196; Agenda</a>
+          <a href="{{ url_for('meeting_prep_worksheet', status='planned') }}"
+             target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="mp-reports-hint">Planned topics only. Use the export buttons below for the current filter instead.</p>
+</div>
+
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('meeting_prep_add') }}" class="mp-add-form">
   <input type="hidden" name="meeting_filter" value="{{ meeting_filter }}">
@@ -55,6 +88,8 @@
   <div class="mp-export-btns">
     <a href="{{ url_for('meeting_prep_agenda', meeting=meeting_filter, status=status_filter) }}"
        target="_blank" class="btn btn-sm">&#128196; Export agenda</a>
+    <a href="{{ url_for('meeting_prep_worksheet', meeting=meeting_filter, status=status_filter) }}"
+       target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
     <button type="button" class="btn btn-sm" id="js-copy-topics">&#128203; Copy to clipboard</button>
     <span id="js-copy-confirm" style="display:none;font-size:0.8rem;color:#1a7f37">&#10003; Copied!</span>
   </div>
@@ -374,19 +409,17 @@
         return ia - ib;
       });
 
-      // Build text grouped by overall_topic
+      // Build text grouped by overall_topic — bullets, no numbering
+      // [USER 2026-08-10] (matches the agenda + worksheet reports)
       var lines = [];
       var lastOt = null;
-      var idx = 0;
       rows.forEach(function (r) {
         if (r.ot !== lastOt) {
           if (lines.length) lines.push('');
           if (r.ot) lines.push('[ ' + r.ot + ' ]');
           lastOt = r.ot;
-          idx = 0;
         }
-        idx++;
-        lines.push(idx + '. ' + r.topic);
+        lines.push('- ' + r.topic);
       });
 
       navigator.clipboard.writeText(lines.join('\n')).then(function () {

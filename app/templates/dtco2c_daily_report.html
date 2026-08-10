@@ -132,9 +132,11 @@
       border-bottom: 1px solid #f1f5f9;
     }
     .item:last-child { border-bottom: none; }
-    .item-n {
-      font-size: 0.82rem; font-weight: 700; color: #64748b;
-      min-width: 1.6rem; text-align: right; flex-shrink: 0;
+    /* bullet instead of a number [USER 2026-08-10] — topics are not ranked */
+    .item-bullet {
+      font-size: 1rem; line-height: 1; color: #94a3b8;
+      min-width: 0.9rem; text-align: center; flex-shrink: 0;
+      padding-top: 0.2rem;
     }
     .item-text { font-size: 0.95rem; color: #1e293b; line-height: 1.6; }
 
@@ -261,7 +263,6 @@
         ('AI',          'ai'),
         ('Other',       'other'),
       ] %}
-      {% set ns = namespace(counter=0) %}
       {% for ot, css in ot_map %}
         {% set grp = topics | selectattr('overall_topic', 'equalto', ot) | list %}
         {% if grp %}
@@ -271,9 +272,8 @@
           </div>
           <ul class="item-list">
             {% for item in grp %}
-            {% set ns.counter = ns.counter + 1 %}
             <li class="item">
-              <span class="item-n">{{ ns.counter }}</span>
+              <span class="item-bullet">&bull;</span>
               <span class="item-text">{{ item.topic }}</span>
             </li>
             {% endfor %}
@@ -291,9 +291,8 @@
         </div>
         <ul class="item-list">
           {% for item in untagged %}
-          {% set ns.counter = ns.counter + 1 %}
           <li class="item">
-            <span class="item-n">{{ ns.counter }}</span>
+            <span class="item-bullet">&bull;</span>
             <span class="item-text">{{ item.topic }}</span>
           </li>
           {% endfor %}

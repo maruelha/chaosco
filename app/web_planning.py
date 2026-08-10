@@ -153,6 +153,36 @@ def meeting_prep_agenda():
     )
 
 
+@app.route("/meeting-prep/worksheet")
+def meeting_prep_worksheet():
+    """Downloadable working document [USER 2026-08-10]: the sorted topic list
+    with a comment box per topic. The page is self-contained — once saved to
+    disk it still types, saves comments to JSON and loads them back, with no
+    server involved (that is the whole point: take it into the meeting)."""
+    meeting_filter = request.args.get("meeting", "")
+    status_filter  = request.args.get("status", "planned")
+    conn = _get_conn()
+    try:
+        items = database.get_meeting_prep(
+            conn,
+            meeting=meeting_filter or None,
+            status=status_filter or None,
+        )
+    finally:
+        conn.close()
+    order = {t: i for i, t in enumerate(database.MEETING_OVERALL_TOPICS)}
+    items.sort(key=lambda r: (order.get(r.get("overall_topic") or "", 999), r.get("id", 0)))
+    return render_template(
+        "meeting_worksheet.html",
+        items=items,
+        meeting_filter=meeting_filter,
+        status_filter=status_filter,
+        today=date.today().strftime("%d %B %Y"),
+        today_iso=date.today().isoformat(),
+        overall_topics=database.MEETING_OVERALL_TOPICS,
+    )
+
+
 @app.route("/meeting-prep/dtco2c-daily")
 def dtco2c_daily_report():
     conn = _get_conn()

@@ -71,6 +71,9 @@ app/
                     storage db/next_steps.py; include _next_step_history.html)
   web_search.py     global 🔍 widget Blueprint (/search; source registry in
                     db/search.py — order numbers now, topics via FTS later)
+  web_retrofits.py  retrofits Blueprint (/retrofits/ — coming system changes
+                    per channel; storage db/retrofits.py; rendered at the
+                    bottom of the ECOM + Retail reports)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -84,6 +87,7 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
+                    retrofits
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

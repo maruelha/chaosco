@@ -320,6 +320,7 @@
     <li><a href="#followups">followups</a></li>
     <li><a href="#cs_followups">cs_followups</a></li>
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
+    <li><a href="#retrofits">retrofits</a></li>
     <li><a href="#encouragement_people">encouragement_people</a></li>
     <li><a href="#encouragements">encouragements</a></li>
     <li><a href="#links">links</a></li>
@@ -1002,6 +1003,30 @@
       </tbody>
     </table>
     <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='prod_defect' (registry label "Known Production Issues")</div>
+  </div>
+
+  <!-- retrofits -->
+  <div class="table-card" id="retrofits">
+    <div class="table-card-header">
+      <span class="tname">retrofits</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">System changes still coming per channel [USER 2026-08-10]. Hand-maintained; rendered at the bottom of the ECOM and Retail status reports (page, HTML download and email attachment) so readers never assume the tested scope is final. Storage <code>app/db/retrofits.py</code>, routes <code>app/web_retrofits.py</code>.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ECOM | Retail — normalised on write, unknown values fall back to ECOM</td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">What is changing</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">What it means for testing</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Confirmed (default — it is coming) | Potential (might still come). Confirmed sorts first in list + report.</td></tr>
+        <tr><td class="col-name">expected</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text, e.g. "CW34", "after go-live"</td></tr>
+        <tr><td class="col-name">topic_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Optional link to <code>topics</code> for the background. Resolved in a SEPARATE query, never a JOIN — a retrofit stays readable where the topics table doesn't exist, and the link is simply not shown.</td></tr>
+        <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- links -->

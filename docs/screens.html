@@ -220,6 +220,8 @@
 
     <li class="group-label">Planning</li>
     <li><a href="#meeting-prep">Meeting Prep</a></li>
+    <li><a href="#meeting-worksheet">Meeting Worksheet</a></li>
+    <li><a href="#retrofits">Retrofits</a></li>
     <li><a href="#dtco2c-daily">DTC O2C Daily Agenda</a></li>
     <li><a href="#todos">To-Do List</a></li>
     <li><a href="#followups">Follow-ups</a></li>
@@ -1303,11 +1305,16 @@
         <span class="feat-value">When an item was added from a Defect or Retail detail page, the Topic column shows a coloured badge below the topic text: purple for defects (defect ID + SolMan name), green for retail test cases (test case ID / country / scenario). Each badge is a link back to the source detail page.</span>
         <span class="feat-label">Source entity badge</span>
         <span class="feat-value">Items added from a Defect detail page show a purple badge (defect ID + SolMan name → link to defect). Items added from a Retail detail page show a green badge (test case ID / country / scenario → link to test case). Manual items show no badge.</span>
+        <span class="feat-label">Reports per meeting (2026-08-10)</span>
+        <span class="feat-value">Block under the page header with a row per meeting type (plus "All meetings"), each offering two reports on its <em>planned</em> topics — so every meeting is covered, not only DTC O2C:<br>
+          <span class="pill pill-ajax">📄 Agenda</span> → <code>GET /meeting-prep/agenda?meeting=…</code> — the plain sorted topic list, grouped by overall topic. <strong>No defects and no follow-ups</strong> (those exist only on the DTC O2C Daily Agenda).<br>
+          <span class="pill pill-ajax">📝 Worksheet</span> → <code>GET /meeting-prep/worksheet?meeting=…</code> — see the Meeting Worksheet card below.
+        </span>
         <span class="feat-label">Export actions</span>
         <span class="feat-value">
-          <span class="pill pill-ajax">Export agenda</span> → <code>GET /meeting-prep/agenda</code> opens in new tab: styled HTML report with coloured section banners per overall topic. Includes Download HTML and Print buttons.<br>
-          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels.<br>
-          <span class="pill pill-action">DTC O2C Daily Agenda</span> → always-visible button in the page header; opens <code>/meeting-prep/dtco2c-daily</code> in a new tab.
+          <span class="pill pill-ajax">Export agenda</span> / <span class="pill pill-ajax">Worksheet</span> → same two reports but for the <em>current filter</em> (meeting + status), next to the filter row.<br>
+          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels; <strong>bullets, no numbering</strong> (2026-08-10).<br>
+          <span class="pill pill-action">DTC O2C Daily Agenda</span> → always-visible button in the page header; opens <code>/meeting-prep/dtco2c-daily</code> in a new tab (the full version: topics + defects to discuss + DTC O2C follow-ups).
         </span>
         <span class="feat-label">Inline actions (AJAX)</span>
         <span class="feat-value">
@@ -1319,6 +1326,52 @@
         </span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>meeting_prep</code> LEFT JOIN <code>notes</code> + LEFT JOIN <code>defects</code> (when source is defect) + LEFT JOIN <code>retail</code> (when source is retail)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meeting Worksheet -->
+  <div class="screen-card" id="meeting-worksheet">
+    <div class="screen-card-header">
+      <span class="screen-title">Meeting Worksheet</span>
+      <span class="screen-url">GET /meeting-prep/worksheet?meeting=…&amp;status=…</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-10. The sorted topic list with a <strong>comment box per topic</strong> — the document you take into the meeting and type into. Deliberately <strong>self-contained</strong>: no external fonts, no server calls, all logic inline, so a copy saved to disk keeps working offline.</p>
+      <div class="features">
+        <span class="feat-label">Content</span>
+        <span class="feat-value">Planned topics for the chosen meeting (or all meetings), grouped by overall topic with coloured section dots — bullets, no numbering. The row's quick note (if any) shows above its comment box.</span>
+        <span class="feat-label">💾 Save comments (JSON)</span>
+        <span class="feat-value">Downloads <code>worksheet_&lt;meeting&gt;_&lt;date&gt;.json</code>: <code>{meeting, status, date, saved_at, comments:[{id, topic, overall_topic, comment}]}</code> — one entry per topic.</span>
+        <span class="feat-label">📁 Load comments (JSON)</span>
+        <span class="feat-value">Reads such a file back into the boxes. Matches on the topic <strong>id</strong> first (survives re-ordering and re-worded topics), falls back to the topic text. Reports how many were loaded and how many had no matching topic — nothing is silently dropped.</span>
+        <span class="feat-label">⇓ Download HTML</span>
+        <span class="feat-value">Saves the whole page <em>including what was typed</em> (textarea values are written into the clone's text content first — a plain HTML copy would lose them). The saved copy still saves/loads JSON.</span>
+        <span class="feat-label">Reached from</span>
+        <span class="feat-value">Meeting Prep — the per-meeting Reports block, or the Worksheet button next to the filters (current filter).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retrofits -->
+  <div class="screen-card" id="retrofits">
+    <div class="screen-card-header">
+      <span class="screen-title">Retrofits</span>
+      <span class="screen-url">GET /retrofits/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-10. Hand-maintained list of system changes still coming per channel, so sign-off readers always see what is still moving. Rendered at the <strong>bottom of the ECOM and Retail status reports</strong>.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value">Channel (ECOM | Retail) · Title · Description ("what it means for testing") · Status (<strong>Confirmed</strong> = it is coming · <strong>Potential</strong> = might still come) · Expected (free text, e.g. "CW34") · Topic (optional link to a Topic for the background)</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-action">Add</span> (form at the top) · <span class="pill pill-action">Edit</span> (expands an inline row form) · <span class="pill pill-ajax">✕ Delete</span> (confirm → <code>POST /retrofits/&lt;id&gt;/delete</code>)</span>
+        <span class="feat-label">Filter</span>
+        <span class="feat-value">Channel dropdown with per-channel counts</span>
+        <span class="feat-label">In the reports</span>
+        <span class="feat-value">Section "Retrofits — ECOM/Retail" at the bottom of each status report (page, HTML download and email attachment), Confirmed rows first then Potential. The section renders <strong>even when the list is empty</strong>, because its standing caveat is the point: "this list reflects what is known today — further retrofits may still be announced, and anything already tested may need a re-test once they land."</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>retrofits</code>; the topic title is resolved in a separate query (never a JOIN — a retrofit must stay readable even where the topics table doesn't exist)</span>
       </div>
     </div>
   </div>

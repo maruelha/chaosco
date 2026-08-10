@@ -150,14 +150,16 @@
       border-bottom: 1px solid #f1f5f9;
     }
     .item:last-child { border-bottom: none; }
-    .item-n {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: #64748b;
-      min-width: 1.6rem;
-      text-align: right;
+    /* bullet instead of a number [USER 2026-08-10] — agenda items are not
+       ranked, and numbering implied an order that isn't meant */
+    .item-bullet {
+      font-size: 1rem;
+      line-height: 1;
+      color: #94a3b8;
+      min-width: 0.9rem;
+      text-align: center;
       flex-shrink: 0;
-      padding-top: 0.05rem;
+      padding-top: 0.2rem;
     }
     .item-text {
       font-size: 0.95rem;
@@ -266,7 +268,7 @@
         <ul class="item-list">
           {% for item in grp %}
           <li class="item">
-            <span class="item-n">{{ loop.index }}</span>
+            <span class="item-bullet">&bull;</span>
             <span class="item-text">{{ item.topic }}</span>
           </li>
           {% endfor %}
@@ -287,7 +289,7 @@
       <ul class="item-list">
         {% for item in untagged %}
         <li class="item">
-          <span class="item-n">{{ loop.index }}</span>
+          <span class="item-bullet">&bull;</span>
           <span class="item-text">{{ item.topic }}</span>
         </li>
         {% endfor %}

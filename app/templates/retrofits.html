@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Retrofits — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1>Retrofits</h1>
+      <p class="page-subtitle">Coming system changes per channel — rendered at the bottom of the ECOM and Retail status reports</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('retail_status_report') }}" class="btn">Retail Report</a>
+      <a href="{{ url_for('ecom.ecom_report') }}" class="btn">ECOM Report</a>
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+    </div>
+  </div>
+</div>
+
+{% if added %}<div class="saved-banner">&#10003;&nbsp; Retrofit added.</div>{% endif %}
+
+{# ---- Add form ---- #}
+{% call ui.section('Add a retrofit', 'teal') %}
+<form method="post" action="{{ url_for('retrofits.retrofit_add') }}" class="rf-form">
+  <input type="hidden" name="channel_filter" value="{{ sel_channel }}">
+  <div class="rf-form-row">
+    <label class="rf-field rf-field--narrow">
+      <span>Channel</span>
+      <select name="channel" required>
+        {% for c in channels %}
+        <option value="{{ c }}" {% if c == sel_channel %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="rf-field rf-field--wide">
+      <span>Title</span>
+      <input type="text" name="title" required placeholder="What is changing…">
+    </label>
+    <label class="rf-field rf-field--narrow">
+      <span>Status</span>
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s }}">{{ s }}{% if s == 'Potential' %} (might still come){% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="rf-form-row">
+    <label class="rf-field rf-field--wide">
+      <span>Description <span class="field-hint">what it means for testing</span></span>
+      <input type="text" name="description" placeholder="optional">
+    </label>
+    <label class="rf-field rf-field--narrow">
+      <span>Expected <span class="field-hint">when</span></span>
+      <input type="text" name="expected" placeholder="e.g. CW34, after go-live">
+    </label>
+    <label class="rf-field rf-field--narrow">
+      <span>Topic <span class="field-hint">more info</span></span>
+      <select name="topic_id">
+        <option value="">— none —</option>
+        {% for t in topics %}
+        <option value="{{ t.id }}">{{ t.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="rf-field rf-field--submit">
+      <button type="submit" class="btn btn-primary">Add</button>
+    </div>
+  </div>
+</form>
+{% endcall %}
+
+{# ---- Filter ---- #}
+<form method="get" action="{{ url_for('retrofits.retrofits_list') }}" class="filters-bar">
+  <div class="filter-group">
+    <label for="f-channel">Channel</label>
+    <select id="f-channel" name="channel" onchange="this.form.submit()">
+      <option value="">All ({{ counts.total }})</option>
+      {% for c in channels %}
+      <option value="{{ c }}" {% if c == sel_channel %}selected{% endif %}>{{ c }} ({{ counts[c] }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if sel_channel %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('retrofits.retrofits_list') }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
+</form>
+
+<p class="list-meta">{{ items | length }} retrofit{{ 's' if items | length != 1 }}</p>
+
+{# ---- List ---- #}
+{% if items %}
+<table class="ui-table rf-table">
+  <thead>
+    <tr>
+      <th style="width:6rem">Channel</th>
+      <th style="width:7rem">Status</th>
+      <th>Title</th>
+      <th>Description</th>
+      <th style="width:8rem">Expected</th>
+      <th style="width:11rem">Topic</th>
+      <th style="width:8rem"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in items %}
+    <tr data-id="{{ r.id }}">
+      <td>{{ r.channel }}</td>
+      <td>
+        {% if r.status == 'Potential' %}
+        <span class="pill pill--amber" title="might still come">Potential</span>
+        {% else %}
+        <span class="pill pill--green">Confirmed</span>
+        {% endif %}
+      </td>
+      <td style="font-weight:500">{{ r.title }}</td>
+      <td style="font-size:0.85rem;color:#555">{{ r.description or '—' }}</td>
+      <td style="font-size:0.85rem">{{ r.expected or '—' }}</td>
+      <td>
+        {% if r.topic_id and r.topic_title %}
+        <a href="{{ url_for('topics.topic_detail', topic_id=r.topic_id) }}">{{ r.topic_title }}</a>
+        {% else %}<span style="color:#bbb">—</span>{% endif %}
+      </td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-sm js-rf-edit">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger js-rf-delete">✕</button>
+      </td>
+    </tr>
+    <tr class="rf-edit-row" data-id="{{ r.id }}" style="display:none">
+      <td colspan="7">
+        <form method="post" action="{{ url_for('retrofits.retrofit_update', retrofit_id=r.id) }}" class="rf-form">
+          <input type="hidden" name="channel_filter" value="{{ sel_channel }}">
+          <div class="rf-form-row">
+            <label class="rf-field rf-field--narrow">
+              <span>Channel</span>
+              <select name="channel">
+                {% for c in channels %}
+                <option value="{{ c }}" {% if c == r.channel %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label class="rf-field rf-field--wide">
+              <span>Title</span>
+              <input type="text" name="title" value="{{ r.title }}" required>
+            </label>
+            <label class="rf-field rf-field--narrow">
+              <span>Status</span>
+              <select name="status">
+                {% for s in statuses %}
+                <option value="{{ s }}" {% if s == r.status %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+          <div class="rf-form-row">
+            <label class="rf-field rf-field--wide">
+              <span>Description</span>
+              <input type="text" name="description" value="{{ r.description or '' }}">
+            </label>
+            <label class="rf-field rf-field--narrow">
+              <span>Expected</span>
+              <input type="text" name="expected" value="{{ r.expected or '' }}">
+            </label>
+            <label class="rf-field rf-field--narrow">
+              <span>Topic</span>
+              <select name="topic_id">
+                <option value="">— none —</option>
+                {% for t in topics %}
+                <option value="{{ t.id }}" {% if t.id == r.topic_id %}selected{% endif %}>{{ t.title }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <div class="rf-field rf-field--submit">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn js-rf-cancel">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="list-empty">No retrofits yet. Add the first one above.</p>
+{% endif %}
+
+<script>
+(function () {
+  document.querySelectorAll('.js-rf-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr');
+      var editRow = row.nextElementSibling;
+      var open = editRow.style.display !== 'none';
+      editRow.style.display = open ? 'none' : '';
+      btn.textContent = open ? 'Edit' : 'Close';
+    });
+  });
+  document.querySelectorAll('.js-rf-cancel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var editRow = btn.closest('tr');
+      editRow.style.display = 'none';
+      var mainRow = editRow.previousElementSibling;
+      mainRow.querySelector('.js-rf-edit').textContent = 'Edit';
+    });
+  });
+  document.querySelectorAll('.js-rf-delete').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      if (!confirm('Delete this retrofit?')) return;
+      var row = btn.closest('tr');
+      var resp = await fetch('/retrofits/' + row.dataset.id + '/delete', { method: 'POST' });
+      if ((await resp.json()).ok) {
+        var editRow = row.nextElementSibling;
+        if (editRow && editRow.classList.contains('rf-edit-row')) editRow.remove();
+        row.remove();
+      }
+    });
+  });
+}());
+</script>
+{% endblock %}

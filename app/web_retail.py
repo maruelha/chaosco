@@ -122,11 +122,13 @@ def _get_retail_report():
 
 @app.route("/retail/report")
 def retail_status_report():
+    from app.db import retrofits as db_retrofits
     report = _get_retail_report()
     conn = _get_conn()
     try:
         impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
+        retrofits = db_retrofits.list_retrofits(conn, channel="Retail")
     finally:
         conn.close()
     return render_template(
@@ -138,6 +140,7 @@ def retail_status_report():
         mb_total=totals["mb"],
         sales_total=totals["sales"],
         report_comments=report_comments,
+        retrofits=retrofits,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         missing_categories=_cfg.get("retail_missing_categories", []),
     )
@@ -156,12 +159,14 @@ def retail_report_save_excel():
 
 @app.route("/retail/report/download")
 def retail_report_download():
+    from app.db import retrofits as db_retrofits
     report = _get_retail_report()
     today  = date.today().isoformat()
     conn   = _get_conn()
     try:
         impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
+        retrofits = db_retrofits.list_retrofits(conn, channel="Retail")
     finally:
         conn.close()
     html = render_template(
@@ -171,6 +176,7 @@ def retail_report_download():
         mb_total=totals["mb"],
         sales_total=totals["sales"],
         report_comments=report_comments,
+        retrofits=retrofits,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         missing_categories=_cfg.get("retail_missing_categories", []),
     )

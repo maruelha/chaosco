@@ -13,6 +13,7 @@ import pytest
 
 from app import database, emailer
 from app.db import ecom as db_ecom
+from app.db import retrofits as db_retrofits
 import app.web_ecom as web_ecom
 from app.reporter import compute_retail_report, load_status_mappings
 from app.web import app
@@ -35,6 +36,7 @@ def client(tmp_path, monkeypatch):
     db_path = tmp_path / "ecom_report.db"
     database.init_db(db_path).close()
     db_ecom.init_schema(db_path)
+    db_retrofits.init_schema(db_path)   # report renders the retrofits section
     monkeypatch.setattr(web_ecom, "_db_path", db_path)
     conn = database.get_connection(db_path)
     try:

@@ -143,6 +143,31 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 2. ~~Status-report filter~~ ✅ DONE 2026-07-09: All / In report / Not in
    report + green-✓ Report column (follows `spillover_report_selection`).
 
+### Meeting Prep + Retrofits — done ad-hoc 2026-08-10
+
+1. ~~Report button for ALL meeting types~~ ✅ DONE 2026-08-10 [USER]:
+   per-meeting Reports block on `/meeting-prep` — Agenda (plain sorted
+   list, no defects/follow-ups) + Worksheet for every meeting type and for
+   "All meetings"; the filter-row buttons still export the current filter.
+2. ~~Bullets instead of numbering~~ ✅ DONE 2026-08-10 [USER]: agenda,
+   DTC O2C daily report, worksheet AND the clipboard copy.
+3. ~~Downloadable meeting worksheet~~ ✅ DONE 2026-08-10 [USER]:
+   `/meeting-prep/worksheet` — comment box per topic, Save/Load comments as
+   JSON (match by topic id, fall back to topic text), Download HTML that
+   keeps what was typed. Fully self-contained: works from a saved file.
+4. ~~Retrofits module~~ ✅ DONE 2026-08-10 [USER]: `/retrofits/`
+   (`app/db/retrofits.py` + `app/web_retrofits.py` + dashboard card) —
+   channel ECOM/Retail, status Confirmed/Potential, optional Topic link;
+   rendered at the bottom of the ECOM + Retail reports (page, download and
+   email) with the standing "further retrofits may still be announced"
+   caveat, shown even when the list is empty.
+   Tests: `tests/test_meeting_reports.py` (14) + `tests/test_retrofits.py`
+   (21); suite 376 green.
+5. **Found while building** — ✅ FIXED 2026-08-10: `emailer.render_retail_html`
+   never passed the impacted-defects context, so every EMAILED Retail report
+   claimed "No active Retail defects found" while the live page listed them.
+   Regression test added.
+
 ### Known Production Issues (`/prod_defects`) — done ad-hoc
 
 1. ~~Rename + rebuild~~ ✅ DONE 2026-08-06 [USER]: renamed from "Known

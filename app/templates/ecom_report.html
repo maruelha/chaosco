@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_report_blocks.html" as blocks %}
 {% block title %}ECOM Status Report — Test Coordination{% endblock %}
 
 {% block content %}
@@ -176,6 +177,9 @@
   {% endfor %}
 </ul>
 {% endif %}
+
+{{ blocks.retrofits(retrofits, "ECOM",
+     retrofits_url=url_for('retrofits.retrofits_list', channel='ECOM')) }}
 
 {# ---- Clipboard + Save-to-Excel ---- #}
 <script>
