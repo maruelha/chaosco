@@ -132,6 +132,22 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 - `todos`, `followups` (lightweight per-person chase list + detail page),
   `cs_followups` (richer, CS sign-off), `enhancements` (global floating
   panel on every page + `/enhancements/page`)
+- `followup_options` [USER 2026-08-11] — **"With whom" and "Group" are pick
+  lists, not free text** ("right now I have 5 spellings for one group and
+  that is cumbersome"). One row per selectable entry, `kind` =
+  `person` | `group`; the entry itself may stand for several people — it is
+  one entity to her, so a follow-up holds exactly ONE value, chosen from the
+  list, **strictly no free text**. Maintained in the grey "Lists" section on
+  top of `/followups`: add, rename (`…/options/<id>/rename` updates every
+  follow-up using the old value; renaming onto an existing entry MERGES the
+  two — that is the de-duplication tool), delete (list entry only, rows keep
+  their text). Values already in use were seeded into the lists once
+  (migration in `db/core.py`); a row whose value later leaves the list keeps
+  it and the edit dialog re-offers it as "(not on the list)".
+  The status `<select>` on the board carries `name="fu-status-<id>"` +
+  `autocomplete="off"` — same position-restore bug as the payment tracker:
+  after a row went to done and dropped out, the browser painted "Done" onto
+  the next row on reload.
 - `urgent_items` [USER 2026-08-11] — **Deadlines & Burning**, the short nag
   list: three categories (`deadline` = before a date, `burning` = urgent
   regardless, `uncomfortable` = promises she'd be ashamed not to keep),

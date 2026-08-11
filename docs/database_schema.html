@@ -320,6 +320,7 @@
     <li><a href="#meeting_prep">meeting_prep</a></li>
     <li><a href="#enhancements">enhancements</a></li>
     <li><a href="#followups">followups</a></li>
+    <li><a href="#followup_options">followup_options</a></li>
     <li><a href="#cs_followups">cs_followups</a></li>
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
     <li><a href="#retrofits">retrofits</a></li>
@@ -977,9 +978,9 @@
       </thead>
       <tbody>
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Person(s) to follow up with. Filtered via LIKE so comma-separated names work.</td></tr>
+        <tr><td class="col-name">with_whom</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">The party to follow up with — since 2026-08-11 picked from <a href="#followup_options">followup_options</a> (kind='person'), one entry per row, no free text. Filtered via LIKE.</td></tr>
         <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
-        <tr><td class="col-name">group_name</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional free-text group label for clustering items. Filterable via multi-select dialog. Added via ALTER TABLE.</td></tr>
+        <tr><td class="col-name">group_name</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Optional group label for clustering items — since 2026-08-11 picked from <a href="#followup_options">followup_options</a> (kind='group'). Filterable via multi-select dialog. Added via ALTER TABLE.</td></tr>
         <tr><td class="col-name">when_next</td><td class="col-type">TEXT</td><td></td><td class="note-text">YYYY-MM-DD target date; nullable</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open · in_progress · done (default: open)</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
@@ -987,6 +988,27 @@
       </tbody>
     </table>
     <div class="relations"><strong>Notes:</strong> list view queries notes WHERE entity_type='followup' &nbsp;·&nbsp; <strong>Delete:</strong> <code>POST /followups/&lt;id&gt;/delete</code> removes item + notes &nbsp;·&nbsp; <strong>Edit:</strong> <code>POST /followups/&lt;id&gt;/edit</code></div>
+  </div>
+
+  <!-- followup_options -->
+  <div class="table-card" id="followup_options">
+    <div class="table-card-header">
+      <span class="tname">followup_options</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Managed pick lists behind the follow-up board's "With whom" and "Group" dropdowns (2026-08-11) — one row per selectable entry. Replaces the free-text fields that produced several spellings of the same party.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">kind</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text"><code>person</code> (→ followups.with_whom) · <code>group</code> (→ followups.group_name)</td></tr>
+        <tr><td class="col-name">value</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">The label shown in the dropdown. May well stand for several people ("DTC O2C") — it is one entity to Marina.</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Unique:</strong> (kind, value) — inserts use <code>ON CONFLICT DO NOTHING</code> &nbsp;·&nbsp; <strong>Rename:</strong> <code>POST /followups/options/&lt;id&gt;/rename</code> also UPDATEs every <a href="#followups">followups</a> row holding the old value; renaming onto an existing entry merges the two &nbsp;·&nbsp; <strong>Delete:</strong> only removes the pick-list entry, follow-ups keep their value &nbsp;·&nbsp; <strong>Seeded once</strong> from the distinct values already in <code>followups</code> when the table is still empty (migration in <code>app/db/core.py</code>)</div>
   </div>
 
   <!-- cs_followups -->

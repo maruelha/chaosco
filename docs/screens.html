@@ -1474,11 +1474,13 @@
         </span>
         <span class="feat-label">Status values</span>
         <span class="feat-value">open · in_progress · done</span>
+        <span class="feat-label">Lists — with whom &amp; groups (2026-08-11)</span>
+        <span class="feat-value">Grey collapsible section above the add form (open while the people list is still empty) — the managed pick lists behind both dropdowns, stored in <code>followup_options</code> (kind = person | group). Per entry: rename field + <span class="pill pill-action">Save</span> (<code>POST /followups/options/&lt;id&gt;/rename</code> — renames every follow-up using it too; renaming onto an entry that already exists MERGES the two, which is how duplicate spellings get cleaned up), a usage count (<code>n×</code>), and <span class="pill pill-action">✕</span> (<code>POST /followups/options/&lt;id&gt;/delete</code> — the entry leaves the list, follow-ups keep their value). Add box per list → <code>POST /followups/options/add</code>. Existing free-text values were seeded into the lists once on migration.</span>
         <span class="feat-label">Quick-add form</span>
-        <span class="feat-value">With Whom + Topic + Group (optional, autocomplete from existing groups) + When Next → <code>POST /followups/add</code></span>
+        <span class="feat-value">With Whom (dropdown, required, list only — no free text) + Topic + Group (dropdown, optional) + When Next → <code>POST /followups/add</code>. The Edit dialog uses the same two dropdowns; a row still carrying a value that has since left the list gets it back as a "(not on the list)" option so editing never silently changes it.</span>
         <span class="feat-label">Inline actions</span>
         <span class="feat-value">
-          <span class="pill pill-ajax">Status change</span> → <code>POST /followups/&lt;id&gt;/status</code><br>
+          <span class="pill pill-ajax">Status change</span> → <code>POST /followups/&lt;id&gt;/status</code> (the select carries <code>name="fu-status-&lt;id&gt;"</code> + <code>autocomplete="off"</code>: unnamed controls are restored BY POSITION on reload, so after a row went to done "Done" appeared on the next row)<br>
           <span class="pill pill-action">Edit</span> → dialog pre-filled with all fields → <code>POST /followups/&lt;id&gt;/edit</code><br>
           <span class="pill pill-action">Delete</span> → confirm → <code>POST /followups/&lt;id&gt;/delete</code> (removes item + all its notes)<br>
           <span class="pill pill-action">Notes</span> → detail page with full notes module

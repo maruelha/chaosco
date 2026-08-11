@@ -428,21 +428,91 @@ def get_followups(conn: sqlite3.Connection,
     return [dict(zip(col_names, r)) for r in rows]
 
 
-def get_followup_filter_options(conn: sqlite3.Connection) -> dict:
+FOLLOWUP_OPTION_KINDS = ["person", "group"]
+
+
+def list_followup_options(conn: sqlite3.Connection, kind: str) -> list[dict]:
+    """The managed pick list for one kind, each entry with its usage count."""
+    col = "with_whom" if kind == "person" else "group_name"
     rows = conn.execute(
-        "SELECT DISTINCT with_whom FROM followups WHERE with_whom IS NOT NULL"
+        f"""
+        SELECT o.id, o.value, COUNT(f.id) AS use_count
+        FROM   followup_options o
+        LEFT JOIN followups f ON f.{col} = o.value
+        WHERE  o.kind = ?
+        GROUP BY o.id, o.value
+        ORDER BY LOWER(o.value)
+        """,
+        (kind,),
     ).fetchall()
-    seen, names = set(), []
-    for (val,) in rows:
-        for name in [n.strip() for n in val.split(",")]:
-            if name and name not in seen:
-                seen.add(name)
-                names.append(name)
-    names.sort()
-    groups = [r[0] for r in conn.execute(
-        "SELECT DISTINCT group_name FROM followups WHERE group_name IS NOT NULL ORDER BY group_name"
-    ).fetchall()]
-    return {"with_whom": names, "groups": groups}
+    return [{"id": r[0], "value": r[1], "use_count": r[2]} for r in rows]
+
+
+def add_followup_option(conn: sqlite3.Connection, kind: str, value: str) -> None:
+    value = (value or "").strip()
+    if not value or kind not in FOLLOWUP_OPTION_KINDS:
+        return
+    now = datetime.now().isoformat(timespec="seconds")
+    conn.execute(
+        "INSERT INTO followup_options (kind, value, created_at) VALUES (?, ?, ?)"
+        " ON CONFLICT (kind, value) DO NOTHING",
+        (kind, value, now),
+    )
+    conn.commit()
+
+
+def rename_followup_option(conn: sqlite3.Connection, option_id: int, value: str) -> None:
+    """Rename an entry and carry every follow-up using it along.
+
+    Renaming onto an existing entry merges the two — that is how duplicate
+    spellings of the same party get cleaned up.
+    """
+    value = (value or "").strip()
+    row = conn.execute(
+        "SELECT kind, value FROM followup_options WHERE id = ?", (option_id,)
+    ).fetchone()
+    if not row or not value or value == row[1]:
+        return
+    kind, old = row[0], row[1]
+    col = "with_whom" if kind == "person" else "group_name"
+    conn.execute(f"UPDATE followups SET {col} = ? WHERE {col} = ?", (value, old))
+    existing = conn.execute(
+        "SELECT id FROM followup_options WHERE kind = ? AND value = ?", (kind, value)
+    ).fetchone()
+    if existing:
+        conn.execute("DELETE FROM followup_options WHERE id = ?", (option_id,))
+    else:
+        conn.execute(
+            "UPDATE followup_options SET value = ? WHERE id = ?", (value, option_id)
+        )
+    conn.commit()
+
+
+def delete_followup_option(conn: sqlite3.Connection, option_id: int) -> None:
+    """Remove an entry from the pick list. Follow-ups keep the value they have."""
+    conn.execute("DELETE FROM followup_options WHERE id = ?", (option_id,))
+    conn.commit()
+
+
+def get_followup_filter_options(conn: sqlite3.Connection) -> dict:
+    """Values offered in the filter dialogs: the managed lists plus anything
+    still in use on a row but no longer on the list."""
+    def _merged(kind: str, col: str) -> list[str]:
+        values = {r[0] for r in conn.execute(
+            "SELECT value FROM followup_options WHERE kind = ?", (kind,)
+        ).fetchall()}
+        values |= {r[0].strip() for r in conn.execute(
+            f"SELECT DISTINCT {col} FROM followups"
+            f" WHERE {col} IS NOT NULL AND TRIM({col}) <> ''"
+        ).fetchall()}
+        return sorted(values, key=str.lower)
+
+    return {
+        "with_whom": _merged("person", "with_whom"),
+        "groups": _merged("group", "group_name"),
+        "people_list": list_followup_options(conn, "person"),
+        "group_list": list_followup_options(conn, "group"),
+    }
 
 
 def add_followup(conn: sqlite3.Connection, with_whom: str, topic: str,

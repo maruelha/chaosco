@@ -359,6 +359,18 @@ round-trip → reports) as a later phase.
    named/meeting chats or pre-fill channels — if that is ever needed, the
    Power Automate webhook route (VDI-created, cloud-run) is the upgrade path.
 
+2. ~~**"With whom" / "Group" as managed pick lists**~~ ✅ DONE 2026-08-11
+   [USER: "right now I have 5 spellings for one group"]: `followup_options`
+   (kind person|group) + the grey "Lists" section on top of `/followups`;
+   both fields are dropdowns, list only. Rename cascades to the follow-ups
+   and merges duplicates; existing values were seeded once.
+
+3. ~~**"Done" jumping to the next row**~~ ✅ FIXED 2026-08-11: the status
+   `<select>` was unnamed, so the browser restored it by position after the
+   done row dropped out of the list (same bug class as the payment tracker
+   comments — pinned in `tests/test_form_state_fixes.py` /
+   `tests/test_followup_options.py`).
+
 ### Jira card — concept REFINED 2026-07-05, see docs/build_plan_2026-07-05.md items 2-6 (do not build until templates provided)
 
 Parked 2026-07-04 after a feasibility chat. Known so far:

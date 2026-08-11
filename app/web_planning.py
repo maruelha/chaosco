@@ -434,6 +434,37 @@ def followup_add():
     return redirect(url_for("followup_list"))
 
 
+@app.route("/followups/options/add", methods=["POST"])
+def followup_option_add():
+    conn = _get_conn()
+    try:
+        database.add_followup_option(conn, request.form.get("kind", ""),
+                                     request.form.get("value", ""))
+    finally:
+        conn.close()
+    return redirect(url_for("followup_list"))
+
+
+@app.route("/followups/options/<int:option_id>/rename", methods=["POST"])
+def followup_option_rename(option_id: int):
+    conn = _get_conn()
+    try:
+        database.rename_followup_option(conn, option_id, request.form.get("value", ""))
+    finally:
+        conn.close()
+    return redirect(url_for("followup_list"))
+
+
+@app.route("/followups/options/<int:option_id>/delete", methods=["POST"])
+def followup_option_delete(option_id: int):
+    conn = _get_conn()
+    try:
+        database.delete_followup_option(conn, option_id)
+    finally:
+        conn.close()
+    return redirect(url_for("followup_list"))
+
+
 @app.route("/followups/<int:followup_id>/edit", methods=["POST"])
 def followup_edit(followup_id: int):
     with_whom  = request.form.get("with_whom", "").strip()

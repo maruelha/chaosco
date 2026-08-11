@@ -32,7 +32,8 @@
     <div class="detail-field">
       <span class="detail-label">Status</span>
       <span class="detail-value">
-        <select class="fu-input fu-status-sel js-status-sel" style="font-size:14px;padding:4px 8px">
+        <select class="fu-input fu-status-sel js-status-sel" style="font-size:14px;padding:4px 8px"
+                name="fu-status-{{ row.id }}" autocomplete="off">
           {% for s in statuses %}
             <option value="{{ s }}" {{ 'selected' if row.status == s }}>{{ s.replace('_',' ').title() }}</option>
           {% endfor %}

@@ -373,6 +373,33 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-08-11 ================= -->
+<h2 class="date">Added 2026-08-11</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Follow-ups: the pick lists want one clean-up pass</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="fu-merge-spellings">
+      <span><strong>Merge the duplicate spellings in the new lists.</strong>
+      <span class="where">&#8594; /followups &rarr; "Lists &mdash; with whom &amp; groups"</span><br>
+      Every value you had used so far was copied into the lists, duplicates and
+      all &mdash; that is on purpose so nothing got lost. Fix a spelling by typing
+      the correct one over it and pressing Save: the follow-ups using it come
+      along, and saving it onto a name that already exists MERGES the two. The
+      <code>n&times;</code> next to each entry tells you how many follow-ups use it,
+      so entries showing <code>0&times;</code> are safe to delete with &#10005;.</span></label>
+
+    <label class="task"><input type="checkbox" data-k="fu-one-entity-per-item">
+      <span><strong>One entry per follow-up &mdash; is that right everywhere?</strong>
+      <span class="where">&#8594; /followups</span><br>
+      As you said, a list entry can stand for several people ("DTC O2C"), but a
+      follow-up now holds exactly one entry and free text is no longer possible.
+      If an old row combined two parties, it still shows what it had; open Edit
+      and it is offered as "(not on the list)" so it doesn't change behind your
+      back &mdash; but you'll want to pick a proper entry for it.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

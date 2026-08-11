@@ -1,5 +1,35 @@
 {% extends "base.html" %}
+{% import '_macros.html' as ui %}
 {% block title %}Follow-ups — Test Coordination{% endblock %}
+
+{# ---- one managed pick list (people or groups) ---- #}
+{% macro option_list(kind, title, entries, placeholder) %}
+<div class="fu-list-col">
+  <h3 class="fu-list-title">{{ title }}</h3>
+  <form method="post" action="{{ url_for('followup_option_add') }}" class="fu-list-add">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <input name="value" class="fu-input" placeholder="{{ placeholder }}" required autocomplete="off">
+    <button type="submit" class="btn btn-sm btn-primary">Add</button>
+  </form>
+  {% for o in entries %}
+    <div class="fu-opt-row">
+      <form method="post" action="{{ url_for('followup_option_rename', option_id=o.id) }}"
+            class="fu-opt-rename">
+        <input name="value" class="fu-input" value="{{ o.value }}" autocomplete="off"
+               title="rename — every follow-up using it is renamed too; renaming onto an existing entry merges the two">
+        <button type="submit" class="btn btn-sm">Save</button>
+      </form>
+      <span class="fu-opt-use" title="follow-ups using this entry">{{ o.use_count }}×</span>
+      <form method="post" action="{{ url_for('followup_option_delete', option_id=o.id) }}"
+            onsubmit="return confirm('Remove &quot;{{ o.value }}&quot; from the list? Existing follow-ups keep the value.')">
+        <button type="submit" class="btn btn-sm btn-danger">✕</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="list-empty" style="margin:0.4rem 0">Nothing defined yet.</p>
+  {% endfor %}
+</div>
+{% endmacro %}
 
 {% block content %}
 <div class="page-header">
@@ -13,14 +43,37 @@
   {% include '_incoming_section.html' %}
 {% endwith %}
 
+{# ---- Managed pick lists ---- #}
+{% set lists_open = not opts.people_list %}
+{% call ui.section('Lists — with whom & groups', 'gray',
+                   badge=opts.people_list|length ~ ' people · ' ~ opts.group_list|length ~ ' groups',
+                   open=lists_open) %}
+  <div class="fu-lists">
+    {{ option_list('person', 'With whom', opts.people_list, 'Add a person or party…') }}
+    {{ option_list('group',  'Group',     opts.group_list,  'Add a group…') }}
+  </div>
+  <p class="fu-lists-hint">
+    These are the only values you can pick when adding a follow-up. Rename an
+    entry to fix a spelling — every follow-up using it follows along, and
+    renaming onto an entry that already exists merges the two.
+  </p>
+{% endcall %}
+
 {# ---- Add form ---- #}
+{% if not opts.people_list %}
+  <p class="list-empty">Define at least one “With whom” entry in the list above,
+     then you can add follow-ups.</p>
+{% endif %}
 <form method="post" action="{{ url_for('followup_add') }}" class="fu-add-form">
-  <input name="with_whom"  type="text" placeholder="With whom *" required class="fu-input fu-short">
+  <select name="with_whom" required class="fu-input fu-short" autocomplete="off">
+    <option value="" disabled selected>With whom *</option>
+    {% for o in opts.people_list %}<option value="{{ o.value }}">{{ o.value }}</option>{% endfor %}
+  </select>
   <input name="topic"      type="text" placeholder="Topic *"     required class="fu-input fu-topic">
-  <input name="group_name" type="text" placeholder="Group"                class="fu-input fu-short" list="fu-group-opts">
-  <datalist id="fu-group-opts">
-    {% for g in opts.groups %}<option value="{{ g }}">{% endfor %}
-  </datalist>
+  <select name="group_name" class="fu-input fu-short" autocomplete="off">
+    <option value="">Group —</option>
+    {% for o in opts.group_list %}<option value="{{ o.value }}">{{ o.value }}</option>{% endfor %}
+  </select>
   <input name="when_next"  type="date" value="{{ today }}"               class="fu-input fu-short">
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
@@ -94,7 +147,10 @@
     <div class="dlg-body" style="display:flex;flex-direction:column;gap:0.6rem">
       <div>
         <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">With whom *</label>
-        <input name="with_whom" type="text" required class="fu-input" style="width:100%;box-sizing:border-box" id="fu-edit-whom">
+        <select name="with_whom" required class="fu-input" style="width:100%;box-sizing:border-box"
+                id="fu-edit-whom" autocomplete="off">
+          {% for o in opts.people_list %}<option value="{{ o.value }}">{{ o.value }}</option>{% endfor %}
+        </select>
       </div>
       <div>
         <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">Topic *</label>
@@ -102,7 +158,11 @@
       </div>
       <div>
         <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">Group</label>
-        <input name="group_name" type="text" class="fu-input" style="width:100%;box-sizing:border-box" id="fu-edit-group" list="fu-group-opts">
+        <select name="group_name" class="fu-input" style="width:100%;box-sizing:border-box"
+                id="fu-edit-group" autocomplete="off">
+          <option value="">—</option>
+          {% for o in opts.group_list %}<option value="{{ o.value }}">{{ o.value }}</option>{% endfor %}
+        </select>
       </div>
       <div>
         <label style="font-size:0.82rem;color:#555;display:block;margin-bottom:0.2rem">When next</label>
@@ -145,7 +205,11 @@
         {{ item.when_next or '—' }}
       </td>
       <td class="fu-col-status">
-        <select class="fu-input fu-status-sel js-fu-status-sel">
+        {# unique name + autocomplete=off: the browser restores form values across
+           reloads by POSITION for unnamed controls — after a row is set to done
+           and drops out of the list, "Done" would show up on the next row #}
+        <select class="fu-input fu-status-sel js-fu-status-sel"
+                name="fu-status-{{ item.id }}" autocomplete="off">
           {% for s in statuses %}
             <option value="{{ s }}" {% if item.status == s %}selected{% endif %}>
               {{ s.replace('_',' ').title() }}
@@ -226,13 +290,26 @@
   var editDlg  = document.getElementById('dlg-fu-edit');
   var editForm = document.getElementById('fu-edit-form');
 
+  /* a row may still carry a value that was removed from the pick list —
+     offer it once so editing the row does not silently change it */
+  function setSelect(sel, val) {
+    sel.value = val || '';
+    if (sel.value !== (val || '')) {
+      var opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = val + ' (not on the list)';
+      sel.appendChild(opt);
+      sel.value = val;
+    }
+  }
+
   document.querySelectorAll('.js-fu-edit').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var tr = btn.closest('tr');
       editForm.action = '/followups/' + tr.dataset.id + '/edit';
-      document.getElementById('fu-edit-whom').value  = tr.dataset.whom;
+      setSelect(document.getElementById('fu-edit-whom'), tr.dataset.whom);
       document.getElementById('fu-edit-topic').value = tr.dataset.topic;
-      document.getElementById('fu-edit-group').value = tr.dataset.group;
+      setSelect(document.getElementById('fu-edit-group'), tr.dataset.group);
       document.getElementById('fu-edit-when').value  = tr.dataset.when;
       editDlg.showModal();
     });

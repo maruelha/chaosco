@@ -194,6 +194,16 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at TEXT
         );
 
+        -- Pick lists for the follow-up board: one row per selectable
+        -- "with whom" party (kind='person') or group (kind='group').
+        CREATE TABLE IF NOT EXISTS followup_options (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            kind       TEXT NOT NULL,
+            value      TEXT NOT NULL,
+            created_at TEXT,
+            UNIQUE (kind, value)
+        );
+
         CREATE TABLE IF NOT EXISTS known_prod_defects (
             id                INTEGER PRIMARY KEY AUTOINCREMENT,
             technical_key     TEXT,
@@ -422,6 +432,23 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    # "With whom" / "Group" used to be free text on the follow-up board.  Seed
+    # the pick lists from whatever is already in use, once, so nothing is lost
+    # (duplicate spellings can then be merged by renaming an entry).
+    if not conn.execute("SELECT COUNT(*) FROM followup_options").fetchone()[0]:
+        now = datetime.now().isoformat(timespec="seconds")
+        for kind, col in (("person", "with_whom"), ("group", "group_name")):
+            values = conn.execute(
+                f"SELECT DISTINCT {col} FROM followups"
+                f" WHERE {col} IS NOT NULL AND TRIM({col}) <> ''"
+            ).fetchall()
+            for (val,) in values:
+                conn.execute(
+                    "INSERT INTO followup_options (kind, value, created_at)"
+                    " VALUES (?, ?, ?) ON CONFLICT (kind, value) DO NOTHING",
+                    (kind, val.strip(), now),
+                )
+        conn.commit()
     # Spillover match key changed from type||name||country to excel_row.
     # UPDATE preserves spillover_id values so FK links in spillover_annotations
     # stay intact.  The importer overwrites remaining columns on next run.
