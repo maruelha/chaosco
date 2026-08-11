@@ -975,21 +975,34 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 
 .mp-export-btns { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 
-/* per-meeting report launcher (Agenda / Worksheet) */
-.mp-reports {
+.mp-export-hint { font-size: 0.74rem; color: #aaa; }
+
+/* manage the meeting dropdown */
+.mp-meetings {
   border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa;
-  padding: 0.75rem 1rem 0.6rem; margin-bottom: 1.25rem;
-  display: inline-block; min-width: 22rem;
+  margin-bottom: 1.25rem; max-width: 46rem;
 }
-.mp-reports-label {
-  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: #888; display: block; margin-bottom: 0.4rem;
+.mp-meetings > summary {
+  cursor: pointer; padding: 0.5rem 0.9rem; font-size: 0.82rem;
+  font-weight: 600; color: #555;
 }
-.mp-reports-table { border-collapse: collapse; }
-.mp-reports-table td { padding: 3px 0.75rem 3px 0; vertical-align: middle; }
-.mp-reports-meeting { font-size: 0.85rem; font-weight: 500; color: #3a3a3c; white-space: nowrap; }
-.mp-reports-meeting--all { color: #888; font-style: italic; }
-.mp-reports-hint { font-size: 0.74rem; color: #aaa; margin: 0.45rem 0 0; }
+.mp-meetings-body { padding: 0.2rem 0.9rem 0.8rem; }
+.mp-meetings-add { display: flex; gap: 0.5rem; margin-bottom: 0.7rem; }
+.mp-meetings-add input {
+  padding: 0.35rem 0.6rem; border: 1px solid #c9c9d4; border-radius: 6px;
+  font-size: 0.86rem; min-width: 15rem;
+}
+.mp-meetings-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+}
+.mp-meetings-list li {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  border: 1px solid #e5e5ea; border-radius: 14px; padding: 0.15rem 0.4rem 0.15rem 0.15rem;
+  background: #fff;
+}
+.mp-meetings-count { font-size: 0.72rem; color: #aaa; padding-right: 0.25rem; }
+.mp-meetings-hint { font-size: 0.74rem; color: #aaa; margin: 0.55rem 0 0; }
 .mp-quick-form { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; padding: 0.75rem 1rem; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; }
 .mp-quick-label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
 

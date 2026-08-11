@@ -117,6 +117,11 @@ from app.web_retrofits import bp as _retrofits_bp
 _db_retrofits.init_schema(_db_path)
 app.register_blueprint(_retrofits_bp)
 
+# Meeting types (2026-08-11) — the meeting dropdown is user-editable, so the
+# list lives in its own table (seeded once from planning.MEETING_OPTIONS).
+from app.db import planning as _db_planning
+_db_planning.init_schema(_db_path)
+
 
 if __name__ == "__main__":
     import threading

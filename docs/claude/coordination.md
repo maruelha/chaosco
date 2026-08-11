@@ -102,21 +102,33 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 
 
 - `meeting_prep` — per-meeting agenda topics; overall_topic ordering;
-  source_entity link badges. Three reports [USER 2026-08-10 for the first
-  two]:
-  - `/meeting-prep/agenda?meeting=…` — plain sorted topic list, NO defects
-    and NO follow-ups. Offered per meeting type (block under the page
-    header) and for the current filter.
-  - `/meeting-prep/worksheet?meeting=…` — same list plus a comment box per
-    topic. Self-contained on purpose (no external fonts/fetches): saves the
-    comments to JSON, loads them back (match by topic id, fall back to
-    topic text) and downloads the page WITH the typed comments (textarea
-    values are copied into the clone's text content first, else they are
-    lost). Same per-meeting availability.
+  source_entity link badges. Reports:
   - `/meeting-prep/dtco2c-daily` — the full DTC O2C version: planned topics
-    + daily-flagged defects + DTC O2C followups.
-  All three (and the clipboard copy) use **bullets, never numbering**
+    + daily-flagged defects + DTC O2C followups. Button in the page header.
+  - `/meeting-prep/agenda?meeting=…` — plain sorted topic list, NO defects
+    and NO follow-ups. Button next to the filters, for whatever meeting is
+    filtered.
+  - **Exactly those two agenda buttons** [USER 2026-08-11: "just two
+    buttons, one for DTC O2C, one for any"] — an earlier per-meeting-type
+    launcher block was built and removed the same week; do not reintroduce
+    it, and no "All meetings" button.
+  - `/meeting-prep/worksheet?meeting=…` — the same list plus a comment box
+    per topic, also following the current filter. Self-contained on purpose
+    (no external fonts/fetches): saves the comments to JSON, loads them
+    back (match by topic id, fall back to topic text) and downloads the
+    page WITH the typed comments (textarea values are copied into the
+    clone's text content first, else they are lost).
+  All reports (and the clipboard copy) use **bullets, never numbering**
   [USER 2026-08-10].
+- `meeting_types` [USER 2026-08-11] — the meeting dropdown is user-editable:
+  "Meetings in the dropdown" panel on `/meeting-prep` adds
+  (`POST /meeting-prep/meetings/add`, duplicates refused case-insensitively)
+  and removes (`…/meetings/delete`, refused while topics still use the
+  meeting). `planning.MEETING_OPTIONS` is now only the SEED list + fallback;
+  read the live list with `planning.get_meeting_options(conn)` — that is
+  what the meeting-prep form/filter and the "Add to Meeting Prep" dropdowns
+  on Defect and Retail detail all use. Seeding runs only while the table is
+  empty, so a removed meeting stays removed across restarts.
 - `todos`, `followups` (lightweight per-person chase list + detail page),
   `cs_followups` (richer, CS sign-off), `enhancements` (global floating
   panel on every page + `/enhancements/page`)

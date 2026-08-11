@@ -10,6 +10,10 @@ from datetime import datetime
 
 from app.db.core import _rows_to_dicts
 
+# Seed list only [USER 2026-08-11]: meetings live in the `meeting_types`
+# table so they can be added from the UI. This list is what a fresh DB is
+# seeded with, and the fallback if the table is missing — read the live list
+# with get_meeting_options(conn), never from here.
 MEETING_OPTIONS = [
     "Balazs",
     "GPO",
@@ -18,6 +22,85 @@ MEETING_OPTIONS = [
     "Sales ECOM daily",
     "Other",
 ]
+
+# The one meeting with its own full report (topics + defects + follow-ups).
+DTC_O2C_MEETING = "DTC O2C Daily"
+
+_MEETING_TYPES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS meeting_types (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    name       TEXT NOT NULL UNIQUE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+"""
+
+
+def init_schema(db_path) -> None:
+    """Create meeting_types and seed it with MEETING_OPTIONS the first time.
+
+    Seeding only happens while the table is EMPTY, so meetings added (or
+    removed) in the UI are never resurrected by a restart."""
+    from app.db.core import get_connection
+    conn = get_connection(db_path)
+    try:
+        conn.executescript(_MEETING_TYPES_SCHEMA)
+        existing = conn.execute("SELECT COUNT(*) FROM meeting_types").fetchone()[0]
+        if not existing:
+            now = datetime.now().isoformat(timespec="seconds")
+            for i, name in enumerate(MEETING_OPTIONS):
+                conn.execute(
+                    "INSERT INTO meeting_types (name, sort_order, created_at)"
+                    " VALUES (?, ?, ?)", (name, i, now))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_meeting_options(conn: sqlite3.Connection) -> list[str]:
+    """The live meeting list for every dropdown. Falls back to the seed list
+    if the table isn't there yet (partial-init DB)."""
+    try:
+        return [r[0] for r in conn.execute(
+            "SELECT name FROM meeting_types ORDER BY sort_order, id")]
+    except sqlite3.OperationalError:
+        return list(MEETING_OPTIONS)
+
+
+def add_meeting_type(conn: sqlite3.Connection, name: str) -> bool:
+    """Add a meeting to the dropdown. Returns False if it already exists."""
+    name = " ".join((name or "").split())
+    if not name:
+        return False
+    existing = conn.execute(
+        "SELECT 1 FROM meeting_types WHERE LOWER(name) = LOWER(?)",
+        (name,)).fetchone()
+    if existing:
+        return False
+    nxt = conn.execute(
+        "SELECT COALESCE(MAX(sort_order) + 1, 0) FROM meeting_types").fetchone()[0]
+    with conn:
+        conn.execute(
+            "INSERT INTO meeting_types (name, sort_order, created_at)"
+            " VALUES (?, ?, ?)",
+            (name, nxt, datetime.now().isoformat(timespec="seconds")))
+    return True
+
+
+def meeting_type_usage(conn: sqlite3.Connection, name: str) -> int:
+    """How many agenda items still reference this meeting."""
+    return conn.execute(
+        "SELECT COUNT(*) FROM meeting_prep WHERE meeting = ?", (name,)).fetchone()[0]
+
+
+def delete_meeting_type(conn: sqlite3.Connection, name: str) -> bool:
+    """Remove a meeting from the dropdown — refused while topics still use it,
+    so existing agenda items can never end up orphaned."""
+    if meeting_type_usage(conn, name):
+        return False
+    with conn:
+        conn.execute("DELETE FROM meeting_types WHERE name = ?", (name,))
+    return True
 
 MEETING_OVERALL_TOPICS = [
     "CS Retail",

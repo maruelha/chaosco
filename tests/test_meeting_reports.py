@@ -23,6 +23,7 @@ from app.web import app
 def client(tmp_path, monkeypatch):
     db_path = tmp_path / "meetings.db"
     database.init_db(db_path).close()
+    db_planning.init_schema(db_path)      # meeting_types + seed
     monkeypatch.setattr(web_core, "_db_path", db_path)
     c = app.test_client()
     c.db_path = db_path
@@ -41,15 +42,25 @@ def _topic(client, meeting, topic, overall_topic=None, status="planned"):
         conn.close()
 
 
-def test_every_meeting_type_has_report_buttons(client):
-    """A report link per meeting — not only the DTC O2C Daily special."""
+def test_exactly_two_agenda_buttons_no_per_meeting_block(client):
+    """[USER 2026-08-11] Two report buttons only: the DTC O2C Daily Agenda in
+    the header, and one for whatever the filter is set to — NOT one per
+    meeting type, and no "All meetings" button."""
+    _topic(client, "GPO", "Some topic", "Orga")
     html = client.get("/meeting-prep").get_data(as_text=True)
-    for meeting in db_planning.MEETING_OPTIONS:
-        assert f"meeting={meeting.replace(' ', '+').replace('&', '%26')}" in html \
-            or meeting in html, meeting
-    # both report kinds are offered per meeting
-    assert html.count("Agenda") >= len(db_planning.MEETING_OPTIONS)
-    assert html.count("Worksheet") >= len(db_planning.MEETING_OPTIONS)
+
+    assert html.count("/meeting-prep/dtco2c-daily") == 1
+    assert html.count("/meeting-prep/agenda") == 1
+    assert html.count("/meeting-prep/worksheet") == 1
+    # the removed per-meeting launcher must not come back
+    assert "mp-reports" not in html
+    assert "All meetings</td>" not in html
+
+
+def test_filter_buttons_follow_the_selected_meeting(client):
+    _topic(client, "GPO", "GPO topic", "Orga")
+    html = client.get("/meeting-prep?meeting=GPO&status=planned").get_data(as_text=True)
+    assert "meeting=GPO" in html      # both report links carry the filter
 
 
 @pytest.mark.parametrize("meeting", db_planning.MEETING_OPTIONS)
@@ -131,3 +142,95 @@ def test_worksheet_with_no_items_still_renders(client):
     resp = client.get("/meeting-prep/worksheet?meeting=GPO")
     assert resp.status_code == 200
     assert "No items match" in resp.get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
+# Editable meeting list [USER 2026-08-11]
+# ---------------------------------------------------------------------------
+
+def test_seeded_with_the_known_meetings(client):
+    conn = database.get_connection(client.db_path)
+    try:
+        assert db_planning.get_meeting_options(conn) == db_planning.MEETING_OPTIONS
+    finally:
+        conn.close()
+
+
+def test_add_meeting_appears_in_every_dropdown(client):
+    resp = client.post("/meeting-prep/meetings/add", data={"name": "Weekly ROE sync"})
+    assert resp.status_code == 302
+
+    conn = database.get_connection(client.db_path)
+    try:
+        assert "Weekly ROE sync" in db_planning.get_meeting_options(conn)
+    finally:
+        conn.close()
+
+    # the meeting-prep add form + filter
+    assert "Weekly ROE sync" in client.get("/meeting-prep").get_data(as_text=True)
+
+
+def test_added_meeting_reaches_the_defect_and_retail_add_forms(client):
+    """The "Add to Meeting Prep" dropdowns must offer new meetings too."""
+    client.post("/meeting-prep/meetings/add", data={"name": "Weekly ROE sync"})
+    conn = database.get_connection(client.db_path)
+    try:
+        conn.execute("INSERT INTO defects (defect_id, solman_name, channel)"
+                     " VALUES ('DEF-1', 'x', 'Retail')")
+        conn.commit()
+    finally:
+        conn.close()
+    html = client.get("/defects/DEF-1").get_data(as_text=True)
+    assert "Weekly ROE sync" in html
+
+
+def test_duplicate_and_blank_meetings_refused(client):
+    conn = database.get_connection(client.db_path)
+    try:
+        before = len(db_planning.get_meeting_options(conn))
+    finally:
+        conn.close()
+
+    r = client.post("/meeting-prep/meetings/add", data={"name": "  gpo  "})
+    assert "err=" in r.headers["Location"]          # case/space-insensitive dup
+    r = client.post("/meeting-prep/meetings/add", data={"name": "   "})
+    assert "err=" in r.headers["Location"]
+
+    conn = database.get_connection(client.db_path)
+    try:
+        assert len(db_planning.get_meeting_options(conn)) == before
+    finally:
+        conn.close()
+
+
+def test_meeting_in_use_cannot_be_deleted(client):
+    _topic(client, "GPO", "A topic on GPO", "Orga")
+    r = client.post("/meeting-prep/meetings/delete", data={"name": "GPO"})
+    assert "err=" in r.headers["Location"]
+    conn = database.get_connection(client.db_path)
+    try:
+        assert "GPO" in db_planning.get_meeting_options(conn)
+    finally:
+        conn.close()
+
+
+def test_unused_meeting_can_be_deleted(client):
+    client.post("/meeting-prep/meetings/add", data={"name": "Temporary sync"})
+    r = client.post("/meeting-prep/meetings/delete", data={"name": "Temporary sync"})
+    assert "msg=" in r.headers["Location"]
+    conn = database.get_connection(client.db_path)
+    try:
+        assert "Temporary sync" not in db_planning.get_meeting_options(conn)
+    finally:
+        conn.close()
+
+
+def test_seeding_does_not_resurrect_a_removed_meeting(client):
+    """Re-running init_schema (every app start) must not undo an edit."""
+    client.post("/meeting-prep/meetings/delete", data={"name": "Other"})
+    db_planning.init_schema(client.db_path)
+    conn = database.get_connection(client.db_path)
+    try:
+        assert "Other" not in db_planning.get_meeting_options(conn)
+    finally:
+        conn.close()

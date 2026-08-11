@@ -1,22 +1,33 @@
-# Session Test — 2026-08-10 — Meeting reports + Retrofits
+# Session Test — 2026-08-10 (+ 11.08 corrections) — Meeting reports + Retrofits
 
-Click-through checklist for the four things built while you were out.
-App at `http://127.0.0.1:8010`.
+Click-through checklist for the four things built while you were out, with
+the 11.08 corrections folded in. App at `http://127.0.0.1:8010`.
 
 > **Before clicking through:** restart the app once (`run_web.bat`) so the new
-> `retrofits` table is created. Nothing existing is changed or deleted.
+> `retrofits` and `meeting_types` tables are created. Nothing existing is
+> changed or deleted — your 6 meetings are seeded exactly as they were.
 
-## ① Report button for every meeting type
+## ① Two report buttons (corrected 11.08)
 
-- [ ] `/meeting-prep` → a **Reports** block sits under the heading with a row
-      per meeting (Balazs, GPO, Sync&Solve, DTC O2C Daily, Sales ECOM daily,
-      Other) plus "All meetings".
-- [ ] Each row's **📄 Agenda** opens the plain sorted topic list for that
-      meeting — **no defects section, no follow-ups section**.
-- [ ] The **DTC O2C Daily Agenda** button in the page header still opens the
-      full version (topics + defects + follow-ups) — unchanged.
-- [ ] The **Export agenda** / **Worksheet** buttons next to the filters still
-      follow whatever filter is set (that's the difference to the block above).
+The first build had a button per meeting type — removed, as you asked.
+
+- [ ] `/meeting-prep` → **no** per-meeting block, **no** "All meetings" button.
+- [ ] **📄 DTC O2C Daily Agenda** in the page header → the full version
+      (topics + defects + follow-ups), unchanged.
+- [ ] Set the meeting filter to e.g. GPO → **📄 Agenda** next to the filters
+      opens the plain sorted list for GPO — **no defects, no follow-ups**.
+      The grey hint next to the buttons names the current filter.
+
+## ①b Adding meetings to the dropdown (new 11.08)
+
+- [ ] `/meeting-prep` → **Meetings in the dropdown (6)** panel under the add
+      form → type a name → **+ Add meeting**.
+- [ ] The new meeting appears in the add form and the filter…
+- [ ] …and also in **Add to Meeting Prep** on a Defect and a Retail detail page.
+- [ ] Adding the same name again (any casing) is refused with a red banner.
+- [ ] A meeting **with** topics shows its topic count and no ✕ (can't be
+      removed by accident); an unused one has a ✕ that removes it.
+- [ ] Restart the app → your added/removed meetings stay as you left them.
 
 ## ② Bullets instead of numbers
 
@@ -57,8 +68,9 @@ App at `http://127.0.0.1:8010`.
 
 ## No clicking needed
 
-- Full suite green: **376 tests** (14 new for the meeting reports, 21 for
-  retrofits, 1 regression test for the emailer bug).
+- Full suite green: **384 tests** (22 for the meeting reports incl. the
+  editable meeting list, 21 for retrofits, 1 regression test for the
+  emailer bug).
 - Every item above was also verified programmatically against temp DBs, and
   all pages were smoke-tested against your real data.
 - Docs updated: `screens.html` · `database_schema.html` · `architecture.html`

@@ -145,10 +145,17 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 
 ### Meeting Prep + Retrofits — done ad-hoc 2026-08-10
 
-1. ~~Report button for ALL meeting types~~ ✅ DONE 2026-08-10 [USER]:
-   per-meeting Reports block on `/meeting-prep` — Agenda (plain sorted
-   list, no defects/follow-ups) + Worksheet for every meeting type and for
-   "All meetings"; the filter-row buttons still export the current filter.
+1. ~~Report button for the other meetings~~ ✅ DONE 2026-08-10, **CORRECTED
+   2026-08-11** [USER]: the first build put a launcher block with a button
+   per meeting type (plus "All meetings") on `/meeting-prep` — too much.
+   Now exactly **two** agenda buttons: DTC O2C Daily Agenda (header, full
+   version) and Agenda (next to the filters, for whatever meeting is
+   filtered). Do not reintroduce the per-meeting block.
+1b. ~~Meetings addable to the dropdown~~ ✅ DONE 2026-08-11 [USER]: new
+   `meeting_types` table (seeded from `MEETING_OPTIONS`, seeding only while
+   empty) + "Meetings in the dropdown" panel to add/remove; removal refused
+   while topics still use the meeting. Every meeting dropdown app-wide
+   (meeting prep, Defect detail, Retail detail) now reads the live list.
 2. ~~Bullets instead of numbering~~ ✅ DONE 2026-08-10 [USER]: agenda,
    DTC O2C daily report, worksheet AND the clipboard copy.
 3. ~~Downloadable meeting worksheet~~ ✅ DONE 2026-08-10 [USER]:

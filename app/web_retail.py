@@ -292,6 +292,8 @@ def retail_detail(retail_id: int):
         attachments_by_note = database.get_attachments_for_notes(
             conn, [n["id"] for n in notes]
         )
+        from app.db import planning as db_planning
+        meetings = db_planning.get_meeting_options(conn)
     finally:
         conn.close()
     saved        = request.args.get("saved") == "1"
@@ -306,6 +308,6 @@ def retail_detail(retail_id: int):
         saved=saved, note_added=note_added,
         note_saved=note_saved, note_deleted=note_deleted,
         added_to_meeting=added_to_meeting,
-        meetings=database.MEETING_OPTIONS,
+        meetings=meetings,
     )
 

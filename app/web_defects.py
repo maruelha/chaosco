@@ -95,6 +95,8 @@ def defect_detail(defect_id: str):
         attachments_by_note = database.get_attachments_for_notes(
             conn, [n["id"] for n in notes]
         )
+        from app.db import planning as db_planning
+        meetings = db_planning.get_meeting_options(conn)
     finally:
         conn.close()
 
@@ -113,7 +115,7 @@ def defect_detail(defect_id: str):
         note_saved=note_saved,
         note_deleted=note_deleted,
         added_to_meeting=added_to_meeting,
-        meetings=database.MEETING_OPTIONS,
+        meetings=meetings,
     )
 
 

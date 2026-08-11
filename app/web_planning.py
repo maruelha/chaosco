@@ -13,6 +13,7 @@ from flask import jsonify, redirect, render_template, request, send_from_directo
 from werkzeug.utils import secure_filename
 
 from app import database
+from app.db import planning as db_planning
 from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
@@ -116,16 +117,56 @@ def meeting_prep_list():
             meeting=meeting_filter or None,
             status=status_filter or None,
         )
+        meetings = db_planning.get_meeting_options(conn)
+        usage = {m: db_planning.meeting_type_usage(conn, m) for m in meetings}
     finally:
         conn.close()
     return render_template(
         "meeting_prep.html",
         items=items,
-        meetings=database.MEETING_OPTIONS,
+        meetings=meetings,
+        meeting_usage=usage,
         overall_topics=database.MEETING_OVERALL_TOPICS,
         meeting_filter=meeting_filter,
         status_filter=status_filter,
+        dtc_meeting=db_planning.DTC_O2C_MEETING,
+        msg=request.args.get("msg"),
+        err=request.args.get("err"),
     )
+
+
+@app.route("/meeting-prep/meetings/add", methods=["POST"])
+def meeting_type_add():
+    """Add a meeting to the dropdown [USER 2026-08-11]."""
+    name = request.form.get("name", "").strip()
+    conn = _get_conn()
+    try:
+        ok = db_planning.add_meeting_type(conn, name)
+    finally:
+        conn.close()
+    if not name:
+        return redirect(url_for("meeting_prep_list", err="Give the meeting a name."))
+    if not ok:
+        return redirect(url_for("meeting_prep_list",
+                                err=f'"{name}" is already in the list.'))
+    return redirect(url_for("meeting_prep_list", msg=f'Meeting "{name}" added.'))
+
+
+@app.route("/meeting-prep/meetings/delete", methods=["POST"])
+def meeting_type_delete():
+    """Remove a meeting from the dropdown — refused while topics still use it."""
+    name = request.form.get("name", "").strip()
+    conn = _get_conn()
+    try:
+        used = db_planning.meeting_type_usage(conn, name)
+        ok = db_planning.delete_meeting_type(conn, name)
+    finally:
+        conn.close()
+    if not ok:
+        return redirect(url_for("meeting_prep_list",
+                                err=f'"{name}" still has {used} topic(s) — '
+                                    f'move or delete them first.'))
+    return redirect(url_for("meeting_prep_list", msg=f'Meeting "{name}" removed.'))
 
 
 @app.route("/meeting-prep/agenda")

@@ -1292,7 +1292,7 @@
           <span class="pill pill-filter">Status (dropdown, default: planned)</span>
         </span>
         <span class="feat-label">Meeting options</span>
-        <span class="feat-value">Balazs · GPO · Sync&amp;Solve · DTC O2C Daily · Sales ECOM daily · Other</span>
+        <span class="feat-value">User-editable since 2026-08-11 (table <code>meeting_types</code>, see "Editing the meeting list" below). Seeded with: Balazs · GPO · Sync&amp;Solve · DTC O2C Daily · Sales ECOM daily · Other</span>
         <span class="feat-label">Status values</span>
         <span class="feat-value">planned · discussed · future — default filter shows planned only</span>
         <span class="feat-label">Quick-add form</span>
@@ -1305,17 +1305,18 @@
         <span class="feat-value">When an item was added from a Defect or Retail detail page, the Topic column shows a coloured badge below the topic text: purple for defects (defect ID + SolMan name), green for retail test cases (test case ID / country / scenario). Each badge is a link back to the source detail page.</span>
         <span class="feat-label">Source entity badge</span>
         <span class="feat-value">Items added from a Defect detail page show a purple badge (defect ID + SolMan name → link to defect). Items added from a Retail detail page show a green badge (test case ID / country / scenario → link to test case). Manual items show no badge.</span>
-        <span class="feat-label">Reports per meeting (2026-08-10)</span>
-        <span class="feat-value">Block under the page header with a row per meeting type (plus "All meetings"), each offering two reports on its <em>planned</em> topics — so every meeting is covered, not only DTC O2C:<br>
-          <span class="pill pill-ajax">📄 Agenda</span> → <code>GET /meeting-prep/agenda?meeting=…</code> — the plain sorted topic list, grouped by overall topic. <strong>No defects and no follow-ups</strong> (those exist only on the DTC O2C Daily Agenda).<br>
-          <span class="pill pill-ajax">📝 Worksheet</span> → <code>GET /meeting-prep/worksheet?meeting=…</code> — see the Meeting Worksheet card below.
+        <span class="feat-label">Reports — exactly two (2026-08-11)</span>
+        <span class="feat-value">Deliberately NOT one button per meeting [USER 2026-08-11: "just two buttons, one for DTC O2C, one for any"]:<br>
+          <span class="pill pill-action">📄 DTC O2C Daily Agenda</span> — page header, always visible. The full version: topics + defects to discuss + DTC O2C follow-ups (<code>/meeting-prep/dtco2c-daily</code>).<br>
+          <span class="pill pill-ajax">📄 Agenda</span> — next to the filters, for <em>whatever meeting is filtered</em> (<code>/meeting-prep/agenda?meeting=…&amp;status=…</code>): the plain sorted topic list grouped by overall topic, <strong>no defects and no follow-ups</strong>. A hint next to the buttons names the current filter.
         </span>
-        <span class="feat-label">Export actions</span>
+        <span class="feat-label">Other export actions</span>
         <span class="feat-value">
-          <span class="pill pill-ajax">Export agenda</span> / <span class="pill pill-ajax">Worksheet</span> → same two reports but for the <em>current filter</em> (meeting + status), next to the filter row.<br>
-          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels; <strong>bullets, no numbering</strong> (2026-08-10).<br>
-          <span class="pill pill-action">DTC O2C Daily Agenda</span> → always-visible button in the page header; opens <code>/meeting-prep/dtco2c-daily</code> in a new tab (the full version: topics + defects to discuss + DTC O2C follow-ups).
+          <span class="pill pill-ajax">📝 Worksheet</span> → <code>/meeting-prep/worksheet?meeting=…</code>, also for the current filter — see the Meeting Worksheet card below.<br>
+          <span class="pill pill-ajax">Copy to clipboard</span> → plain text grouped by overall topic order with section labels; <strong>bullets, no numbering</strong> (2026-08-10).
         </span>
+        <span class="feat-label">Editing the meeting list (2026-08-11)</span>
+        <span class="feat-value">Collapsed "Meetings in the dropdown (N)" panel under the add form: type a name → <span class="pill pill-action">+ Add meeting</span> (<code>POST /meeting-prep/meetings/add</code>) and it appears in every meeting dropdown app-wide (meeting prep add form + filter, and the "Add to Meeting Prep" forms on Defect and Retail detail). Duplicates are refused case- and space-insensitively. A meeting shows its topic count and can only be removed (<code>POST /meeting-prep/meetings/delete</code>) <strong>while no topic uses it</strong>, so agenda items are never orphaned. Stored in <code>meeting_types</code>, seeded once from <code>planning.MEETING_OPTIONS</code> — re-seeding never resurrects a meeting you removed.</span>
         <span class="feat-label">Inline actions (AJAX)</span>
         <span class="feat-value">
           <span class="pill pill-ajax">Status change</span> → <code>POST /meeting-prep/&lt;id&gt;/status</code><br>
@@ -1348,7 +1349,7 @@
         <span class="feat-label">⇓ Download HTML</span>
         <span class="feat-value">Saves the whole page <em>including what was typed</em> (textarea values are written into the clone's text content first — a plain HTML copy would lose them). The saved copy still saves/loads JSON.</span>
         <span class="feat-label">Reached from</span>
-        <span class="feat-value">Meeting Prep — the per-meeting Reports block, or the Worksheet button next to the filters (current filter).</span>
+        <span class="feat-value">Meeting Prep — the Worksheet button next to the filters; it follows the current meeting + status filter.</span>
       </div>
     </div>
   </div>

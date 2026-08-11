@@ -12,38 +12,8 @@
   </div>
 </div>
 
-{# ---- Reports per meeting [USER 2026-08-10] ----
-   Agenda = the plain sorted topic list (no defects, no follow-ups — those
-   only exist on the DTC O2C Daily Agenda above).
-   Worksheet = the same list with a comment box per topic, saveable offline. #}
-<div class="mp-reports">
-  <span class="mp-reports-label">Reports</span>
-  <table class="mp-reports-table">
-    <tbody>
-      {% for m in meetings %}
-      <tr>
-        <td class="mp-reports-meeting">{{ m }}</td>
-        <td>
-          <a href="{{ url_for('meeting_prep_agenda', meeting=m, status='planned') }}"
-             target="_blank" class="btn btn-sm">&#128196; Agenda</a>
-          <a href="{{ url_for('meeting_prep_worksheet', meeting=m, status='planned') }}"
-             target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
-        </td>
-      </tr>
-      {% endfor %}
-      <tr>
-        <td class="mp-reports-meeting mp-reports-meeting--all">All meetings</td>
-        <td>
-          <a href="{{ url_for('meeting_prep_agenda', status='planned') }}"
-             target="_blank" class="btn btn-sm">&#128196; Agenda</a>
-          <a href="{{ url_for('meeting_prep_worksheet', status='planned') }}"
-             target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  <p class="mp-reports-hint">Planned topics only. Use the export buttons below for the current filter instead.</p>
-</div>
+{% if msg %}<div class="saved-banner">&#10003;&nbsp; {{ msg }}</div>{% endif %}
+{% if err %}<div class="saved-banner saved-banner--error">&#9888;&nbsp; {{ err }}</div>{% endif %}
 
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('meeting_prep_add') }}" class="mp-add-form">
@@ -63,6 +33,34 @@
   </select>
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
+
+{# ---- Manage the meeting list [USER 2026-08-11] ---- #}
+<details class="mp-meetings">
+  <summary>Meetings in the dropdown ({{ meetings | length }})</summary>
+  <div class="mp-meetings-body">
+    <form method="post" action="{{ url_for('meeting_type_add') }}" class="mp-meetings-add">
+      <input type="text" name="name" placeholder="New meeting name…" required>
+      <button type="submit" class="btn btn-sm btn-primary">+ Add meeting</button>
+    </form>
+    <ul class="mp-meetings-list">
+      {% for m in meetings %}
+      <li>
+        <span class="mp-meeting-pill">{{ m }}</span>
+        {% if meeting_usage.get(m) %}
+        <span class="mp-meetings-count" title="topics using this meeting">{{ meeting_usage[m] }} topic{{ 's' if meeting_usage[m] != 1 }}</span>
+        {% else %}
+        <form method="post" action="{{ url_for('meeting_type_delete') }}" style="display:inline"
+              onsubmit="return confirm('Remove &quot;{{ m }}&quot; from the dropdown?')">
+          <input type="hidden" name="name" value="{{ m }}">
+          <button type="submit" class="btn btn-sm" title="remove — only possible while no topic uses it">✕</button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="mp-meetings-hint">A meeting can only be removed while no topic uses it.</p>
+  </div>
+</details>
 
 {# ---- Filters ---- #}
 <div class="mp-filters">
@@ -85,13 +83,18 @@
   </form>
   <p class="list-meta">{{ items | length }} item(s)</p>
   {% if items %}
+  {# Reports for whatever is filtered above — the DTC O2C Daily Agenda (with
+     defects + follow-ups) has its own button in the page header. #}
   <div class="mp-export-btns">
     <a href="{{ url_for('meeting_prep_agenda', meeting=meeting_filter, status=status_filter) }}"
-       target="_blank" class="btn btn-sm">&#128196; Export agenda</a>
+       target="_blank" class="btn btn-sm"
+       title="plain sorted topic list for the filter above">&#128196; Agenda</a>
     <a href="{{ url_for('meeting_prep_worksheet', meeting=meeting_filter, status=status_filter) }}"
-       target="_blank" class="btn btn-sm">&#128221; Worksheet</a>
+       target="_blank" class="btn btn-sm"
+       title="same list with a comment box per topic — works offline once saved">&#128221; Worksheet</a>
     <button type="button" class="btn btn-sm" id="js-copy-topics">&#128203; Copy to clipboard</button>
     <span id="js-copy-confirm" style="display:none;font-size:0.8rem;color:#1a7f37">&#10003; Copied!</span>
+    <span class="mp-export-hint">for {{ meeting_filter or 'all meetings' }}{% if status_filter %} · {{ status_filter }}{% endif %}</span>
   </div>
   {% endif %}
 </div>
