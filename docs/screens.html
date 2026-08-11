@@ -219,6 +219,7 @@
     <li><a href="#cs-followup-detail">CS Follow-Ups — Detail / New</a></li>
 
     <li class="group-label">Planning</li>
+    <li><a href="#urgent">Deadlines &amp; Burning</a></li>
     <li><a href="#meeting-prep">Meeting Prep</a></li>
     <li><a href="#meeting-worksheet">Meeting Worksheet</a></li>
     <li><a href="#retrofits">Retrofits</a></li>
@@ -261,7 +262,9 @@
       <p class="screen-desc">The home screen. Shows a grid of action cards — one per major module. Acts as the main navigation hub since there is no persistent sidebar. Compact one-pager version: <code>docs/dashboard_cards.html</code> (one mini-card per dashboard card — keep in sync when cards change).</p>
       <div class="features">
         <span class="feat-label">Cards</span>
-        <span class="feat-value">Order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · <strong>Known Production Issues</strong> (renamed 2026-08-06 from "Known Prod Defects"; count badge — the register outlives the spillover work; the Spillover-page link stays too) · <strong>Export &amp; Backup</strong> (teal accent — report exports, Email Reports link, and the DB-backup section folded in 2026-07-18) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
+        <span class="feat-value"><strong>Deadlines &amp; Burning</strong> (2026-08-11, red card, FIRST — open count badge, plus "N overdue"/"N due today"). Then the order fixed by Marina (2026-07-16), daily work first: Inbox (pending count badge) · Import · Core South Spillover · Retail · ECOM Gatekeeper · ECOM · Defects · <strong>Known Production Issues</strong> (renamed 2026-08-06 from "Known Prod Defects"; count badge — the register outlives the spillover work; the Spillover-page link stays too) · <strong>Export &amp; Backup</strong> (teal accent — report exports, Email Reports link, and the DB-backup section folded in 2026-07-18) · Meeting Prep · Retail Requirements Tracker (unresolved count badge, amber accent) · Topics (active count badge, green accent) · Follow-ups · Links · Contacts · Shelf (item count badge, purple accent) · Encouragements (undelivered count badge) · CS Follow-Up Tracker · To-Do · <strong>Teams Chats</strong> (2026-07-16, manage registry + pin for the 💬 widget) · <strong>Message Types</strong> (2026-07-16, ✉️ builder reference) · Enhancements (open count badge)</span>
+        <span class="feat-label">Deadlines &amp; Burning popup (2026-08-11)</span>
+        <span class="feat-value">A modal (<code>_urgent_popup.html</code>) opens on the dashboard whenever something in <a href="#urgent">Deadlines &amp; Burning</a> is open — "really push my nose into those topics" [USER]. Lists the open entries most-urgent first with their category chip and overdue/today marker, and each can be <strong>ticked off right in the popup</strong> (AJAX), so it is useful rather than just noise. Dismissed with "Got it", Esc, or a backdrop click; the dismissal is remembered <strong>per day</strong> in localStorage (<code>urgent-popup-seen</code>), so it is back tomorrow but does not nag on every dashboard visit. Ticking the last open entry closes it automatically. No open entries → no popup at all.</span>
         <span class="feat-label">Primary action</span>
         <span class="feat-value"><span class="pill pill-action">Run Import</span> — triggers a POST to <code>/import</code> and redirects to the Import Result screen</span>
         <span class="feat-label">Export Reports</span>
@@ -1274,6 +1277,36 @@
 <!-- ================================================================ -->
 <div class="section s-planning">
   <div class="section-heading">Planning</div>
+
+  <!-- Deadlines & Burning -->
+  <div class="screen-card" id="urgent">
+    <div class="screen-card-header">
+      <span class="screen-title">Deadlines &amp; Burning</span>
+      <span class="screen-url">GET /urgent/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-11. The short nag list of things that must not slip — deliberately not a to-do module: what lands here gets pushed in your face on the first app open of each day. Red dashboard card, listed FIRST in the card grid.</p>
+      <div class="features">
+        <span class="feat-label">Three categories</span>
+        <span class="feat-value">
+          <strong>Deadline</strong> — must be done before a date ·
+          <strong>Burning</strong> — urgent, date or not ·
+          <strong>Uncomfortable</strong> — promises you'd be ashamed not to keep.
+          Each renders as its own colour-coded section.
+        </span>
+        <span class="feat-label">Per entry</span>
+        <span class="feat-value">Title · optional due date · optional note. Overdue rows go red with an "N days over" pill, due-today amber; undated entries just say "no date" and are never overdue.</span>
+        <span class="feat-label">Sorting</span>
+        <span class="feat-value">Open first, dated before undated, earliest date first — the list always leads with what is closest to blowing up.</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value"><span class="pill pill-ajax">☐ tick</span> marks done (<code>POST /urgent/&lt;id&gt;/done</code>) · <span class="pill pill-action">Edit</span> inline form · <span class="pill pill-ajax">✕</span> delete · <span class="pill pill-nav">Show done</span> reveals a collapsed Done section where entries can be reopened.</span>
+        <span class="feat-label">Dashboard popup</span>
+        <span class="feat-value">See the Dashboard card below — the whole point of the module.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>urgent_items</code> (storage <code>app/db/urgent.py</code>, routes <code>app/web_urgent.py</code>)</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Meeting Prep -->
   <div class="screen-card" id="meeting-prep">

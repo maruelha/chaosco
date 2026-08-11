@@ -315,6 +315,7 @@
 
     <li class="group-label">Planning &amp; Coordination</li>
     <li><a href="#todos">todos</a></li>
+    <li><a href="#urgent_items">urgent_items</a></li>
     <li><a href="#meeting_types">meeting_types</a></li>
     <li><a href="#meeting_prep">meeting_prep</a></li>
     <li><a href="#enhancements">enhancements</a></li>
@@ -870,6 +871,29 @@
   </div>
 
   <!-- meeting_prep -->
+  <!-- urgent_items -->
+  <div class="table-card" id="urgent_items">
+    <div class="table-card-header">
+      <span class="tname">urgent_items</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Deadlines &amp; Burning [USER 2026-08-11] — the short nag list behind the red dashboard card and the once-a-day dashboard popup. Storage <code>app/db/urgent.py</code>, routes <code>app/web_urgent.py</code>. "Overdue" is computed in Python against today (no SQL date functions), and a done item never counts as overdue.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">category</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">deadline | burning | uncomfortable — normalised on write, unknown values fall back to deadline</td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">What must be done</td></tr>
+        <tr><td class="col-name">due_date</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO 'YYYY-MM-DD', optional. A value that isn't a real date is DROPPED rather than stored (it would sort and compare wrongly).</td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Optional one-liner, shown under the title and in the popup</td></tr>
+        <tr><td class="col-name">done / done_at</td><td class="col-type">INTEGER / TEXT</td><td><span class="tag tag-nn">NOT NULL</span> (done)</td><td class="note-text">Done entries leave the list and the popup; reopening clears done_at</td></tr>
+        <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <!-- meeting_types -->
   <div class="table-card" id="meeting_types">
     <div class="table-card-header">

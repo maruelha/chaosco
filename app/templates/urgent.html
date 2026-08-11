@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Deadlines &amp; Burning — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1>Deadlines &amp; Burning</h1>
+      <p class="page-subtitle">The short list that must not slip — shown as a popup on the first app open of each day</p>
+    </div>
+    <div class="page-header-actions">
+      {% if show_done %}
+      <a href="{{ url_for('urgent.urgent_list') }}" class="btn">Hide done</a>
+      {% else %}
+      <a href="{{ url_for('urgent.urgent_list', show_done='1') }}" class="btn">Show done</a>
+      {% endif %}
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+    </div>
+  </div>
+</div>
+
+{% if msg %}<div class="saved-banner">&#10003;&nbsp; {{ msg }}</div>{% endif %}
+
+{% if counts.overdue %}
+<div class="alarm-box" style="margin-bottom:1.25rem">
+  <h2>&#9888; {{ counts.overdue }} overdue</h2>
+  <p style="color:#a10d19;margin:0">Past their date and still open.</p>
+</div>
+{% endif %}
+
+{# ---- Add form ---- #}
+<form method="post" action="{{ url_for('urgent.urgent_add') }}" class="ur-form">
+  <select name="category" class="ur-cat-select" required>
+    {% for key, label, blurb in categories %}
+    <option value="{{ key }}">{{ label }} — {{ blurb }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="title" placeholder="What must be done…" required class="ur-title-input">
+  <input type="date" name="due_date" class="ur-date-input" title="optional — a date to be done before">
+  <input type="text" name="note" placeholder="note (optional)" class="ur-note-input">
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{# ---- The three lists ---- #}
+{% for key, label, blurb in categories %}
+{% set items = grouped.get(key, []) %}
+<div class="ur-section ur-section--{{ key }}">
+  <div class="ur-section-head">
+    <span class="ur-section-title">{{ label }}</span>
+    <span class="ur-section-blurb">{{ blurb }}</span>
+    <span class="ur-section-count">{{ items | length }}</span>
+  </div>
+  {% if items %}
+  <ul class="ur-list">
+    {% for it in items %}
+    <li class="ur-item{% if it.overdue %} ur-item--overdue{% elif it.due_today %} ur-item--today{% endif %}"
+        data-id="{{ it.id }}">
+      <button type="button" class="ur-check js-ur-done" title="mark as done">&#9744;</button>
+      <div class="ur-body">
+        <div class="ur-title">{{ it.title }}</div>
+        {% if it.note %}<div class="ur-note">{{ it.note }}</div>{% endif %}
+      </div>
+      <div class="ur-when">
+        {% if it.due_date %}
+          <span class="ur-date">{{ it.due_date }}</span>
+          {% if it.overdue %}
+          <span class="pill pill--red">{{ -it.days_left }} day{{ 's' if it.days_left != -1 }} over</span>
+          {% elif it.due_today %}
+          <span class="pill pill--amber">today</span>
+          {% else %}
+          <span class="ur-days">in {{ it.days_left }} day{{ 's' if it.days_left != 1 }}</span>
+          {% endif %}
+        {% else %}
+          <span class="ur-days">no date</span>
+        {% endif %}
+      </div>
+      <div class="ur-actions">
+        <button type="button" class="btn btn-sm js-ur-edit">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger js-ur-delete" title="delete">&#10005;</button>
+      </div>
+    </li>
+    <li class="ur-edit-row" data-id="{{ it.id }}" style="display:none">
+      <form method="post" action="{{ url_for('urgent.urgent_update', item_id=it.id) }}" class="ur-form">
+        <select name="category" class="ur-cat-select">
+          {% for k, l, b in categories %}
+          <option value="{{ k }}" {% if k == it.category %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="title" value="{{ it.title }}" required class="ur-title-input">
+        <input type="date" name="due_date" value="{{ it.due_date or '' }}" class="ur-date-input">
+        <input type="text" name="note" value="{{ it.note or '' }}" placeholder="note" class="ur-note-input">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn js-ur-cancel">Cancel</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="ur-empty">Nothing here.</p>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% if show_done and done_items %}
+<details class="rt-section ui-section--gray" style="margin-top:1.5rem" open>
+  <summary>Done <span class="rt-count">{{ done_items | length }}</span></summary>
+  <ul class="ur-list ur-list--done" style="padding:0.6rem 1rem">
+    {% for it in done_items %}
+    <li class="ur-item ur-item--done" data-id="{{ it.id }}">
+      <button type="button" class="ur-check js-ur-reopen" title="reopen">&#9745;</button>
+      <div class="ur-body">
+        <div class="ur-title">{{ it.title }}</div>
+      </div>
+      <div class="ur-when">
+        <span class="ur-days">{{ it.done_at or '' }}</span>
+      </div>
+      <div class="ur-actions">
+        <button type="button" class="btn btn-sm btn-danger js-ur-delete">&#10005;</button>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+
+<script>
+(function () {
+  function post(url, body) {
+    return fetch(url, { method: 'POST', body: body }).then(function (r) { return r.json(); });
+  }
+  document.querySelectorAll('.js-ur-done').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var li = btn.closest('li');
+      var fd = new FormData(); fd.append('done', '1');
+      post('/urgent/' + li.dataset.id + '/done', fd).then(function (d) {
+        if (d.ok) window.location.replace(window.location.href);
+      });
+    });
+  });
+  document.querySelectorAll('.js-ur-reopen').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var li = btn.closest('li');
+      var fd = new FormData(); fd.append('done', '0');
+      post('/urgent/' + li.dataset.id + '/done', fd).then(function (d) {
+        if (d.ok) window.location.replace(window.location.href);
+      });
+    });
+  });
+  document.querySelectorAll('.js-ur-delete').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('Delete this entry?')) return;
+      var li = btn.closest('li');
+      post('/urgent/' + li.dataset.id + '/delete', new FormData()).then(function (d) {
+        if (d.ok) window.location.replace(window.location.href);
+      });
+    });
+  });
+  document.querySelectorAll('.js-ur-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('li').nextElementSibling;
+      var open = row.style.display !== 'none';
+      row.style.display = open ? 'none' : '';
+      btn.textContent = open ? 'Edit' : 'Close';
+    });
+  });
+  document.querySelectorAll('.js-ur-cancel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('li');
+      row.style.display = 'none';
+      row.previousElementSibling.querySelector('.js-ur-edit').textContent = 'Edit';
+    });
+  });
+}());
+</script>
+{% endblock %}

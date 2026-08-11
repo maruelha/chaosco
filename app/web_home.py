@@ -35,9 +35,17 @@ def dashboard():
         prod_defect_count = len(database.list_known_prod_defects(conn))
         from app.db import retrofits as db_retrofits
         retrofit_count    = db_retrofits.retrofit_counts(conn)["total"]
+        # Deadlines & Burning: card counts + the once-a-day popup [USER 2026-08-11]
+        from app.db import urgent as db_urgent
+        urgent_counts      = db_urgent.urgent_counts(conn)
+        urgent_popup_items = db_urgent.list_urgent(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
+                           urgent_counts=urgent_counts,
+                           urgent_popup_items=urgent_popup_items,
+                           urgent_labels=db_urgent.CATEGORY_LABELS,
+                           urgent_today=date.today().isoformat(),
                            open_enhancements=open_enhancements,
                            to_deliver=to_deliver,
                            shelf_count=shelf_count,

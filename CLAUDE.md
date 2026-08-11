@@ -74,6 +74,9 @@ app/
   web_retrofits.py  retrofits Blueprint (/retrofits/ — coming system changes
                     per channel; storage db/retrofits.py; rendered at the
                     bottom of the ECOM + Retail reports)
+  web_urgent.py     Deadlines & Burning Blueprint (/urgent/ — the nag list;
+                    storage db/urgent.py; red dashboard card + the once-a-day
+                    dashboard popup _urgent_popup.html)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -87,7 +90,7 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
-                    retrofits
+                    retrofits urgent
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

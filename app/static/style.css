@@ -1051,6 +1051,99 @@ dialog::backdrop { background: rgba(0,0,0,.38); }
 .pill--blue { background: #e8f0ff; color: #2c5fb3; border: 1px solid #b8d0f5; border-radius: 10px; padding: 2px 8px; font-size: 0.78rem; }
 .list-empty { color: #888; font-style: italic; margin-top: 2rem; }
 
+/* --------------------------------------------------------------- deadlines & burning */
+.action-card--urgent {
+  border: 1px solid #f1a9a0;
+  border-left: 4px solid #c1121f;
+  background: #fffaf9;
+}
+.action-card--urgent h2 { color: #c1121f; }
+.notes-count-badge--red { background: #ffe3e3; color: #c1121f; }
+
+/* the page */
+.ur-form {
+  display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.ur-form input, .ur-form select {
+  padding: 0.4rem 0.6rem; border: 1px solid #c9c9d4; border-radius: 6px; font-size: 0.9rem;
+}
+.ur-title-input { flex: 1; min-width: 16rem; }
+.ur-note-input  { min-width: 12rem; }
+.ur-cat-select  { min-width: 12rem; }
+
+.ur-section { margin-bottom: 1.75rem; }
+.ur-section-head {
+  display: flex; align-items: baseline; gap: 0.6rem;
+  border-bottom: 2px solid #e5e5ea; padding-bottom: 0.4rem; margin-bottom: 0.5rem;
+}
+.ur-section-title { font-size: 0.95rem; font-weight: 700; color: #1d1d1f; }
+.ur-section-blurb { font-size: 0.78rem; color: #aeaeb2; }
+.ur-section-count { margin-left: auto; font-size: 0.8rem; color: #aeaeb2; font-weight: 600; }
+.ur-section--deadline      .ur-section-title { color: #c1121f; }
+.ur-section--burning       .ur-section-title { color: #b45309; }
+.ur-section--uncomfortable .ur-section-title { color: #6b21a8; }
+
+.ur-list { list-style: none; margin: 0; padding: 0; }
+.ur-item {
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  padding: 0.55rem 0.6rem; border-bottom: 1px solid #f0f0f5; border-radius: 6px;
+}
+.ur-item--overdue { background: #fff5f5; }
+.ur-item--today   { background: #fffbeb; }
+.ur-item--done    { opacity: 0.55; }
+.ur-check {
+  background: none; border: none; cursor: pointer; font-size: 1.1rem;
+  line-height: 1; color: #8a8a8e; padding: 0.1rem 0.2rem;
+}
+.ur-check:hover { color: #1a7f37; }
+.ur-body { flex: 1; min-width: 0; }
+.ur-title { font-size: 0.92rem; color: #1d1d1f; }
+.ur-item--done .ur-title { text-decoration: line-through; }
+.ur-note { font-size: 0.79rem; color: #8a8a8e; margin-top: 0.1rem; }
+.ur-when { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; }
+.ur-date { font-size: 0.8rem; color: #6e6e73; }
+.ur-days { font-size: 0.78rem; color: #aeaeb2; }
+.ur-actions { display: flex; gap: 0.3rem; white-space: nowrap; }
+.ur-empty { color: #c7c7cc; font-style: italic; font-size: 0.85rem; margin: 0.3rem 0 0; }
+.ur-edit-row { padding: 0.5rem 0.6rem 0.9rem 2.2rem; }
+.ur-edit-row .ur-form { margin-bottom: 0; }
+
+/* the once-a-day popup */
+.ur-popup {
+  border: none; border-radius: 14px; padding: 0; max-width: 620px; width: 92vw;
+  box-shadow: 0 12px 48px rgba(0,0,0,.28);
+  /* explicit: the app's global `dialog` rule leaves it pinned top-left */
+  margin: auto;
+}
+.ur-popup::backdrop { background: rgba(20,0,0,.45); }
+.ur-popup-head { background: #c1121f; color: #fff; padding: 1rem 1.4rem 0.85rem; }
+.ur-popup-title { display: block; font-size: 1.1rem; font-weight: 700; }
+.ur-popup-sub { font-size: 0.8rem; color: rgba(255,255,255,.85); }
+.ur-popup-list { list-style: none; margin: 0; padding: 0.5rem 0.6rem; max-height: 55vh; overflow-y: auto; }
+.ur-popup-item {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  padding: 0.5rem 0.7rem; border-radius: 8px; border-bottom: 1px solid #f5f5f7;
+}
+.ur-popup-item--overdue { background: #fff5f5; }
+.ur-popup-item--today   { background: #fffbeb; }
+.ur-popup-item--struck .ur-popup-text { text-decoration: line-through; color: #aeaeb2; }
+.ur-popup-body { flex: 1; min-width: 0; }
+.ur-popup-cat {
+  display: inline-block; font-size: 0.63rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; padding: 0.1rem 0.4rem; border-radius: 4px; margin-right: 0.4rem;
+}
+.ur-popup-cat--deadline      { background: #ffe3e3; color: #c1121f; }
+.ur-popup-cat--burning       { background: #fef3c7; color: #92400e; }
+.ur-popup-cat--uncomfortable { background: #f3e8ff; color: #6b21a8; }
+.ur-popup-text { font-size: 0.9rem; color: #1d1d1f; }
+.ur-popup-note { display: block; font-size: 0.76rem; color: #8a8a8e; margin-top: 0.15rem; }
+.ur-popup-when { font-size: 0.78rem; color: #6e6e73; white-space: nowrap; padding-top: 0.15rem; }
+.ur-popup-foot {
+  display: flex; justify-content: flex-end; gap: 0.5rem;
+  padding: 0.8rem 1.4rem 1rem; border-top: 1px solid #f0f0f5;
+}
+
 /* --------------------------------------------------------------- retrofits */
 .rf-form { display: flex; flex-direction: column; gap: 0.7rem; padding: 0.8rem 1rem; }
 .rf-form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; }

@@ -143,6 +143,18 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 2. ~~Status-report filter~~ ✅ DONE 2026-07-09: All / In report / Not in
    report + green-✓ Report column (follows `spillover_report_selection`).
 
+### Deadlines & Burning (`/urgent/`) — done ad-hoc 2026-08-11
+
+1. ~~Red nag module + daily popup~~ ✅ DONE 2026-08-11 [USER]: three
+   categories (deadline / burning / uncomfortable), optional due date +
+   note, done/reopen; red dashboard card FIRST in the grid; the dashboard
+   popup opens whenever something is open, ticks off inline, and is
+   dismissed per day (localStorage `urgent-popup-seen`).
+   Tests: `tests/test_urgent.py` (16); suite 401 green.
+2. **Later / if needed**: notes on entries · recurring items · a
+   "snooze until date" instead of the per-day dismissal · surfacing the
+   popup on pages other than the dashboard.
+
 ### Meeting Prep + Retrofits — done ad-hoc 2026-08-10
 
 1. ~~Report button for the other meetings~~ ✅ DONE 2026-08-10, **CORRECTED

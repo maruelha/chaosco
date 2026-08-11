@@ -132,6 +132,19 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 - `todos`, `followups` (lightweight per-person chase list + detail page),
   `cs_followups` (richer, CS sign-off), `enhancements` (global floating
   panel on every page + `/enhancements/page`)
+- `urgent_items` [USER 2026-08-11] — **Deadlines & Burning**, the short nag
+  list: three categories (`deadline` = before a date, `burning` = urgent
+  regardless, `uncomfortable` = promises she'd be ashamed not to keep),
+  optional due date + note, done/reopen. Own module `app/db/urgent.py` +
+  Blueprint `app/web_urgent.py` (`/urgent/`), RED dashboard card listed
+  FIRST. The point of the module is the **dashboard popup**
+  (`_urgent_popup.html`, included from `dashboard.html`): it opens whenever
+  something is open, lists the entries most-urgent first, lets her tick them
+  off inline, and remembers its dismissal PER DAY in localStorage
+  (`urgent-popup-seen`) — back tomorrow, but not on every dashboard visit.
+  Overdue is computed in Python against today (no SQL date functions), a
+  done item never counts as overdue, and an unparseable date is dropped
+  rather than stored. NOT a to-do module — To-Do and Topics stay separate.
 - `retrofits` [USER 2026-08-10] — coming system changes per channel
   (ECOM | Retail), status Confirmed | Potential ("might still come"),
   optional `topic_id` link for the background. Own module

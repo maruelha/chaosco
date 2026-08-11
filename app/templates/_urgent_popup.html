@@ -1,0 +1,81 @@
+{# Deadlines & Burning popup [USER 2026-08-11] — "really push my nose into
+   those topics that are urgent".
+
+   Shows on the dashboard when there is at least one open item, ONCE PER DAY:
+   dismissing writes today's date to localStorage, so it is back tomorrow but
+   does not nag on every dashboard visit. Items can be ticked off right here,
+   otherwise it would only be noise. #}
+{% if urgent_popup_items %}
+<dialog id="urgent-popup" class="ur-popup">
+  <div class="ur-popup-head">
+    <span class="ur-popup-title">&#128293; Before anything else</span>
+    <span class="ur-popup-sub">
+      {{ urgent_popup_items | length }} open
+      {%- if urgent_counts.overdue %} · <strong>{{ urgent_counts.overdue }} overdue</strong>{% endif %}
+    </span>
+  </div>
+  <ul class="ur-popup-list">
+    {% for it in urgent_popup_items %}
+    <li class="ur-popup-item{% if it.overdue %} ur-popup-item--overdue{% elif it.due_today %} ur-popup-item--today{% endif %}"
+        data-id="{{ it.id }}">
+      <button type="button" class="ur-check js-urp-done" title="mark as done">&#9744;</button>
+      <div class="ur-popup-body">
+        <span class="ur-popup-cat ur-popup-cat--{{ it.category }}">{{ urgent_labels[it.category] }}</span>
+        <span class="ur-popup-text">{{ it.title }}</span>
+        {% if it.note %}<span class="ur-popup-note">{{ it.note }}</span>{% endif %}
+      </div>
+      <span class="ur-popup-when">
+        {% if it.overdue %}<strong>{{ -it.days_left }}d over</strong>
+        {% elif it.due_today %}<strong>today</strong>
+        {% elif it.due_date %}{{ it.due_date }}
+        {% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="ur-popup-foot">
+    <a href="{{ url_for('urgent.urgent_list') }}" class="btn btn-sm">Open the list</a>
+    <button type="button" class="btn btn-sm btn-primary" id="urgent-popup-close">Got it</button>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var dlg = document.getElementById('urgent-popup');
+  if (!dlg) return;
+  var KEY = 'urgent-popup-seen';
+  var today = {{ urgent_today | tojson }};
+
+  // once per day — back tomorrow, but not on every dashboard visit
+  if (localStorage.getItem(KEY) !== today) {
+    if (typeof dlg.showModal === 'function') dlg.showModal();
+  }
+
+  function dismiss() {
+    localStorage.setItem(KEY, today);
+    if (dlg.open) dlg.close();
+  }
+  document.getElementById('urgent-popup-close').addEventListener('click', dismiss);
+  // Esc and backdrop clicks count as "seen" too
+  dlg.addEventListener('cancel', function (e) { e.preventDefault(); dismiss(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dismiss(); });
+
+  dlg.querySelectorAll('.js-urp-done').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var li = btn.closest('li');
+      var fd = new FormData(); fd.append('done', '1');
+      fetch('/urgent/' + li.dataset.id + '/done', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.ok) return;
+          li.classList.add('ur-popup-item--struck');
+          btn.textContent = '☑';
+          btn.disabled = true;
+          // nothing left open? close and stop nagging today
+          if (d.counts && d.counts.open === 0) setTimeout(dismiss, 600);
+        });
+    });
+  });
+}());
+</script>
+{% endif %}

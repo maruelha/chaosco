@@ -6,10 +6,25 @@
   <h1>Dashboard</h1>
 </div>
 
+{% include '_urgent_popup.html' %}
+
 {# Card order fixed by Marina [USER 2026-07-16]: daily work first (capture,
    import, the four boards, defects, reports, meetings, tracker), then
-   coordination/reference, then the admin/registry cards, Enhancements last. #}
+   coordination/reference, then the admin/registry cards, Enhancements last.
+   Deadlines & Burning sits FIRST [USER 2026-08-11] — it is the nag card. #}
 <div class="action-grid">
+
+  <div class="action-card action-card--urgent">
+    <h2>&#128293; Deadlines &amp; Burning
+      {% if urgent_counts.open %}<span class="notes-count-badge notes-count-badge--red">{{ urgent_counts.open }}</span>{% endif %}
+    </h2>
+    <p>
+      Topics that must not slip — deadlines, burning items, and promises you'd be ashamed not to keep.
+      {% if urgent_counts.overdue %}<strong style="color:#c1121f">{{ urgent_counts.overdue }} overdue.</strong>
+      {% elif urgent_counts.due_today %}<strong style="color:#b45309">{{ urgent_counts.due_today }} due today.</strong>{% endif %}
+    </p>
+    <a href="{{ url_for('urgent.urgent_list') }}" class="btn btn-primary">Open the list</a>
+  </div>
 
   <div class="action-card" style="border-left:3px solid #2b6cb0">
     <h2>Inbox {% if inbox_count %}<span class="notes-count-badge">{{ inbox_count }}</span>{% endif %}</h2>

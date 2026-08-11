@@ -122,6 +122,13 @@ app.register_blueprint(_retrofits_bp)
 from app.db import planning as _db_planning
 _db_planning.init_schema(_db_path)
 
+# Deadlines & Burning (2026-08-11) — the short nag list; also drives the
+# once-a-day dashboard popup.
+from app.db import urgent as _db_urgent
+from app.web_urgent import bp as _urgent_bp
+_db_urgent.init_schema(_db_path)
+app.register_blueprint(_urgent_bp)
+
 
 if __name__ == "__main__":
     import threading
