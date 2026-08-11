@@ -22,24 +22,60 @@
 
 {% if msg %}<div class="saved-banner">&#10003;&nbsp; {{ msg }}</div>{% endif %}
 
+{# counts are GLOBAL on purpose — a nag banner that hides overdue work
+   because a filter is set would defeat the point; it says so when filtered #}
 {% if counts.overdue %}
 <div class="alarm-box" style="margin-bottom:1.25rem">
-  <h2>&#9888; {{ counts.overdue }} overdue</h2>
-  <p style="color:#a10d19;margin:0">Past their date and still open.</p>
+  <h2>&#9888; {{ counts.overdue }} overdue{% if sel_area %} (across all areas){% endif %}</h2>
+  <p style="color:#a10d19;margin:0">
+    Past their date and still open.{% if sel_area %}
+    <a href="{{ url_for('urgent.urgent_list', show_done='1' if show_done else None) }}">Show all areas</a>
+    to see them.{% endif %}
+  </p>
 </div>
 {% endif %}
 
 {# ---- Add form ---- #}
 <form method="post" action="{{ url_for('urgent.urgent_add') }}" class="ur-form">
+  <input type="hidden" name="area_filter" value="{{ sel_area }}">
+  {# labels only — the blurbs are on the section headers below, and the long
+     option text made the whole add row wrap onto two lines #}
   <select name="category" class="ur-cat-select" required>
     {% for key, label, blurb in categories %}
-    <option value="{{ key }}">{{ label }} — {{ blurb }}</option>
+    <option value="{{ key }}" title="{{ blurb }}">{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="area" class="ur-area-select" title="Sales ECOM or MB">
+    <option value="">— area —</option>
+    {% for a in areas %}
+    <option value="{{ a }}" {% if a == sel_area %}selected{% endif %}>{{ a }}</option>
     {% endfor %}
   </select>
   <input type="text" name="title" placeholder="What must be done…" required class="ur-title-input">
   <input type="date" name="due_date" class="ur-date-input" title="optional — a date to be done before">
   <input type="text" name="note" placeholder="note (optional)" class="ur-note-input">
   <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{# ---- Area filter [USER 2026-08-11] ---- #}
+<form method="get" action="{{ url_for('urgent.urgent_list') }}" class="filters-bar">
+  {% if show_done %}<input type="hidden" name="show_done" value="1">{% endif %}
+  <div class="filter-group">
+    <label for="f-area">Area</label>
+    <select id="f-area" name="area" onchange="this.form.submit()">
+      <option value="">All ({{ counts.open }})</option>
+      {% for a in areas %}
+      <option value="{{ a }}" {% if a == sel_area %}selected{% endif %}>{{ a }} ({{ counts.areas[a] }})</option>
+      {% endfor %}
+      <option value="none" {% if sel_area == 'none' %}selected{% endif %}>— not assigned — ({{ counts.areas['none'] }})</option>
+    </select>
+  </div>
+  {% if sel_area %}
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <a href="{{ url_for('urgent.urgent_list', show_done='1' if show_done else None) }}" class="btn">Clear</a>
+  </div>
+  {% endif %}
 </form>
 
 {# ---- The three lists ---- #}
@@ -57,6 +93,11 @@
     <li class="ur-item{% if it.overdue %} ur-item--overdue{% elif it.due_today %} ur-item--today{% endif %}"
         data-id="{{ it.id }}">
       <button type="button" class="ur-check js-ur-done" title="mark as done">&#9744;</button>
+      <div class="ur-area-col">
+        {% if it.area %}
+        <span class="ur-area ur-area--{{ 'sales' if it.area == 'Sales ECOM' else 'mb' }}">{{ it.area }}</span>
+        {% else %}<span class="ur-area ur-area--none">—</span>{% endif %}
+      </div>
       <div class="ur-body">
         <div class="ur-title">{{ it.title }}</div>
         {% if it.note %}<div class="ur-note">{{ it.note }}</div>{% endif %}
@@ -82,9 +123,16 @@
     </li>
     <li class="ur-edit-row" data-id="{{ it.id }}" style="display:none">
       <form method="post" action="{{ url_for('urgent.urgent_update', item_id=it.id) }}" class="ur-form">
+        <input type="hidden" name="area_filter" value="{{ sel_area }}">
         <select name="category" class="ur-cat-select">
           {% for k, l, b in categories %}
           <option value="{{ k }}" {% if k == it.category %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+        </select>
+        <select name="area" class="ur-area-select">
+          <option value="">— area —</option>
+          {% for a in areas %}
+          <option value="{{ a }}" {% if a == it.area %}selected{% endif %}>{{ a }}</option>
           {% endfor %}
         </select>
         <input type="text" name="title" value="{{ it.title }}" required class="ur-title-input">

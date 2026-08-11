@@ -21,6 +21,24 @@ App at `http://127.0.0.1:8010`.
 - [ ] **Show done** reveals the done ones; the ☑ there reopens an entry.
 - [ ] **✕** deletes after a confirm.
 
+## ①b Sales ECOM / MB (added later on 11.08)
+
+- [ ] The add form has an **— area —** dropdown: Sales ECOM or MB (leaving it
+      empty is fine).
+- [ ] Entries show their area as a chip in its own column — blue for Sales
+      ECOM, purple for MB, a faint dash when unset.
+- [ ] The **Area** filter above the list shows counts
+      (All / Sales ECOM / MB / — not assigned —) and filters all three
+      sections at once.
+- [ ] Adding while filtered keeps you on that filtered view, with the area
+      pre-selected.
+- [ ] **Edit** lets you change the area of an existing entry.
+- [ ] Filter to an area that has no overdue entries → the red banner still
+      says "N overdue (across all areas)" with a link back. That's deliberate:
+      a nag banner shouldn't hide overdue work just because a filter is on.
+      Tell me if you'd rather it followed the filter.
+- [ ] The popup shows the area chip too.
+
 ## ② The popup — the actual point
 
 - [ ] Go to the Dashboard (or restart the app). A red **"🔥 Before anything
@@ -46,7 +64,7 @@ App at `http://127.0.0.1:8010`.
 
 ## No clicking needed
 
-- Full suite green: **401 tests** (16 new).
+- Full suite green: **415 tests** (24 for this module).
 - Verified in the real browser: popup appears centred, ticking off works,
   dismissal survives a reload, counts update. Demo entries I created while
   testing have been deleted — the list starts empty for you.

@@ -126,7 +126,8 @@ def test_overdue_due_today_and_undated(client):
     assert not by_title["No date"]["overdue"]
 
     assert counts == {"open": 4, "overdue": 1, "due_today": 1,
-                      "deadline": 4, "burning": 0, "uncomfortable": 0}
+                      "deadline": 4, "burning": 0, "uncomfortable": 0,
+                      "areas": {"Sales ECOM": 0, "MB": 0, "none": 4}}
 
 
 def test_open_items_sort_most_urgent_first(client):
@@ -197,6 +198,108 @@ def test_update_and_delete(client):
         assert db_urgent.get_urgent(conn, item_id) is None
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Area: Sales ECOM vs MB [USER 2026-08-11]
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("given,expected", [
+    ("Sales ECOM", "Sales ECOM"), ("sales ecom", "Sales ECOM"),
+    ("MB", "MB"), ("mb", "MB"), ("  mb ", "MB"),
+    ("", None), (None, None), ("nonsense", None),
+])
+def test_area_normalised_and_optional(client, given, expected):
+    conn = _conn(client)
+    try:
+        rid = db_urgent.create_urgent(conn, "burning", "t", area=given)
+        assert db_urgent.get_urgent(conn, rid)["area"] == expected
+    finally:
+        conn.close()
+
+
+def test_area_filter_including_unassigned(client):
+    _add(client, title="Sales thing", area="Sales ECOM")
+    _add(client, title="MB thing", area="MB")
+    _add(client, title="Neither")
+
+    conn = _conn(client)
+    try:
+        assert [i["title"] for i in db_urgent.list_urgent(conn, area="Sales ECOM")] \
+            == ["Sales thing"]
+        assert [i["title"] for i in db_urgent.list_urgent(conn, area="MB")] \
+            == ["MB thing"]
+        assert [i["title"] for i in db_urgent.list_urgent(conn, area="none")] \
+            == ["Neither"]
+        assert len(db_urgent.list_urgent(conn)) == 3        # no filter = all
+    finally:
+        conn.close()
+
+    html = client.get("/urgent/?area=MB").get_data(as_text=True)
+    assert "MB thing" in html
+    assert "Sales thing" not in html and "Neither" not in html
+
+
+def test_area_counts_for_the_filter_dropdown(client):
+    _add(client, title="s1", area="Sales ECOM")
+    _add(client, title="s2", area="Sales ECOM")
+    _add(client, title="m1", area="MB")
+    _add(client, title="n1")
+    conn = _conn(client)
+    try:
+        counts = db_urgent.urgent_counts(conn)
+    finally:
+        conn.close()
+    assert counts["areas"] == {"Sales ECOM": 2, "MB": 1, "none": 1}
+
+
+def test_area_shown_on_the_row_and_editable(client):
+    _add(client, title="Sales thing", area="Sales ECOM")
+    html = client.get("/urgent/").get_data(as_text=True)
+    assert "ur-area--sales" in html and "Sales ECOM" in html
+
+    conn = _conn(client)
+    try:
+        item_id = db_urgent.list_urgent(conn)[0]["id"]
+    finally:
+        conn.close()
+    client.post(f"/urgent/{item_id}/update", data={
+        "category": "burning", "title": "Sales thing", "area": "MB"})
+    conn = _conn(client)
+    try:
+        assert db_urgent.get_urgent(conn, item_id)["area"] == "MB"
+    finally:
+        conn.close()
+
+
+def test_area_filter_survives_add_and_edit(client):
+    """Adding while filtered keeps you on the same filtered view."""
+    r = client.post("/urgent/add", data={
+        "category": "burning", "title": "New one", "area": "MB",
+        "area_filter": "MB"})
+    assert "area=MB" in r.headers["Location"]
+
+
+def test_overdue_banner_stays_global_when_filtered(client):
+    """A nag banner that hides overdue work because a filter is set would
+    defeat the point — it stays global and says so."""
+    _add(client, title="Late MB thing", due_date=_d(-2), area="MB")
+    _add(client, title="Sales thing", area="Sales ECOM")
+
+    html = client.get("/urgent/?area=Sales+ECOM").get_data(as_text=True)
+    assert "1 overdue (across all areas)" in html
+    assert "Show all areas" in html
+    assert "Late MB thing" not in html          # the row itself IS filtered out
+
+    html = client.get("/urgent/").get_data(as_text=True)
+    assert "across all areas" not in html       # no filter, no caveat
+
+
+def test_popup_shows_the_area(client):
+    _add(client, title="Sales thing", area="Sales ECOM")
+    html = client.get("/").get_data(as_text=True)
+    assert "urgent-popup" in html
+    assert "ur-area--sales" in html
 
 
 # ---------------------------------------------------------------------------

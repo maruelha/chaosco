@@ -21,6 +21,9 @@
       <button type="button" class="ur-check js-urp-done" title="mark as done">&#9744;</button>
       <div class="ur-popup-body">
         <span class="ur-popup-cat ur-popup-cat--{{ it.category }}">{{ urgent_labels[it.category] }}</span>
+        {% if it.area %}
+        <span class="ur-area ur-area--{{ 'sales' if it.area == 'Sales ECOM' else 'mb' }}">{{ it.area }}</span>
+        {% endif %}
         <span class="ur-popup-text">{{ it.title }}</span>
         {% if it.note %}<span class="ur-popup-note">{{ it.note }}</span>{% endif %}
       </div>

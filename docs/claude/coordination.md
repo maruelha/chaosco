@@ -135,7 +135,12 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 - `urgent_items` [USER 2026-08-11] — **Deadlines & Burning**, the short nag
   list: three categories (`deadline` = before a date, `burning` = urgent
   regardless, `uncomfortable` = promises she'd be ashamed not to keep),
-  optional due date + note, done/reopen. Own module `app/db/urgent.py` +
+  optional due date + note, done/reopen. Second axis `area`: **Sales ECOM |
+  MB | NULL** [USER 2026-08-11] — own column + chip on the list and in the
+  popup, filter dropdown with counts (incl. "not assigned"). Unset is a
+  valid state on purpose. The overdue banner deliberately stays GLOBAL when
+  a filter is on (labelled "across all areas") — hiding overdue work behind
+  a filter would defeat a nag module. Own module `app/db/urgent.py` +
   Blueprint `app/web_urgent.py` (`/urgent/`), RED dashboard card listed
   FIRST. The point of the module is the **dashboard popup**
   (`_urgent_popup.html`, included from `dashboard.html`): it opens whenever

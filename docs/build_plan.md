@@ -150,7 +150,10 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    note, done/reopen; red dashboard card FIRST in the grid; the dashboard
    popup opens whenever something is open, ticks off inline, and is
    dismissed per day (localStorage `urgent-popup-seen`).
-   Tests: `tests/test_urgent.py` (16); suite 401 green.
+1b. ~~Sales ECOM / MB axis~~ ✅ DONE 2026-08-11 [USER]: `area` column
+   (Sales ECOM | MB | unset) with a chip on the list + popup and a filter
+   dropdown with counts; overdue banner stays global when filtered.
+   Tests: `tests/test_urgent.py` (24); suite 415 green.
 2. **Later / if needed**: notes on entries · recurring items · a
    "snooze until date" instead of the per-day dismissal · surfacing the
    popup on pages other than the dashboard.

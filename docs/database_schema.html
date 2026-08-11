@@ -888,6 +888,7 @@
         <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">What must be done</td></tr>
         <tr><td class="col-name">due_date</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO 'YYYY-MM-DD', optional. A value that isn't a real date is DROPPED rather than stored (it would sort and compare wrongly).</td></tr>
         <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Optional one-liner, shown under the title and in the popup</td></tr>
+        <tr><td class="col-name">area</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-11 — 'Sales ECOM' | 'MB' | NULL. Normalised on write; NULL ("not assigned") is a valid, filterable state. Added by an additive ALTER TABLE for DBs created before that date.</td></tr>
         <tr><td class="col-name">done / done_at</td><td class="col-type">INTEGER / TEXT</td><td><span class="tag tag-nn">NOT NULL</span> (done)</td><td class="note-text">Done entries leave the list and the popup; reopening clears done_at</td></tr>
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>

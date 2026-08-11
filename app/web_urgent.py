@@ -26,11 +26,13 @@ def _get_conn():
 @bp.route("/")
 def urgent_list():
     show_done = request.args.get("show_done") == "1"
+    area = request.args.get("area", "").strip()
     conn = _get_conn()
     try:
-        grouped = db_urgent.list_by_category(conn)
+        grouped = db_urgent.list_by_category(conn, area=area or None)
         counts = db_urgent.urgent_counts(conn)
-        done_items = (db_urgent.list_urgent(conn, include_done=True)
+        done_items = (db_urgent.list_urgent(conn, include_done=True,
+                                            area=area or None)
                       if show_done else [])
     finally:
         conn.close()
@@ -38,6 +40,8 @@ def urgent_list():
         "urgent.html",
         grouped=grouped, counts=counts,
         categories=db_urgent.URGENT_CATEGORIES,
+        areas=db_urgent.URGENT_AREAS,
+        sel_area=area,
         done_items=[i for i in done_items if i["done"]],
         show_done=show_done,
         msg=request.args.get("msg"),
@@ -57,10 +61,13 @@ def urgent_add():
             title=title,
             due_date=request.form.get("due_date"),
             note=request.form.get("note"),
+            area=request.form.get("area"),
         )
     finally:
         conn.close()
-    return redirect(url_for("urgent.urgent_list", msg="Added."))
+    return redirect(url_for("urgent.urgent_list",
+                            area=request.form.get("area_filter", ""),
+                            msg="Added."))
 
 
 @bp.route("/<int:item_id>/update", methods=["POST"])
@@ -76,10 +83,13 @@ def urgent_update(item_id: int):
             title=title,
             due_date=request.form.get("due_date"),
             note=request.form.get("note"),
+            area=request.form.get("area"),
         )
     finally:
         conn.close()
-    return redirect(url_for("urgent.urgent_list", msg="Saved."))
+    return redirect(url_for("urgent.urgent_list",
+                            area=request.form.get("area_filter", ""),
+                            msg="Saved."))
 
 
 @bp.route("/<int:item_id>/done", methods=["POST"])
