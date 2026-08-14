@@ -1086,9 +1086,9 @@
       </thead>
       <tbody>
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ECOM | Retail — normalised on write, unknown values fall back to ECOM</td></tr>
-        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">What is changing</td></tr>
-        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">What it means for testing</td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ECOM | Retail | ECOM &amp; Retail (2026-08-14 — renders on BOTH reports; single-channel queries include it, counts count it into both channels but once into the total) — normalised on write, unknown values fall back to ECOM</td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">What is changing. Reports show ONLY status + title since 2026-08-14.</td></tr>
+        <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Confluence link (UI label since 2026-08-14; column name unchanged). Rendered as a link on /retrofits when it starts with http; not on the reports.</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Confirmed (default — it is coming) | Potential (might still come). Confirmed sorts first in list + report.</td></tr>
         <tr><td class="col-name">expected</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text, e.g. "CW34", "after go-live"</td></tr>
         <tr><td class="col-name">topic_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Optional link to <code>topics</code> for the background. Resolved in a SEPARATE query, never a JOIN — a retrofit stays readable where the topics table doesn't exist, and the link is simply not shown.</td></tr>

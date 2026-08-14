@@ -201,14 +201,14 @@
 </p>
 
 {% if confirmed or potential %}
+{# Deliberately just status + title [USER 2026-08-14] — the report audience
+   needs "what is coming", not the working detail (Confluence link, expected,
+   topic stay on the /retrofits page). #}
 <table class="rr-diag-table" style="width:100%;margin-bottom:1.25rem">
   <thead>
     <tr>
       <th style="width:8rem">Status</th>
       <th>Retrofit</th>
-      <th>What it means</th>
-      <th style="width:9rem">Expected</th>
-      <th style="width:11rem">More information</th>
     </tr>
   </thead>
   <tbody>
@@ -222,13 +222,6 @@
         {% endif %}
       </td>
       <td style="font-weight:500">{{ r.title }}</td>
-      <td>{{ r.description or '—' }}</td>
-      <td>{{ r.expected or '—' }}</td>
-      <td>
-        {% if r.topic_id and r.topic_title %}
-        <a href="{{ url_for('topics.topic_detail', topic_id=r.topic_id) }}">{{ r.topic_title }}</a>
-        {% else %}—{% endif %}
-      </td>
     </tr>
   {% endfor %}
   </tbody>

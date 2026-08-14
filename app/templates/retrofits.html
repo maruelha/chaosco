@@ -47,8 +47,8 @@
   </div>
   <div class="rf-form-row">
     <label class="rf-field rf-field--wide">
-      <span>Description <span class="field-hint">what it means for testing</span></span>
-      <input type="text" name="description" placeholder="optional">
+      <span>Confluence link <span class="field-hint">more details</span></span>
+      <input type="text" name="description" placeholder="https://… (optional)">
     </label>
     <label class="rf-field rf-field--narrow">
       <span>Expected <span class="field-hint">when</span></span>
@@ -99,7 +99,7 @@
       <th style="width:6rem">Channel</th>
       <th style="width:7rem">Status</th>
       <th>Title</th>
-      <th>Description</th>
+      <th>Confluence link</th>
       <th style="width:8rem">Expected</th>
       <th style="width:11rem">Topic</th>
       <th style="width:8rem"></th>
@@ -117,7 +117,11 @@
         {% endif %}
       </td>
       <td style="font-weight:500">{{ r.title }}</td>
-      <td style="font-size:0.85rem;color:#555">{{ r.description or '—' }}</td>
+      <td style="font-size:0.85rem;color:#555">
+        {% if r.description and r.description.startswith('http') %}
+        <a href="{{ r.description }}" target="_blank" rel="noopener">Confluence ↗</a>
+        {% else %}{{ r.description or '—' }}{% endif %}
+      </td>
       <td style="font-size:0.85rem">{{ r.expected or '—' }}</td>
       <td>
         {% if r.topic_id and r.topic_title %}
@@ -157,7 +161,7 @@
           </div>
           <div class="rf-form-row">
             <label class="rf-field rf-field--wide">
-              <span>Description</span>
+              <span>Confluence link</span>
               <input type="text" name="description" value="{{ r.description or '' }}">
             </label>
             <label class="rf-field rf-field--narrow">

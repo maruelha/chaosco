@@ -1399,13 +1399,13 @@
       <p class="screen-desc">Added 2026-08-10. Hand-maintained list of system changes still coming per channel, so sign-off readers always see what is still moving. Rendered at the <strong>bottom of the ECOM and Retail status reports</strong>.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
-        <span class="feat-value">Channel (ECOM | Retail) · Title · Description ("what it means for testing") · Status (<strong>Confirmed</strong> = it is coming · <strong>Potential</strong> = might still come) · Expected (free text, e.g. "CW34") · Topic (optional link to a Topic for the background)</span>
+        <span class="feat-value">Channel (ECOM | Retail | <strong>ECOM &amp; Retail</strong> — appears on both reports, since 2026-08-14) · Title · Confluence link (renamed from "Description" 2026-08-14; shown as a clickable link when it starts with http) · Status (<strong>Confirmed</strong> = it is coming · <strong>Potential</strong> = might still come) · Expected (free text, e.g. "CW34") · Topic (optional link to a Topic for the background)</span>
         <span class="feat-label">Actions</span>
         <span class="feat-value"><span class="pill pill-action">Add</span> (form at the top) · <span class="pill pill-action">Edit</span> (expands an inline row form) · <span class="pill pill-ajax">✕ Delete</span> (confirm → <code>POST /retrofits/&lt;id&gt;/delete</code>)</span>
         <span class="feat-label">Filter</span>
         <span class="feat-value">Channel dropdown with per-channel counts</span>
         <span class="feat-label">In the reports</span>
-        <span class="feat-value">Section "Retrofits — ECOM/Retail" at the bottom of each status report (page, HTML download and email attachment), Confirmed rows first then Potential. The section renders <strong>even when the list is empty</strong>, because its standing caveat is the point: "this list reflects what is known today — further retrofits may still be announced, and anything already tested may need a re-test once they land."</span>
+        <span class="feat-value">Section "Retrofits — ECOM/Retail" at the bottom of each status report (page, HTML download and email attachment), Confirmed rows first then Potential; "ECOM &amp; Retail" retrofits appear on <strong>both</strong> reports. Since 2026-08-14 the report table shows <strong>only Status + Title</strong> — Confluence link, Expected and Topic stay on this page. The section renders <strong>even when the list is empty</strong>, because its standing caveat is the point: "this list reflects what is known today — further retrofits may still be announced, and anything already tested may need a re-test once they land."</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>retrofits</code>; the topic title is resolved in a separate query (never a JOIN — a retrofit must stay readable even where the topics table doesn't exist)</span>
       </div>

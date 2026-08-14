@@ -251,14 +251,12 @@
   already tested may need a re-test once they land.
 </p>
 {% if rf_confirmed or rf_potential %}
+{# status + title only [USER 2026-08-14] — mirror the retrofits() macro #}
 <table class="def-table">
   <thead>
     <tr>
       <th style="width:6rem">Status</th>
       <th>Retrofit</th>
-      <th>What it means</th>
-      <th style="width:7rem">Expected</th>
-      <th style="width:9rem">More information</th>
     </tr>
   </thead>
   <tbody>
@@ -268,9 +266,6 @@
         <span class="rf-pill rf-pill--{{ 'potential' if r.status == 'Potential' else 'confirmed' }}">{{ r.status }}</span>
       </td>
       <td style="font-weight:600">{{ r.title }}</td>
-      <td>{{ r.description or '—' }}</td>
-      <td>{{ r.expected or '—' }}</td>
-      <td>{{ r.topic_title or '—' }}</td>
     </tr>
     {% endfor %}
   </tbody>

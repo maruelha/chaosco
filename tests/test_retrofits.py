@@ -5,7 +5,10 @@ What must hold:
 - Confirmed rows sort before Potential ones (the report reads "is coming"
   before "might still come")
 - the channel report sections are strictly per-channel: a Retail retrofit
-  never leaks into the ECOM report and vice versa
+  never leaks into the ECOM report and vice versa — EXCEPT channel
+  'ECOM & Retail', which appears on both reports [USER 2026-08-14]
+- the report section shows only status + title; the working detail
+  (Confluence link, expected, topic) stays on the /retrofits page
 - the standing caveat ("further retrofits may still be announced") is shown
   even when the list is EMPTY — the section exists to stop the reader
   assuming the list is final
@@ -90,7 +93,9 @@ def test_blank_title_is_not_created(client):
 
 @pytest.mark.parametrize("given,expected", [
     ("ecom", "ECOM"), ("ECOM", "ECOM"), ("retail", "Retail"),
-    ("  Retail ", "Retail"), ("nonsense", "ECOM"), ("", "ECOM"),
+    ("  Retail ", "Retail"), ("ecom & retail", "ECOM & Retail"),
+    ("ECOM & RETAIL", "ECOM & Retail"),
+    ("nonsense", "ECOM"), ("", "ECOM"),
 ])
 def test_channel_normalised(client, given, expected):
     conn = database.get_connection(client.db_path)
@@ -135,7 +140,8 @@ def test_channel_filter_and_counts(client):
     conn = database.get_connection(client.db_path)
     try:
         counts = db_retrofits.retrofit_counts(conn)
-        assert counts == {"total": 2, "ECOM": 1, "Retail": 1}
+        assert counts == {"total": 2, "ECOM": 1, "Retail": 1,
+                          "ECOM & Retail": 0}
     finally:
         conn.close()
 
@@ -153,6 +159,41 @@ def test_reports_show_only_their_own_channel(client):
     assert "EcomRetrofit" in ecom and "RetailRetrofit" not in ecom
 
 
+def test_both_channel_retrofit_appears_on_both_reports(client):
+    """channel 'ECOM & Retail' = the change hits both systems, so it must be
+    on BOTH reports [USER 2026-08-14]."""
+    _add(client, channel="ECOM & Retail", title="SharedRetrofit")
+
+    for url in ("/retail/report", "/ecom/report"):
+        assert "SharedRetrofit" in client.get(url).get_data(as_text=True)
+
+    # counts: once in the total, but in both single-channel numbers
+    conn = database.get_connection(client.db_path)
+    try:
+        counts = db_retrofits.retrofit_counts(conn)
+        assert counts == {"total": 1, "ECOM": 1, "Retail": 1,
+                          "ECOM & Retail": 1}
+    finally:
+        conn.close()
+
+    # the single-channel page filters include the shared row too
+    html = client.get("/retrofits/?channel=ECOM").get_data(as_text=True)
+    assert "SharedRetrofit" in html
+
+
+def test_report_shows_only_status_and_title(client):
+    """The report audience gets 'what is coming', not the working detail
+    [USER 2026-08-14] — Confluence link / expected / topic stay off it."""
+    _add(client, channel="Retail", title="LeanRetrofit",
+         description="https://confluence.example/x", expected="CW42")
+
+    for url in ("/retail/report", "/retail/report/download"):
+        html = client.get(url).get_data(as_text=True)
+        assert "LeanRetrofit" in html
+        assert "https://confluence.example/x" not in html
+        assert "CW42" not in html
+
+
 def test_caveat_shown_even_with_no_retrofits(client):
     """The section is the reminder — it must not disappear when empty."""
     for url in ("/retail/report", "/ecom/report"):
@@ -162,6 +203,7 @@ def test_caveat_shown_even_with_no_retrofits(client):
 
 
 def test_topic_link_rendered(client):
+    """On the /retrofits page only — the report is status + title [2026-08-14]."""
     conn = database.get_connection(client.db_path)
     try:
         tid = db_topics.create_topic(conn, "Voucher retrofit background")
@@ -169,10 +211,9 @@ def test_topic_link_rendered(client):
         conn.close()
     _add(client, channel="Retail", title="Linked retrofit", topic_id=str(tid))
 
-    for url in ("/retrofits/", "/retail/report"):
-        html = client.get(url).get_data(as_text=True)
-        assert "Voucher retrofit background" in html
-        assert f"/topics/{tid}" in html
+    html = client.get("/retrofits/").get_data(as_text=True)
+    assert "Voucher retrofit background" in html
+    assert f"/topics/{tid}" in html
 
 
 def test_readable_without_the_topics_table(tmp_path):

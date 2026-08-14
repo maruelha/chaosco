@@ -1,6 +1,7 @@
 """Retrofits — planned/announced system changes per channel [USER 2026-08-10].
 
-A retrofit is a change that is coming to the live system (ECOM or Retail) and
+A retrofit is a change that is coming to the live system (ECOM, Retail, or
+both — channel 'ECOM & Retail' renders on BOTH channel reports) and
 therefore matters for sign-off: it may invalidate what was already tested, or
 it may still be announced late. The list is hand-maintained here and rendered
 at the BOTTOM of the ECOM and Retail status reports, so the audience always
@@ -24,13 +25,14 @@ from pathlib import Path
 
 from app.db.core import _rows_to_dicts, get_connection
 
-RETROFIT_CHANNELS = ["ECOM", "Retail"]
+RETROFIT_CHANNELS = ["ECOM", "Retail", "ECOM & Retail"]
+_BOTH = "ECOM & Retail"
 RETROFIT_STATUSES = ["Confirmed", "Potential"]
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS retrofits (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    channel     TEXT NOT NULL,                    -- ECOM | Retail
+    channel     TEXT NOT NULL,                    -- ECOM | Retail | ECOM & Retail
     title       TEXT NOT NULL,
     description TEXT,
     status      TEXT NOT NULL DEFAULT 'Confirmed',-- Confirmed | Potential
@@ -99,12 +101,21 @@ def list_retrofits(conn: sqlite3.Connection,
     """All retrofits (newest first per channel), with the linked topic's title.
 
     Confirmed rows come before Potential ones so the report reads
-    "this is coming" before "this might still come"."""
+    "this is coming" before "this might still come".
+
+    Filtering by ECOM or Retail also returns 'ECOM & Retail' rows — a shared
+    retrofit belongs on BOTH channel reports [USER 2026-08-14]. Filtering by
+    'ECOM & Retail' itself returns only the shared ones."""
     sql = "SELECT * FROM retrofits WHERE 1=1"
     params: list = []
     if channel:
-        sql += " AND channel = ?"
-        params.append(_clean_channel(channel))
+        ch = _clean_channel(channel)
+        if ch == _BOTH:
+            sql += " AND channel = ?"
+            params.append(ch)
+        else:
+            sql += " AND channel IN (?, ?)"
+            params.extend([ch, _BOTH])
     if status:
         sql += " AND status = ?"
         params.append(_clean_status(status))
@@ -156,12 +167,20 @@ def delete_retrofit(conn: sqlite3.Connection, retrofit_id: int) -> None:
 
 
 def retrofit_counts(conn: sqlite3.Connection) -> dict:
-    """{'total': n, 'ECOM': n, 'Retail': n} — dashboard card + page header."""
+    """{'total': n, 'ECOM': n, 'Retail': n, 'ECOM & Retail': n} — dashboard
+    card + filter dropdown. 'ECOM & Retail' rows count into BOTH single-channel
+    numbers (so the dropdown counts match what each filter shows) but only once
+    into the total."""
     out = {"total": 0}
     for c in RETROFIT_CHANNELS:
         out[c] = 0
     for channel, n in conn.execute(
             "SELECT channel, COUNT(*) FROM retrofits GROUP BY channel"):
-        out[channel] = n
+        if channel == _BOTH:
+            out[_BOTH] = n
+            out["ECOM"] += n
+            out["Retail"] += n
+        else:
+            out[channel] = out.get(channel, 0) + n
         out["total"] += n
     return out

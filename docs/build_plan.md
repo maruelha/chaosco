@@ -185,6 +185,11 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    caveat, shown even when the list is empty.
    Tests: `tests/test_meeting_reports.py` (14) + `tests/test_retrofits.py`
    (21); suite 376 green.
+   **Follow-up 2026-08-14** [USER]: third channel **ECOM & Retail** (shared
+   retrofits render on BOTH reports; single-channel filters/counts include
+   them); the report table slimmed to **status + title only**; the
+   description field relabeled **"Confluence link"** (column name unchanged,
+   rendered as a link on /retrofits when it starts with http).
 5. **Found while building** — ✅ FIXED 2026-08-10: `emailer.render_retail_html`
    never passed the impacted-defects context, so every EMAILED Retail report
    claimed "No active Retail defects found" while the live page listed them.

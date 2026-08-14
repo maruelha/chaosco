@@ -167,15 +167,23 @@ Images render as thumbnails; documents as download links (`is_image` filter).
   done item never counts as overdue, and an unparseable date is dropped
   rather than stored. NOT a to-do module — To-Do and Topics stay separate.
 - `retrofits` [USER 2026-08-10] — coming system changes per channel
-  (ECOM | Retail), status Confirmed | Potential ("might still come"),
-  optional `topic_id` link for the background. Own module
-  `app/db/retrofits.py` + Blueprint `app/web_retrofits.py` (`/retrofits/`),
-  dashboard card. Rendered at the BOTTOM of both status reports via the
-  `retrofits()` macro in `_report_blocks.html` (and an inline copy in the
-  standalone `retail_report_download.html`) — the section shows even when
-  empty, because its caveat "further retrofits may still be announced" is
-  the actual point. The topic title is resolved in a separate query, NOT a
-  JOIN, so retrofits stay readable without the topics table.
+  (ECOM | Retail | **ECOM & Retail** — the shared channel renders on BOTH
+  reports [USER 2026-08-14]; `list_retrofits(channel=...)` for a single
+  channel therefore also returns the shared rows, and `retrofit_counts`
+  counts them into both single-channel numbers but once into the total).
+  Status Confirmed | Potential ("might still come"), optional `topic_id`
+  link for the background; the `description` column holds the **Confluence
+  link** (labeled so in the UI since 2026-08-14, rendered as a link when it
+  starts with http). Own module `app/db/retrofits.py` + Blueprint
+  `app/web_retrofits.py` (`/retrofits/`), dashboard card. Rendered at the
+  BOTTOM of both status reports via the `retrofits()` macro in
+  `_report_blocks.html` (and an inline copy in the standalone
+  `retail_report_download.html`) — the report section shows **only status +
+  title** [USER 2026-08-14]; Confluence link / expected / topic stay on the
+  /retrofits page. The section shows even when empty, because its caveat
+  "further retrofits may still be announced" is the actual point. The topic
+  title is resolved in a separate query, NOT a JOIN, so retrofits stay
+  readable without the topics table.
 
 ## Reference entities (app/db/reference.py + app/web_reference.py)
 
