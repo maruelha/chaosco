@@ -12,6 +12,8 @@
       <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
       <a href="{{ url_for('email_report.email_page', reports='known_prod_defects') }}" class="btn" title="pick recipients and send this page">✉ Send via email</a>
       <a href="{{ url_for('prod_defects_download') }}" class="btn">⬇ Download HTML</a>
+      <a href="{{ url_for('prod_defects_download_review') }}" class="btn" title="offline copy with a Detail popup per row and a comment/feedback feature — no Edit/Delete">📝 Download for review</a>
+      <a href="{{ url_for('prod_defects_review_comments') }}" class="btn" title="upload the JSON a reviewer sent back and read their comments">📥 Reviewer feedback{% if review_comment_count %} ({{ review_comment_count }}){% endif %}</a>
       <a href="{{ url_for('prod_defect_new') }}" class="btn btn-primary">+ Add New</a>
     </div>
   </div>
@@ -39,7 +41,16 @@
       {% endfor %}
     </select>
   </div>
-  {% if sel_channel or sel_scenario %}
+  <div class="filter-group">
+    <label for="f-type">Type</label>
+    <select id="f-type" name="type" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for t in types %}
+      <option value="{{ t }}" {% if t == sel_type %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if sel_channel or sel_scenario or sel_type %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
     <a href="{{ url_for('prod_defects_list') }}" class="btn">Clear</a>
@@ -48,14 +59,15 @@
 </form>
 
 <div class="table-wrap" style="overflow-x:auto">
-  <table style="min-width:1100px">
+  <table style="min-width:1250px">
     <thead>
       <tr>
         <th style="width:90px">Channel</th>
+        <th style="width:110px">Type</th>
         <th style="width:150px">Scenario</th>
         <th style="width:170px">Short Description</th>
-        <th style="width:160px">Biz Impact</th>
-        <th style="width:170px">How to handle</th>
+        <th style="width:220px">Biz Impact</th>
+        <th style="width:220px">How to handle</th>
         <th style="width:140px">Confluence</th>
         <th style="width:100px"></th>
       </tr>
@@ -64,10 +76,11 @@
     {% for row in rows %}
       <tr data-id="{{ row.id }}">
         <td>{{ row.channel or '' }}</td>
+        <td>{{ row.type or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
         <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.short_description or '' }}</td>
-        <td class="kpd-truncate" title="{{ row.biz_impact | e }}">{{ row.biz_impact or '' }}</td>
-        <td class="kpd-truncate" title="{{ row.how_to_handle | e }}">{{ row.how_to_handle or '' }}</td>
+        <td style="white-space:normal;word-break:break-word">{{ row.biz_impact or '' }}</td>
+        <td style="white-space:normal;word-break:break-word">{{ row.how_to_handle or '' }}</td>
         <td>{{ row.confluence or '' }}</td>
         <td class="kpd-actions">
           <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
@@ -75,7 +88,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="7" class="table-empty">No entries yet. Click "+ Add New" to get started.</td></tr>
+      <tr><td colspan="8" class="table-empty">No entries yet. Click "+ Add New" to get started.</td></tr>
     {% endfor %}
     </tbody>
   </table>

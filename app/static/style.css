@@ -650,7 +650,6 @@ dt:last-of-type, dd:last-of-type { border-bottom: none; }
 .form-footer .btn-row { margin-top: 0; }
 
 /* --------------------------------------------------------------- known prod defects */
-.kpd-truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kpd-actions  { white-space: nowrap; }
 #dlg-kpd      { max-width: 700px; }
 

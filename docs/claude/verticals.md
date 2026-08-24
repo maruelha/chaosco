@@ -360,7 +360,42 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - Sign-off reports `/report/retail`, `/report/ecom`; production defects
   `/prod_defects` (hand-maintained `known_prod_defects` register — own
   dashboard card with count badge since [USER 2026-07-18], because it
-  outlives the spillover work; the Spillover-header link stays)
+  outlives the spillover work; the Spillover-header link stays).
+  `/prod_defects/download-review` [USER 2026-08-24]: a SECOND, additive
+  download button ("📝 Download for review") next to the plain
+  `/prod_defects/download` snapshot — a standalone, fully self-contained
+  HTML file (own inline CSS/JS, unlike the plain download which runs
+  through `emailer.standalone_html` and strips all `<script>` tags). List
+  is read-only (Detail button opens an in-page `<dialog>` per row with all
+  fields; no Edit/Delete). Client-side "add feedback" widget on every row
+  AND inside the Detail dialog: comments live only in the browser's
+  `localStorage` (`kpd_review_comments_v1`), each with a client-generated
+  UUID, the reviewer's name (asked once via `prompt()`, remembered under
+  `kpd_review_author`), text, timestamp — a "Your comments so far" section
+  lists them all with per-comment remove. "⬇ Download my comments (JSON)"
+  exports `{export_id, exported_at, report_date, author, comments: [...]}`
+  for the reviewer to send back. Template `prod_defects_review.html`
+  (standalone, no base.html — same convention as
+  `retail_report_download.html`). A Type dropdown filters rows
+  client-side (`data-type` per row, plain show/hide — added 2026-08-24
+  alongside the same Channel/Scenario/Type filters on the live list).
+  `/prod_defects/review-comments` [USER 2026-08-24, "upload the comments
+  to my page"]: where the downloaded JSON actually gets READ — a plain
+  multipart upload form parses the file and upserts each comment into
+  `prod_defect_review_comments` keyed by its client-generated id
+  (`database.import_review_comments`, `ON CONFLICT(comment_id) DO
+  NOTHING` — re-uploading the same file is a no-op), reporting
+  imported/duplicate/malformed counts. Below the form: every uploaded
+  comment, the defect it's about (linked, or flagged "no longer in the
+  list" if deleted), text, author, timestamp, Delete. List page toolbar
+  badge "📥 Reviewer feedback (N)". Table + Type filter/column
+  [USER 2026-08-24]: `type` (fixed list `_PROD_DEFECT_TYPES`) is now a
+  dropdown filter + visible column on BOTH `/prod_defects` and the
+  standalone review download; Biz Impact/How to handle no longer
+  truncated to 200px with an ellipsis (`.kpd-truncate` removed) — full
+  text wraps. Scenario list gained "Marketplace"
+  (`prod_defect_scenarios` in settings.yaml). Tests:
+  `tests/test_prod_defects.py`.
 - PPT builders: `app/ppt_utils.py` (shared primitives), `app/ppt_retail.py`,
   `app/ppt_spillover.py`. Export Reports button (`POST /export-reports`,
   `app/report_exporter.py`) writes dated HTML + PPTX for both reports to

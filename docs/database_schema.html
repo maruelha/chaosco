@@ -323,6 +323,7 @@
     <li><a href="#followup_options">followup_options</a></li>
     <li><a href="#cs_followups">cs_followups</a></li>
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
+    <li><a href="#prod_defect_review_comments">prod_defect_review_comments</a></li>
     <li><a href="#retrofits">retrofits</a></li>
     <li><a href="#encouragement_people">encouragement_people</a></li>
     <li><a href="#encouragements">encouragements</a></li>
@@ -1071,6 +1072,31 @@
       </tbody>
     </table>
     <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='prod_defect' (registry label "Known Production Issues")</div>
+  </div>
+
+  <!-- prod_defect_review_comments -->
+  <div class="table-card" id="prod_defect_review_comments">
+    <div class="table-card-header">
+      <span class="tname">prod_defect_review_comments</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Feedback uploaded back from a "📝 Download for review" offline copy of Known Production Issues [USER 2026-08-24]. Comments are authored client-side (JS, <code>localStorage</code>) in the standalone download and exported as JSON; this table is where that JSON lands after upload on <code>/prod_defects/review-comments</code>. <code>defect_id</code> is a loose text reference (no FK) — the defect may since have been deleted, in which case the row still displays with a "no longer in the list" hint instead of a link.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">comment_id</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">Client-generated UUID (from the standalone download's JS) — makes re-uploading the same export file a no-op</td></tr>
+        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Loose reference to <code>known_prod_defects.id</code>, no FK — the defect may no longer exist</td></tr>
+        <tr><td class="col-name">defect_label</td><td class="col-type">TEXT</td><td></td><td class="note-text">Short description/scenario captured at comment time, so the row stays readable even if the defect is gone</td></tr>
+        <tr><td class="col-name">author</td><td class="col-type">TEXT</td><td></td><td class="note-text">Reviewer's name, asked once client-side and remembered for the rest of that download session</td></tr>
+        <tr><td class="col-name">comment_text</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">When the reviewer wrote it (client-side timestamp)</td></tr>
+        <tr><td class="col-name">export_id / report_date</td><td class="col-type">TEXT</td><td></td><td class="note-text">Which JSON download batch / which snapshot date this comment came from</td></tr>
+        <tr><td class="col-name">imported_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">Server-side timestamp of the upload</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Uploaded via:</strong> <code>POST /prod_defects/review-comments/upload</code> (<code>database.import_review_comments</code>, upsert ON CONFLICT(comment_id) DO NOTHING)</div>
   </div>
 
   <!-- retrofits -->

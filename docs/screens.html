@@ -1177,15 +1177,15 @@
       <p class="screen-desc">Manually curated register of defects, limitations, risks and accepted defects known to exist in production — used to populate the known-issues section of the ECOM sign-off report. Reachable from the Spillover page header AND an own dashboard card with count badge — the register outlives the spillover work. Renamed from "Known Production Defects" [USER 2026-08-06] — UI text only, URLs/endpoints/table/column names unchanged (same precedent as the MB ROE Defects rename).</p>
       <div class="features">
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Channel · Scenario · Short Description · Biz Impact · How to handle · Confluence (References/Next Steps moved detail-only)</span>
+        <span class="feat-value">Channel · Type (added 2026-08-24) · Scenario · Short Description · Biz Impact · How to handle · Confluence (References/Next Steps moved detail-only). Biz Impact/How to handle show FULL text and wrap [USER 2026-08-24] — no longer truncated with an ellipsis (dropped the old <code>.kpd-truncate</code> 200px clamp).</span>
         <span class="feat-label">Filters</span>
-        <span class="feat-value">Channel (ECOM/Retail) and Scenario (fixed list, <code>prod_defect_scenarios</code> in settings.yaml) dropdowns, GET-based</span>
+        <span class="feat-value">Channel (ECOM/Retail), Scenario (fixed list, <code>prod_defect_scenarios</code> in settings.yaml — gained "Marketplace" 2026-08-24) and Type (fixed list, <code>_PROD_DEFECT_TYPES</code>, added 2026-08-24) dropdowns, GET-based</span>
         <span class="feat-label">Confluence link</span>
         <span class="feat-value">Top of the page — the TRAN space "Core South and ROE SIT defects" page, URL from <code>prod_defects_confluence_url</code> in settings.yaml</span>
         <span class="feat-label">Note count</span>
         <span class="feat-value">Edit button shows "Edit (N)" when the row has notes, matching the other boards</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · Click row → Detail screen</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot, scripts stripped, for email) · <span class="pill pill-action">📝 Download for review</span> (interactive offline copy, see below) · <span class="pill pill-action">📥 Reviewer feedback</span> (badge = uploaded comment count; see below) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · Click row → Detail screen</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>known_prod_defects</code> (note_count via subquery on <code>notes</code>)</span>
       </div>
@@ -1209,6 +1209,46 @@
         <span class="feat-value">Green "Saved." banner on return from POST</span>
         <span class="feat-label">Table written</span>
         <span class="feat-value"><code>known_prod_defects</code></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download for review -->
+  <div class="screen-card" id="prod-defects-review">
+    <div class="screen-card-header">
+      <span class="screen-title">Known Production Issues — Download for review</span>
+      <span class="screen-url">GET /prod_defects/download-review</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Interactive offline copy for handing to reviewers who don't have app access [USER 2026-08-24]. One self-contained HTML file (own inline CSS/JS, no external requests, unlike the plain Download HTML which strips all scripts) — read-only: every row has a <span class="pill pill-action">Detail</span> button (in-page dialog with the full record) instead of Edit, and no Delete. A Type dropdown filters rows client-side (added 2026-08-24 alongside the same filter on the live list). Every row and the Detail dialog also carry a <span class="pill pill-action">💬 Comment</span> button so a reviewer can add feedback without any server — comments live in the browser's <code>localStorage</code> (key <code>kpd_review_comments_v1</code>), each with a client-generated UUID, the reviewer's name (asked once via <code>prompt()</code>, remembered), text and timestamp. A "Your comments so far" section lists everything added (with per-comment remove) so the reviewer can see what's about to go out. <span class="pill pill-action">⬇ Download my comments (JSON)</span> serializes the stored comments (plus an export id/timestamp) to a downloaded <code>.json</code> file the reviewer sends back to Marina, for upload on the Reviewer feedback screen below.</p>
+      <div class="features">
+        <span class="feat-label">Template</span>
+        <span class="feat-value"><code>prod_defects_review.html</code> — standalone, does NOT extend base.html/style.css (same convention as <code>retail_report_download.html</code>)</span>
+        <span class="feat-label">Data</span>
+        <span class="feat-value">All rows, unfiltered, same fields as the Edit form, read-only</span>
+        <span class="feat-label">Comment JSON shape</span>
+        <span class="feat-value"><code>{export_id, exported_at, report_date, author, comments: [{id, defect_id, defect_label, author, text, created_at}]}</code></span>
+        <span class="feat-label">Not wired to</span>
+        <span class="feat-value">Email attachments (those still use the plain <code>/prod_defects/download</code> snapshot) — this is a separate, additive download button</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviewer feedback (upload + view) -->
+  <div class="screen-card" id="prod-defects-review-comments">
+    <div class="screen-card-header">
+      <span class="screen-title">Known Production Issues — Reviewer feedback</span>
+      <span class="screen-url">GET /prod_defects/review-comments &nbsp;·&nbsp; POST /prod_defects/review-comments/upload</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Where the JSON a reviewer downloaded (see above) is uploaded to actually be read [USER 2026-08-24: "I want to be able to upload the comments to my page"]. A plain multipart form uploads the file; the server parses it and upserts each comment keyed by its client-generated id — re-uploading the same file is a no-op the second time (duplicates counted, not re-inserted). A flash banner reports imported/duplicate/malformed counts, or an error if the file isn't valid JSON / doesn't look like a comments export. Below it, every uploaded comment lists the defect it's about (linked to its Edit page, or flagged "no longer in the list" if the defect was since deleted), the text, author, timestamp, and a Delete button.</p>
+      <div class="features">
+        <span class="feat-label">Template</span>
+        <span class="feat-value"><code>prod_defects_review_comments.html</code> — normal app page (extends base.html, <code>_macros.html</code> table/page_header)</span>
+        <span class="feat-label">Table</span>
+        <span class="feat-value"><code>prod_defect_review_comments</code> (comment_id PK — see database_schema.html)</span>
+        <span class="feat-label">Actions</span>
+        <span class="feat-value">Upload (multipart form) · Delete per comment (AJAX)</span>
       </div>
     </div>
   </div>

@@ -178,6 +178,7 @@ prod_defect_scenarios:
   - "Retail Sale"
   - "Retail Return"
   - "Retail Exchange"
+  - "Marketplace"
   - "other"
 
 # Confluence page linked at the top of the Known Production Issues page.

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Reviewer feedback — Known Production Issues{% endblock %}
+
+{% block content %}
+{{ ui.breadcrumb([('Known Production Issues', url_for('prod_defects_list')), ('Reviewer feedback', None)]) }}
+
+{% call ui.page_header('Reviewer feedback') %}
+<a href="{{ url_for('prod_defects_list') }}" class="btn">← Known Production Issues</a>
+{% endcall %}
+<p class="page-subtitle">Comments reviewers added on a "📝 Download for review" copy, uploaded back as JSON.</p>
+
+{% if imported is not none %}
+<div class="saved-banner">
+  &#10003;&nbsp; Imported {{ imported }} new comment{{ 's' if imported != '1' else '' }}
+  {% if duplicate and duplicate != '0' %}· {{ duplicate }} already had this comment{% endif %}
+  {% if malformed and malformed != '0' %}· {{ malformed }} entr{{ 'ies' if malformed != '1' else 'y' }} skipped (not a valid comment){% endif %}
+</div>
+{% endif %}
+{% if upload_error %}
+<div class="alarm-box">⚠ {{ upload_error }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('prod_defects_review_comments_upload') }}"
+      enctype="multipart/form-data" class="filters-bar" style="align-items:flex-end">
+  <div class="filter-group">
+    <label for="f-comments-file">Comments JSON from a reviewer</label>
+    <input type="file" id="f-comments-file" name="file" accept=".json,application/json" required>
+  </div>
+  <div class="filter-group filter-group--submit">
+    <label>&nbsp;</label>
+    <button type="submit" class="btn btn-primary">Upload</button>
+  </div>
+</form>
+
+{% call ui.table(['Defect', 'Comment', 'From', 'When', '']) %}
+{% for c in comments %}
+  <tr data-id="{{ c.comment_id }}">
+    <td style="white-space:normal;word-break:break-word;min-width:160px">
+      {% if c.defect_exists %}
+      <a href="{{ url_for('prod_defect_detail', record_id=c.defect_id) }}">{{ c.defect_label or ('Issue ' ~ c.defect_id) }}</a>
+      {% else %}
+      {{ c.defect_label or ('Issue ' ~ (c.defect_id or '?')) }}
+      <span class="field-hint">(no longer in the list)</span>
+      {% endif %}
+    </td>
+    <td style="white-space:pre-wrap;word-break:break-word">{{ c.comment_text }}</td>
+    <td>{{ c.author or 'anonymous' }}</td>
+    <td style="white-space:nowrap">{{ c.created_at or c.imported_at or '' }}</td>
+    <td class="kpd-actions"><button class="btn btn-sm btn-danger rc-del-btn">Delete</button></td>
+  </tr>
+{% else %}
+  <tr><td colspan="5" class="table-empty">No reviewer comments uploaded yet — use the form above once you get a JSON file back.</td></tr>
+{% endfor %}
+{% endcall %}
+
+<script>
+async function deleteReviewComment(tr) {
+  if (!confirm('Delete this comment? This cannot be undone.')) return;
+  const id  = tr.dataset.id;
+  const res  = await fetch(`/prod_defects/review-comments/${encodeURIComponent(id)}/delete`, { method: 'POST' });
+  const json = await res.json();
+  if (!json.ok) return;
+  tr.remove();
+}
+document.querySelectorAll('.rc-del-btn').forEach(btn => {
+  btn.addEventListener('click', () => deleteReviewComment(btn.closest('tr')));
+});
+</script>
+{% endblock %}

@@ -5,6 +5,7 @@ app.web_core; endpoint names and URLs are unchanged from the old monolith.
 """
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -149,16 +150,20 @@ def defect_toggle_daily(defect_id: str):
 def prod_defects_list():
     channel = request.args.get("channel", "").strip()
     scenario = request.args.get("scenario", "").strip()
+    type_ = request.args.get("type", "").strip()
     conn = _get_conn()
     try:
         rows = database.list_known_prod_defects(
-            conn, channel=channel or None, scenario=scenario or None)
+            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None)
+        review_comment_count = len(database.list_review_comments(conn))
     finally:
         conn.close()
     return render_template(
         "prod_defects.html", rows=rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
-        sel_channel=channel, sel_scenario=scenario,
+        types=_PROD_DEFECT_TYPES,
+        sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        review_comment_count=review_comment_count,
         confluence_url=_cfg.get("prod_defects_confluence_url", ""))
 
 
@@ -252,6 +257,76 @@ def prod_defects_download():
         "Content-Disposition":
             f'attachment; filename="known_prod_defects_{today}.html"',
     }
+
+
+@app.route("/prod_defects/download-review")
+def prod_defects_download_review():
+    """Standalone, offline-reviewable snapshot: read-only overview + a
+    per-row Detail popup (no Edit/Delete), plus a client-side "add feedback"
+    feature — comments are kept in the browser (localStorage) and exported
+    as JSON to send back. No server round-trip once downloaded."""
+    conn = _get_conn()
+    try:
+        rows = database.list_known_prod_defects(conn)
+    finally:
+        conn.close()
+    today = date.today().isoformat()
+    html = render_template(
+        "prod_defects_review.html", rows=rows, today=today, types=_PROD_DEFECT_TYPES)
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="known_prod_defects_review_{today}.html"',
+    }
+
+
+@app.route("/prod_defects/review-comments")
+def prod_defects_review_comments():
+    conn = _get_conn()
+    try:
+        comments = database.list_review_comments(conn)
+        known_ids = {str(r["id"]) for r in database.list_known_prod_defects(conn)}
+    finally:
+        conn.close()
+    for c in comments:
+        c["defect_exists"] = c["defect_id"] in known_ids
+    return render_template(
+        "prod_defects_review_comments.html", comments=comments,
+        imported=request.args.get("imported"), duplicate=request.args.get("duplicate"),
+        malformed=request.args.get("malformed"), upload_error=request.args.get("upload_error"))
+
+
+@app.route("/prod_defects/review-comments/upload", methods=["POST"])
+def prod_defects_review_comments_upload():
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return redirect(url_for("prod_defects_review_comments", upload_error="No file selected."))
+    try:
+        payload = json.loads(f.read().decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return redirect(url_for("prod_defects_review_comments",
+                                upload_error="That file isn't valid JSON — is it the comments export?"))
+    if not isinstance(payload, dict) or "comments" not in payload:
+        return redirect(url_for("prod_defects_review_comments",
+                                upload_error="That JSON doesn't look like a comments export (no 'comments' list)."))
+    conn = _get_conn()
+    try:
+        result = database.import_review_comments(conn, payload)
+    finally:
+        conn.close()
+    return redirect(url_for(
+        "prod_defects_review_comments", imported=result["inserted"],
+        duplicate=result["duplicate"], malformed=result["malformed"]))
+
+
+@app.route("/prod_defects/review-comments/<comment_id>/delete", methods=["POST"])
+def prod_defects_review_comment_delete(comment_id: str):
+    conn = _get_conn()
+    try:
+        database.delete_review_comment(conn, comment_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @app.route("/prod_defects/<int:record_id>/delete", methods=["POST"])

@@ -209,6 +209,34 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    added. `⬇ Download HTML` + `✉ Send via email` (7th `emailer.
    REPORT_CHOICES` entry; `/email-report?reports=<key>` pre-tick).
    Tests: `tests/test_prod_defects.py` (10); suite 339 green.
+2. ~~Download for review, with client-side comments~~ ✅ DONE 2026-08-24
+   [USER]: second, additive download button "📝 Download for review" next
+   to the plain `⬇ Download HTML` snapshot. Standalone self-contained HTML
+   (`prod_defects_review.html`, own inline CSS/JS — unlike the plain
+   download it is NOT run through `emailer.standalone_html`, so its
+   scripts survive). Read-only: per-row Detail button opens an in-page
+   `<dialog>` with the full record, no Edit/Delete. Every row + the Detail
+   dialog carry a 💬 Comment button — a client-only feedback widget backed
+   by `localStorage` (unique id per comment, reviewer name asked once and
+   remembered, text, timestamp), with a "Your comments so far" list and
+   "⬇ Download my comments (JSON)" to hand back. Route
+   `/prod_defects/download-review`. Tests: `tests/test_prod_defects.py`
+   (11); full suite 430 green.
+3. ~~Reviewer feedback upload/view + Type filter + Marketplace + readable
+   columns~~ ✅ DONE 2026-08-24 [USER: "how can I read the comments... can
+   we build something so I can upload the comments to my page?" +
+   "another scenario... Marketplace" + "filter... according to type" +
+   "Biz Impact and How to handle... readable and not cut off"]. New page
+   `/prod_defects/review-comments`: multipart upload of the JSON from
+   "Download for review", parsed and upserted (idempotent, keyed by
+   comment id) into new table `prod_defect_review_comments`; lists every
+   comment with a link back to its defect (or "no longer in the list"),
+   author, timestamp, Delete. List toolbar badge "📥 Reviewer feedback
+   (N)". Type is now a filter dropdown + visible column on both
+   `/prod_defects` and the review download (client-side filter there);
+   `prod_defect_scenarios` gained "Marketplace"; Biz Impact/How to handle
+   dropped the 200px `.kpd-truncate` ellipsis clamp and wrap in full.
+   Tests: `tests/test_prod_defects.py` (13); full suite 433 green.
 
 ### Cross-vertical components — done ad-hoc
 

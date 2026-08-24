@@ -155,7 +155,8 @@ def combine_shelf_items(
 
 def list_known_prod_defects(conn: sqlite3.Connection,
                             channel: str | None = None,
-                            scenario: str | None = None) -> list[dict]:
+                            scenario: str | None = None,
+                            type_: str | None = None) -> list[dict]:
     sql = """
         SELECT k.*,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'prod_defect'
@@ -170,6 +171,9 @@ def list_known_prod_defects(conn: sqlite3.Connection,
     if scenario:
         sql += " AND k.scenario = ?"
         params.append(scenario)
+    if type_:
+        sql += " AND k.type = ?"
+        params.append(type_)
     sql += " ORDER BY k.created_at DESC"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -255,6 +259,52 @@ def delete_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> None:
         conn.execute("DELETE FROM known_prod_defects WHERE id = ?", (record_id,))
 
 
+def import_review_comments(conn: sqlite3.Connection, payload: dict) -> dict:
+    """Upsert comments from an uploaded "Download for review" JSON export
+    (app/templates/prod_defects_review.html). Keyed by the client-generated
+    comment id, so re-uploading the same file is a no-op the second time.
+    Entries missing an id or text are counted as malformed and skipped."""
+    now = datetime.now().isoformat(timespec="seconds")
+    export_id = payload.get("export_id")
+    report_date = payload.get("report_date")
+    inserted = duplicate = malformed = 0
+    with conn:
+        for c in payload.get("comments") or []:
+            comment_id = (c.get("id") or "").strip()
+            comment_text = (c.get("text") or "").strip()
+            if not comment_id or not comment_text:
+                malformed += 1
+                continue
+            cur = conn.execute(
+                """INSERT INTO prod_defect_review_comments
+                   (comment_id, defect_id, defect_label, author, comment_text,
+                    created_at, export_id, report_date, imported_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (comment_id) DO NOTHING""",
+                (comment_id, str(c.get("defect_id") or "") or None, c.get("defect_label"),
+                 c.get("author"), comment_text, c.get("created_at"),
+                 export_id, report_date, now),
+            )
+            if cur.rowcount:
+                inserted += 1
+            else:
+                duplicate += 1
+    return {"inserted": inserted, "duplicate": duplicate, "malformed": malformed}
+
+
+def list_review_comments(conn: sqlite3.Connection, defect_id: str | None = None) -> list[dict]:
+    sql = "SELECT * FROM prod_defect_review_comments WHERE 1=1"
+    params: list = []
+    if defect_id:
+        sql += " AND defect_id = ?"
+        params.append(str(defect_id))
+    sql += " ORDER BY COALESCE(created_at, imported_at) DESC"
+    return _rows_to_dicts(conn.execute(sql, params))
+
+
+def delete_review_comment(conn: sqlite3.Connection, comment_id: str) -> None:
+    with conn:
+        conn.execute("DELETE FROM prod_defect_review_comments WHERE comment_id = ?", (comment_id,))
 
 
 def _parse_tags(raw: str | None) -> set[str]:

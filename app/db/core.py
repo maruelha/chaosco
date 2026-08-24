@@ -219,6 +219,18 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at        TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS prod_defect_review_comments (
+            comment_id   TEXT PRIMARY KEY,
+            defect_id    TEXT,
+            defect_label TEXT,
+            author       TEXT,
+            comment_text TEXT NOT NULL,
+            created_at   TEXT,
+            export_id    TEXT,
+            report_date  TEXT,
+            imported_at  TEXT
+        );
+
         CREATE TABLE IF NOT EXISTS links (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             description TEXT NOT NULL,

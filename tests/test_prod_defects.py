@@ -81,12 +81,12 @@ def test_legacy_scenario_not_in_fixed_list_stays_visible(client):
 
 
 def test_list_columns_filters_and_note_count(client):
-    ecom_id = _new(client, short_description="EcomIssue", scenario="GWC", channel="ECOM")
-    _new(client, short_description="RetailIssue", scenario="SFDC", channel="Retail")
+    ecom_id = _new(client, short_description="EcomIssue", scenario="GWC", channel="ECOM", type="Defect")
+    _new(client, short_description="RetailIssue", scenario="SFDC", channel="Retail", type="Risk")
 
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "Known Production Issues" in html
-    for col in ("Channel", "Scenario", "Short Description", "Biz Impact",
+    for col in ("Channel", "Type", "Scenario", "Short Description", "Biz Impact",
                "How to handle", "Confluence"):
         assert col in html
     assert "EcomIssue" in html and "RetailIssue" in html
@@ -97,6 +97,9 @@ def test_list_columns_filters_and_note_count(client):
     html = client.get("/prod_defects?scenario=SFDC").get_data(as_text=True)
     assert "RetailIssue" in html and "EcomIssue" not in html
 
+    html = client.get("/prod_defects?type=Risk").get_data(as_text=True)
+    assert "RetailIssue" in html and "EcomIssue" not in html
+
     conn = database.get_connection(client.db_path)
     try:
         database.add_note(conn, "prod_defect", str(ecom_id), heading="h", note_text="n")
@@ -104,6 +107,21 @@ def test_list_columns_filters_and_note_count(client):
         conn.close()
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "Edit (1)" in html
+
+
+def test_marketplace_scenario_option_available(client):
+    import app.web_defects as web_defects
+    assert "Marketplace" in web_defects._prod_defect_scenarios()
+
+
+def test_biz_impact_and_how_to_handle_not_truncated(client):
+    long_impact = ("This is a much longer business impact description than the "
+                   "old 200px truncation allowed to show " * 2).strip()
+    _new(client, short_description="LongTextRow", scenario="GWC", biz_impact=long_impact,
+         how_to_handle="Also a long how-to-handle description that used to get cut off with an ellipsis")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert long_impact in html
+    assert "kpd-truncate" not in html
 
 
 def test_confluence_link_rendered_from_config(client, monkeypatch):
@@ -155,6 +173,25 @@ def test_download_route_produces_standalone_snapshot(client):
     assert "DownloadRow" in html
     assert "<script" not in html                # standalone_html strips scripts
     assert ",form," in html                     # forms hidden via injected CSS rule
+
+
+def test_download_review_route_no_edit_delete_has_comment_widget(client):
+    _new(client, short_description="ReviewRow", scenario="GWC", channel="ECOM", type="Defect")
+    resp = client.get("/prod_defects/download-review")
+    assert resp.status_code == 200
+    assert "attachment" in resp.headers["Content-Disposition"]
+    assert "known_prod_defects_review_" in resp.headers["Content-Disposition"]
+    html = resp.get_data(as_text=True)
+    assert "ReviewRow" in html
+    assert "Detail</button>" in html
+    assert "kpd-detail-" in html                # per-row read-only detail dialog
+    assert "Edit" not in html and "Delete" not in html
+    assert "/prod_defects/" not in html.split("<script")[0]  # no edit/delete links in the markup
+    assert "kpd-comment-btn" in html            # comment button (list + detail)
+    assert "btn-download-comments" in html      # JSON export button
+    assert "<script" in html                    # unlike /download, this keeps its JS
+    assert 'id="type-filter"' in html           # client-side Type filter
+    assert 'data-type="Defect"' in html
 
 
 def test_email_page_pretick_and_gather_attachments():
