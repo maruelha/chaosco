@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delegated Testing Numbers — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 760px; margin: 0 auto;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+
+    .num-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid #e2e8f0; }
+    .num-table th {
+      background: #f1f5f9; color: #64748b; font-weight: 600;
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.4rem 0.8rem; text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    .num-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .num-table td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .num-table tr.is-blocked td { color: #991b1b; font-weight: 600; }
+    .num-table tr.is-zero td { color: #94a3b8; font-weight: 400; }
+    .num-table tr.total-row td {
+      border-top: 2px solid #1e293b; font-weight: 800; color: #0f172a;
+    }
+
+    @page { size: A4 portrait; margin: 2cm; }
+    @media print {
+      body { padding: 0; max-width: none; }
+      .toolbar { display: none !important; }
+      .num-table th { background: #f1f5f9 !important;
+                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">Delegated Testing Numbers</span>
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('delegated.delegated_report') }}" class="btn">📄 Status report</a>
+  <button class="btn" onclick="window.print()">Print</button>
+  <button class="btn" onclick="copyTable()">📋 Copy table</button>
+</div>
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
+    <div class="rh-title">Delegated Testing Numbers</div>
+    <div class="rh-date">{{ today }} · tickets per bucket, from the delegated Jira export</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ total }}</div>
+    <div class="rh-stat-lbl">Tickets</div>
+  </div>
+</div>
+
+<table class="num-table" id="num-table">
+  <thead>
+    <tr>
+      <th>Bucket</th>
+      <th style="width:6rem; text-align:right">Tickets</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for key, title, count in counts %}
+    <tr class="{% if key == 'blocked' and count %}is-blocked{% elif not count %}is-zero{% endif %}">
+      <td>{{ title }}</td>
+      <td class="num">{{ count }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row">
+      <td>Total</td>
+      <td class="num">{{ total }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<script>
+function copyTable() {
+  const lines = [["Bucket", "Tickets"].join("\t")];
+  document.querySelectorAll("#num-table tbody tr").forEach(tr => {
+    const c = tr.querySelectorAll("td");
+    lines.push([c[0].textContent.trim(), c[1].textContent.trim()].join("\t"));
+  });
+  navigator.clipboard.writeText(lines.join("\n"));
+}
+</script>
+</body>
+</html>

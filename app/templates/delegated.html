@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Delegated Testing — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>Delegated Testing</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('delegated.delegated_report') }}" class="btn" target="_blank"
+         title="print-ready status report with the delegated buckets">📄 Status report</a>
+      <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn" target="_blank"
+         title="counts per bucket">🔢 Numbers</a>
+      <form method="post" action="{{ url_for('delegated.delegated_upload') }}"
+            enctype="multipart/form-data" style="display:inline">
+        <input type="file" name="file" accept=".xml" required
+               style="font-size:0.8rem; max-width:15rem">
+        <button type="submit" class="btn btn-primary"
+                title="upload the delegated Jira XML export — refreshes status, assignee and comments">
+          ⤒ Upload &amp; import</button>
+      </form>
+    </div>
+  </div>
+  <p class="page-subtitle">Testing delegated to the team — tickets from the
+    <strong>delegated Jira export</strong> (pick the .xml and press Upload &amp; import),
+    bucketed by status and assignee. Order numbers come from the <strong>latest comment</strong>.</p>
+</div>
+
+{% if jira_msg %}
+<div class="result-box{% if jira_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Jira import</span>
+    <span class="result-value">{{ jira_msg }}</span>
+  </div>
+</div>
+{% endif %}
+
+{% if not total %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No delegated tickets yet — pick the Jira XML export above and press
+  <strong>⤒ Upload &amp; import</strong>.
+</p>
+{% endif %}
+
+{% for section_key, section_title, section_css, section_items in sections %}
+{% set is_blocked_section = section_key == 'blocked' %}
+{% if section_items or section_key not in ('done', 'unexpected') %}
+<details class="rt-section" {% if section_items %}open{% endif %}>
+  <summary{% if is_blocked_section and section_items %} style="color:#a10d19"{% endif %}>{{ section_title }}
+    <span class="rt-count">{{ section_items|length }}</span>
+  </summary>
+  {% if loop.first %}
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    <strong>Why blocked</strong> and <strong>Next step</strong> are yours
+    (saved on blur, keyed by the jira ticket); ↻ archives the next step,
+    🕘 shows the history.
+  </p>
+  {% endif %}
+  {% if section_items %}
+  <table class="rt-table">
+    <thead>
+      <tr>
+        <th style="width:7.5rem">Jira ID</th>
+        <th style="width:8.5rem">Solman ID</th>
+        <th>Summary</th>
+        <th style="width:7.5rem">Status</th>
+        <th style="width:9rem">Assignee</th>
+        <th style="width:11rem" title="from the latest comment that carries one">Orders</th>
+        {% if is_blocked_section %}<th style="width:13rem">Why blocked</th>{% endif %}
+        <th style="width:13rem">Next step</th>
+        <th style="width:12rem"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in section_items %}
+      <tr>
+        <td class="mono" style="font-size:0.78rem">
+          {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
+          {% else %}{{ i.jira_key }}{% endif %}
+        </td>
+        <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
+        <td><a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a></td>
+        <td>{{ i.jira_status or "—" }}</td>
+        <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
+        <td style="font-size:0.76rem">
+          {% for line in i.orders %}<div class="mono">{{ line }}</div>{% else %}—{% endfor %}
+        </td>
+        {% if is_blocked_section %}
+        <td>
+          <input type="text" class="rt-comment dlg-br" data-key="{{ i.jira_key }}"
+                 value="{{ i.blocked_reason or '' }}"
+                 placeholder="why blocked…" onblur="dlgBrSave(this)">
+        </td>
+        {% endif %}
+        <td>
+          <input type="text" class="rt-comment dlg-ns" data-key="{{ i.jira_key }}"
+                 value="{{ i.next_step or '' }}"
+                 placeholder="next step…" onblur="dlgNsSave(this)">
+        </td>
+        <td style="white-space:nowrap; text-align:right">
+          <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+                  data-entity-type="delegated" data-entity-id="{{ i.jira_key }}"
+                  data-ns-target='input.dlg-ns[data-key="{{ i.jira_key }}"]'>↻</button>
+          <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+                  data-entity-type="delegated" data-entity-id="{{ i.jira_key }}"
+                  data-ns-label="{{ i.jira_key }} — {{ i.summary or '' }}">🕘</button>
+          {{ ui.chat_row_button(chats_by_entity.get(i.jira_key), 'jira', i.jira_key, i.jira_key ~ ' — ' ~ (i.summary or '')) }}
+          <button type="button" class="btn btn-sm js-open-msg" title="build a standardized issue message"
+                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
+                  data-msg-name="{{ i.jira_key }} — {{ i.summary or '' }}">&#9993;</button>
+          <a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}"
+             class="btn btn-sm">Details{% if note_counts.get(i.jira_key) %} ({{ note_counts[i.jira_key] }}){% endif %}</a>
+          <button type="button" class="rt-cbtn" title="description + comments inline" onclick="dlgJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
+        </td>
+      </tr>
+      <tr class="dlg-jira-detail" style="display:none">
+        <td colspan="{{ 9 if is_blocked_section else 8 }}" style="background:#fafafa; padding:0.6rem 1rem">
+          {% if i.description %}
+          <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
+          <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
+            {{ i.description | safe }}
+          </div>
+          {% endif %}
+          <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Comments ({{ jira_comments[i.jira_key]|length }})</div>
+          {% for c in jira_comments[i.jira_key] %}
+          <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
+            {% if c.created %}<div style="color:#999; font-size:0.72rem">{{ c.created }}</div>{% endif %}
+            <div style="overflow-x:auto">{{ c.body | safe }}</div>
+          </div>
+          {% else %}
+          <p style="color:#999; font-size:0.82rem; margin:0.3rem 0 0">No comments.</p>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">Nothing here right now.</p>
+  {% endif %}
+</details>
+{% endif %}
+{% endfor %}
+
+{% include '_next_step_history.html' %}
+{% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
+
+<script>
+function dlgJira(btn) {
+  const detail = btn.closest("tr").nextElementSibling;
+  const open = detail.style.display !== "none";
+  detail.style.display = open ? "none" : "";
+  btn.textContent = btn.textContent.replace(open ? "▾" : "▸", open ? "▸" : "▾");
+}
+
+function dlgSave(input, url, field) {
+  const body = new URLSearchParams({ [field]: input.value });
+  fetch(url, { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#1a7f37';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+
+function dlgNsSave(input) {
+  dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/next-step', 'next_step');
+}
+
+function dlgBrSave(input) {
+  dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/blocked-reason', 'blocked_reason');
+}
+</script>
+{% endblock %}

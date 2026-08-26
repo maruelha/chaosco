@@ -1,0 +1,74 @@
+# Delegated Testing (2026-08-26)
+
+The card for testing work DELEGATED to the team. Its own Jira XML export,
+uploaded as a file on the card; tickets bucketed by status/assignee from
+🔴 BLOCKED down to "Ready for Sales validations".
+
+## Design decisions (planning chat 2026-08-26)
+
+- **Own Jira export, SHARED store.** The upload tags every ticket in the
+  file `seen_in_delegated` in `jira_issues` (third source tag next to
+  gatekeeper/ecom). No filtering — the export itself defines the scope.
+  Shared-store refresh rules apply (status, assignee, acceptance criteria
+  refresh; comments replaced wholesale). A ticket may carry several tags —
+  one import refreshes every view.
+- **File upload, not a watched folder** [USER]: like ECOMTestPlan — the
+  browser uploads the file's content (`<input type="file">`), so there is
+  no per-machine folder config and it would survive future hosting. A dated
+  copy is kept: `data/uploads/delegated_jira_<timestamp>.xml` (mirrored by
+  the backup). The watched-folder + tkinter-Browse ideas were discussed and
+  rejected.
+- **Order numbers: LATEST COMMENT only** [USER] — `extract_latest_comment_orders`
+  in `app/jira_importer.py`; acceptance criteria deliberately ignored
+  (unlike the gatekeeper's acceptance-criteria-first rule).
+- **Authored fields separate from the gatekeeper.** `delegated_annotations`
+  (jira_key PK, blocked_reason, next_step) in `app/db/delegated.py`. Same
+  jira_key can hold a gatekeeper next step AND a delegated next step —
+  different working contexts. Next-step archive entity: `delegated`.
+  Notes entity: `delegated` (own thread, separate from gatekeeper `jira`).
+- **Report duplication accepted** [USER]: `delegated_report.html` is a COPY
+  of the sales-report layout — the two reports are expected to grow apart
+  (still experimenting). Extract a shared partial only if they stabilise.
+
+## Buckets (app/delegated_buckets.py — pure, tested)
+
+| Bucket | Rule |
+|---|---|
+| 🔴 BLOCKED (top, wins) | status Blocked |
+| Open | status Open |
+| In progress with testing team | In Progress, not Marina |
+| Gatekeeper check Marina | In Progress + `jira_gatekeeper_assignee` substring |
+| Waiting for Settlementfile creation | In Verification |
+| In validation with GBS key users | In Validation |
+| Ready for Sales validations | In Review |
+| Resolved / Closed | Resolved / Closed / Done |
+| Unexpected status | anything else (never silently dropped) |
+
+Case-insensitive, whitespace-tolerant. Board hides Resolved+Unexpected
+sections while empty; the report shows only non-empty sections.
+
+## Pieces
+
+- `app/db/delegated.py` — schema + all SQL (annotations, `delegated_counts`
+  for the dashboard badge)
+- `app/delegated_buckets.py` — bucket rules + counts (backlog joins here later)
+- `app/web_delegated.py` — Blueprint `/delegated/`: board, upload, ticket
+  detail (Details/Messages tabs), inline saves, `/report`, `/numbers`
+- Templates: `delegated.html`, `delegated_ticket.html`,
+  `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`
+- Registries: `web_notes.REGISTRY['delegated']`,
+  `web_next_steps.REGISTRY['delegated']`
+- Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
+
+## PARKED — explicitly pushed to later [USER 2026-08-26]
+
+1. **Excel/ECOM info join**: the `ecom` table rows (filled by the ROE
+   tracking import) matched by Jira key, so the board/detail also shows the
+   Excel-side info next to the Jira data. Marina was "not quite sure" about
+   this — re-discuss scope before building.
+2. **Backlog items**: manually managed items that are COUNTED in the
+   numbers report but NOT listed in any detail view. Likely a small
+   `delegated_backlog` table; the counting seam is
+   `delegated_buckets.bucket_counts` (add backlog counts onto the bucket
+   counts there). Will "get more complex" per Marina — expect follow-up
+   requirements when she brings it back.

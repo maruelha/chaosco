@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-26</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-26</h1>
+<p class="hint">Everything built in the 26.08. session (the new <strong>Delegated Testing</strong>
+card), as a click-through checklist. Ticks are remembered by this browser. Links assume the
+app runs at <a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>).
+New on startup: the <code>delegated_annotations</code> table and the
+<code>seen_in_delegated</code> column on <code>jira_issues</code> (both created/migrated
+automatically) and the <code>/delegated/…</code> routes. You also need a fresh
+<strong>Jira XML export for the delegated tickets</strong> saved anywhere on disk —
+the card uploads the file directly, there is NO folder to configure (works the same
+on both computers).</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Dashboard — the new card</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>On the <a href="http://127.0.0.1:8010/" target="_blank">dashboard</a>, find
+      <strong>Delegated Testing</strong> (right after the ECOM card).
+      <span class="expect">"Open the board" + "Report" buttons; no count badge yet
+      (nothing imported).</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · Upload &amp; import — the delegated Jira export</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>Open <a href="http://127.0.0.1:8010/delegated/" target="_blank">/delegated/</a>,
+      pick your delegated Jira .xml with the file field in the header and press
+      <strong>⤒ Upload &amp; import</strong>.
+      <span class="expect">Green banner: "&lt;filename&gt;: N tickets — N new · 0 refreshed ·
+      N comments". The buckets below fill up.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Check the buckets against Jira: a Blocked ticket sits under <strong>🔴 BLOCKED</strong>
+      (top, red heading), In-Progress tickets split into <strong>In progress with testing team</strong>
+      vs. <strong>Gatekeeper check Marina</strong> (assigned to you), In Verification →
+      <strong>Waiting for Settlementfile creation</strong>, In Validation →
+      <strong>In validation with GBS key users</strong>, In Review →
+      <strong>Ready for Sales validations</strong>.
+      <span class="expect">Every ticket appears in exactly ONE bucket; odd statuses land in
+      <strong>Unexpected status</strong> instead of disappearing.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Try uploading a wrong file (e.g. an .xlsx).
+      <span class="expect">Red banner "That is not an .xml file…", nothing imported.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2d">
+      <span>Upload the SAME xml again.
+      <span class="expect">Banner now says "0 new · N refreshed" — re-import is safe,
+      statuses/assignees/comments just refresh.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2e">
+      <span>Sanity check the other boards: open
+      <a href="http://127.0.0.1:8010/ecom-gatekeeper" target="_blank">ECOM Gatekeeper</a>.
+      <span class="expect">The delegated tickets did NOT flood the gatekeeper sections
+      (separate source tag).</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-red">
+  <div class="box-head">3 · BLOCKED — why-blocked + next steps</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>In the BLOCKED section, type a reason into <strong>Why blocked</strong> and click
+      elsewhere (blur).
+      <span class="expect">Field border flashes green = saved; reload the page — still there.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Type a <strong>Next step</strong> on any ticket (any bucket), blur, then press
+      <strong>↻</strong> on that row and type a new one.
+      <span class="expect">↻ archives the old step and blanks the field; <strong>🕘</strong> shows
+      the history with dates — the same keep-adding mechanism as everywhere else.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>Back on the dashboard.
+      <span class="expect">The Delegated Testing card now shows the ticket-count badge and a red
+      "n blocked." line.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-purple">
+  <div class="box-head">4 · Ticket detail — Details / Messages tabs</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Click a ticket's Summary (or its <strong>Details</strong> button).
+      <span class="expect">Detail page with two tabs on the Jira card: <strong>Details</strong>
+      (fields, order numbers from the latest comment, acceptance criteria, description) and
+      <strong>Messages (n)</strong> (the full comment thread). A blocked ticket shows a red
+      BLOCKED badge in the header.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Edit Why blocked / Next step in "My working fields" and Save; add a note below.
+      <span class="expect">"✓ Changes saved." banner; the note stays on THIS page (delegated
+      notes are their own thread — separate from gatekeeper notes on the same ticket).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Check the <strong>Orders</strong> column/section on a ticket where testers posted
+      several order numbers over time.
+      <span class="expect">Only the LATEST comment's numbers show (not the acceptance criteria,
+      not older comments) — that was your rule for this card.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-green">
+  <div class="box-head">5 · Reports — status report + numbers</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Press <strong>📄 Status report</strong> on the board.
+      <span class="expect">Print-ready page in the Sales-report style, but with the delegated
+      buckets as coloured sections (BLOCKED dark red, first). BLOCKED rows have a red
+      <strong>Why blocked</strong> column. Empty buckets don't print.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Try the call-outs (+ Add call-out), the Status/Assignee filter, Print preview and
+      Download HTML.
+      <span class="expect">All work like on the Sales report; call-outs are saved (key
+      <code>delegated</code>) and only filled ones print.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5c">
+      <span>Press <strong>🔢 Numbers</strong>.
+      <span class="expect">One row per bucket with the count (blocked in red, zero rows dimmed)
+      + Total; <strong>📋 Copy table</strong> pastes into Excel. This is where the future backlog
+      items will be added to the counts.</span></span></label>
+  </div>
+</div>
+
+<div class="box b-slate">
+  <div class="box-head">Parked (your call, later)</div>
+  <div class="box-body">
+    Explicitly pushed to later and written down in <code>docs/claude/delegated.md</code> +
+    <code>docs/build_plan.md</code>: the <strong>Excel/ECOM join</strong> (show the ROE-tracking
+    row next to the Jira data, matched by Jira key — you wanted to re-think the scope) and the
+    <strong>backlog items</strong> (counted in Numbers, not listed in detail).
+    Suite now at 454 tests.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0826-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

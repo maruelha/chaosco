@@ -64,6 +64,9 @@ def init_schema(db_path: Path) -> None:
             "ALTER TABLE jira_issues ADD COLUMN seen_in_gatekeeper INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE jira_issues ADD COLUMN seen_in_ecom INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE jira_issues ADD COLUMN reporter TEXT",
+            # Delegated Testing card (2026-08-26) — third source tag, filled
+            # from its own uploaded XML export
+            "ALTER TABLE jira_issues ADD COLUMN seen_in_delegated INTEGER NOT NULL DEFAULT 0",
         ):
             try:
                 conn.execute(ddl)
@@ -88,10 +91,10 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict],
     """Upsert parsed issues by jira_key. New keys: full insert. Existing keys:
     ONLY jira_status, jira_assignee, acceptance_criteria (living test data),
     last_seen refresh. Comments of every imported issue are REPLACED
-    wholesale. seen_in ('gatekeeper'|'ecom') tags the source — the flag is
-    set, never cleared (a ticket may legitimately live in both worlds).
-    Returns counts."""
-    assert seen_in in (None, "gatekeeper", "ecom")
+    wholesale. seen_in ('gatekeeper'|'ecom'|'delegated') tags the source —
+    the flag is set, never cleared (a ticket may legitimately live in
+    several worlds). Returns counts."""
+    assert seen_in in (None, "gatekeeper", "ecom", "delegated")
     flag_col = f"seen_in_{seen_in}" if seen_in else None
     inserted = updated = comments = 0
     now = _now()
@@ -147,10 +150,10 @@ def get_jira_issue(conn: sqlite3.Connection, jira_key: str) -> dict | None:
 def list_jira_issues(conn: sqlite3.Connection,
                      seen_in: str | None = None) -> list[dict]:
     """All issues, or only those tagged with one source
-    (seen_in='gatekeeper'|'ecom') — the gatekeeper page uses the tag so a
-    broad ECOM export can never flood its working list."""
+    (seen_in='gatekeeper'|'ecom'|'delegated') — each card uses its tag so a
+    broad export can never flood another card's working list."""
     sql = "SELECT * FROM jira_issues"
-    if seen_in in ("gatekeeper", "ecom"):
+    if seen_in in ("gatekeeper", "ecom", "delegated"):
         sql += f" WHERE seen_in_{seen_in} = 1"
     sql += " ORDER BY jira_key"
     return _rows_to_dicts(conn.execute(sql))

@@ -75,6 +75,12 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.get_gatekeeper_next_step(c, str(i)),
         lambda c, i: database.set_gatekeeper_next_step(c, str(i), None),
     ),
+    # Delegated Testing tickets (2026-08-26) — same jira_key, but the card's
+    # OWN next step in delegated_annotations (separate from the gatekeeper's)
+    "delegated": NSEntity(
+        lambda c, i: database.get_delegated_next_step(c, str(i)),
+        lambda c, i: database.set_delegated_next_step(c, str(i), None),
+    ),
 }
 
 

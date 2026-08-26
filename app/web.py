@@ -129,6 +129,14 @@ from app.web_urgent import bp as _urgent_bp
 _db_urgent.init_schema(_db_path)
 app.register_blueprint(_urgent_bp)
 
+# Delegated Testing (2026-08-26) — the delegated Jira export (uploaded on
+# the card, tagged seen_in_delegated in the shared store) bucketed by
+# status/assignee; authored blocked reason + next step per ticket.
+from app.db import delegated as _db_delegated
+from app.web_delegated import bp as _delegated_bp
+_db_delegated.init_schema(_db_path)
+app.register_blueprint(_delegated_bp)
+
 
 if __name__ == "__main__":
     import threading

@@ -32,3 +32,4 @@ from app.db.next_steps import *    # noqa: F401,F403
 from app.db.order_archive import *  # noqa: F401,F403
 from app.db.inbox_autofile import preview_autofile, apply_autofile  # noqa: F401
 from app.db.gatekeeper import *    # noqa: F401,F403
+from app.db.delegated import *     # noqa: F401,F403

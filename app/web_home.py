@@ -39,6 +39,8 @@ def dashboard():
         from app.db import urgent as db_urgent
         urgent_counts      = db_urgent.urgent_counts(conn)
         urgent_popup_items = db_urgent.list_urgent(conn)
+        from app.db import delegated as db_delegated
+        delegated_counts   = db_delegated.delegated_counts(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
@@ -53,6 +55,7 @@ def dashboard():
                            active_topics=active_topics,
                            prod_defect_count=prod_defect_count,
                            retrofit_count=retrofit_count,
+                           delegated_counts=delegated_counts,
                            backup_info=last_backup(_cfg))
 
 

@@ -266,6 +266,7 @@
     <li><a href="#retail_annotations">retail_annotations</a></li>
     <li><a href="#ecom_annotations">ecom_annotations</a></li>
     <li><a href="#gatekeeper_annotations">gatekeeper_annotations</a></li>
+    <li><a href="#delegated_annotations">delegated_annotations</a></li>
 
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
@@ -556,6 +557,27 @@
       </tbody>
     </table>
     <div class="relations"><strong>Toggle:</strong> <code>POST /ecom-gatekeeper/ticket/&lt;jira_key&gt;/track-sales</code> &nbsp;·&nbsp; <strong>Next step:</strong> <code>POST /ecom-gatekeeper/ticket/&lt;jira_key&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/gatekeeper.py</code></div>
+  </div>
+
+  <!-- delegated_annotations -->
+  <div class="table-card" id="delegated_annotations">
+    <div class="table-card-header">
+      <span class="tname">delegated_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Delegated Testing working fields per JIRA TICKET (2026-08-26) — keyed by jira_key, deliberately SEPARATE from gatekeeper_annotations on the same key (different working context). Never touched by imports.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → jira_issues</span></td><td></td></tr>
+        <tr><td class="col-name">blocked_reason</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Why blocked" — editable on BLOCKED rows (card, blur-save) and on the detail page</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Authored inline next step (blur-save; ↻/🕘 next-step archive, entity <code>delegated</code>)</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Blocked reason:</strong> <code>POST /delegated/ticket/&lt;jira_key&gt;/blocked-reason</code> &nbsp;·&nbsp; <strong>Next step:</strong> <code>POST /delegated/ticket/&lt;jira_key&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/delegated.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('delegated', jira_key)</code> — own thread, separate from the gatekeeper's <code>('jira', jira_key)</code></div>
   </div>
 </div>
 
@@ -1535,10 +1557,11 @@
         <tr><td class="col-name">created / updated</td><td class="col-type">TEXT</td><td></td><td class="note-text">Jira timestamps</td></tr>
         <tr><td class="col-name">seen_in_gatekeeper</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Source tag — set, never cleared; the gatekeeper page lists only tagged rows</td></tr>
         <tr><td class="col-name">seen_in_ecom</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Same for the ECOM import path</td></tr>
+        <tr><td class="col-name">seen_in_delegated</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Third source tag (2026-08-26) — set by the Delegated Testing XML upload; the /delegated/ card lists only tagged rows</td></tr>
         <tr><td class="col-name">first_seen / last_seen</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>Comments:</strong> jira_comments (replaced wholesale per import) &nbsp;·&nbsp; <strong>Authored:</strong> gatekeeper_annotations (by jira_key) &nbsp;·&nbsp; <strong>Notes/orders/chats:</strong> shared tables at <code>('jira', jira_key)</code></div>
+    <div class="relations"><strong>Comments:</strong> jira_comments (replaced wholesale per import) &nbsp;·&nbsp; <strong>Authored:</strong> gatekeeper_annotations + delegated_annotations (by jira_key) &nbsp;·&nbsp; <strong>Notes/orders/chats:</strong> shared tables at <code>('jira', jira_key)</code>; Delegated notes at <code>('delegated', jira_key)</code></div>
   </div>
 
   <div class="table-card" id="jira_comments">

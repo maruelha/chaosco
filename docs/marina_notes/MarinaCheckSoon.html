@@ -400,6 +400,26 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<div class="box b-blue">
+  <div class="box-head">New on 26.08 — Delegated Testing: two things to verify</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="dlg-status-list">
+      <span><strong>Check the bucket mapping against a REAL delegated export.</strong>
+      <span class="where">&#8594; /delegated/</span><br>
+      The done-bucket assumes the statuses <code>Resolved</code> / <code>Closed</code> /
+      <code>Done</code>; anything else unknown lands under "Unexpected status". After your
+      first real upload, look at that section &mdash; if a legitimate status shows up
+      there (e.g. "Ready for Verification"), tell Claude which bucket it belongs to.</span></label>
+    <label class="task"><input type="checkbox" data-k="dlg-notes-split">
+      <span><strong>Notes on delegated tickets are their OWN thread.</strong>
+      <span class="where">&#8594; delegated ticket detail</span><br>
+      A ticket that lives in BOTH the gatekeeper and delegated worlds keeps two separate
+      note threads (and two separate next steps) &mdash; deliberate, so the contexts don't
+      mix. If you'd rather see ONE combined thread per ticket, that's a small change &mdash;
+      just say so.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

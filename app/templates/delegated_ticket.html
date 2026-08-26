@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.jira_key }} — Delegated Testing — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('delegated.delegated_list') }}">Delegated Testing</a>
+  <span>›</span>
+  <span>{{ issue.jira_key }}</span>
+</nav>
+
+<div class="page-header">
+  <h1>{{ issue.jira_key }}
+    {% if is_blocked %}<span class="pill" style="background:#fee2e2; color:#a10d19; vertical-align:middle">BLOCKED</span>{% endif %}
+  </h1>
+  {% if issue.summary %}<p class="page-subtitle">{{ issue.summary }}</p>{% endif %}
+</div>
+
+{# ---- Section 1: Jira (read-only, shared store) — Details / Messages tabs ---- #}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Jira</h2>
+    <span class="readonly-badge">&#128274; From the Jira store — read only</span>
+  </div>
+
+  <div style="display:flex; gap:0.4rem; border-bottom:1px solid #e5e5ea; margin-bottom:0.8rem">
+    <button type="button" class="btn btn-sm dlg-tab" data-tab="details"
+            style="border-radius:6px 6px 0 0; border-bottom:none">Details</button>
+    <button type="button" class="btn btn-sm dlg-tab" data-tab="messages"
+            style="border-radius:6px 6px 0 0; border-bottom:none">Messages ({{ comments|length }})</button>
+  </div>
+
+  <div id="dlg-tab-details">
+    <dl class="field-list">
+      {% set jira_fields = [
+        ("Solman ID",     issue.solman_id),
+        ("Jira status",   issue.jira_status),
+        ("Jira assignee", issue.jira_assignee),
+        ("Reporter",      issue.reporter),
+        ("Type",          issue.type),
+        ("Priority",      issue.priority),
+        ("Epic",          issue.epic),
+        ("Markets",       issue.markets),
+        ("Created",       issue.created),
+        ("Updated",       issue.updated),
+        ("Last import",   issue.last_seen),
+      ] %}
+      {% for label, value in jira_fields %}
+      <dt>{{ label }}</dt>
+      <dd>{{ value if value is not none and value != '' else '—' }}</dd>
+      {% endfor %}
+    </dl>
+    {% if issue.link %}
+    <p style="margin:0.6rem 0"><a href="{{ issue.link }}" target="_blank" rel="noopener" class="btn btn-sm">Open in Jira &#8599;</a></p>
+    {% endif %}
+
+    {% if orders.orders %}
+    <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Order numbers
+      <span style="font-weight:400; color:#888">(latest comment)</span></h3>
+    <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem">
+      {% for line in orders.orders %}<div class="mono" style="font-size:0.8rem">{{ line }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if issue.acceptance_criteria %}
+    <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Acceptance criteria</h3>
+    <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.82rem; white-space:pre-wrap">{{ issue.acceptance_criteria }}</div>
+    {% endif %}
+
+    {% if issue.description %}
+    <h3 style="font-size:0.85rem; margin:0.8rem 0 0.3rem">Description</h3>
+    <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.6rem 0.9rem; font-size:0.85rem; overflow-x:auto">
+      {{ issue.description | safe }}
+    </div>
+    {% endif %}
+  </div>
+
+  <div id="dlg-tab-messages" style="display:none">
+    {% if comments %}
+    <div style="display:flex; flex-direction:column; gap:0.5rem">
+      {% for c in comments %}
+      <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.9rem; font-size:0.85rem">
+        {% if c.created %}<div style="color:#888; font-size:0.75rem; margin-bottom:0.2rem">{{ c.created }}</div>{% endif %}
+        <div style="overflow-x:auto">{{ c.body | safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#888; font-size:0.85rem">No comments in the store.</p>
+    {% endif %}
+  </div>
+</div>
+
+{# ---- Section 2: authored fields (blocked reason + next step, archive) ---- #}
+<div class="annotation-card">
+  <div class="card-header-row">
+    <h2>My working fields</h2>
+    <span class="editable-badge">&#9998; Editable — keyed by the Jira ticket</span>
+  </div>
+  {% if saved %}
+  <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
+  {% endif %}
+  <form method="post" action="{{ url_for('delegated.delegated_ticket_detail', jira_key=issue.jira_key) }}">
+    <div class="form-stack">
+      {% if is_blocked or blocked_reason %}
+      <div class="form-field">
+        <label for="f-blocked">Why blocked</label>
+        <textarea id="f-blocked" name="blocked_reason" rows="2">{{ blocked_reason or '' }}</textarea>
+      </div>
+      {% else %}
+      <input type="hidden" name="blocked_reason" value="{{ blocked_reason or '' }}">
+      {% endif %}
+      <div class="form-field">
+        <label for="f-nextstep">Next step
+          <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"
+                  data-entity-type="delegated" data-entity-id="{{ issue.jira_key }}"
+                  data-ns-target="#f-nextstep"
+                  title="archive the current next step and start fresh">↻ New next step</button>
+          <button type="button" class="btn btn-sm js-ns-history"
+                  data-entity-type="delegated" data-entity-id="{{ issue.jira_key }}"
+                  data-ns-label="{{ issue.jira_key }} — {{ issue.summary or '' }}">History</button>
+        </label>
+        <textarea id="f-nextstep" name="next_step" rows="3">{{ next_step or '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-footer">
+      <span class="last-edited"></span>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div>
+
+{% include '_next_step_history.html' %}
+
+{# ---- Teams chats + issue message (shared jira-keyed registries) ---- #}
+<div class="btn-row" style="margin-bottom:1rem">
+  <button type="button" class="btn js-open-chats"
+          data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+          data-tcl-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">&#128172; Teams chats</button>
+  <button type="button" class="btn js-open-msg"
+          data-entity-type="jira" data-entity-id="{{ issue.jira_key }}"
+          data-msg-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">&#9993; Issue message</button>
+</div>
+{% include '_teams_chat_links.html' %}
+{% include '_issue_message.html' %}
+
+{# ---- Section 3: Notes (entity 'delegated' — this card's own thread) ---- #}
+{% with entity_type='delegated', entity_id=issue.jira_key %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<div class="btn-row">
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">&#8592; Back to Delegated Testing</a>
+</div>
+
+<script>
+(function () {
+  const tabs = document.querySelectorAll('.dlg-tab');
+  function activate(name) {
+    document.getElementById('dlg-tab-details').style.display  = name === 'details'  ? '' : 'none';
+    document.getElementById('dlg-tab-messages').style.display = name === 'messages' ? '' : 'none';
+    tabs.forEach(t => {
+      const on = t.dataset.tab === name;
+      t.style.background = on ? '#1e293b' : '';
+      t.style.color = on ? '#fff' : '';
+    });
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  activate('details');
+}());
+</script>
+{% endblock %}

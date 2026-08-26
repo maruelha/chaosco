@@ -13,6 +13,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Topic | File |
 |---|---|
 | Import verticals (Defects / Spillover / Retail), reports, PPT | `docs/claude/verticals.md` |
+| Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
 | Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
@@ -77,6 +78,9 @@ app/
   web_urgent.py     Deadlines & Burning Blueprint (/urgent/ — the nag list;
                     storage db/urgent.py; red dashboard card + the once-a-day
                     dashboard popup _urgent_popup.html)
+  web_delegated.py  Delegated Testing Blueprint (/delegated/ — own uploaded
+                    Jira XML tagged seen_in_delegated; buckets in
+                    delegated_buckets.py; storage db/delegated.py)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -90,7 +94,7 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
-                    retrofits urgent
+                    retrofits urgent delegated
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

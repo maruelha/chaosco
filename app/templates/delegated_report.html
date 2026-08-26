@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delegated Testing Report — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 1100px; margin: 0 auto;
+    }
+
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+
+    /* call-outs (editable, storage report_comments key 'delegated') */
+    .callout-section {
+      border: 1px solid #fcd34d; background: #fffbeb; border-radius: 7px;
+      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+      page-break-inside: avoid; break-inside: avoid;
+    }
+    .callout-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+                     letter-spacing: 0.09em; color: #92400e; margin-bottom: 0.5rem; }
+    .callout-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .callout-list li { display: flex; align-items: center; gap: 0.4rem; }
+    .callout-list li::before { content: "•"; color: #b45309; font-weight: 700; }
+    .co-input { flex: 1; border: none; background: transparent; font: inherit;
+                font-size: 0.85rem; color: #334155; padding: 0.15rem 0.3rem;
+                border-bottom: 1px dashed transparent; }
+    .co-input:hover, .co-input:focus { border-bottom-color: #d6a256; outline: none; }
+    .co-x { padding: 0 0.4rem; font-size: 0.72rem; color: #b91c1c; }
+
+    .rpt-section { margin-bottom: 1.75rem; page-break-inside: avoid; break-inside: avoid; }
+    .rpt-section-head {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      background: #1e293b; color: #f1f5f9; border-radius: 6px 6px 0 0;
+      padding: 0.45rem 0.9rem;
+    }
+    .rpt-section-head.sec-blocked    { background: #7f1d1d; }
+    .rpt-section-head.sec-open       { background: #334155; }
+    .rpt-section-head.sec-team       { background: #0e7490; }
+    .rpt-section-head.sec-marina     { background: #7c2d12; }
+    .rpt-section-head.sec-settle     { background: #92400e; }
+    .rpt-section-head.sec-gbs        { background: #1e3a8a; }
+    .rpt-section-head.sec-sales      { background: #14532d; }
+    .rpt-section-head.sec-done       { background: #374151; }
+    .rpt-section-head.sec-unexpected { background: #6b21a8; }
+
+    /* filter bar (screen only — the filtered state also prints) */
+    .filterbar {
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+      border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 7px;
+      padding: 0.5rem 0.8rem; margin-bottom: 1.25rem; font-size: 0.78rem;
+    }
+    .filterbar label { color: #64748b; font-weight: 600; }
+    .filterbar select {
+      font: inherit; padding: 0.2rem 0.4rem; border: 1px solid #cbd5e1;
+      border-radius: 5px; background: #fff; max-width: 14rem;
+    }
+    @media print { .filterbar { display: none !important; } }
+    .rpt-section-title { font-size: 0.88rem; font-weight: 700; flex: 1; }
+    .rpt-section-count { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
+
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; border: 1px solid #e2e8f0; }
+    .rpt-table th {
+      background: #f1f5f9; color: #64748b; font-weight: 600;
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.35rem 0.6rem; text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    .rpt-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #f1f5f9;
+                    vertical-align: top; color: #334155; }
+    .rpt-table tr:last-child td { border-bottom: none; }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    .rpt-orders div { padding: 0.05rem 0; font-size: 0.76rem; color: #475569; }
+    .rpt-next { white-space: pre-wrap; }
+    .rpt-blocked-reason { white-space: pre-wrap; color: #991b1b; }
+    .empty-state { text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.9rem; }
+
+    @page { size: A4 landscape; margin: 1.5cm; }
+    .print-header { display: none; }
+    @media print {
+      body { padding: 0; max-width: none; font-size: 11px; }
+      .toolbar { display: none !important; }
+      .print-header { display: block; margin-bottom: 1.5rem; }
+      .print-header h1 { font-size: 1.1rem; font-weight: 800; }
+      .print-header p  { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+      .rpt-section-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .rpt-table th { background: #f1f5f9 !important;
+                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .callout-section { background: #fffbeb !important;
+                         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .co-x, #co-add { display: none !important; }
+      .co-empty { display: none !important; }
+      .co-input { border: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="toolbar-title">Delegated Testing Report</span>
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn">🔢 Numbers</a>
+  <button class="btn" onclick="window.print()">Print</button>
+  <button class="btn" onclick="downloadHtml()">Download HTML</button>
+</div>
+
+<div class="print-header">
+  <h1>Delegated Testing Report</h1>
+  <p>{{ today }} &nbsp;·&nbsp; {{ total }} ticket{{ 's' if total != 1 else '' }} — Blocked · Open · testing team · Gatekeeper Marina · Settlementfile · GBS validation · Sales validations</p>
+</div>
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
+    <div class="rh-title">Delegated Testing Report</div>
+    <div class="rh-date">{{ today }} · from the delegated Jira export · order numbers from the latest comment</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ total }}</div>
+    <div class="rh-stat-lbl">Tickets</div>
+  </div>
+</div>
+
+{# ---- Filters (screen only; the filtered view is what prints) ---- #}
+<div class="filterbar">
+  <label for="rf-status">Status</label>
+  <select id="rf-status" class="rf-select">
+    <option value="">All</option>
+    {% for s in filter_options.statuses %}<option value="{{ s|lower }}">{{ s }}</option>{% endfor %}
+  </select>
+  <label for="rf-assignee">Assignee</label>
+  <select id="rf-assignee" class="rf-select">
+    <option value="">All</option>
+    {% for a in filter_options.assignees %}<option value="{{ a|lower }}">{{ a }}</option>{% endfor %}
+  </select>
+  <button type="button" class="btn" id="rf-clear">Clear</button>
+  <span id="rf-hint" style="color:#94a3b8"></span>
+</div>
+
+{# ---- Call-outs (general notes, editable on screen) ---- #}
+<div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
+     id="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list" id="callout-list">
+    {% for c in report_comments %}
+    <li data-id="{{ c.id }}">
+      <input type="text" class="co-input" value="{{ c.comment or '' }}"
+             placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
+</div>
+
+{% if not total %}
+<div class="empty-state">No delegated tickets — upload the Jira XML export on the card first.</div>
+{% endif %}
+
+{% for section_title, section_css, items in sections %}
+{% if items %}
+{% set is_blocked_section = section_css == 'sec-blocked' %}
+<div class="rpt-section">
+  <div class="rpt-section-head {{ section_css }}">
+    <span class="rpt-section-title">{{ section_title }}</span>
+    <span class="rpt-section-count" data-total="{{ items|length }}">{{ items|length }} ticket{{ 's' if items|length != 1 else '' }}</span>
+  </div>
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th style="width:1.6rem">#</th>
+        <th style="width:6.5rem">Jira ID</th>
+        <th style="width:8rem">Solman ID</th>
+        <th>Summary</th>
+        <th style="width:7rem">Status</th>
+        <th style="width:8.5rem">Assignee</th>
+        <th style="width:7rem">Market</th>
+        <th style="width:13%">Order numbers</th>
+        {% if is_blocked_section %}<th style="width:14%">Why blocked</th>{% endif %}
+        <th style="width:15%">Next step</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr data-status="{{ (i.jira_status or '')|lower }}"
+          data-assignee="{{ (i.jira_assignee or '')|lower }}">
+        <td style="color:#94a3b8">{{ loop.index }}</td>
+        <td class="mono" style="font-size:0.76rem">{{ i.jira_key }}</td>
+        <td class="mono" style="font-size:0.76rem">{{ i.solman_id or "—" }}</td>
+        <td>{{ i.summary or "—" }}</td>
+        <td>{{ i.jira_status or "—" }}</td>
+        <td style="font-size:0.76rem">{{ i.jira_assignee or "—" }}</td>
+        <td style="font-size:0.76rem">{{ i.markets or "—" }}</td>
+        <td class="rpt-orders">
+          {% for line in i.orders %}<div>{{ line }}</div>{% else %}—{% endfor %}
+        </td>
+        {% if is_blocked_section %}<td class="rpt-blocked-reason">{{ i.blocked_reason or "" }}</td>{% endif %}
+        <td class="rpt-next">{{ i.next_step or "" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+<script>
+function coSave(input) {
+  const li = input.closest('li');
+  const body = new URLSearchParams({ comment: input.value });
+  fetch('/report-comments/' + li.dataset.id + '/update', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 document.getElementById('callout-section').classList.remove('co-empty');
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+function coDel(btn) {
+  const li = btn.closest('li');
+  if (!confirm('Delete this call-out?')) return;
+  fetch('/report-comments/' + li.dataset.id + '/delete', { method: 'POST' })
+    .then(() => li.remove());
+}
+
+function coAdd() {
+  const body = new URLSearchParams({ comment: '' });
+  fetch('/report-comments/delegated/add', { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      const li = document.createElement('li');
+      li.dataset.id = d.row.id;
+      li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
+      document.getElementById('callout-list').appendChild(li);
+      li.querySelector('input').focus();
+    });
+}
+
+window.addEventListener('beforeprint', () => {
+  let any = false;
+  document.querySelectorAll('#callout-list li').forEach(li => {
+    const filled = li.querySelector('.co-input').value.trim() !== '';
+    li.style.display = filled ? '' : 'none';
+    any = any || filled;
+  });
+  document.getElementById('callout-section').style.display = any ? '' : 'none';
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
+  document.getElementById('callout-section').style.display = '';
+});
+
+/* ---- filters: status/assignee AND-combine; hidden rows also stay hidden
+   in print; filtering never moves a ticket between sections. ---- */
+function rfApply() {
+  const want = {
+    status:   document.getElementById('rf-status').value,
+    assignee: document.getElementById('rf-assignee').value,
+  };
+  let shown = 0, total = 0;
+  document.querySelectorAll('.rpt-section').forEach(sec => {
+    let secShown = 0;
+    sec.querySelectorAll('tbody tr').forEach(tr => {
+      total += 1;
+      const ok = (!want.status   || tr.dataset.status   === want.status)
+              && (!want.assignee || tr.dataset.assignee === want.assignee);
+      tr.style.display = ok ? '' : 'none';
+      if (ok) { secShown += 1; shown += 1; }
+    });
+    const count = sec.querySelector('.rpt-section-count');
+    if (count) {
+      const t = parseInt(count.dataset.total, 10);
+      count.textContent = (secShown === t)
+        ? t + ' ticket' + (t !== 1 ? 's' : '')
+        : secShown + ' of ' + t + ' tickets';
+    }
+  });
+  const filtering = want.status || want.assignee;
+  document.getElementById('rf-hint').textContent =
+    filtering ? ('showing ' + shown + ' of ' + total) : '';
+}
+document.querySelectorAll('.rf-select').forEach(sel =>
+  sel.addEventListener('change', rfApply));
+document.getElementById('rf-clear').addEventListener('click', () => {
+  document.querySelectorAll('.rf-select').forEach(sel => { sel.value = ''; });
+  rfApply();
+});
+
+function downloadHtml() {
+  document.querySelectorAll('.co-input').forEach(i => i.setAttribute('value', i.value));
+  const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'delegated_testing_report_{{ today }}.html';
+  a.click();
+}
+</script>
+</body>
+</html>

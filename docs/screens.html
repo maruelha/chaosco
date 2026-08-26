@@ -197,6 +197,10 @@
     <li class="group-label">ECOM Gatekeeper</li>
     <li><a href="#ecom-gk-list">ECOM Gatekeeper — List</a></li>
     <li><a href="#ecom-gk-detail">ECOM Gatekeeper — Detail / Notes</a></li>
+    <li class="group-label">Delegated Testing</li>
+    <li><a href="#delegated-list">Delegated Testing — Board</a></li>
+    <li><a href="#delegated-detail">Delegated Testing — Ticket Detail</a></li>
+    <li><a href="#delegated-reports">Delegated Testing — Reports</a></li>
 
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
@@ -909,6 +913,56 @@
         <span class="feat-label">Navigation</span>
         <span class="feat-value"><span class="pill pill-nav">← Back to Gatekeeper</span> · breadcrumb</span>
       </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ================================================================ -->
+<!-- DELEGATED TESTING -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-heading">Delegated Testing</div>
+
+  <!-- Delegated Testing board -->
+  <div class="screen-card" id="delegated-list">
+    <div class="screen-card-header">
+      <span class="screen-title">Delegated Testing — Board</span>
+      <span class="screen-url">GET /delegated/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Card for the testing delegated to the team (added 2026-08-26). Its own <strong>Jira XML export uploaded as a file</strong> on the card (ECOMTestPlan pattern — the browser uploads the file's content, no folder config, works identically on both machines): <code>POST /delegated/upload</code> saves a dated copy under <code>data/uploads/delegated_jira_&lt;timestamp&gt;.xml</code> and imports EVERY ticket in the file (the export defines the scope — no assignee/board filtering) into the shared jira store, tagged <code>seen_in_delegated</code>. Shared-store refresh rules apply (status, assignee, acceptance criteria; comments replaced wholesale). Tickets are grouped into the <strong>delegated buckets</strong> (logic in <code>app/delegated_buckets.py</code>): 🔴 BLOCKED (top, wins over everything) · Open · In progress with testing team (In Progress, not Marina) · Gatekeeper check Marina (In Progress + <code>jira_gatekeeper_assignee</code> substring match) · Waiting for Settlementfile creation (In Verification) · In validation with GBS key users (In Validation) · Ready for Sales validations (In Review) · Resolved / Closed · Unexpected status (catch-all — nothing silently disappears; Resolved+Unexpected sections hidden while empty).</p>
+      <div class="features">
+        <span class="feat-label">Columns per section</span>
+        <span class="feat-value">Jira ID (open-in-Jira) · Solman ID · Summary (→ detail page) · Status · Assignee · <strong>Orders</strong> (LATEST comment carrying an order number — acceptance criteria deliberately ignored, unlike the gatekeeper; <code>extract_latest_comment_orders</code>) · <strong>Why blocked</strong> (BLOCKED section only, blur-save) · <strong>Next step</strong> (blur-save) · buttons ↻ archive / 🕘 history (next-step archive, entity <code>delegated</code>) · 💬 chats + ✉️ issue message (shared components at <code>('jira', key)</code>) · Details link (note count) · comments expander (description + thread inline).</span>
+        <span class="feat-label">Authored storage</span>
+        <span class="feat-value"><code>delegated_annotations</code> (jira_key PK, blocked_reason, next_step) — deliberately SEPARATE from <code>gatekeeper_annotations</code> on the same key: a ticket living in both worlds keeps two independent next steps. Inline saves: <code>POST /delegated/ticket/&lt;key&gt;/next-step</code> · <code>POST /delegated/ticket/&lt;key&gt;/blocked-reason</code>.</span>
+        <span class="feat-label">Dashboard card</span>
+        <span class="feat-value">"Delegated Testing" with total badge + red "n blocked." callout (<code>delegated_counts</code>).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delegated ticket detail -->
+  <div class="screen-card" id="delegated-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Delegated Testing — Ticket Detail</span>
+      <span class="screen-url">GET/POST /delegated/ticket/&lt;jira_key&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Per-ticket page with a <strong>Details / Messages tab switch</strong> on the read-only Jira card: Details = fields (incl. Reporter), order numbers (latest comment), acceptance criteria, description; Messages = the full comment thread. BLOCKED badge in the header when status is Blocked. Below: "My working fields" (Why blocked — shown when blocked or already filled — + Next step with ↻/🕘 archive component, form POST saves both), 💬 Teams chats / ✉️ Issue message buttons (shared, <code>('jira', key)</code>), and the full notes module with attachments — entity <code>delegated</code>, its OWN thread separate from the gatekeeper's <code>jira</code> notes on the same key.</p>
+    </div>
+  </div>
+
+  <!-- Delegated reports -->
+  <div class="screen-card" id="delegated-reports">
+    <div class="screen-card-header">
+      <span class="screen-title">Delegated Testing — Status report &amp; Numbers</span>
+      <span class="screen-url">GET /delegated/report · GET /delegated/numbers</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc"><strong>Status report</strong>: standalone print-ready page in the Sales-report layout (deliberately a COPY of <code>gatekeeper_sales_report.html</code> — the two reports are expected to grow apart [USER 2026-08-26]) with the nine delegated buckets as coloured sections. Columns: # · Jira ID · Solman ID · Summary · Status · Assignee · Market · Order numbers (latest comment) · <strong>Why blocked</strong> (BLOCKED section only, red) · Next step. Editable 📣 call-outs on top (<code>report_comments</code> key <code>delegated</code>), Status/Assignee filter bar (screen-only, the filtered state prints), Print (A4 landscape) + Download HTML. <strong>Numbers</strong>: compact print-ready count table — one row per bucket (blocked red, zero rows dimmed) + total, 📋 Copy table as TSV; counting via <code>delegated_buckets.bucket_counts</code>, shaped so the parked backlog items can later join the counts without appearing in any detail list.</p>
     </div>
   </div>
 

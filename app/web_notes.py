@@ -99,6 +99,14 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_jira_issue(c, str(i)),
         lambda r: f"{r['jira_key']} — {r.get('summary') or ''}".rstrip(" —"), str,
     ),
+    # Delegated Testing (2026-08-26) — same jira_key, but its OWN notes
+    # thread (entity 'delegated'), separate from the gatekeeper's 'jira'
+    "delegated": NoteEntity(
+        "Delegated Testing", "delegated.delegated_list",
+        "delegated.delegated_ticket_detail", "jira_key",
+        lambda c, i: database.get_jira_issue(c, str(i)),
+        lambda r: f"{r['jira_key']} — {r.get('summary') or ''}".rstrip(" —"), str,
+    ),
     "prod_defect": NoteEntity(
         "Known Production Issues", "prod_defects_list", "prod_defect_detail", "record_id",
         lambda c, i: database.get_known_prod_defect(c, int(i)),

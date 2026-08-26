@@ -49,6 +49,30 @@ Last updated: 2026-08-06
 
 ## Part 1 — Feature work by module
 
+### Delegated Testing (`/delegated/`) — NEW 2026-08-26
+
+Deep-dive: `docs/claude/delegated.md` (incl. the design decisions from the
+planning chat).
+
+1. ~~Storage + shared-store tag~~ ✅ DONE 2026-08-26: `delegated_annotations`
+   (`app/db/delegated.py`) + `jira_issues.seen_in_delegated` migration.
+2. ~~Upload import~~ ✅ DONE 2026-08-26: file upload on the card (ECOMTestPlan
+   pattern — no folder config), dated copy in `data/uploads/`, accept-all,
+   `run_delegated_import`.
+3. ~~Buckets + latest-comment orders~~ ✅ DONE 2026-08-26:
+   `app/delegated_buckets.py` (tests first) + `extract_latest_comment_orders`.
+4. ~~Board / detail / reports~~ ✅ DONE 2026-08-26: bucket board with
+   why-blocked + next-step archive (entity `delegated`), ticket detail with
+   Details/Messages tabs + notes (entity `delegated`), status report
+   (sales-report layout copy, call-outs key `delegated`), numbers report,
+   dashboard card with blocked callout.
+5. **PARKED — Excel/ECOM join** [USER 2026-08-26]: show the `ecom` rows
+   (from the ROE tracking import) matched by Jira key next to the Jira
+   data. Marina unsure about scope — re-discuss first.
+6. **PARKED — Backlog items** [USER 2026-08-26]: manually managed items
+   counted in the numbers report but not listed in detail. Seam:
+   `delegated_buckets.bucket_counts`. Requirements to come.
+
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.

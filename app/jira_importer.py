@@ -168,6 +168,22 @@ def extract_order_numbers(acceptance_criteria: str | None,
     return {"orders": [], "source": None}
 
 
+def extract_latest_comment_orders(comments: list[dict]) -> dict:
+    """Delegated Testing rule [USER 2026-08-26]: order numbers come from the
+    COMMENTS only — always the LATEST comment that carries one; the
+    acceptance criteria are deliberately ignored (testers post the current
+    order numbers as comments over time). Same return shape as
+    extract_order_numbers."""
+    for c in reversed(comments or []):          # newest last in store order
+        body = c.get("body") or ""
+        found = _labeled_orders(body)
+        if not found:
+            found = _ORDER_TOKEN_RE.findall(body)
+        if found:
+            return {"orders": found, "source": "latest comment"}
+    return {"orders": [], "source": None}
+
+
 def parse_jira_xml(path: Path) -> list[dict]:
     """Parse a Jira RSS XML export into issue dicts (incl. comments)."""
     text = Path(path).read_text(encoding="utf-8", errors="replace")
@@ -216,6 +232,38 @@ def newest_xml(folder: Path) -> Path | None:
     candidates = sorted(Path(folder).glob("*.xml"),
                         key=lambda p: p.stat().st_mtime, reverse=True)
     return candidates[0] if candidates else None
+
+
+def run_delegated_import(cfg: dict, xml_path: Path) -> dict:
+    """Delegated Testing import (2026-08-26) — the card has its OWN Jira
+    export, picked as a file in the browser and saved by the upload route;
+    this parses that file. Unlike the unified import there is no filtering:
+    the export itself defines the scope, so EVERY ticket in it is accepted
+    and tagged seen_in_delegated (shared-store rules apply — status,
+    assignee, acceptance criteria refresh; comments replaced wholesale)."""
+    result: dict = {"ok": False, "error": None, "xml_path": str(xml_path),
+                    "parsed": 0, "inserted": 0, "updated": 0, "comments": 0}
+    try:
+        issues = parse_jira_xml(xml_path)
+    except ET.ParseError as exc:
+        result["error"] = f"XML parse error: {exc}"
+        return result
+    result["parsed"] = len(issues)
+    if not issues:
+        result["error"] = "no Jira tickets in that file — is it a Jira XML export?"
+        return result
+
+    from app import database
+    db_path = Path(cfg["database_path"])
+    db_jira.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        counts = db_jira.upsert_jira_issues(conn, issues, seen_in="delegated")
+    finally:
+        conn.close()
+    result.update(counts)
+    result["ok"] = True
+    return result
 
 
 def run_jira_import(cfg: dict) -> dict:
