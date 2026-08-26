@@ -194,8 +194,9 @@ def test_report_page_keeps_its_buttons(client):
     _upload(client)
     html = client.get("/delegated/report").get_data(as_text=True)
     assert "🔢 Numbers" in html
-    assert "Print" in html
     assert "⬇ Download HTML" in html
+    # no Print button on the report [USER 2026-08-26] — Ctrl+P still works
+    assert 'onclick="window.print()"' not in html
 
 
 def test_numbers_download_is_standalone_attachment(client):
