@@ -308,9 +308,13 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   (`jira_importer.extract_order_numbers` [USER 2026-07-11]): 1. ALL
   labeled orders from the AC ("… Order[ Number] : value", XXXX
   placeholders skipped) → 2. else the LATEST comment carrying a labeled
-  order or an order token (`AA_BB_XXXXXX` pattern). Feeds the
-  "Order numbers report" on the gatekeeper page (Jira ID · Solman ID ·
-  orders · source pill, copy-as-TSV).
+  order or an order token. Since 2026-08-26: comment bodies (stored HTML)
+  are flattened to plain text before matching, and the token shapes are
+  `AA_BB_XXXXXX`, 3–4 capitals + 6+ digits (ASK0342321 / ASKR0342321),
+  and bare `6000…` SAP numbers. Feeds the "Order numbers report" on the
+  gatekeeper page (Jira ID · Solman ID · orders · source pill,
+  copy-as-TSV). The Delegated Testing card uses its own comments-ONLY rule
+  (`extract_latest_comment_orders` — see `docs/claude/delegated.md`).
 - Never merged into Excel-sourced tables. Tests: `tests/test_jira_importer.py`.
 
 ## Screens & reports

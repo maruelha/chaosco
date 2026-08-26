@@ -154,6 +154,31 @@ on both computers).</div>
   </div>
 </div>
 
+<!-- 6 -->
+<div class="box b-amber">
+  <div class="box-head">6 · Follow-up fixes from the first click-through</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span>Section titles: on <a href="http://127.0.0.1:8010/delegated/" target="_blank">/delegated/</a>
+      each bucket header is a colored bar (BLOCKED red, testing team teal, Marina amber, …).
+      <span class="expect">Titles readable — they were white-on-white before (missing color
+      modifier). The <a href="http://127.0.0.1:8010/ecom-gatekeeper" target="_blank">Gatekeeper
+      board</a> had the SAME latent bug and got colors too (work sections blue/green, order
+      report teal, deprecated gray) — say so if you preferred it plain.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span>Orders found: check the Orders column on tickets whose comments carry
+      <code>ASK…</code>/<code>ASKR…</code> numbers or bare <code>6000…</code> numbers.
+      <span class="expect">Latest comment's numbers show. Fixes: comment HTML is flattened
+      before matching + the two delegated shapes (3–4 capitals + digits, 6000…) are
+      recognized. If a ticket still shows —, paste its comment in the chat.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s6c">
+      <span>Press the new <strong>Orders</strong> button on a delegated row (and see the
+      Order details card on the ticket detail page).
+      <span class="expect">The shared order-details dialog — SAME rows as the Gatekeeper/ECOM
+      boards for that ticket, green ✓ once a row has S4 docs.</span></span></label>
+  </div>
+</div>
+
 <div class="box b-slate">
   <div class="box-head">Parked (your call, later)</div>
   <div class="box-body">
@@ -161,7 +186,7 @@ on both computers).</div>
     <code>docs/build_plan.md</code>: the <strong>Excel/ECOM join</strong> (show the ROE-tracking
     row next to the Jira data, matched by Jira key — you wanted to re-think the scope) and the
     <strong>backlog items</strong> (counted in Numbers, not listed in detail).
-    Suite now at 454 tests.
+    Suite now at 456 tests.
   </div>
 </div>
 
