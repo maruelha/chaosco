@@ -212,6 +212,24 @@ def test_numbers_download_is_standalone_attachment(client):
     assert "<script>" not in html
 
 
+def test_email_choices_and_attachments_include_delegated(client):
+    from app import emailer
+    assert ("delegated", "Delegated Testing Report") in emailer.REPORT_CHOICES
+    assert ("delegated_numbers", "Delegated Testing Numbers") in emailer.REPORT_CHOICES
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        atts = emailer.gather_attachments(
+            conn, {}, app, ["delegated", "delegated_numbers"], "2026-08-26")
+    finally:
+        conn.close()
+    assert [name for name, _ in atts] == [
+        "delegated_report_2026-08-26.html", "delegated_numbers_2026-08-26.html"]
+    for _name, html in atts:
+        assert 'class="toolbar"' not in html
+        assert "<script>" not in html
+
+
 def test_reimport_refreshes_status(client):
     _upload(client)
     updated = XML.replace(">Blocked<", ">In Review<")

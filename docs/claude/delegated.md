@@ -70,6 +70,9 @@ sections while empty; the report shows only non-empty sections.
   [USER 2026-08-26]). `report_context`/`numbers_context` are shared with
   `report_exporter.py`: the dashboard Export Reports card also writes
   `delegated_report_<date>.html` + `delegated_numbers_<date>.html`.
+  Both reports are also Email Reports attachments (`emailer.REPORT_CHOICES`
+  keys `delegated` / `delegated_numbers` — gather_attachments fetches the
+  download routes, already-clean HTML) [USER 2026-08-26].
 - Templates: `delegated.html`, `delegated_ticket.html`,
   `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`
 - Registries: `web_notes.REGISTRY['delegated']`,

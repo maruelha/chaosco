@@ -37,6 +37,8 @@ REPORT_CHOICES = [
     ("manual_retail", "Manual Test Cases Retail Report"),
     ("manual_ecom", "Manual Test Cases ECOM Report"),
     ("known_prod_defects", "Known Production Issues"),
+    ("delegated", "Delegated Testing Report"),
+    ("delegated_numbers", "Delegated Testing Numbers"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -155,6 +157,15 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         resp = flask_app.test_client().get("/prod_defects")
         out.append((f"known_prod_defects_{day}.html",
                     standalone_html(resp.get_data(as_text=True))))
+    # the delegated download routes already return clean standalone HTML
+    # (toolbar/scripts stripped, call-outs static) — no standalone_html needed
+    if "delegated" in reports:
+        resp = flask_app.test_client().get("/delegated/report/download")
+        out.append((f"delegated_report_{day}.html", resp.get_data(as_text=True)))
+    if "delegated_numbers" in reports:
+        resp = flask_app.test_client().get("/delegated/numbers/download")
+        out.append((f"delegated_numbers_{day}.html",
+                    resp.get_data(as_text=True)))
     return out
 
 

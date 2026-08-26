@@ -211,7 +211,10 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 ## Email reports (app/emailer.py + app/web_email.py + app/db/email.py)
 
 `/email-report` — send the status reports as standalone-HTML attachments via
-GMX SMTP. Checkbox per report (Spillover / Retail / Requirements Board),
+GMX SMTP. Checkbox per report (`emailer.REPORT_CHOICES` — Spillover / Retail /
+Requirements Board / ECOM / Manual Retail+ECOM / Known Production Issues /
+Delegated Testing Report + Numbers since 2026-08-26, the delegated pair
+attaches the clean `/delegated/*/download` renders),
 date field (default today) drives subject + body text (both editable),
 recipients managed in the `report_recipients` table (add / toggle active /
 delete; active ones pre-ticked). Credentials `email_user`/`email_password`
