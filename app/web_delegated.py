@@ -221,3 +221,27 @@ def delegated_numbers():
         total=len(issues),
         today=date.today().strftime("%Y-%m-%d"),
     )
+
+
+@bp.route("/numbers/download")
+def delegated_numbers_download():
+    """Dated standalone snapshot of the numbers page. The template already
+    carries its own inline CSS; download=True just drops toolbar + script."""
+    conn = _get_conn()
+    try:
+        issues, _comments = _load_issues(conn)
+    finally:
+        conn.close()
+    today = date.today().strftime("%Y-%m-%d")
+    html = render_template(
+        "delegated_numbers.html",
+        counts=bucket_counts(issues, _me()),
+        total=len(issues),
+        today=today,
+        download=True,
+    )
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="delegated_numbers_{today}.html"',
+    }

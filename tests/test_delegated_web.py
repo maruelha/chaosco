@@ -173,6 +173,19 @@ def test_numbers_report_counts(client):
     assert "Resolved / Closed" in html
 
 
+def test_numbers_download_is_standalone_attachment(client):
+    _upload(client)
+    resp = client.get("/delegated/numbers/download")
+    assert resp.status_code == 200
+    assert 'attachment; filename="delegated_numbers_' in resp.headers["Content-Disposition"]
+    html = resp.get_data(as_text=True)
+    assert "Delegated Testing Numbers" in html
+    assert "Waiting for Settlementfile creation" in html
+    # toolbar (app-local links) and the copy script are stripped
+    assert 'class="toolbar"' not in html
+    assert "<script>" not in html
+
+
 def test_reimport_refreshes_status(client):
     _upload(client)
     updated = XML.replace(">Blocked<", ">In Review<")

@@ -62,7 +62,9 @@ sections while empty; the report shows only non-empty sections.
   for the dashboard badge)
 - `app/delegated_buckets.py` — bucket rules + counts (backlog joins here later)
 - `app/web_delegated.py` — Blueprint `/delegated/`: board, upload, ticket
-  detail (Details/Messages tabs), inline saves, `/report`, `/numbers`
+  detail (Details/Messages tabs), inline saves, `/report`, `/numbers`,
+  `/numbers/download` (dated standalone HTML — template renders with
+  `download=True`, which drops toolbar + copy script; CSS is inline anyway)
 - Templates: `delegated.html`, `delegated_ticket.html`,
   `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`
 - Registries: `web_notes.REGISTRY['delegated']`,

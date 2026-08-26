@@ -61,13 +61,16 @@
 </head>
 <body>
 
+{% if not download %}
 <div class="toolbar">
   <span class="toolbar-title">Delegated Testing Numbers</span>
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
   <a href="{{ url_for('delegated.delegated_report') }}" class="btn">📄 Status report</a>
+  <a href="{{ url_for('delegated.delegated_numbers_download') }}" class="btn">⬇ Download HTML</a>
   <button class="btn" onclick="window.print()">Print</button>
   <button class="btn" onclick="copyTable()">📋 Copy table</button>
 </div>
+{% endif %}
 
 <div class="report-header">
   <div>
@@ -102,6 +105,7 @@
   </tbody>
 </table>
 
+{% if not download %}
 <script>
 function copyTable() {
   const lines = [["Bucket", "Tickets"].join("\t")];
@@ -112,5 +116,6 @@ function copyTable() {
   navigator.clipboard.writeText(lines.join("\n"));
 }
 </script>
+{% endif %}
 </body>
 </html>
