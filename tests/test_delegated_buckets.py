@@ -75,6 +75,8 @@ def test_latest_comment_orders_finds_compact_letter_digit_orders():
     or bare numbers starting with 6000."""
     comments = [{"created": "1", "body": "<p>created ASK0342321 for retest</p>"}]
     assert extract_latest_comment_orders(comments)["orders"] == ["ASK0342321"]
+    comments = [{"created": "1", "body": "order ASKR0342321 created"}]  # 4 letters
+    assert extract_latest_comment_orders(comments)["orders"] == ["ASKR0342321"]
     comments = [{"created": "1", "body": "return created 6000084252 today"}]
     assert extract_latest_comment_orders(comments)["orders"] == ["6000084252"]
     # ticket keys / solman-style ids / short numbers must NOT match

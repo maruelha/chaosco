@@ -134,11 +134,11 @@ _ORDER_LABEL_RE = re.compile(
     r"((?:[A-Za-z][A-Za-z ]* )?Order(?: Number)?)\s*[:\-–]\s*([A-Za-z0-9_/-]+)")
 # bare order tokens in free comment text: TBY_SS_ADE0006955 style, and —
 # [USER 2026-08-26, delegated tickets] — two more shapes: compact orders
-# like ASK0342321 (exactly THREE capitals then 6+ digits; test-case ids
+# like ASK0342321 (THREE or FOUR capitals then 6+ digits; test-case ids
 # like PCS0001MU01 don't match — digit runs short / mixed with letters)
 # and bare SAP numbers starting with 6000 (e.g. 6000084252)
 _ORDER_TOKEN_RE = re.compile(
-    r"\b(?:[A-Z]{2,5}_[A-Z]{2,5}_[A-Z0-9]{5,}|[A-Z]{3}\d{6,12}|6000\d{5,8})\b")
+    r"\b(?:[A-Z]{2,5}_[A-Z]{2,5}_[A-Z0-9]{5,}|[A-Z]{3,4}\d{6,12}|6000\d{5,8})\b")
 
 
 def _is_placeholder(value: str) -> bool:
