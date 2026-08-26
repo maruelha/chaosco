@@ -32,6 +32,20 @@ SECTIONS = [
 
 _DONE_STATUSES = {"resolved", "closed", "done"}
 
+# board section colors — style.css ui-section modifiers (a bare rt-section
+# summary is WHITE text without one, i.e. invisible on the white box)
+BOARD_CSS = {
+    "blocked":    "ui-section--red",
+    "open":       "ui-section--slate",
+    "team":       "ui-section--teal",
+    "marina":     "ui-section--amber",
+    "settlement": "ui-section--purple",
+    "gbs":        "ui-section--blue",
+    "sales":      "ui-section--green",
+    "done":       "ui-section--gray",
+    "unexpected": "ui-section--gray",
+}
+
 
 def bucket_key(issue: dict, me: str) -> str:
     """Section key for one issue. `me` = jira_gatekeeper_assignee (lowered);

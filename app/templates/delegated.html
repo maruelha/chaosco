@@ -45,8 +45,8 @@
 {% for section_key, section_title, section_css, section_items in sections %}
 {% set is_blocked_section = section_key == 'blocked' %}
 {% if section_items or section_key not in ('done', 'unexpected') %}
-<details class="rt-section" {% if section_items %}open{% endif %}>
-  <summary{% if is_blocked_section and section_items %} style="color:#a10d19"{% endif %}>{{ section_title }}
+<details class="rt-section {{ board_css[section_key] }}" {% if section_items %}open{% endif %}>
+  <summary>{{ section_title }}
     <span class="rt-count">{{ section_items|length }}</span>
   </summary>
   {% if loop.first %}

@@ -20,7 +20,7 @@ from app import database
 from app.config_loader import load_config
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
-from app.delegated_buckets import bucket_counts, bucket_issues
+from app.delegated_buckets import BOARD_CSS, bucket_counts, bucket_issues
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -68,6 +68,7 @@ def delegated_list():
     return render_template(
         "delegated.html",
         sections=bucket_issues(issues, _me()),
+        board_css=BOARD_CSS,
         total=len(issues),
         jira_comments=comments_map,
         note_counts=note_counts,

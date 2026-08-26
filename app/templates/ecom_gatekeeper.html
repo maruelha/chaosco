@@ -118,7 +118,7 @@
 </p>
 {% endif %}
 {% for section_title, section_items in gk_sections %}
-<details class="rt-section" {% if loop.first or section_items %}open{% endif %}>
+<details class="rt-section {{ 'ui-section--blue' if loop.first else 'ui-section--green' }}" {% if loop.first or section_items %}open{% endif %}>
   <summary>{{ section_title }}
     <span class="rt-count">{{ section_items|length }}</span>
   </summary>
@@ -215,7 +215,7 @@
 
 {# ---- Order-numbers report (from Jira: acceptance criteria, comment fallback) ---- #}
 {% if jira_issues %}
-<details class="rt-section" style="margin-top:1.2rem" open>
+<details class="rt-section ui-section--teal" style="margin-top:1.2rem" open>
   <summary>Order numbers report
     <span class="rt-count">{{ jira_issues|length }}</span>
   </summary>
@@ -260,7 +260,7 @@
 {% endif %}
 
 {# ---- DEPRECATED: the old manual gatekeeper table (kept, collapsed) ---- #}
-<details class="rt-section" style="margin-top:1.5rem">
+<details class="rt-section ui-section--gray" style="margin-top:1.5rem">
   <summary>⚠ Deprecated — manual gatekeeper table
     <span class="rt-count">{{ rows|length }}</span>
   </summary>

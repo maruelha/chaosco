@@ -78,6 +78,10 @@ def test_upload_imports_and_page_shows_buckets(client):
     assert "In progress with testing team" in html
     assert "Unexpected status" in html                 # odd status is visible
     assert "Return Order: 6000084252" in html          # LATEST comment's order
+    # every section carries a ui-section color modifier — a bare rt-section
+    # summary renders WHITE on white (invisible title) [USER 2026-08-26]
+    assert 'class="rt-section "' not in html
+    assert "ui-section--red" in html                   # BLOCKED section color
 
 
 def test_upload_rejects_non_xml_and_missing_file(client):
