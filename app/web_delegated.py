@@ -173,18 +173,12 @@ def delegated_ticket_detail(jira_key: str):
     )
 
 
-@bp.route("/report")
-def delegated_report():
-    """Delegated status report — sales-report layout (deliberately a COPY,
-    the two reports are expected to grow apart [USER 2026-08-26]) with the
-    delegated buckets as sections; editable call-outs (key 'delegated')."""
-    conn = _get_conn()
-    try:
-        issues, _comments = _load_issues(conn)
-        annotations = db_delegated.get_delegated_annotations(conn)
-        report_comments = database.list_report_comments(conn, "delegated")
-    finally:
-        conn.close()
+def report_context(conn) -> dict:
+    """Template context for the status report — shared by the page, the
+    download route, and the dashboard Export Reports snapshot."""
+    issues, _comments = _load_issues(conn)
+    annotations = db_delegated.get_delegated_annotations(conn)
+    report_comments = database.list_report_comments(conn, "delegated")
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
         i["next_step"] = ann.get("next_step")
@@ -197,13 +191,53 @@ def delegated_report():
         "assignees": sorted({(i.get("jira_assignee") or "").strip()
                              for i in issues if (i.get("jira_assignee") or "").strip()}),
     }
-    return render_template(
-        "delegated_report.html",
-        sections=sections, total=len(issues),
-        filter_options=filter_options,
-        report_comments=report_comments,
-        today=date.today().strftime("%Y-%m-%d"),
-    )
+    return {
+        "sections": sections, "total": len(issues),
+        "filter_options": filter_options,
+        "report_comments": report_comments,
+        "today": date.today().strftime("%Y-%m-%d"),
+    }
+
+
+def numbers_context(conn) -> dict:
+    """Template context for the numbers report — shared like report_context."""
+    issues, _comments = _load_issues(conn)
+    return {
+        "counts": bucket_counts(issues, _me()),
+        "total": len(issues),
+        "today": date.today().strftime("%Y-%m-%d"),
+    }
+
+
+@bp.route("/report")
+def delegated_report():
+    """Delegated status report — sales-report layout (deliberately a COPY,
+    the two reports are expected to grow apart [USER 2026-08-26]) with the
+    delegated buckets as sections; editable call-outs (key 'delegated')."""
+    conn = _get_conn()
+    try:
+        ctx = report_context(conn)
+    finally:
+        conn.close()
+    return render_template("delegated_report.html", **ctx)
+
+
+@bp.route("/report/download")
+def delegated_report_download():
+    """Dated standalone snapshot of the status report. The template carries
+    its own inline CSS; download=True drops toolbar, filter bar and scripts
+    and renders the call-outs as static text."""
+    conn = _get_conn()
+    try:
+        ctx = report_context(conn)
+    finally:
+        conn.close()
+    html = render_template("delegated_report.html", **ctx, download=True)
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="delegated_report_{ctx["today"]}.html"',
+    }
 
 
 @bp.route("/numbers")
@@ -212,15 +246,10 @@ def delegated_numbers():
     Later backlog items join these counts in delegated_buckets."""
     conn = _get_conn()
     try:
-        issues, _comments = _load_issues(conn)
+        ctx = numbers_context(conn)
     finally:
         conn.close()
-    return render_template(
-        "delegated_numbers.html",
-        counts=bucket_counts(issues, _me()),
-        total=len(issues),
-        today=date.today().strftime("%Y-%m-%d"),
-    )
+    return render_template("delegated_numbers.html", **ctx)
 
 
 @bp.route("/numbers/download")
@@ -229,19 +258,12 @@ def delegated_numbers_download():
     carries its own inline CSS; download=True just drops toolbar + script."""
     conn = _get_conn()
     try:
-        issues, _comments = _load_issues(conn)
+        ctx = numbers_context(conn)
     finally:
         conn.close()
-    today = date.today().strftime("%Y-%m-%d")
-    html = render_template(
-        "delegated_numbers.html",
-        counts=bucket_counts(issues, _me()),
-        total=len(issues),
-        today=today,
-        download=True,
-    )
+    html = render_template("delegated_numbers.html", **ctx, download=True)
     return html, 200, {
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition":
-            f'attachment; filename="delegated_numbers_{today}.html"',
+            f'attachment; filename="delegated_numbers_{ctx["today"]}.html"',
     }

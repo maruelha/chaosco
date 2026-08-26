@@ -121,10 +121,15 @@
 </head>
 <body>
 
+{% if not download %}
 <div class="toolbar">
   <span class="toolbar-title">Delegated Testing Report</span>
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn">🔢 Numbers</a>
+  <button class="btn" onclick="window.print()">Print</button>
+  <a href="{{ url_for('delegated.delegated_report_download') }}" class="btn">⬇ Download HTML</a>
 </div>
+{% endif %}
 
 <div class="print-header">
   <h1>Delegated Testing Report</h1>
@@ -144,6 +149,7 @@
 </div>
 
 {# ---- Filters (screen only; the filtered view is what prints) ---- #}
+{% if not download %}
 <div class="filterbar">
   <label for="rf-status">Status</label>
   <select id="rf-status" class="rf-select">
@@ -158,8 +164,22 @@
   <button type="button" class="btn" id="rf-clear">Clear</button>
   <span id="rf-hint" style="color:#94a3b8"></span>
 </div>
+{% endif %}
 
-{# ---- Call-outs (general notes, editable on screen) ---- #}
+{# ---- Call-outs (editable on screen; static text in the download) ---- #}
+{% if download %}
+{% set filled_callouts = report_comments | selectattr('comment') | list %}
+{% if filled_callouts %}
+<div class="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list">
+    {% for c in filled_callouts %}
+    <li><span style="font-size:0.85rem;color:#334155;padding:0.15rem 0.3rem">{{ c.comment }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% else %}
 <div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
      id="callout-section">
   <div class="callout-title">📣 Call-outs</div>
@@ -174,6 +194,7 @@
   </ul>
   <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
 </div>
+{% endif %}
 
 {% if not total %}
 <div class="empty-state">No delegated tickets — upload the Jira XML export on the card first.</div>
@@ -226,6 +247,7 @@
 {% endif %}
 {% endfor %}
 
+{% if not download %}
 <script>
 function coSave(input) {
   const li = input.closest('li');
@@ -310,5 +332,6 @@ document.getElementById('rf-clear').addEventListener('click', () => {
 });
 
 </script>
+{% endif %}
 </body>
 </html>

@@ -403,4 +403,6 @@ card — triggered where configured). Config keys: `solman_export_folder`,
 - PPT builders: `app/ppt_utils.py` (shared primitives), `app/ppt_retail.py`,
   `app/ppt_spillover.py`. Export Reports button (`POST /export-reports`,
   `app/report_exporter.py`) writes dated HTML + PPTX for both reports to
-  `report_export/`.
+  `report_export/`, plus HTML-only snapshots of the Delegated status
+  report + numbers (2026-08-26; download-mode renders via
+  `web_delegated.report_context`/`numbers_context`).

@@ -21,9 +21,10 @@ from app.reporter import (compute_impacted_totals, compute_retail_report,
 
 
 def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
-    """Render and save HTML + PPTX for the Retail and Spillover reports.
+    """Render and save the report snapshots: HTML + PPTX for Retail and
+    Spillover, HTML for the Delegated status report + numbers.
 
-    Returns the list of paths written (4 files: 2 HTML + 2 PPTX).
+    Returns the list of paths written (6 files: 4 HTML + 2 PPTX).
     """
     folder = Path(cfg.get("report_export_folder", "report_export"))
     folder.mkdir(parents=True, exist_ok=True)
@@ -94,5 +95,24 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
     spillover_pptx_path.write_bytes(
         build_spillover_ppt(items=items, order_details=order_details, today=today))
     saved.append(spillover_pptx_path)
+
+    # --------------------------------------------------------------- Delegated
+    # Same clean renders as the ⬇ Download HTML buttons on the two pages
+    # (download=True: toolbar/filter/scripts stripped, call-outs static).
+    from app.web_delegated import numbers_context, report_context
+
+    delegated_html_path = folder / f"delegated_report_{today}.html"
+    delegated_html_path.write_text(
+        render_template("delegated_report.html", **report_context(conn),
+                        download=True),
+        encoding="utf-8")
+    saved.append(delegated_html_path)
+
+    delegated_numbers_path = folder / f"delegated_numbers_{today}.html"
+    delegated_numbers_path.write_text(
+        render_template("delegated_numbers.html", **numbers_context(conn),
+                        download=True),
+        encoding="utf-8")
+    saved.append(delegated_numbers_path)
 
     return saved

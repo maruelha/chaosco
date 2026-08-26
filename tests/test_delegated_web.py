@@ -173,6 +173,31 @@ def test_numbers_report_counts(client):
     assert "Resolved / Closed" in html
 
 
+def test_report_download_is_standalone_attachment(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2001/blocked-reason",
+                data={"blocked_reason": "no settlement file yet"})
+    resp = client.get("/delegated/report/download")
+    assert resp.status_code == 200
+    assert 'attachment; filename="delegated_report_' in resp.headers["Content-Disposition"]
+    html = resp.get_data(as_text=True)
+    assert "Delegated Testing Report" in html
+    assert "no settlement file yet" in html            # content intact
+    # interactive chrome is stripped: toolbar, filter bar, scripts, inputs
+    assert 'class="toolbar"' not in html
+    assert 'class="filterbar"' not in html
+    assert "<script>" not in html
+    assert "co-input" not in html.split("</style>")[1]  # no call-out inputs in the body
+
+
+def test_report_page_keeps_its_buttons(client):
+    _upload(client)
+    html = client.get("/delegated/report").get_data(as_text=True)
+    assert "🔢 Numbers" in html
+    assert "Print" in html
+    assert "⬇ Download HTML" in html
+
+
 def test_numbers_download_is_standalone_attachment(client):
     _upload(client)
     resp = client.get("/delegated/numbers/download")
