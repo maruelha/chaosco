@@ -124,9 +124,6 @@
 <div class="toolbar">
   <span class="toolbar-title">Delegated Testing Report</span>
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
-  <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn">🔢 Numbers</a>
-  <button class="btn" onclick="window.print()">Print</button>
-  <button class="btn" onclick="downloadHtml()">Download HTML</button>
 </div>
 
 <div class="print-header">
@@ -312,14 +309,6 @@ document.getElementById('rf-clear').addEventListener('click', () => {
   rfApply();
 });
 
-function downloadHtml() {
-  document.querySelectorAll('.co-input').forEach(i => i.setAttribute('value', i.value));
-  const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'delegated_testing_report_{{ today }}.html';
-  a.click();
-}
 </script>
 </body>
 </html>
