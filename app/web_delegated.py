@@ -59,6 +59,9 @@ def delegated_list():
             conn, "delegated", i["jira_key"])) for i in issues}
         from app.db import teams_chats as db_tc
         chats_by_entity = db_tc.chats_by_entity(conn, "jira")
+        # shared order-details component at ('jira', key) — same rows as the
+        # gatekeeper/ECOM boards; green ✓ when any row has S4 docs
+        docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
     finally:
         conn.close()
     for i in issues:
@@ -73,6 +76,7 @@ def delegated_list():
         jira_comments=comments_map,
         note_counts=note_counts,
         chats_by_entity=chats_by_entity,
+        docs_s4_jira=docs_s4_jira,
         jira_ok=request.args.get("jira_ok"),
         jira_msg=request.args.get("jira_msg"),
     )

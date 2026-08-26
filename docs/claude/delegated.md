@@ -20,7 +20,14 @@ uploaded as a file on the card; tickets bucketed by status/assignee from
   rejected.
 - **Order numbers: LATEST COMMENT only** [USER] — `extract_latest_comment_orders`
   in `app/jira_importer.py`; acceptance criteria deliberately ignored
-  (unlike the gatekeeper's acceptance-criteria-first rule).
+  (unlike the gatekeeper's acceptance-criteria-first rule). Comment bodies
+  are stored as HTML, so they are flattened (tags → spaces, entities
+  decoded) before the regexes run — without that, markup between label and
+  value made extraction find nothing [USER 2026-08-26]. The gatekeeper's
+  comment fallback got the same flattening.
+- **Order details component**: the shared `_order_details.html` dialog at
+  `('jira', jira_key)` — Orders button per board row (S4 ✓ tick) + a card
+  on the ticket detail page; SAME rows as the Gatekeeper/ECOM boards.
 - **Authored fields separate from the gatekeeper.** `delegated_annotations`
   (jira_key PK, blocked_reason, next_step) in `app/db/delegated.py`. Same
   jira_key can hold a gatekeeper next step AND a delegated next step —

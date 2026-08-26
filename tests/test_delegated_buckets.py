@@ -70,6 +70,21 @@ def test_latest_comment_orders_finds_bare_tokens():
     assert extract_latest_comment_orders(comments)["orders"] == ["TBY_SS_ADE0006955"]
 
 
+def test_latest_comment_orders_survive_html_markup():
+    """Comment bodies are stored as HTML [USER 2026-08-26: 'no orders were
+    found'] — markup between label and value must not break the regexes."""
+    comments = [
+        {"created": "1", "body": "<p>Order Number: <b>6000084252</b></p>"},
+    ]
+    assert extract_latest_comment_orders(comments)["orders"] == [
+        "Order Number: 6000084252"]
+    # label and value split over elements + &nbsp; entity
+    comments = [{"created": "1",
+                 "body": "<div>Return Order:&nbsp;</div><div>TBY_SS_ADE0006955</div>"}]
+    assert extract_latest_comment_orders(comments)["orders"] == [
+        "Return Order: TBY_SS_ADE0006955"]
+
+
 def test_latest_comment_orders_empty_when_no_comment_carries_one():
     assert extract_latest_comment_orders([]) == {"orders": [], "source": None}
     assert extract_latest_comment_orders(

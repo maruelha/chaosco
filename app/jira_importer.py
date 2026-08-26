@@ -115,6 +115,19 @@ def _customfields(item) -> dict:
 
 
 # --- order-number extraction (report on the gatekeeper page) ---------------
+# comment bodies are stored as HTML — markup between label and value
+# ("Order Number: <b>600…</b>", label and number in separate <p>s) broke the
+# regexes, so comment text is flattened first [USER 2026-08-26: "no orders
+# were found" on the delegated card, which reads ONLY comments]
+import html as _html
+
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _comment_plain_text(body: str) -> str:
+    """HTML comment body -> plain text (tags become spaces, entities decoded)."""
+    return _html.unescape(_TAG_RE.sub(" ", body or ""))
+
 # labeled entries like "Omni Order: ANT_ZL_ANLA1O8PUY" / "Return Order :
 # 6000084252" / "Order Number - TBY_SS_ADE0006955"; XXXX… = placeholder
 _ORDER_LABEL_RE = re.compile(
@@ -159,7 +172,7 @@ def extract_order_numbers(acceptance_criteria: str | None,
         return {"orders": orders, "source": "acceptance criteria"}
 
     for c in reversed(comments or []):          # newest last in store order
-        body = c.get("body") or ""
+        body = _comment_plain_text(c.get("body"))
         found = _labeled_orders(body)
         if not found:
             found = _ORDER_TOKEN_RE.findall(body)
@@ -175,7 +188,7 @@ def extract_latest_comment_orders(comments: list[dict]) -> dict:
     order numbers as comments over time). Same return shape as
     extract_order_numbers."""
     for c in reversed(comments or []):          # newest last in store order
-        body = c.get("body") or ""
+        body = _comment_plain_text(c.get("body"))
         found = _labeled_orders(body)
         if not found:
             found = _ORDER_TOKEN_RE.findall(body)
