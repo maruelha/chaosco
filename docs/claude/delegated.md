@@ -24,7 +24,9 @@ uploaded as a file on the card; tickets bucketed by status/assignee from
   are stored as HTML, so they are flattened (tags → spaces, entities
   decoded) before the regexes run — without that, markup between label and
   value made extraction find nothing [USER 2026-08-26]. The gatekeeper's
-  comment fallback got the same flattening.
+  comment fallback got the same flattening. Delegated order shapes [USER]:
+  three capitals + digits (ASK0342321) and bare numbers starting 6000
+  (6000084252) — both added to the shared `_ORDER_TOKEN_RE`.
 - **Order details component**: the shared `_order_details.html` dialog at
   `('jira', jira_key)` — Orders button per board row (S4 ✓ tick) + a card
   on the ticket detail page; SAME rows as the Gatekeeper/ECOM boards.

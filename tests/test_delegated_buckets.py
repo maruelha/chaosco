@@ -70,6 +70,19 @@ def test_latest_comment_orders_finds_bare_tokens():
     assert extract_latest_comment_orders(comments)["orders"] == ["TBY_SS_ADE0006955"]
 
 
+def test_latest_comment_orders_finds_compact_letter_digit_orders():
+    """Delegated order formats [USER 2026-08-26]: three letters + digits,
+    or bare numbers starting with 6000."""
+    comments = [{"created": "1", "body": "<p>created ASK0342321 for retest</p>"}]
+    assert extract_latest_comment_orders(comments)["orders"] == ["ASK0342321"]
+    comments = [{"created": "1", "body": "return created 6000084252 today"}]
+    assert extract_latest_comment_orders(comments)["orders"] == ["6000084252"]
+    # ticket keys / solman-style ids / short numbers must NOT match
+    comments = [{"created": "1",
+                 "body": "see S4ECOM-1492 / SM1234 / PCS0001MU01 / row 600012, no order yet"}]
+    assert extract_latest_comment_orders(comments)["orders"] == []
+
+
 def test_latest_comment_orders_survive_html_markup():
     """Comment bodies are stored as HTML [USER 2026-08-26: 'no orders were
     found'] — markup between label and value must not break the regexes."""
