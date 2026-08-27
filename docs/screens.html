@@ -224,6 +224,7 @@
     <li class="group-label">Production Defects</li>
     <li><a href="#prod-defects-list">Prod Defects — List</a></li>
     <li><a href="#prod-defects-archive">Prod Defects — Archive</a></li>
+    <li><a href="#prod-defects-report">Prod Defects — Management Report</a></li>
     <li><a href="#prod-defect-detail">Prod Defects — Detail / New</a></li>
 
     <li class="group-label">CS Follow-Up Tracker</li>
@@ -1347,7 +1348,7 @@
         <span class="feat-label">Note count</span>
         <span class="feat-value">Edit button shows "Edit (N)" when the row has notes, matching the other boards</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">🗄 Archive</span> (fixed-item count badge, added 2026-08-27; see below) · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot, scripts stripped, for email) · <span class="pill pill-action">📝 Download for review</span> (interactive offline copy, see below) · <span class="pill pill-action">📥 Reviewer feedback</span> (badge = uploaded comment count; see below) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · per row (expand first): <span class="pill pill-action">✓ Mark Fixed</span> (AJAX, row disappears — archived, not deleted; main table only) · <span class="pill pill-action">Delete</span> · Edit stays on the collapsed summary</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">📄 Management report</span> (added 2026-08-27; see below) · <span class="pill pill-action">🗄 Archive</span> (fixed-item count badge, added 2026-08-27; see below) · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot, scripts stripped, for email) · <span class="pill pill-action">📝 Download for review</span> (interactive offline copy, see below) · <span class="pill pill-action">📥 Reviewer feedback</span> (badge = uploaded comment count; see below) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · per row (expand first): <span class="pill pill-action">✓ Mark Fixed</span> (AJAX, row disappears — archived, not deleted; main table only) · <span class="pill pill-action">Delete</span> · Edit stays on the collapsed summary</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>known_prod_defects</code> (note_count via subquery on <code>notes</code>) — <code>list_known_prod_defects</code> defaults to <code>status='open'</code>, so fixed rows never appear here (2026-08-27)</span>
       </div>
@@ -1367,6 +1368,27 @@
         <span class="feat-value">Header actions trimmed to just "← Active List" (no +New/Download/Email — this view isn't itself a report). Per-row action is <span class="pill pill-action">↺ Reopen</span> instead of ✓ Mark Fixed; Delete stays available.</span>
         <span class="feat-label">Reopen</span>
         <span class="feat-value">Same <code>POST /prod_defects/&lt;id&gt;/fixed</code> toggle (value=0) — the row disappears from Archive and reappears on the active list, <code>fixed_at</code> cleared.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Management report -->
+  <div class="screen-card" id="prod-defects-report">
+    <div class="screen-card-header">
+      <span class="screen-title">Known Production Issues — Management Report</span>
+      <span class="screen-url">GET /prod_defects/report &nbsp;·&nbsp; GET /prod_defects/report/download</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-27 [USER: "how I can prepare this as a management worthy summary"]. Standalone print-ready page (delegated-report style: self-contained CSS, A4-landscape print rules, no <code>style.css</code>) for the audience "ECOM Core South management + GBS Ops team". Scope decisions [USER via question dialog]: Channel = ECOM, non-fixed; the <strong>Defects</strong> and <strong>Limitations</strong> sections include only items ticked for BOTH Core South AND GBS Ops; the <strong>Risks</strong> section includes ALL ECOM risks regardless of ticks. Deliberately lean: no filter bar, no call-outs, no working controls — none were asked for.</p>
+      <div class="features">
+        <span class="feat-label">Layout</span>
+        <span class="feat-value">Header stat strip with per-section counts (Defects · Limitations · Risks), then three colour-headed sections; inside each, rows are grouped under <strong>Scenario sub-headings that carry per-scenario counts</strong> [USER: "counts per block - but also per scenario"] — the scenario sort order from the list makes the grouping free. Columns per row: ID (monospace) · Sub-case · Short Description · Business Impact — nothing past Biz Impact [USER: "only until biz impact"].</span>
+        <span class="feat-label">Data enabler</span>
+        <span class="feat-value">With Channel + both audience ticks as the gate, an entry only reaches the Defects/Limitations sections after the data-entry pass (set Channel = ECOM, tick both boxes) — same cleanup pass that assigns the display ids.</span>
+        <span class="feat-label">Download &amp; email</span>
+        <span class="feat-value"><span class="pill pill-action">⬇ Download HTML</span> → <code>/prod_defects/report/download</code>, a dated standalone snapshot (<code>known_prod_defects_report_&lt;date&gt;.html</code>; the template's CSS is already inline and <code>download=True</code> drops the toolbar — no post-processing, delegated pattern). Also an Email Reports choice ("Known Production Issues — Management Report") alongside the full-list snapshot and the Review Copy — all three prod-defect outputs attachable per mail since 2026-08-27.</span>
+        <span class="feat-label">Context builder</span>
+        <span class="feat-value"><code>web_defects.prod_defects_report_context</code> + <code>_group_by_scenario</code> — shared by the screen view, the download and the email attachment, one source of truth.</span>
       </div>
     </div>
   </div>
@@ -2045,7 +2067,7 @@
       <p class="screen-desc">Send the status reports as standalone-HTML attachments via GMX SMTP. Linked from the dashboard Export card. Credentials (<code>email_user</code>/<code>email_password</code>) live ONLY in gitignored <code>settings.local.yaml</code> — the page shows setup instructions and disables Send until configured.</p>
       <div class="features">
         <span class="feat-label">Reports to attach</span>
-        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05) &middot; Known Production Issues (added 2026-08-06; renders <code>/prod_defects</code> server-side and makes it standalone) &middot; Delegated Testing Report &middot; Delegated Testing Numbers (added 2026-08-26; attach the clean <code>/delegated/report/download</code> + <code>/delegated/numbers/download</code> renders — no buttons/scripts). All non-Spillover/Retail reports rendered server-side and made standalone: CSS inlined, scripts stripped. <code>?reports=&lt;key&gt;</code> on the page URL pre-ticks just that report (e.g. the Known Production Issues page's own "✉ Send via email" button) — with no query param, everything stays ticked as before.</span>
+        <span class="feat-value">Checkbox per report: Spillover Status Report &middot; Retail Status Report &middot; Retail Requirements Board &middot; ECOM Status Report (added 2026-07-09) &middot; Manual Test Cases Retail Report &middot; Manual Test Cases ECOM Report (added 2026-08-05) &middot; Known Production Issues (added 2026-08-06; renders <code>/prod_defects</code> server-side and makes it standalone) &middot; Known Production Issues — Review Copy (added 2026-08-27; attaches <code>/prod_defects/download-review</code> AS-IS — deliberately NOT run through <code>standalone_html</code>, its Detail-popup/comment scripts are the point) &middot; Known Production Issues — Management Report (added 2026-08-27; attaches the already-clean <code>/prod_defects/report/download</code>) &middot; Delegated Testing Report &middot; Delegated Testing Numbers (added 2026-08-26; attach the clean <code>/delegated/report/download</code> + <code>/delegated/numbers/download</code> renders — no buttons/scripts). All non-Spillover/Retail reports rendered server-side; made standalone (CSS inlined, scripts stripped) except where noted. <code>?reports=&lt;key&gt;</code> on the page URL pre-ticks just that report (e.g. the Known Production Issues page's own "✉ Send via email" button) — with no query param, everything stays ticked as before.</span>
         <span class="feat-label">Message</span>
         <span class="feat-value">Date field (default today) drives the editable subject ("UAT status reports — &lt;date&gt;") and body ("&hellip;reflect the status of the day.") — and since 2026-08-05 it is ALSO the date under which the sent bucket numbers land in <code>report_history</code> (automatic on every successful send; failures never block the mail, the result banner says whether history was saved).</span>
         <span class="feat-label">Recipients</span>

@@ -638,7 +638,12 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
        Tests: `tests/test_prod_defects.py` (+2, 44 total — incl.
        script-presence assertions per attachment flavour); full suite
        553 green.
-    3. Docs sweep (screens, dashboard_cards, build plan close-out).
+    3. ~~Docs sweep~~ ✅ DONE 2026-08-27: `screens.html` (new
+       "Management Report" screen-card + sidebar entry, list Actions +
+       Email Reports attach-list updated), `dashboard_cards.html`
+       (card text reworked to cover the 2026-08-27 batch: expandable
+       rows, ids, splits, archive, management report + email choices).
+       All three management-report steps done; full suite 553 green.
 
 ### Cross-vertical components — done ad-hoc
 
