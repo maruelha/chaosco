@@ -73,6 +73,43 @@ planning chat).
    counted in the numbers report but not listed in detail. Seam:
    `delegated_buckets.bucket_counts`. Requirements to come.
 
+**Blockers + Management Summary (planning chat 2026-08-27)** — decisions:
+a BLOCKER is its own entity (Marina's design), types defect / task /
+clarification (clarification has NO jira key, just a name); NO new upload —
+the existing delegated upload refreshes blocker issues by key via the shared
+jira store, Marina extends her Jira filter to include them; issues registered
+as blockers are EXCLUDED from the delegated board buckets; goal = ONE number
+("X created test orders"), editable on the Management Summary, NO history
+(downloaded reports are the history); whether a blocked ticket counts toward
+the goal is a per-ticket authored flag (depends on WHERE the defect was
+found); "Why blocked" free text stays for now — decide later. Steps
+one-at-a-time, Marina confirms each:
+
+7. **Blockers storage + page**: `app/db/blockers.py` — `blockers` (id, type,
+   name, jira_key NULL) + `blocker_links` (blocker ↔ delegated jira_key,
+   m:n). Blueprint `/blockers/`: list grouped by type (a list of BLOCKERS,
+   not blocked tickets), add/edit, notes (registry entity `blocker`), live
+   Jira status + comments on the blocker when its key is in the store.
+   Registered blocker keys excluded from the delegated buckets.
+8. **Attach to tickets**: blocker picker (link existing / quick-create) on
+   the board's blocked rows + ticket detail, shown as chips. Same step:
+   `counts_toward_goal` flag on blocked tickets (`delegated_annotations` —
+   authored, import never touches it).
+9. **Detailed status report** (name stays): blocker chips on blocked rows +
+   Blocker filter next to Status/Assignee (pick one → see what it blocks).
+   Downloads/exports stay clean automatically (download-mode renders).
+10. **Management Summary** (Numbers page renamed "Management Summary Status
+    Report"; routes/keys/filenames stay `numbers`/`delegated_numbers` so
+    export + email keep working): goal field (one-row table, portable SQL)
+    vs actual = Settlementfile + GBS validation + Sales validations +
+    Resolved/Closed + blocked(counts_toward_goal); bucket counts shown as 3
+    stages (Blocked | until gatekeeper check | past gatekeeper check);
+    blocker overview grouped Defects → Tasks → Clarifications with per-
+    blocker blocked-ticket count. INCLUDES the full documentation sweep
+    [USER 2026-08-27]: delegated.md, screens.html, database_schema.html,
+    architecture.html, dashboard_cards.html (if the card changes),
+    build_plan ticks, session test checklist.
+
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
