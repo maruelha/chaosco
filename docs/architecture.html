@@ -279,7 +279,7 @@
           <td>Write SQL directly · import pandas</td>
         </tr>
         <tr>
-          <td>Blueprints: web_notes · web_retail_tracker · web_topics · web_email · web_teams(_chats) · web_ecom · web_next_steps · web_entity_links · web_connections · web_issue_msg · web_search · web_retrofits · web_urgent · web_delegated · web_blockers</td>
+          <td>Blueprints: web_notes · web_retail_tracker · web_topics · web_email · web_teams(_chats) · web_ecom · web_next_steps · web_entity_links · web_connections · web_issue_msg · web_search · web_retrofits · web_urgent · web_delegated · web_blockers · web_smoke</td>
           <td>The pattern for NEW modules — own url_prefix, own storage module, registered in web.py. web_notes / web_next_steps / web_search are REGISTRY-driven generics.</td>
           <td>Write SQL directly</td>
         </tr>
@@ -290,11 +290,11 @@
         </tr>
         <tr>
           <td>app/db/ package</td>
-          <td>ALL SQL, one module per area: core (schema+migrations) · defects · spillover · retail · notes · ecom · jira · gatekeeper · delegated · topics · entity_links · entity_connections · next_steps · order_archive · inbox_autofile · teams_chats · message_types · email · search · planning · reference — plus <code>db_retail_tracker.py</code></td>
+          <td>ALL SQL, one module per area: core (schema+migrations) · defects · spillover · retail · notes · ecom · jira · gatekeeper · delegated · blockers · urgent · retrofits · smoke · topics · entity_links · entity_connections · next_steps · order_archive · inbox_autofile · teams_chats · message_types · email · search · planning · reference — plus <code>db_retail_tracker.py</code></td>
           <td>Import Flask · render templates</td>
         </tr>
         <tr>
-          <td>Importers: read_defects · spillover_importer · retail_importer · ecom_importer (orchestrated by importer.py) · jira_importer · retail_tracker_importer · solman_sync</td>
+          <td>Importers: read_defects · spillover_importer · retail_importer · ecom_importer (orchestrated by importer.py) · jira_importer · retail_tracker_importer · smoke_importer · solman_sync</td>
           <td>Excel tabs → their one table each (header-map driven, idempotent upserts) · Jira XML → the shared jira store · SolMan export → targeted defects update · archiver.py archives the source file (SHA-256 dedup)</td>
           <td>Touch another importer's table · touch *_annotations · write to the Excel</td>
         </tr>

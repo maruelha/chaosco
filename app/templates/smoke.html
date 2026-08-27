@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}CORE SOUTH Smoke Testing — Test Coordination{% endblock %}
+
+{% block content %}
+{% call ui.page_header('CORE SOUTH Smoke Testing', 'eCOM and Retail smoke test '
+                       ~ 'scenarios from the EU CS Smoke Test execution workbook '
+                       ~ '(only WS eCOM/Retail with MB Invoice Validation = WAHR).') %}
+<form method="post" action="{{ url_for('smoke.smoke_upload') }}"
+      enctype="multipart/form-data" style="display:inline">
+  <input type="file" name="file" accept=".xlsx" required
+         style="font-size:0.8rem; max-width:15rem">
+  <button type="submit" class="btn btn-primary"
+          title="upload the EU CS Smoke Test execution workbook">
+    ⤒ Upload &amp; import</button>
+</form>
+{% endcall %}
+
+{% if smoke_msg %}
+<div class="result-box{% if smoke_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Import</span>
+    <span class="result-value">{{ smoke_msg }}</span>
+  </div>
+</div>
+{% endif %}
+
+{% if not total_scenarios %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No smoke test scenarios yet — pick the workbook above and press
+  <strong>⤒ Upload &amp; import</strong>.
+</p>
+{% else %}
+{% for key, title, link in [('ecom', 'ECOM', ecom_url), ('omni', 'OMNI', ecom_url),
+                            ('retail', 'Retail', retail_url)] %}
+<h2 style="margin:{{ '0' if loop.first else '1.5rem' }} 0 0.5rem; font-size:1.1rem">
+  <a href="{{ link }}">{{ title }} →</a>
+</h2>
+{% call ui.stat_cards() %}
+  {{ ui.stat_card(counts[key].total, 'scenarios total', 'info') }}
+  {{ ui.stat_card(counts[key].not_started, 'not started', 'open') }}
+  {{ ui.stat_card(counts[key].in_progress, 'in progress', 'open') }}
+  {{ ui.stat_card(counts[key].completed, 'completed', 'done') }}
+{% endcall %}
+{% endfor %}
+{% endif %}
+{% endblock %}

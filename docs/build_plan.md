@@ -8,7 +8,7 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-08-06
+Last updated: 2026-08-27
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
@@ -48,6 +48,69 @@ Last updated: 2026-08-06
 ---
 
 ## Part 1 — Feature work by module
+
+### CORE SOUTH Smoke Testing (`/smoke/`) — NEW 2026-08-27
+
+Deep-dive: `docs/claude/smoke.md` (workbook structure, filter rules and
+the design decisions from the planning chat 2026-08-27).
+
+1. ~~Storage `app/db/smoke.py`~~ ✅ DONE 2026-08-27: `smoke_scenarios` +
+   `smoke_steps` (1:n, technical PKs, portable SQL), `replace_all`,
+   `list_scenarios`/`get_scenario`, `is_omni_package`, `overview_counts`
+   (blank Status folds into not_started — flagged in smoke.md); registered
+   in `database.py` facade; `tests/test_smoke_storage.py`.
+2. ~~Importer `app/smoke_importer.py`~~ ✅ DONE 2026-08-27: `parse_smoke_workbook`
+   (WS eCOM/Retail + MB Invoice Validation WAHR filter, steps linked via
+   ParentRow==RowID) + `run_smoke_import` (replace-all write). Verified
+   against the real 2026-08-27 workbook: 70 eCOM + 9 Retail scenarios,
+   1,723 steps, matches the earlier pandas exploration exactly.
+   `tests/test_smoke_importer.py`.
+3. ~~Blueprint `app/web_smoke.py`~~ ✅ DONE 2026-08-27: `/smoke/` upload
+   page, file picker (.xlsx), dated copy in `data/uploads/` (Delegated
+   pattern), wired to `run_smoke_import`; registered in `app/web.py`.
+   Shows a plain scenario-count line for now — the real overview/eCOM/
+   Retail pages are steps 4-6. `tests/test_smoke_web.py`; verified by eye
+   against the running app (empty state renders correctly).
+4. ~~Overview page~~ ✅ DONE 2026-08-27: `/smoke/` now shows 3 stat-card
+   rows (ECOM/OMNI/Retail — total/not started/in progress/completed) via
+   `db_smoke.overview_counts`; empty-import state kept. Verified against
+   the real workbook via a disposable DB copy: ECOM 43, OMNI 27, Retail 9
+   (27+43=70 eCOM, matches step 2's import count).
+5. ~~eCOM page~~ ✅ DONE 2026-08-27: `/smoke/ecom` — OMNI + ECOM
+   `ui.section`s (colors teal/blue), each scenario a `<details
+   class="smoke-scenario">` (native accordion, no custom JS needed)
+   showing Package/Status/RowID/step-count in the summary and a full
+   steps `ui.table` inside; live text filter on Scenario via
+   `smokeFilterScenarios()` (`data-scenario` lowercased attribute,
+   `oninput`, same pattern as the tracker's payment-method filter).
+   Shared partial `_smoke_scenarios.html` (macro `scenario_group`) — used
+   twice here (OMNI/ECOM) and reused by the Retail page (step 6) so the
+   identical structure isn't tripled. Overview's ECOM/OMNI headers now
+   link here. New CSS component `.smoke-scenario` in style.css.
+   `tests/test_smoke_web.py` (+4). Verified against the real workbook via
+   a disposable DB copy: 27 OMNI / 43 ECOM rows render with full step
+   tables.
+6. ~~Retail page~~ ✅ DONE 2026-08-27: `/smoke/retail` — one `ui.section`
+   (slate) reusing the same `scenario_group` macro from
+   `_smoke_scenarios.html` (`smoke_retail.html` is a thin wrapper, same
+   shape as `smoke_ecom.html`). Overview's Retail header now links here
+   too — all 3 group headers link out. `tests/test_smoke_web.py` (+2).
+   Verified against the real workbook via a disposable DB copy: 9 Retail
+   scenarios render with steps + Company code/Sales org/Store metadata
+   line.
+7. ~~Dashboard card + docs sweep~~ ✅ DONE 2026-08-27: "CORE SOUTH Smoke
+   Testing" dashboard card (scenario-count badge, `db_smoke.scenario_count`)
+   placed after Delegated Testing. Docs: `architecture.html` (blueprint +
+   db/ + importer lists — also backfilled the pre-existing missing
+   blockers/urgent/retrofits entries while touching that line),
+   `database_schema.html` (new group, 2 table-cards — found the doc's
+   table count was stale at 53 vs 67 actual; corrected the count and
+   logged the older gap in `MarinaCheckSoon.html` rather than scope-creeping
+   into fixing it here), `screens.html` (3 screen-cards + sidebar),
+   `dashboard_cards.html`, CLAUDE.md (doc table + code layout).
+
+All 7 build-plan steps for CORE SOUTH Smoke Testing are now done. 519
+tests passing.
 
 ### Delegated Testing (`/delegated/`) — NEW 2026-08-26
 

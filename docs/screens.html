@@ -204,6 +204,11 @@
     <li><a href="#blockers-list">Blockers — List</a></li>
     <li><a href="#blockers-detail">Blockers — Detail / Notes</a></li>
 
+    <li class="group-label">CORE SOUTH Smoke Testing</li>
+    <li><a href="#smoke-overview">Smoke Testing — Overview &amp; Upload</a></li>
+    <li><a href="#smoke-ecom">Smoke Testing — eCOM (OMNI / ECOM)</a></li>
+    <li><a href="#smoke-retail">Smoke Testing — Retail</a></li>
+
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
     <li><a href="#retail-detail">Retail — Detail</a></li>
@@ -1003,6 +1008,60 @@
         <span class="feat-label">Notes</span>
         <span class="feat-value">Registry entity <code>blocker</code> — generic <code>/n/blocker/&lt;id&gt;/…</code> routes, same as every other module</span>
       </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ================================================================ -->
+<!-- CORE SOUTH SMOKE TESTING -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-heading">CORE SOUTH Smoke Testing</div>
+
+  <!-- Smoke overview -->
+  <div class="screen-card" id="smoke-overview">
+    <div class="screen-card-header">
+      <span class="screen-title">CORE SOUTH Smoke Testing — Overview &amp; Upload</span>
+      <span class="screen-url">GET /smoke/ · POST /smoke/upload</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-27. File-picker upload of the <strong>EU CS Smoke Test execution</strong> workbook (Delegated-upload pattern — the browser uploads the file's content, no folder config; a dated copy is kept at <code>data/uploads/smoke_&lt;timestamp&gt;.xlsx</code>, mirrored by backup). <code>app/smoke_importer.py</code> keeps only <code>RowType</code>=Scenario rows where <code>WS</code> is eCOM/Retail AND <code>MB Invoice Validation</code> = WAHR (boolean TRUE) — non-matching scenarios are dropped at import, not just hidden in the views [USER 2026-08-27]. Their Step rows attach via <code>ParentRow</code> == scenario <code>RowID</code>. <strong>Replace-all</strong> on every upload (whole table cleared then rewritten) — unlike the upserted-forever verticals.</p>
+      <div class="features">
+        <span class="feat-label">Overview cards</span>
+        <span class="feat-value">Three <code>ui.stat_cards()</code> rows — ECOM / OMNI / Retail — each total / not started / in progress / completed, from <code>db_smoke.overview_counts</code>. Blank <code>Status</code> folds into not-started (judgment call, flagged in <code>docs/claude/smoke.md</code>). Each group heading links to its scenario list page.</span>
+        <span class="feat-label">OMNI/ECOM split</span>
+        <span class="feat-value">An eCOM scenario is OMNI when <code>Package</code> is Click &amp; Collect / Ship From Store / Return in Store (<code>db_smoke.is_omni_package</code>); everything else eCOM is ECOM. Retail has no split.</span>
+        <span class="feat-label">Dashboard card</span>
+        <span class="feat-value">"CORE SOUTH Smoke Testing" with a total scenario-count badge (<code>db_smoke.scenario_count</code>).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smoke eCOM -->
+  <div class="screen-card" id="smoke-ecom">
+    <div class="screen-card-header">
+      <span class="screen-title">CORE SOUTH Smoke Testing — eCOM (OMNI / ECOM)</span>
+      <span class="screen-url">GET /smoke/ecom</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Two colour-coded <code>ui.section</code>s — OMNI then ECOM — each listing its scenarios via the shared <code>scenario_group</code> macro (<code>_smoke_scenarios.html</code>, reused by the Retail page below so the identical structure isn't tripled). Each scenario is a native <code>&lt;details class="smoke-scenario"&gt;</code> accordion (no custom JS needed to expand/collapse) showing Package, Status pill, RowID and step count in the summary; expanding shows Company code/Sales org/Plant/Store metadata, any scenario Comment, and the full steps table (Step · Expected result · Owner · WS Executing · ASPEN Ticket · Execution status · Progress · Comment).</p>
+      <div class="features">
+        <span class="feat-label">Scenario filter</span>
+        <span class="feat-value">Live text filter on the Scenario column, one per section — <code>smokeFilterScenarios(groupKey)</code>, <code>oninput</code> + lowercased <code>data-scenario</code> attribute match, same pattern as the Retail Tracker's payment-method filter.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smoke Retail -->
+  <div class="screen-card" id="smoke-retail">
+    <div class="screen-card-header">
+      <span class="screen-title">CORE SOUTH Smoke Testing — Retail</span>
+      <span class="screen-url">GET /smoke/retail</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Same expandable-scenario list and Scenario filter as the eCOM page, one section (no OMNI/ECOM split for Retail) — thin wrapper around the same <code>scenario_group</code> macro.</p>
     </div>
   </div>
 

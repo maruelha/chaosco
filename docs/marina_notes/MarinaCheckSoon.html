@@ -420,6 +420,28 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-08-27 ================= -->
+<h2 class="date">Added 2026-08-27</h2>
+
+<div class="box b-red">
+  <div class="box-head">database_schema.html is behind the real DB — 67 tables, doc covers fewer</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="schema-doc-drift">
+      <span><strong>While adding the CORE SOUTH Smoke Testing tables I counted the live
+      DB: 67 tables exist, several without a table-card</strong> (e.g.
+      <code>urgent_items</code>, <code>retrofits</code>, <code>meeting_types</code>,
+      <code>email_lists</code>/<code>email_list_members</code>,
+      <code>report_recipients</code>, <code>teams_chat_refs</code>,
+      <code>topic_steps</code> — modules built after the doc's last full pass,
+      2026-07-18). Smoke's own tables are documented; the older gap is
+      pre-existing, not something this session tried to backfill (out of
+      scope for the build plan step it was doing).
+      <span class="where">&#8594; docs/database_schema.html</span><br>
+      Worth a dedicated pass sometime — say the word and it gets done as its
+      own step rather than folded into unrelated work.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

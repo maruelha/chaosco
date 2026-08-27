@@ -76,6 +76,12 @@
   </div>
 
   <div class="action-card">
+    <h2>CORE SOUTH Smoke Testing {% if smoke_count %}<span class="notes-count-badge">{{ smoke_count }}</span>{% endif %}</h2>
+    <p>eCOM/Retail smoke test scenarios from the EU CS Smoke Test execution workbook — expandable steps, OMNI/ECOM split, quick status overview.</p>
+    <a href="{{ url_for('smoke.smoke_home') }}" class="btn btn-primary">Open</a>
+  </div>
+
+  <div class="action-card">
     <h2>Manual Test Cases Retail</h2>
     <p>Manual test cases from the "Manual Test Cases | Retail" tab — read-only list plus a simple status report (same buckets as Retail, defects from the Defects tab).</p>
     <a href="{{ url_for('manual_tests.manual_list', stream='retail') }}" class="btn">View List</a>

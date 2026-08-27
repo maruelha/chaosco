@@ -1,0 +1,63 @@
+{# CORE SOUTH Smoke Testing (build plan step 5) — one scenario group
+   (OMNI / ECOM / Retail): filter-by-Scenario textbox + expandable scenario
+   list, each expanding to its steps. Shared by smoke_ecom.html (OMNI +
+   ECOM) and smoke_retail.html so the identical structure isn't tripled. #}
+{% import '_macros.html' as ui %}
+
+{% macro scenario_group(scenarios, group_key) %}
+<div class="ui-filterbar">
+  <input type="text" id="smoke-filter-{{ group_key }}" placeholder="Filter by Scenario…"
+         oninput="smokeFilterScenarios('{{ group_key }}')">
+  <span id="smoke-info-{{ group_key }}" style="color:#888; font-size:0.82rem"></span>
+</div>
+{% if scenarios %}
+{% for s in scenarios %}
+{% set status = s.status or 'Not Started' %}
+{% set status_chip = 'chip--pass' if status not in ('Not Started', 'In Progress')
+                     else ('chip--other' if status == 'In Progress' else 'chip--none') %}
+<details class="smoke-scenario" data-group="{{ group_key }}"
+         data-scenario="{{ (s.scenario or '')|lower }}">
+  <summary>
+    <strong>{{ s.scenario or '(no name)' }}</strong>
+    <span style="color:#666; font-size:0.78rem">{{ s.package or '—' }}</span>
+    <span class="chip {{ status_chip }}">{{ status }}</span>
+    <span style="color:#999; font-size:0.78rem; margin-left:0.4rem">
+      RowID {{ s.row_id }} · {{ s.steps|length }} step{{ 's' if s.steps|length != 1 else '' }}
+    </span>
+  </summary>
+  <div style="padding:0.4rem 1rem 0.9rem">
+    <p style="color:#666; font-size:0.82rem; margin:0 0 0.6rem">
+      {%- set meta = [] -%}
+      {%- if s.company_code %}{% set _ = meta.append('Company code ' ~ s.company_code) %}{% endif -%}
+      {%- if s.sales_org %}{% set _ = meta.append('Sales org ' ~ s.sales_org) %}{% endif -%}
+      {%- if s.plant %}{% set _ = meta.append('Plant ' ~ s.plant) %}{% endif -%}
+      {%- if s.store_code %}{% set _ = meta.append('Store ' ~ s.store_code) %}{% endif -%}
+      {{ meta|join(' · ') if meta else '—' }}
+    </p>
+    {% if s.comment %}
+    <p style="color:#666; font-size:0.82rem; margin:0 0 0.6rem"><em>{{ s.comment }}</em></p>
+    {% endif %}
+    {% call ui.table(['Step', 'Expected result', 'Owner', 'WS Executing',
+                      'ASPEN Ticket', 'Execution status', 'Progress', 'Comment']) %}
+      {% for st in s.steps %}
+      <tr>
+        <td>{{ st.step or '—' }}</td>
+        <td>{{ st.expected_result or '—' }}</td>
+        <td>{{ st.owner or st.owner_email or '—' }}</td>
+        <td>{{ st.ws_executing or '—' }}</td>
+        <td>{{ st.aspen_ticket or '—' }}</td>
+        <td>{{ st.execution_status or '—' }}</td>
+        <td>{{ st.progress or '—' }}</td>
+        <td>{{ st.comment or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" style="color:#888">No steps.</td></tr>
+      {% endfor %}
+    {% endcall %}
+  </div>
+</details>
+{% endfor %}
+{% else %}
+<p style="color:#888; margin:0.6rem 1rem">No scenarios.</p>
+{% endif %}
+{% endmacro %}

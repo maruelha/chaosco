@@ -1426,6 +1426,14 @@ tr.rt-req td:first-child { border-left:4px solid transparent; }
     max-width:30rem; max-height:70vh; overflow-y:auto; }
 .ui-dlg label, .rt-dlg label, .pm-dlg label { display:block; padding:3px 0; font-size:0.88rem; cursor:pointer; }
 
+/* ---- expandable scenario row (CORE SOUTH Smoke Testing) ---- */
+details.smoke-scenario { margin:0.5rem 1rem; border:1px solid #e2e2ea; border-radius:8px;
+    overflow:hidden; }
+details.smoke-scenario > summary { cursor:pointer; list-style:none; padding:0.55rem 0.8rem;
+    display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; background:#fafafd; }
+details.smoke-scenario > summary::before { content:"\25B8"; transition:transform .15s; }
+details.smoke-scenario[open] > summary::before { transform:rotate(90deg); }
+
 /* ---- chips (per-country state marks) ---- */
 .chip, .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
     font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }

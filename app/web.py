@@ -145,6 +145,14 @@ from app.web_blockers import bp as _blockers_bp
 _db_blockers.init_schema(_db_path)
 app.register_blueprint(_blockers_bp)
 
+# CORE SOUTH Smoke Testing (2026-08-27) — EU CS Smoke Test execution
+# workbook, uploaded on the card; eCOM/Retail scenarios + steps, WS +
+# MB Invoice Validation filter applied at import.
+from app.db import smoke as _db_smoke
+from app.web_smoke import bp as _smoke_bp
+_db_smoke.init_schema(_db_path)
+app.register_blueprint(_smoke_bp)
+
 
 if __name__ == "__main__":
     import threading

@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-07-18 (all 53 tables)</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-27 (67 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -272,6 +272,10 @@
     <li class="group-label">Blockers</li>
     <li><a href="#blockers">blockers</a></li>
     <li><a href="#blocker_links">blocker_links</a></li>
+
+    <li class="group-label">CORE SOUTH Smoke Testing</li>
+    <li><a href="#smoke_scenarios">smoke_scenarios</a></li>
+    <li><a href="#smoke_steps">smoke_steps</a></li>
 
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
@@ -655,6 +659,66 @@
       </tbody>
     </table>
     <div class="relations"><strong>Attach/detach/quick-create:</strong> <code>GET /blockers/links/&lt;jira_key&gt;</code> · <code>POST .../attach</code> · <code>POST .../detach</code> · <code>POST .../quick-create</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> (<code>list_blockers_for_ticket</code>, <code>blockers_for_tickets</code> — batched for the board)</div>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: CORE SOUTH SMOKE TESTING (added 2026-08-27) -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">CORE SOUTH Smoke Testing — imported, replace-all per upload</div>
+
+  <!-- smoke_scenarios -->
+  <div class="table-card" id="smoke_scenarios">
+    <div class="table-card-header">
+      <span class="tname">smoke_scenarios</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">EU CS Smoke Test execution workbook, RowType=Scenario rows — kept only where WS is eCOM/Retail AND MB Invoice Validation = WAHR (planning chat 2026-08-27). Replace-all on every upload (whole table cleared then rewritten), unlike the upserted-forever verticals above.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td class="note-text">technical PK — RowID is the Excel business key, not reused as PK</td></tr>
+        <tr><td class="col-name">row_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Excel RowID — unique per scenario, join target for smoke_steps via ParentRow</td></tr>
+        <tr><td class="col-name">package</td><td class="col-type">TEXT</td><td></td><td class="note-text">drives the eCOM page's OMNI/ECOM split (Click &amp; Collect / Ship From Store / Return in Store → OMNI)</td></tr>
+        <tr><td class="col-name">ws</td><td class="col-type">TEXT</td><td></td><td class="note-text">'eCOM' or 'Retail' — canonicalised on import</td></tr>
+        <tr><td class="col-name">scenario</td><td class="col-type">TEXT</td><td></td><td class="note-text">scenario name; filterable on the eCOM/Retail pages</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Not Started / In Progress / Completed / blank — overview counts fold blank into not_started</td></tr>
+        <tr><td class="col-name">company_code</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">sales_org</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Sales Org."</td></tr>
+        <tr><td class="col-name">plant</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Plant (DC)"</td></tr>
+        <tr><td class="col-name">store_code</td><td class="col-type">TEXT</td><td></td><td class="note-text">populated on Retail scenarios only in the current export</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Overview/eCOM/Retail:</strong> <code>GET /smoke/</code> · <code>GET /smoke/ecom</code> · <code>GET /smoke/retail</code> &nbsp;·&nbsp; <strong>Upload:</strong> <code>POST /smoke/upload</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/smoke.py</code> &nbsp;·&nbsp; <strong>Importer:</strong> <code>app/smoke_importer.py</code></div>
+  </div>
+
+  <!-- smoke_steps -->
+  <div class="table-card" id="smoke_steps">
+    <div class="table-card-header">
+      <span class="tname">smoke_steps</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">RowType=Step rows attached to a kept scenario via ParentRow == scenario RowID. Rendered inside each scenario's expandable accordion on the eCOM/Retail pages.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">scenario_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → smoke_scenarios</span></td><td></td></tr>
+        <tr><td class="col-name">row_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Excel RowID of the step row</td></tr>
+        <tr><td class="col-name">step</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">expected_result</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Expected result"</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">owner_email</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Owner eMail" — often a name, not always an email address (source data quality)</td></tr>
+        <tr><td class="col-name">owner</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">ws_executing</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">aspen_ticket</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">execution_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">empty in the 2026-08-27 export; imported for when it fills in</td></tr>
+        <tr><td class="col-name">progress</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 

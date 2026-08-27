@@ -14,6 +14,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 |---|---|
 | Import verticals (Defects / Spillover / Retail), reports, PPT | `docs/claude/verticals.md` |
 | Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
+| CORE SOUTH Smoke Testing (workbook import, eCOM/Retail reports) | `docs/claude/smoke.md` |
 | Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
@@ -86,6 +87,11 @@ app/
                     no separate import (shared jira store); storage
                     db/blockers.py; registered keys excluded from the
                     delegated board via web_delegated._load_issues)
+  web_smoke.py      CORE SOUTH Smoke Testing Blueprint (/smoke/ — EU CS
+                    Smoke Test execution workbook, file-picker upload;
+                    overview + eCOM (OMNI/ECOM split) + Retail scenario
+                    lists with expandable steps; storage db/smoke.py,
+                    importer smoke_importer.py)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -99,12 +105,15 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
-                    retrofits urgent delegated blockers
+                    retrofits urgent delegated blockers smoke
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py
   retail_tracker_importer.py / retail_tracker_counting.py
   jira_importer.py  Jira XML → shared jira store (newest .xml per folder)
+  smoke_importer.py EU CS Smoke Test execution workbook → smoke_scenarios/
+                    smoke_steps (WS eCOM/Retail + MB Invoice Validation
+                    WAHR filter, steps linked via ParentRow==RowID)
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export
