@@ -16,7 +16,7 @@
     <span class="mono">{{ row.display_id or '—' }}</span>
     <strong>{{ row.scenario or '(no scenario)' }}</strong>
     {% if not narrow and row.sub_case %}<span style="color:#666; font-size:0.84rem">{{ row.sub_case }}</span>{% endif %}
-    <span style="color:#666; font-size:0.84rem">{{ row.short_description or '' }}</span>
+    <span style="color:#666; font-size:0.84rem; flex-basis:100%">{{ row.short_description or '' }}</span>
     <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm"
        style="margin-left:auto" onclick="event.stopPropagation()">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
   </summary>

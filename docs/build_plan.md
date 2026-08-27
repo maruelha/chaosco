@@ -591,6 +591,15 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
     needed since the narrow-table omission tests already cover this by
     construction); full suite 543 green. Verified against a disposable
     copy of the real DB.
+12. ~~Short Description forced onto its own line~~ ✅ DONE 2026-08-27
+    [USER: "short description also needs to be on next line (even if it
+    would fit in first line)"]. The collapsed summary is a wrapping flex
+    row, so short/blank ID+Scenario+Sub-case content could leave enough
+    room for Short Description to sit on the same visual line — added
+    `flex-basis:100%` on that span, the standard flex-wrap trick to force
+    a break there regardless of available width. CSS-only; full suite
+    543 green; verified rendered HTML against a disposable copy of the
+    real DB.
 
 ### Cross-vertical components — done ad-hoc
 
