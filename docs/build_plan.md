@@ -85,12 +85,20 @@ the goal is a per-ticket authored flag (depends on WHERE the defect was
 found); "Why blocked" free text stays for now — decide later. Steps
 one-at-a-time, Marina confirms each:
 
-7. **Blockers storage + page**: `app/db/blockers.py` — `blockers` (id, type,
-   name, jira_key NULL) + `blocker_links` (blocker ↔ delegated jira_key,
-   m:n). Blueprint `/blockers/`: list grouped by type (a list of BLOCKERS,
-   not blocked tickets), add/edit, notes (registry entity `blocker`), live
-   Jira status + comments on the blocker when its key is in the store.
-   Registered blocker keys excluded from the delegated buckets.
+7. ~~Blockers storage + page~~ ✅ DONE 2026-08-27: `app/db/blockers.py` —
+   `blockers` (id, type, name, jira_key NULL for clarifications) +
+   `blocker_links` schema (m:n, unused until step 8's attach UI). Blueprint
+   `/blockers/` (`app/web_blockers.py`): list grouped by type (Defects →
+   Tasks → Business Clarifications, fixed order), add/edit
+   (`blocker_detail.html`, type dropdown hides the Jira Key field for
+   clarifications), notes (registry entity `blocker`), live Jira
+   status/description/comments on the blocker when its key is already in
+   the shared store (no separate import — Marina adds the key to her
+   delegated Jira filter). Registered blocker keys excluded from
+   `web_delegated._load_issues` (board/report/numbers all route through
+   it). Links: dashboard Delegated Testing card + board toolbar → 🚧
+   Blockers. Tests: `tests/test_blockers.py` (13, incl. the board-exclusion
+   regression).
 8. **Attach to tickets**: blocker picker (link existing / quick-create) on
    the board's blocked rows + ticket detail, shown as chips. Same step:
    `counts_toward_goal` flag on blocked tickets (`delegated_annotations` —

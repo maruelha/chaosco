@@ -107,6 +107,13 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_jira_issue(c, str(i)),
         lambda r: f"{r['jira_key']} — {r.get('summary') or ''}".rstrip(" —"), str,
     ),
+    # Blockers (2026-08-27) — defects/tasks/clarifications blocking
+    # Delegated Testing tickets; own entity, own notes thread
+    "blocker": NoteEntity(
+        "Blockers", "blockers.blockers_list", "blockers.blocker_detail", "blocker_id",
+        lambda c, i: database.get_blocker(c, int(i)),
+        lambda r: r.get("name") or f"Blocker #{r['blocker_id']}", int,
+    ),
     "prod_defect": NoteEntity(
         "Known Production Issues", "prod_defects_list", "prod_defect_detail", "record_id",
         lambda c, i: database.get_known_prod_defect(c, int(i)),

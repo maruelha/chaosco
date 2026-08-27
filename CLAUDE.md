@@ -81,6 +81,11 @@ app/
   web_delegated.py  Delegated Testing Blueprint (/delegated/ — own uploaded
                     Jira XML tagged seen_in_delegated; buckets in
                     delegated_buckets.py; storage db/delegated.py)
+  web_blockers.py   Blockers Blueprint (/blockers/ — defects/tasks/business
+                    clarifications blocking delegated tickets; own entity,
+                    no separate import (shared jira store); storage
+                    db/blockers.py; registered keys excluded from the
+                    delegated board via web_delegated._load_issues)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -94,7 +99,7 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
-                    retrofits urgent delegated
+                    retrofits urgent delegated blockers
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

@@ -268,6 +268,10 @@
     <li><a href="#gatekeeper_annotations">gatekeeper_annotations</a></li>
     <li><a href="#delegated_annotations">delegated_annotations</a></li>
 
+    <li class="group-label">Blockers</li>
+    <li><a href="#blockers">blockers</a></li>
+    <li><a href="#blocker_links">blocker_links</a></li>
+
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
     <li><a href="#jira_comments">jira_comments</a></li>
@@ -578,6 +582,57 @@
       </tbody>
     </table>
     <div class="relations"><strong>Blocked reason:</strong> <code>POST /delegated/ticket/&lt;jira_key&gt;/blocked-reason</code> &nbsp;·&nbsp; <strong>Next step:</strong> <code>POST /delegated/ticket/&lt;jira_key&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/delegated.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('delegated', jira_key)</code> — own thread, separate from the gatekeeper's <code>('jira', jira_key)</code></div>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: BLOCKERS -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Blockers — defects/tasks/clarifications blocking Delegated Testing tickets (2026-08-27)</div>
+
+  <!-- blockers -->
+  <div class="table-card" id="blockers">
+    <div class="table-card-header">
+      <span class="tname">blockers</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Own entity, not per-ticket free text — a blocker (e.g. a defect) commonly blocks several delegated tickets. A defect/task blocker's live status/comments are joined from <code>jira_issues</code> by <code>jira_key</code> when that key is already in the shared store — NO separate upload; Marina adds the key to her delegated Jira export filter and the existing <code>POST /delegated/upload</code> keeps it current. Registered jira_keys are excluded from the delegated board/report/numbers (<code>web_delegated._load_issues</code>).</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">blocker_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td class="note-text">defect · task · clarification — fixed display order everywhere (<code>db_blockers.TYPE_SECTIONS</code>)</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td></td><td class="note-text">NULL for clarifications — stripped server-side even if posted (<code>_clean_jira_key</code>), no FK enforced since the key may not be in <code>jira_issues</code> yet</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>List/add/edit:</strong> <code>GET /blockers/</code> · <code>GET/POST /blockers/new</code> · <code>GET/POST /blockers/&lt;id&gt;</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('blocker', blocker_id)</code></div>
+  </div>
+
+  <!-- blocker_links -->
+  <div class="table-card" id="blocker_links">
+    <div class="table-card-header">
+      <span class="tname">blocker_links</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Many-to-many: which delegated tickets a blocker blocks. Schema created 2026-08-27 alongside <code>blockers</code>; the attach-to-tickets UI (picker on the board's blocked rows + ticket detail) is build plan step 8 — table exists but is unused until then.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">blocker_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → blockers</span></td><td></td></tr>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → jira_issues</span></td><td class="note-text">the delegated ticket it blocks</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Storage:</strong> <code>app/db/blockers.py</code> &nbsp;·&nbsp; <strong>Status:</strong> schema only — see build plan step 8</div>
   </div>
 </div>
 

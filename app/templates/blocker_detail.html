@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{% if is_new %}New Blocker{% else %}Edit Blocker{% endif %} — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('blockers.blockers_list') }}">Blockers</a>
+  <span>›</span>
+  <span>{% if is_new %}New Blocker{% else %}{{ record.name or ('Blocker ' ~ record.blocker_id) }}{% endif %}</span>
+</div>
+
+<div class="page-header">
+  <h1>{% if is_new %}New Blocker{% else %}Edit Blocker{% endif %}</h1>
+</div>
+
+{% if saved %}
+<div class="saved-banner">Changes saved.</div>
+{% endif %}
+{% if error %}
+<div class="result-box result-box--error" style="margin-bottom:1rem">
+  <div class="result-row"><span class="result-value">{{ error }}</span></div>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('blockers.blocker_new') if is_new else url_for('blockers.blocker_detail', blocker_id=record.blocker_id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-type">Type</label>
+        {% set option_labels = {'defect': 'Defect', 'task': 'Task', 'clarification': 'Business Clarification'} %}
+        <select id="f-type" name="type" onchange="blkToggleJiraKey()">
+          {% for key, _ in types %}
+          <option value="{{ key }}" {% if record.type == key %}selected{% endif %}>{{ option_labels[key] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" name="name"
+               value="{{ record.name or '' }}" required
+               placeholder="What is blocking testing?">
+      </div>
+
+      <div class="form-field" id="f-jira-key-field">
+        <label for="f-jira-key">Jira Key</label>
+        <input type="text" id="f-jira-key" name="jira_key"
+               value="{{ record.jira_key or '' }}"
+               placeholder="e.g. S4ECOM-1234">
+        <p style="font-size:0.78rem;color:#8e8e93;margin-top:0.3rem" id="f-jira-key-hint">
+          Add this key to the delegated Jira export filter — the card's usual upload
+          then keeps its status and comments current here too. Business clarifications
+          have no Jira key.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('blockers.blockers_list') }}" class="btn">Cancel</a>
+    {% if not is_new %}
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+    {% endif %}
+  </div>
+</form>
+
+{% if jira_issue %}
+<div class="detail-card" style="margin-top:1.25rem">
+  <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:0.4rem">
+    Jira — {{ jira_issue.jira_key }}{% if jira_issue.link %} · <a href="{{ jira_issue.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}
+  </div>
+  <p><strong>Status:</strong> {{ jira_issue.jira_status or '—' }}
+     &nbsp;·&nbsp; <strong>Assignee:</strong> {{ jira_issue.jira_assignee or '—' }}</p>
+  {% if jira_issue.summary %}<p>{{ jira_issue.summary }}</p>{% endif %}
+  {% if jira_issue.description %}
+  <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-top:0.6rem">Description</div>
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
+    {{ jira_issue.description | safe }}
+  </div>
+  {% endif %}
+  <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-top:0.6rem">Comments ({{ jira_comments|length }})</div>
+  {% for c in jira_comments %}
+  <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.4rem 0.8rem; font-size:0.82rem; margin-top:0.3rem; background:#fff">
+    {% if c.created %}<div style="color:#999; font-size:0.72rem">{{ c.created }}</div>{% endif %}
+    <div style="overflow-x:auto">{{ c.body | safe }}</div>
+  </div>
+  {% else %}
+  <p style="color:#999; font-size:0.82rem; margin:0.3rem 0 0">No comments.</p>
+  {% endfor %}
+</div>
+{% elif record.jira_key %}
+<p style="color:#888; margin:1rem 0">This jira key is not in the shared Jira store yet — add it to the
+  delegated Jira export filter and upload on the Delegated Testing card.</p>
+{% endif %}
+
+{% if not is_new %}
+{% with entity_type='blocker', entity_id=record.blocker_id %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+{% endif %}
+
+<script>
+function blkToggleJiraKey() {
+  const isClarification = document.getElementById('f-type').value === 'clarification';
+  document.getElementById('f-jira-key-field').style.display = isClarification ? 'none' : '';
+}
+blkToggleJiraKey();
+</script>
+{% endblock %}

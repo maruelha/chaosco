@@ -11,6 +11,8 @@
          title="print-ready status report with the delegated buckets">📄 Status report</a>
       <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn" target="_blank"
          title="counts per bucket">🔢 Numbers</a>
+      <a href="{{ url_for('blockers.blockers_list') }}" class="btn"
+         title="defects/tasks/clarifications blocking tickets — tickets registered here are hidden from this board">🚧 Blockers</a>
       <form method="post" action="{{ url_for('delegated.delegated_upload') }}"
             enctype="multipart/form-data" style="display:inline">
         <input type="file" name="file" accept=".xml" required

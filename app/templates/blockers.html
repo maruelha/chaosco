@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Blockers — Test Coordination{% endblock %}
+
+{% block content %}
+{% set section_color = {'defect': 'blue', 'task': 'teal', 'clarification': 'purple'} %}
+
+{% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block.') %}
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('blockers.blocker_new') }}" class="btn btn-primary">+ Add Blocker</a>
+{% endcall %}
+
+{% for key, label, items in sections %}
+{% call ui.section(label, section_color.get(key, 'slate'), badge=items|length, open=(items|length > 0)) %}
+  {% if items %}
+  {% call ui.table(['Name', 'Jira Key', 'Jira Status', 'Notes', '']) %}
+    {% for b in items %}
+    <tr>
+      <td>{{ b.name }}</td>
+      <td class="mono" style="font-size:0.8rem">
+        {% if b.jira_key %}{{ b.jira_key }}{% else %}—{% endif %}
+      </td>
+      <td>
+        {% if b.jira_key %}
+          {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
+        {% else %}—{% endif %}
+      </td>
+      <td>{{ note_counts.get(b.blocker_id, 0) or '—' }}</td>
+      <td style="text-align:right">
+        <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" class="btn btn-sm">Details</a>
+      </td>
+    </tr>
+    {% endfor %}
+  {% endcall %}
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">No {{ label|lower }} yet.</p>
+  {% endif %}
+{% endcall %}
+{% endfor %}
+{% endblock %}

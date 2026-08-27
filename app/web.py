@@ -137,6 +137,14 @@ from app.web_delegated import bp as _delegated_bp
 _db_delegated.init_schema(_db_path)
 app.register_blueprint(_delegated_bp)
 
+# Blockers (2026-08-27, delegated build plan step 7) — defects/tasks/
+# business clarifications that block Delegated Testing tickets; own entity,
+# own notes thread, excluded from the delegated board by jira_key.
+from app.db import blockers as _db_blockers
+from app.web_blockers import bp as _blockers_bp
+_db_blockers.init_schema(_db_path)
+app.register_blueprint(_blockers_bp)
+
 
 if __name__ == "__main__":
     import threading

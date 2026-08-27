@@ -18,6 +18,7 @@ from flask import (Blueprint, jsonify, redirect, render_template, request,
 
 from app import database
 from app.config_loader import load_config
+from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
 from app.delegated_buckets import BOARD_CSS, bucket_counts, bucket_issues
@@ -39,8 +40,16 @@ def _me() -> str:
 
 
 def _load_issues(conn):
-    """Delegated issues + their comments + latest-comment orders."""
+    """Delegated issues + their comments + latest-comment orders.
+
+    Tickets registered as a BLOCKER (app/db/blockers.py) are excluded here
+    [USER 2026-08-27] — a defect/task that blocks testing must not also show
+    up as a testing ticket to work through; it lives on the Blockers page
+    instead. Same shared jira store, so its status/comments still refresh
+    on the usual delegated upload."""
     issues = db_jira.list_jira_issues(conn, seen_in="delegated")
+    blocker_keys = db_blockers.list_blocker_jira_keys(conn)
+    issues = [i for i in issues if i["jira_key"] not in blocker_keys]
     comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                     for i in issues}
     for i in issues:

@@ -79,6 +79,44 @@ sections while empty; the report shows only non-empty sections.
   `web_next_steps.REGISTRY['delegated']`
 - Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
 
+## Blockers (planning chat + build step 2026-08-27)
+
+Own entity, own module (`app/db/blockers.py` + `app/web_blockers.py`,
+Blueprint `/blockers/`) — a defect, task or business clarification that
+blocks one or more delegated tickets. Design decisions:
+
+- **Own table, not free text.** A blocker (e.g. a pricing defect) commonly
+  blocks several tickets — modelling it as per-ticket `blocked_reason` text
+  would mean retyping the same defect and never being able to ask "what
+  does S4DEF-1 block?". `blockers` (id, type, name, jira_key) is the
+  BLOCKER; `blocker_links` (m:n to delegated jira_key) is the "attach to
+  tickets" step — schema exists, UI comes in build step 8.
+- **Three types, fixed order everywhere**: Defects → Tasks → Business
+  Clarifications (`db_blockers.TYPE_SECTIONS`). Clarifications never carry
+  a jira key — just a name (`_clean_jira_key` strips it even if posted).
+- **No separate upload/import.** A defect/task blocker's live status,
+  description and comments come from the SAME shared jira store the
+  delegated card already refreshes — Marina extends her delegated Jira
+  filter to include the blocker issues, and the existing
+  `POST /delegated/upload` keeps them current by key, same as any other
+  ticket [USER 2026-08-27].
+- **Excluded from the delegated board.** A jira key registered as a
+  blocker is filtered out in `web_delegated._load_issues` (the board,
+  status report and numbers all route through it) — a blocking defect must
+  not also appear as a testing ticket to work through. It only lives on
+  the Blockers page.
+- **"Why blocked" stays as-is for now** [USER 2026-08-27] — decide later
+  whether structured blockers replace that free-text field.
+- Notes: registry entity `blocker` (own thread, `_notes_section.html`).
+- Links: dashboard "Delegated Testing" card + the board toolbar both carry
+  a 🚧 Blockers button.
+- Tests: `tests/test_blockers.py` (storage, list/detail pages, notes,
+  board-exclusion).
+
+Next build steps (see `docs/build_plan.md`): 8 attach blockers to tickets
+(picker + chips + `counts_toward_goal` flag), 9 blocker filter/chips on the
+status report, 10 Management Summary blocker overview + weekly goal.
+
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 
 1. **Excel/ECOM info join**: the `ecom` table rows (filled by the ROE
