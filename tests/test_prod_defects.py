@@ -457,17 +457,26 @@ def test_ecom_spillover_report_excludes_fixed_prod_defects(client):
 
 
 # ---------------------------------------------------------------------------
-# Risks split into their own table [USER 2026-08-27]
+# Risks + Limitations split into their own tables [USER 2026-08-27]
 
-def test_risks_split_into_their_own_table(client):
+def _split_sections(html):
+    """(main_html, limitation_html, risk_html) — the page in table order."""
+    main_html, rest = html.split("🔧 Limitations")
+    limitation_html, risk_html = rest.split("⚠ Risks")
+    return main_html, limitation_html, risk_html
+
+
+def test_risks_and_limitations_split_into_their_own_tables(client):
     _new(client, short_description="ADefect", scenario="GWC", type="Defect")
     _new(client, short_description="ALimitation", scenario="GWC", type="Limitation")
     _new(client, short_description="ARisk", scenario="GWC", type="Risk")
 
     html = client.get("/prod_defects").get_data(as_text=True)
-    main_html, risk_html = html.split("⚠ Risks")
-    assert "ADefect" in main_html and "ALimitation" in main_html
-    assert "ARisk" not in main_html
+    main_html, limitation_html, risk_html = _split_sections(html)
+    assert "ADefect" in main_html
+    assert "ALimitation" not in main_html and "ARisk" not in main_html
+    assert "ALimitation" in limitation_html
+    assert "ADefect" not in limitation_html and "ARisk" not in limitation_html
     assert "ARisk" in risk_html
     assert "ADefect" not in risk_html and "ALimitation" not in risk_html
 
@@ -477,7 +486,7 @@ def test_risk_table_omits_biz_impact_how_to_handle_confluence(client):
         biz_impact="Big impact text", how_to_handle="Handle it this way",
         confluence="https://confluence.example/risk")
     html = client.get("/prod_defects").get_data(as_text=True)
-    _, risk_html = html.split("⚠ Risks")
+    _, _, risk_html = _split_sections(html)
     assert "RiskRow" in risk_html
     assert "Big impact text" not in risk_html
     assert "Handle it this way" not in risk_html
@@ -486,10 +495,24 @@ def test_risk_table_omits_biz_impact_how_to_handle_confluence(client):
     assert "GWC" in risk_html
 
 
-def test_empty_risk_table_shows_its_own_empty_state(client):
+def test_limitation_table_omits_biz_impact_sub_case_confluence(client):
+    _new(client, short_description="LimitationRow", scenario="GWC", type="Limitation",
+        biz_impact="Big impact text", sub_case="a specific sub-case",
+        confluence="https://confluence.example/limitation")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    _, limitation_html, _ = _split_sections(html)
+    assert "LimitationRow" in limitation_html
+    assert "Big impact text" not in limitation_html
+    assert "a specific sub-case" not in limitation_html
+    assert "https://confluence.example/limitation" not in limitation_html
+    assert "GWC" in limitation_html
+
+
+def test_empty_risk_and_limitation_tables_show_their_own_empty_state(client):
     _new(client, short_description="NoRisksHere", scenario="GWC", type="Defect")
     html = client.get("/prod_defects").get_data(as_text=True)
-    _, risk_html = html.split("⚠ Risks")
+    _, limitation_html, risk_html = _split_sections(html)
+    assert "No limitations currently listed." in limitation_html
     assert "No risks currently listed." in risk_html
 
 
@@ -501,9 +524,33 @@ def test_mark_fixed_moves_a_risk_row_to_the_archives_risk_table(client):
     assert "ArchivedRisk" not in html
 
     html = client.get("/prod_defects/archive").get_data(as_text=True)
-    main_html, risk_html = html.split("⚠ Risks")
-    assert "ArchivedRisk" not in main_html
+    main_html, limitation_html, risk_html = _split_sections(html)
+    assert "ArchivedRisk" not in main_html and "ArchivedRisk" not in limitation_html
     assert "ArchivedRisk" in risk_html
+
+
+def test_mark_fixed_moves_a_limitation_row_to_the_archives_limitation_table(client):
+    limitation_id = _new(client, short_description="ArchivedLimitation", scenario="GWC",
+                         type="Limitation")
+    client.post(f"/prod_defects/{limitation_id}/fixed", data={"value": "1"})
+
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "ArchivedLimitation" not in html
+
+    html = client.get("/prod_defects/archive").get_data(as_text=True)
+    main_html, limitation_html, risk_html = _split_sections(html)
+    assert "ArchivedLimitation" not in main_html and "ArchivedLimitation" not in risk_html
+    assert "ArchivedLimitation" in limitation_html
+
+
+def test_archive_fixed_count_badge_includes_all_three_tables(client):
+    defect_id = _new(client, short_description="D", scenario="GWC", type="Defect")
+    limitation_id = _new(client, short_description="L", scenario="GWC", type="Limitation")
+    risk_id = _new(client, short_description="R", scenario="GWC", type="Risk")
+    for rid in (defect_id, limitation_id, risk_id):
+        client.post(f"/prod_defects/{rid}/fixed", data={"value": "1"})
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "🗄 Archive (3)" in html
 
 
 def test_detail_page_shows_fixed_badge_and_toggle_button(client):

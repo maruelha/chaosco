@@ -512,6 +512,31 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    a column removal that only makes sense if that split happens.
    Tests: `tests/test_prod_defects.py` (+6 new, 2 rewritten for the new
    column set; 32 total in the file); full suite 539 green.
+9. ~~Limitations split into their own table too~~ ✅ DONE 2026-08-27
+   [USER, confirming the "maybe" from step 8: "split limitations into
+   their own table too"]. `_split_risks` generalised to `_split_by_type`
+   → 3-way (main/limitation/risk); main table now keeps only
+   Defect/Accepted Defect/blank. New "🔧 Limitations" table, same
+   narrower column set as Risks (no Biz Impact/Sub-case — wasn't asked
+   for Limitations specifically, mirrored the established Risks
+   convention rather than invent a different one) — placed between the
+   main table and Risks (matches `_PROD_DEFECT_TYPES` order: Defect,
+   Limitation, Risk, Accepted Defect). Template refactor: the two
+   narrow-table blocks (previously the Risks table's own markup,
+   duplicated) became one `kpd_narrow_table(title, rows, tbody_id,
+   empty_text, archived)` macro, called twice — avoids tripling the
+   structure now that there are two of these tables. Archive's fixed-count
+   badge sums all three groups. Deliberately NOT done — dropping the Type
+   column, which was conditional ("and then we can lose the Type column")
+   on this split: Type still distinguishes Defect from Accepted Defect in
+   the main table, so it isn't redundant yet; left as-is unless asked.
+   Tests: `tests/test_prod_defects.py` (+4 new, 3 rewritten to correctly
+   distinguish the 3 sections rather than false-positive on the
+   Limitations table landing "before Risks" in the page; 35 total in the
+   file); full suite 542 green. Verified against a disposable copy of the
+   real DB — same finding as step 8: her 10 existing rows also have
+   blank Type, so none exercise the split yet; page still renders
+   cleanly, everything lands in the main table.
 
 ### Cross-vertical components — done ad-hoc
 

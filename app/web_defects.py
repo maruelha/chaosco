@@ -146,12 +146,13 @@ def defect_toggle_daily(defect_id: str):
     return {"ok": True}
 
 
-def _split_risks(rows: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Risks get their own table below the main one [USER 2026-08-27] —
-    everything else (Defect/Limitation/Accepted Defect/blank) stays put."""
+def _split_by_type(rows: list[dict]) -> tuple[list[dict], list[dict], list[dict]]:
+    """Limitations and Risks each get their own table below the main one
+    [USER 2026-08-27] — the main table keeps Defect/Accepted Defect/blank."""
+    limitation_rows = [r for r in rows if (r.get("type") or "") == "Limitation"]
     risk_rows = [r for r in rows if (r.get("type") or "") == "Risk"]
-    other_rows = [r for r in rows if (r.get("type") or "") != "Risk"]
-    return other_rows, risk_rows
+    other_rows = [r for r in rows if (r.get("type") or "") not in ("Limitation", "Risk")]
+    return other_rows, limitation_rows, risk_rows
 
 
 @app.route("/prod_defects")
@@ -170,9 +171,9 @@ def prod_defects_list():
         fixed_count = len(database.list_known_prod_defects(conn, status="fixed"))
     finally:
         conn.close()
-    rows, risk_rows = _split_risks(rows)
+    rows, limitation_rows, risk_rows = _split_by_type(rows)
     return render_template(
-        "prod_defects.html", rows=rows, risk_rows=risk_rows,
+        "prod_defects.html", rows=rows, limitation_rows=limitation_rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
@@ -200,16 +201,17 @@ def prod_defects_archive():
             relevant_core_south=relevant_cs or None, relevant_gbs_ops=relevant_gbs or None)
     finally:
         conn.close()
-    rows, risk_rows = _split_risks(rows)
+    rows, limitation_rows, risk_rows = _split_by_type(rows)
     return render_template(
-        "prod_defects.html", rows=rows, risk_rows=risk_rows,
+        "prod_defects.html", rows=rows, limitation_rows=limitation_rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
         sel_relevant_cs=relevant_cs, sel_relevant_gbs=relevant_gbs,
         review_comment_count=0,
         confluence_url="",
-        archived=True, fixed_count=len(rows) + len(risk_rows))
+        archived=True,
+        fixed_count=len(rows) + len(limitation_rows) + len(risk_rows))
 
 
 _PROD_DEFECT_TYPES = ["Defect", "Limitation", "Risk", "Accepted Defect"]
