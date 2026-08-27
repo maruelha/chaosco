@@ -537,6 +537,46 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    real DB — same finding as step 8: her 10 existing rows also have
    blank Type, so none exercise the split yet; page still renders
    cleanly, everything lands in the main table.
+10. ~~Expandable-row redesign + Channel/Type columns dropped + sort by
+    Scenario~~ ✅ DONE 2026-08-27 [USER: "I am having difficulty working
+    with the table now as I can only scroll at the bottom maybe we can
+    change to a design where we can collapse and expand a row?"; "the
+    risk and limitations do NOT need the mark as fixed button or the
+    core south GBS ops check list visibe on the front"; "subcase belongs
+    directly after scenario - and we dont need type anymore after
+    spitting out"; "since we have the channel in the unique key we dont
+    need teh channel column (but please allow to filter)"; "can the
+    lists please be presorted according to scenarios?"]. The wide
+    11-/9-column tables (needing `overflow-x:auto`, scrollbar only
+    reachable at the very bottom) are gone — each list is now a stack of
+    `<details class="kpd-row">` rows (reused the CORE SOUTH Smoke
+    Testing accordion CSS, generalised the selector rather than
+    duplicating it: `details.smoke-scenario, details.kpd-row { ... }`).
+    Collapsed summary: ID · Scenario · **Sub-case (directly after
+    Scenario, main table only)** · Short Description · Edit (pinned
+    right, `event.stopPropagation()` so it doesn't also toggle the row).
+    Channel and Type are both gone as columns — Channel because it's
+    already the id's prefix (ECOM-/RETAIL-) [USER], Type because which
+    list a row is in already says that now the split exists — but
+    **Channel stays filterable** [USER: "but please allow to filter"]
+    while the Type filter dropdown was dropped along with the column (no
+    non-redundant answer with rows already permanently split by type).
+    Limitations/Risks rows lost the Mark Fixed button and the Core
+    South/GBS Ops checkboxes ENTIRELY (not hidden — not rendered at all;
+    still toggleable on the detail page, this is a list-view-only
+    removal) — only Edit + Delete remain there. `kpd_row(row, archived,
+    narrow)` macro drives both variants; `kpd_list(...)` wraps rows +
+    empty-state, replacing the old table/tbody + colspan JS with a
+    simpler "does this container have any `.kpd-row` children" check.
+    Sort order: `list_known_prod_defects` changed from `created_at DESC`
+    to Scenario (case-insensitive, blanks last, portable — no
+    `COLLATE NOCASE`). Tests: `tests/test_prod_defects.py` (+2 new
+    [narrow rows have no fix/checkboxes; sort order], 3 rewritten for
+    the new DOM shape — `<details data-id>`/`</details>` instead of
+    `<tr>`/`</tr>`, no more literal column-header-text assertions; 36
+    total in the file); full suite 543 green. Verified against a
+    disposable copy of the real DB: no wide table, both filters/dropdowns
+    behave as expected, real scenario names sort correctly.
 
 ### Cross-vertical components — done ad-hoc
 

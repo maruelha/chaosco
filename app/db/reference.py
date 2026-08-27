@@ -194,7 +194,11 @@ def list_known_prod_defects(conn: sqlite3.Connection,
         sql += " AND k.relevant_gbs_ops = 1"
     elif relevant_gbs_ops == "no":
         sql += " AND k.relevant_gbs_ops = 0"
-    sql += " ORDER BY k.created_at DESC"
+    # Presorted by Scenario [USER 2026-08-27]; blank scenario last, ties by
+    # id for a stable order. LOWER() keeps this Postgres-portable (no
+    # SQLite-only COLLATE NOCASE).
+    sql += """ ORDER BY (k.scenario IS NULL OR k.scenario = ''),
+               LOWER(k.scenario), k.id"""
     return _rows_to_dicts(conn.execute(sql, params))
 
 

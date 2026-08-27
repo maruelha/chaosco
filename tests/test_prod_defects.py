@@ -167,11 +167,11 @@ def test_relevant_checkboxes_round_trip(client):
     assert row["relevant_gbs_ops"] == 1
 
 
-def test_relevant_columns_shown_and_checked_in_list(client):
+def test_relevant_checkboxes_shown_and_checked_in_expanded_row(client):
     record_id = _new(client, relevant_core_south="on")
     html = client.get("/prod_defects").get_data(as_text=True)
-    assert "Core South" in html and "GBS Ops" in html
-    row_html = html.split(f'<tr data-id="{record_id}">')[1].split("</tr>")[0]
+    assert "Relevant for Core South" in html and "Relevant for GBS Ops" in html
+    row_html = html.split(f'<details class="kpd-row" data-id="{record_id}">')[1].split("</details>")[0]
     cs_cb = row_html.split('class="kpd-cs-toggle"')[1].split(">")[0]
     gbs_cb = row_html.split('class="kpd-gbs-toggle"')[1].split(">")[0]
     assert "checked" in cs_cb
@@ -220,14 +220,22 @@ def test_relevant_filters_narrow_the_list(client):
     assert cs_id  # keep the id referenced
 
 
-def test_relevant_columns_on_risk_table(client):
-    risk_id = _new(client, short_description="RiskWithFlag", scenario="GWC", type="Risk",
-                   relevant_gbs_ops="on")
+def test_risk_and_limitation_rows_have_no_fixed_button_or_relevant_checkboxes(client):
+    """[USER 2026-08-27]: "the risk and limitations do NOT need the mark
+    as fixed button or the core south GBS ops check list" — Delete stays,
+    everything else is dropped, not just hidden."""
+    _new(client, short_description="RiskRow", scenario="GWC", type="Risk", relevant_gbs_ops="on")
+    _new(client, short_description="LimitationRow", scenario="GWC", type="Limitation",
+        relevant_core_south="on")
     html = client.get("/prod_defects").get_data(as_text=True)
-    _, risk_html = html.split("⚠ Risks")
-    row_html = risk_html.split(f'<tr data-id="{risk_id}">')[1].split("</tr>")[0]
-    gbs_cb = row_html.split('class="kpd-gbs-toggle"')[1].split(">")[0]
-    assert "checked" in gbs_cb
+    body = html.split("<script>")[0]  # scripts always reference the button/checkbox classes
+    _, limitation_html, risk_html = _split_sections(body)
+
+    for section_html in (limitation_html, risk_html):
+        assert "kpd-fix-btn" not in section_html
+        assert "kpd-cs-toggle" not in section_html
+        assert "kpd-gbs-toggle" not in section_html
+        assert "kpd-del-btn" in section_html
 
 
 def test_legacy_scenario_not_in_fixed_list_stays_visible(client):
@@ -238,25 +246,24 @@ def test_legacy_scenario_not_in_fixed_list_stays_visible(client):
         or "A very old free-text scenario (current)</option>" in html
 
 
-def test_list_columns_filters_and_note_count(client):
-    ecom_id = _new(client, short_description="EcomIssue", scenario="GWC", channel="ECOM", type="Defect")
+def test_list_shows_id_scenario_subcase_and_filters(client):
+    ecom_id = _new(client, short_description="EcomIssue", scenario="GWC", channel="ECOM",
+                   type="Defect", sub_case="a specific sub-case")
     _new(client, short_description="RetailIssue", scenario="SFDC", channel="Retail", type="Risk")
 
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "Known Production Issues" in html
-    for col in ("ID", "Channel", "Type", "Scenario", "Short Description", "Biz Impact",
-               "Sub-case"):
-        assert col in html
+    assert "ECOM-001" in html  # display id shown
+    assert "a specific sub-case" in html
     assert "How to handle" not in html  # Confluence still appears in the header link (config-driven)
     assert "EcomIssue" in html and "RetailIssue" in html  # RetailIssue (Risk) is in the Risks table
+    assert 'id="f-channel"' in html  # Channel stays filterable even though it's not a column
+    assert 'id="f-type"' not in html  # Type filter dropped along with the column
 
     html = client.get("/prod_defects?channel=ECOM").get_data(as_text=True)
     assert "EcomIssue" in html and "RetailIssue" not in html
 
     html = client.get("/prod_defects?scenario=SFDC").get_data(as_text=True)
-    assert "RetailIssue" in html and "EcomIssue" not in html
-
-    html = client.get("/prod_defects?type=Risk").get_data(as_text=True)
     assert "RetailIssue" in html and "EcomIssue" not in html
 
     conn = database.get_connection(client.db_path)
@@ -266,6 +273,18 @@ def test_list_columns_filters_and_note_count(client):
         conn.close()
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "Edit (1)" in html
+
+
+def test_list_presorted_by_scenario(client):
+    _new(client, short_description="C", scenario="Zebra scenario")
+    _new(client, short_description="A", scenario="Apple scenario")
+    _new(client, short_description="B", scenario="Middle scenario")
+    conn = database.get_connection(client.db_path)
+    try:
+        rows = database.list_known_prod_defects(conn)
+    finally:
+        conn.close()
+    assert [r["scenario"] for r in rows] == ["Apple scenario", "Middle scenario", "Zebra scenario"]
 
 
 def test_marketplace_scenario_option_available(client):

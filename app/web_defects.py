@@ -159,13 +159,12 @@ def _split_by_type(rows: list[dict]) -> tuple[list[dict], list[dict], list[dict]
 def prod_defects_list():
     channel = request.args.get("channel", "").strip()
     scenario = request.args.get("scenario", "").strip()
-    type_ = request.args.get("type", "").strip()
     relevant_cs = request.args.get("relevant_core_south", "").strip()
     relevant_gbs = request.args.get("relevant_gbs_ops", "").strip()
     conn = _get_conn()
     try:
         rows = database.list_known_prod_defects(
-            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None,
+            conn, channel=channel or None, scenario=scenario or None,
             relevant_core_south=relevant_cs or None, relevant_gbs_ops=relevant_gbs or None)
         review_comment_count = len(database.list_review_comments(conn))
         fixed_count = len(database.list_known_prod_defects(conn, status="fixed"))
@@ -175,8 +174,7 @@ def prod_defects_list():
     return render_template(
         "prod_defects.html", rows=rows, limitation_rows=limitation_rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
-        types=_PROD_DEFECT_TYPES,
-        sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        sel_channel=channel, sel_scenario=scenario,
         sel_relevant_cs=relevant_cs, sel_relevant_gbs=relevant_gbs,
         review_comment_count=review_comment_count,
         confluence_url=_cfg.get("prod_defects_confluence_url", ""),
@@ -190,13 +188,12 @@ def prod_defects_archive():
     [USER 2026-08-27]. Reopen brings a row back to the active list."""
     channel = request.args.get("channel", "").strip()
     scenario = request.args.get("scenario", "").strip()
-    type_ = request.args.get("type", "").strip()
     relevant_cs = request.args.get("relevant_core_south", "").strip()
     relevant_gbs = request.args.get("relevant_gbs_ops", "").strip()
     conn = _get_conn()
     try:
         rows = database.list_known_prod_defects(
-            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None,
+            conn, channel=channel or None, scenario=scenario or None,
             status="fixed",
             relevant_core_south=relevant_cs or None, relevant_gbs_ops=relevant_gbs or None)
     finally:
@@ -205,8 +202,7 @@ def prod_defects_archive():
     return render_template(
         "prod_defects.html", rows=rows, limitation_rows=limitation_rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
-        types=_PROD_DEFECT_TYPES,
-        sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        sel_channel=channel, sel_scenario=scenario,
         sel_relevant_cs=relevant_cs, sel_relevant_gbs=relevant_gbs,
         review_comment_count=0,
         confluence_url="",
