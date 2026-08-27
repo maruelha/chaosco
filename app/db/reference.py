@@ -209,6 +209,8 @@ def create_known_prod_defect(
     sub_case: str | None = None,
     how_to_detect: str | None = None,
     how_to_handle: str | None = None,
+    relevant_core_south: bool = False,
+    relevant_gbs_ops: bool = False,
 ) -> dict:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
@@ -217,11 +219,14 @@ def create_known_prod_defect(
                (short_description, scenario, description, biz_impact,
                 numbers, refs, next_steps, comments, confluence,
                 channel, type, sub_case, how_to_detect, how_to_handle,
+                relevant_core_south, relevant_gbs_ops,
                 created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (short_description, scenario, description, biz_impact,
              numbers, refs, next_steps, comments, confluence,
-             channel, type_, sub_case, how_to_detect, how_to_handle, now, now),
+             channel, type_, sub_case, how_to_detect, how_to_handle,
+             1 if relevant_core_south else 0, 1 if relevant_gbs_ops else 0,
+             now, now),
         )
         new_id = cur.lastrowid
     return get_known_prod_defect(conn, new_id)
@@ -244,6 +249,8 @@ def update_known_prod_defect(
     sub_case: str | None = None,
     how_to_detect: str | None = None,
     how_to_handle: str | None = None,
+    relevant_core_south: bool = False,
+    relevant_gbs_ops: bool = False,
 ) -> dict | None:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
@@ -252,11 +259,13 @@ def update_known_prod_defect(
                short_description=?, scenario=?, description=?, biz_impact=?,
                numbers=?, refs=?, next_steps=?, comments=?, confluence=?,
                channel=?, type=?, sub_case=?, how_to_detect=?, how_to_handle=?,
+               relevant_core_south=?, relevant_gbs_ops=?,
                updated_at=?
                WHERE id=?""",
             (short_description, scenario, description, biz_impact,
              numbers, refs, next_steps, comments, confluence,
              channel, type_, sub_case, how_to_detect, how_to_handle,
+             1 if relevant_core_south else 0, 1 if relevant_gbs_ops else 0,
              now, record_id),
         )
     return get_known_prod_defect(conn, record_id)

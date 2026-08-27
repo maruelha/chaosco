@@ -72,6 +72,33 @@ def test_create_and_edit_round_trip_new_fields(client):
     assert row["how_to_handle"] == "escalate"
 
 
+def test_relevant_checkboxes_round_trip(client):
+    record_id = _new(client, relevant_core_south="on")  # GBS Ops left unchecked
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["relevant_core_south"] == 1
+    assert row["relevant_gbs_ops"] == 0
+    html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)
+    cs_field = html.split('id="f-relevant-cs"')[1].split(">")[0]
+    gbs_field = html.split('id="f-relevant-gbs"')[1].split(">")[0]
+    assert "checked" in cs_field
+    assert "checked" not in gbs_field
+
+    client.post(f"/prod_defects/{record_id}", data={
+        "short_description": "issue", "scenario": "GWC", "relevant_gbs_ops": "on",
+    })  # Core South left unchecked this time
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["relevant_core_south"] == 0
+    assert row["relevant_gbs_ops"] == 1
+
+
 def test_legacy_scenario_not_in_fixed_list_stays_visible(client):
     record_id = _new(client, scenario="A very old free-text scenario")
     html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)
@@ -286,6 +313,56 @@ def test_ecom_spillover_report_excludes_fixed_prod_defects(client):
     html = client.get("/report/ecom").get_data(as_text=True)
     assert "HiddenFromReport" not in html
     assert "ShownInReport" in html
+
+
+# ---------------------------------------------------------------------------
+# Risks split into their own table [USER 2026-08-27]
+
+def test_risks_split_into_their_own_table(client):
+    _new(client, short_description="ADefect", scenario="GWC", type="Defect")
+    _new(client, short_description="ALimitation", scenario="GWC", type="Limitation")
+    _new(client, short_description="ARisk", scenario="GWC", type="Risk")
+
+    html = client.get("/prod_defects").get_data(as_text=True)
+    main_html, risk_html = html.split("⚠ Risks")
+    assert "ADefect" in main_html and "ALimitation" in main_html
+    assert "ARisk" not in main_html
+    assert "ARisk" in risk_html
+    assert "ADefect" not in risk_html and "ALimitation" not in risk_html
+
+
+def test_risk_table_omits_biz_impact_how_to_handle_confluence(client):
+    _new(client, short_description="RiskRow", scenario="GWC", type="Risk",
+        biz_impact="Big impact text", how_to_handle="Handle it this way",
+        confluence="https://confluence.example/risk")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    _, risk_html = html.split("⚠ Risks")
+    assert "RiskRow" in risk_html
+    assert "Big impact text" not in risk_html
+    assert "Handle it this way" not in risk_html
+    assert "https://confluence.example/risk" not in risk_html
+    # channel/type/scenario/short description still there
+    assert "GWC" in risk_html
+
+
+def test_empty_risk_table_shows_its_own_empty_state(client):
+    _new(client, short_description="NoRisksHere", scenario="GWC", type="Defect")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    _, risk_html = html.split("⚠ Risks")
+    assert "No risks currently listed." in risk_html
+
+
+def test_mark_fixed_moves_a_risk_row_to_the_archives_risk_table(client):
+    risk_id = _new(client, short_description="ArchivedRisk", scenario="GWC", type="Risk")
+    client.post(f"/prod_defects/{risk_id}/fixed", data={"value": "1"})
+
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "ArchivedRisk" not in html
+
+    html = client.get("/prod_defects/archive").get_data(as_text=True)
+    main_html, risk_html = html.split("⚠ Risks")
+    assert "ArchivedRisk" not in main_html
+    assert "ArchivedRisk" in risk_html
 
 
 def test_detail_page_shows_fixed_badge_and_toggle_button(client):

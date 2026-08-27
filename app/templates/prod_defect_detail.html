@@ -67,6 +67,18 @@
       </div>
 
       <div class="form-field">
+        <label>Relevant for</label>
+        <label style="font-weight:400; display:inline-flex; align-items:center; gap:0.35rem; margin-right:1.2rem; cursor:pointer">
+          <input type="checkbox" id="f-relevant-cs" name="relevant_core_south"
+                 {% if record.relevant_core_south %}checked{% endif %}> Core South
+        </label>
+        <label style="font-weight:400; display:inline-flex; align-items:center; gap:0.35rem; cursor:pointer">
+          <input type="checkbox" id="f-relevant-gbs" name="relevant_gbs_ops"
+                 {% if record.relevant_gbs_ops %}checked{% endif %}> GBS Ops
+        </label>
+      </div>
+
+      <div class="form-field">
         <label for="f-shortdesc">Short Description</label>
         <input type="text" id="f-shortdesc" name="short_description" value="{{ record.short_description or '' }}">
       </div>

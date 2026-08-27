@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Known Production Issues{% if archived %} — Archive{% endif %}{% endblock %}
 
+{% macro kpd_actions(row, archived) %}
+<a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
+{% if archived %}
+<button class="btn btn-sm kpd-reopen-btn" title="bring this back to the active list">↺ Reopen</button>
+{% else %}
+<button class="btn btn-sm kpd-fix-btn" title="archive — kept for reference, out of the active list and reports">✓ Mark Fixed</button>
+{% endif %}
+<button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
+{% endmacro %}
+
 {% block content %}
 <div class="page-header">
   <div class="page-header-row">
@@ -81,7 +91,8 @@
         <th style="width:100px"></th>
       </tr>
     </thead>
-    <tbody id="kpd-tbody">
+    <tbody id="kpd-tbody"
+           data-empty="{% if archived %}Nothing archived yet — &quot;✓ Mark Fixed&quot; on the active list moves an item here.{% else %}No entries yet. Click &quot;+ Add New&quot; to get started.{% endif %}">
     {% for row in rows %}
       <tr data-id="{{ row.id }}">
         <td>{{ row.channel or '' }}</td>
@@ -91,15 +102,7 @@
         <td style="white-space:normal;word-break:break-word">{{ row.biz_impact or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.how_to_handle or '' }}</td>
         <td>{{ row.confluence or '' }}</td>
-        <td class="kpd-actions">
-          <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
-          {% if archived %}
-          <button class="btn btn-sm kpd-reopen-btn" title="bring this back to the active list">↺ Reopen</button>
-          {% else %}
-          <button class="btn btn-sm kpd-fix-btn" title="archive — kept for reference, out of the active list and reports">✓ Mark Fixed</button>
-          {% endif %}
-          <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
-        </td>
+        <td class="kpd-actions">{{ kpd_actions(row, archived) }}</td>
       </tr>
     {% else %}
       <tr><td colspan="8" class="table-empty">{% if archived %}Nothing archived yet — "✓ Mark Fixed" on the active list moves an item here.{% else %}No entries yet. Click "+ Add New" to get started.{% endif %}</td></tr>
@@ -108,30 +111,54 @@
   </table>
 </div>
 
-<script>
-const EMPTY_ROW_HTML = {% if archived %}
-  '<td colspan="8" class="table-empty">Nothing archived yet — &quot;✓ Mark Fixed&quot; on the active list moves an item here.</td>'
-{% else %}
-  '<td colspan="8" class="table-empty">No entries yet. Click "+ Add New" to get started.</td>'
-{% endif %};
+<h2 style="margin:1.5rem 0 0.5rem; font-size:1.1rem">⚠ Risks</h2>
+<div class="table-wrap" style="overflow-x:auto">
+  <table style="min-width:700px">
+    <thead>
+      <tr>
+        <th style="width:90px">Channel</th>
+        <th style="width:110px">Type</th>
+        <th style="width:220px">Scenario</th>
+        <th style="width:300px">Short Description</th>
+        <th style="width:100px"></th>
+      </tr>
+    </thead>
+    <tbody id="kpd-tbody-risk"
+           data-empty="{% if archived %}No archived risks.{% else %}No risks currently listed.{% endif %}">
+    {% for row in risk_rows %}
+      <tr data-id="{{ row.id }}">
+        <td>{{ row.channel or '' }}</td>
+        <td>{{ row.type or '' }}</td>
+        <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
+        <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.short_description or '' }}</td>
+        <td class="kpd-actions">{{ kpd_actions(row, archived) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="table-empty">{% if archived %}No archived risks.{% else %}No risks currently listed.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-function showEmptyRowIfNeeded() {
-  const tbody = document.getElementById('kpd-tbody');
+<script>
+function showEmptyRowIfNeeded(tbody) {
   if (!tbody.querySelector('tr[data-id]')) {
+    const colspan = tbody.closest('table').querySelectorAll('thead th').length;
     const emptyTr = document.createElement('tr');
-    emptyTr.innerHTML = EMPTY_ROW_HTML;
+    emptyTr.innerHTML = `<td colspan="${colspan}" class="table-empty">${tbody.dataset.empty}</td>`;
     tbody.appendChild(emptyTr);
   }
 }
 
 async function toggleFixed(tr, fixed) {
-  const id   = tr.dataset.id;
-  const body = new URLSearchParams({ value: fixed ? '1' : '0' });
-  const res  = await fetch(`/prod_defects/${id}/fixed`, { method: 'POST', body });
-  const json = await res.json();
+  const id    = tr.dataset.id;
+  const tbody = tr.closest('tbody');
+  const body  = new URLSearchParams({ value: fixed ? '1' : '0' });
+  const res   = await fetch(`/prod_defects/${id}/fixed`, { method: 'POST', body });
+  const json  = await res.json();
   if (!json.ok) return;
   tr.remove();
-  showEmptyRowIfNeeded();
+  showEmptyRowIfNeeded(tbody);
 }
 document.querySelectorAll('.kpd-fix-btn').forEach(btn => {
   btn.addEventListener('click', () => toggleFixed(btn.closest('tr'), true));
@@ -142,12 +169,13 @@ document.querySelectorAll('.kpd-reopen-btn').forEach(btn => {
 
 async function deleteDef(tr) {
   if (!confirm('Delete this entry? This cannot be undone.')) return;
-  const id  = tr.dataset.id;
-  const res  = await fetch(`/prod_defects/${id}/delete`, { method: 'POST' });
-  const json = await res.json();
+  const id    = tr.dataset.id;
+  const tbody = tr.closest('tbody');
+  const res   = await fetch(`/prod_defects/${id}/delete`, { method: 'POST' });
+  const json  = await res.json();
   if (!json.ok) return;
   tr.remove();
-  showEmptyRowIfNeeded();
+  showEmptyRowIfNeeded(tbody);
 }
 document.querySelectorAll('.kpd-del-btn').forEach(btn => {
   btn.addEventListener('click', () => deleteDef(btn.closest('tr')));

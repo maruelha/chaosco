@@ -146,6 +146,14 @@ def defect_toggle_daily(defect_id: str):
     return {"ok": True}
 
 
+def _split_risks(rows: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Risks get their own table below the main one [USER 2026-08-27] —
+    everything else (Defect/Limitation/Accepted Defect/blank) stays put."""
+    risk_rows = [r for r in rows if (r.get("type") or "") == "Risk"]
+    other_rows = [r for r in rows if (r.get("type") or "") != "Risk"]
+    return other_rows, risk_rows
+
+
 @app.route("/prod_defects")
 def prod_defects_list():
     channel = request.args.get("channel", "").strip()
@@ -159,8 +167,9 @@ def prod_defects_list():
         fixed_count = len(database.list_known_prod_defects(conn, status="fixed"))
     finally:
         conn.close()
+    rows, risk_rows = _split_risks(rows)
     return render_template(
-        "prod_defects.html", rows=rows,
+        "prod_defects.html", rows=rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
@@ -184,14 +193,15 @@ def prod_defects_archive():
             status="fixed")
     finally:
         conn.close()
+    rows, risk_rows = _split_risks(rows)
     return render_template(
-        "prod_defects.html", rows=rows,
+        "prod_defects.html", rows=rows, risk_rows=risk_rows,
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
         review_comment_count=0,
         confluence_url="",
-        archived=True, fixed_count=len(rows))
+        archived=True, fixed_count=len(rows) + len(risk_rows))
 
 
 _PROD_DEFECT_TYPES = ["Defect", "Limitation", "Risk", "Accepted Defect"]
@@ -224,6 +234,8 @@ def prod_defect_new():
                 sub_case=_f("sub_case"),
                 how_to_detect=_f("how_to_detect"),
                 how_to_handle=_f("how_to_handle"),
+                relevant_core_south=bool(request.form.get("relevant_core_south")),
+                relevant_gbs_ops=bool(request.form.get("relevant_gbs_ops")),
             )
         finally:
             conn.close()
@@ -258,6 +270,8 @@ def prod_defect_detail(record_id: int):
                 sub_case=_f("sub_case"),
                 how_to_detect=_f("how_to_detect"),
                 how_to_handle=_f("how_to_handle"),
+                relevant_core_south=bool(request.form.get("relevant_core_south")),
+                relevant_gbs_ops=bool(request.form.get("relevant_gbs_ops")),
             )
         notes = database.list_notes(conn, "prod_defect", str(record_id))
         attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])

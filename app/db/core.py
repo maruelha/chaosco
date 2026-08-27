@@ -392,7 +392,12 @@ def init_db(db_path: Path) -> sqlite3.Connection:
                 # Spillover Report section (all read via the same
                 # list_known_prod_defects default), but stay in the DB and
                 # are reachable on the Archive view for reference/reopen.
-                "status TEXT NOT NULL DEFAULT 'open'", "fixed_at TEXT"):
+                "status TEXT NOT NULL DEFAULT 'open'", "fixed_at TEXT",
+                # Audience checkboxes [USER 2026-08-27] — which team(s) an
+                # issue is relevant for; independent flags, an item can be
+                # both/neither.
+                "relevant_core_south INTEGER NOT NULL DEFAULT 0",
+                "relevant_gbs_ops INTEGER NOT NULL DEFAULT 0"):
         try:
             conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()

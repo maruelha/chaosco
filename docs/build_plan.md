@@ -434,6 +434,34 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    18 total); full suite 525 green. Verified against a disposable copy of
    the real DB: create → mark fixed → gone from active list + archived +
    gone from `/report/ecom` → reopen → back.
+5. ~~Risks split into their own table~~ ✅ DONE 2026-08-27 [USER: "split
+   the risks from the defects and limitations and have the risks in a
+   table below"]. `web_defects._split_risks` splits any `rows` list by
+   `type == 'Risk'`; applied in both `prod_defects_list` and
+   `prod_defects_archive` (so a fixed risk lands in the archive's own
+   Risks table, not mixed with fixed defects/limitations). Template gained
+   a `kpd_actions(row, archived)` macro (Edit/Fix-or-Reopen/Delete) shared
+   by both tables so the buttons aren't tripled. Risk table is
+   deliberately narrower [USER: "I dont need the biz impact or how to
+   handle or confluence I just need channel, type, scenario, short
+   description"] — 4 data columns + actions vs the main table's 7. JS
+   empty-row/toggle helpers generalised to work per-tbody (`data-empty`
+   attribute + `tr.closest('tbody')`) instead of one hardcoded id, so
+   N tables share the same script. Scoped to `/prod_defects` +
+   `/prod_defects/archive` only — the ECOM report's compact
+   "Known Production Issues" section and the "Download for review" offline
+   copy (which already has its own Type filter) were left as-is.
+6. ~~Relevant for Core South / GBS Ops checkboxes~~ ✅ DONE 2026-08-27
+   [USER: "two checkboxes - relevant for Core South and relevant for GBS
+   Ops"]. `known_prod_defects` gained `relevant_core_south` +
+   `relevant_gbs_ops` (INTEGER DEFAULT 0, independent flags). Checkboxes
+   on the create/edit form only for now — not yet surfaced as list
+   columns or filters (say the word if that's wanted too).
+   Tests: `tests/test_prod_defects.py` (+6 across both items, 29 total);
+   full suite 530 green. Verified against a disposable copy of the real
+   DB: risk row excluded from the main table + biz impact/how to
+   handle/confluence hidden from the risk table; checkbox state
+   round-trips through create → detail page.
 
 ### Cross-vertical components — done ad-hoc
 
