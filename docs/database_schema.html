@@ -1230,11 +1230,13 @@
         <tr><td class="col-name">sub_case</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — which specific sub-case of the scenario it happens in (e.g. "several items in one order row, GWC applied")</td></tr>
         <tr><td class="col-name">how_to_detect</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — how Operations can find these cases in the system</td></tr>
         <tr><td class="col-name">how_to_handle</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-06 — what to do about it</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — DEFAULT 'open'; 'fixed' = archived. Drives <code>list_known_prod_defects</code>' default filter, so a fixed row drops out of the active list, both downloads, the email report AND the ECOM Spillover Report section — without being deleted.</td></tr>
+        <tr><td class="col-name">fixed_at</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — set when marked fixed, cleared on reopen</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='prod_defect' (registry label "Known Production Issues")</div>
+    <div class="relations"><strong>Notes:</strong> <code>notes</code> WHERE entity_type='prod_defect' (registry label "Known Production Issues") &nbsp;·&nbsp; <strong>List/Archive:</strong> <code>GET /prod_defects</code> · <code>GET /prod_defects/archive</code> &nbsp;·&nbsp; <strong>Toggle fixed:</strong> <code>POST /prod_defects/&lt;id&gt;/fixed</code></div>
   </div>
 
   <!-- prod_defect_review_comments -->

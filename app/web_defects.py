@@ -156,6 +156,7 @@ def prod_defects_list():
         rows = database.list_known_prod_defects(
             conn, channel=channel or None, scenario=scenario or None, type_=type_ or None)
         review_comment_count = len(database.list_review_comments(conn))
+        fixed_count = len(database.list_known_prod_defects(conn, status="fixed"))
     finally:
         conn.close()
     return render_template(
@@ -164,7 +165,33 @@ def prod_defects_list():
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
         review_comment_count=review_comment_count,
-        confluence_url=_cfg.get("prod_defects_confluence_url", ""))
+        confluence_url=_cfg.get("prod_defects_confluence_url", ""),
+        archived=False, fixed_count=fixed_count)
+
+
+@app.route("/prod_defects/archive")
+def prod_defects_archive():
+    """Fixed items — kept for reference, excluded from the active list,
+    downloads, email report and the ECOM Spillover Report section
+    [USER 2026-08-27]. Reopen brings a row back to the active list."""
+    channel = request.args.get("channel", "").strip()
+    scenario = request.args.get("scenario", "").strip()
+    type_ = request.args.get("type", "").strip()
+    conn = _get_conn()
+    try:
+        rows = database.list_known_prod_defects(
+            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None,
+            status="fixed")
+    finally:
+        conn.close()
+    return render_template(
+        "prod_defects.html", rows=rows,
+        channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
+        types=_PROD_DEFECT_TYPES,
+        sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        review_comment_count=0,
+        confluence_url="",
+        archived=True, fixed_count=len(rows))
 
 
 _PROD_DEFECT_TYPES = ["Defect", "Limitation", "Risk", "Accepted Defect"]
@@ -324,6 +351,17 @@ def prod_defects_review_comment_delete(comment_id: str):
     conn = _get_conn()
     try:
         database.delete_review_comment(conn, comment_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/prod_defects/<int:record_id>/fixed", methods=["POST"])
+def prod_defect_toggle_fixed(record_id: int):
+    value = request.json.get("value", False) if request.is_json else request.form.get("value") == "1"
+    conn = _get_conn()
+    try:
+        database.mark_known_prod_defect_fixed(conn, record_id, value)
     finally:
         conn.close()
     return jsonify({"ok": True})

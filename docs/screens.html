@@ -223,6 +223,7 @@
 
     <li class="group-label">Production Defects</li>
     <li><a href="#prod-defects-list">Prod Defects — List</a></li>
+    <li><a href="#prod-defects-archive">Prod Defects — Archive</a></li>
     <li><a href="#prod-defect-detail">Prod Defects — Detail / New</a></li>
 
     <li class="group-label">CS Follow-Up Tracker</li>
@@ -1305,7 +1306,7 @@
         <span class="feat-label">Filter</span>
         <span class="feat-value">Only rows where <code>area</code> is "ecom" or "omni"</span>
         <span class="feat-label">Extra section</span>
-        <span class="feat-value">Known Production Issues — all rows from <code>known_prod_defects</code>, shown at the bottom</span>
+        <span class="feat-value">Known Production Issues — active (non-fixed) rows from <code>known_prod_defects</code>, shown at the bottom. Fixed/archived items are excluded (2026-08-27) — same <code>list_known_prod_defects</code> default as the list page and downloads.</span>
         <span class="feat-label">Table source</span>
         <span class="feat-value"><code>spillover</code> LEFT JOIN <code>spillover_annotations</code> + <code>known_prod_defects</code></span>
       </div>
@@ -1338,9 +1339,26 @@
         <span class="feat-label">Note count</span>
         <span class="feat-value">Edit button shows "Edit (N)" when the row has notes, matching the other boards</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot, scripts stripped, for email) · <span class="pill pill-action">📝 Download for review</span> (interactive offline copy, see below) · <span class="pill pill-action">📥 Reviewer feedback</span> (badge = uploaded comment count; see below) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · Click row → Detail screen</span>
+        <span class="feat-value"><span class="pill pill-action">+ New</span> · <span class="pill pill-action">🗄 Archive</span> (fixed-item count badge, added 2026-08-27; see below) · <span class="pill pill-action">⬇ Download HTML</span> (dated standalone snapshot, scripts stripped, for email) · <span class="pill pill-action">📝 Download for review</span> (interactive offline copy, see below) · <span class="pill pill-action">📥 Reviewer feedback</span> (badge = uploaded comment count; see below) · <span class="pill pill-action">✉ Send via email</span> (links to Email Reports with this report pre-ticked) · per row: <span class="pill pill-action">Edit</span> · <span class="pill pill-action">✓ Mark Fixed</span> (AJAX, row disappears — archived, not deleted) · <span class="pill pill-action">Delete</span></span>
         <span class="feat-label">Table source</span>
-        <span class="feat-value"><code>known_prod_defects</code> (note_count via subquery on <code>notes</code>)</span>
+        <span class="feat-value"><code>known_prod_defects</code> (note_count via subquery on <code>notes</code>) — <code>list_known_prod_defects</code> defaults to <code>status='open'</code>, so fixed rows never appear here (2026-08-27)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Archive -->
+  <div class="screen-card" id="prod-defects-archive">
+    <div class="screen-card-header">
+      <span class="screen-title">Known Production Issues — Archive</span>
+      <span class="screen-url">GET /prod_defects/archive</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-27 [USER: "mark something as fixed - and it is then removed from the list - archived so to speak - so I can check it (it is not deleted) but it is also not added to the report"]. Same template and columns as the List, filtered to <code>status='fixed'</code> — a place to check fixed items without them cluttering the active list, downloads, email report, or the ECOM Spillover Report section. Reached from the List's 🗄 Archive button (badge = fixed count).</span>
+      <div class="features">
+        <span class="feat-label">Difference from the active list</span>
+        <span class="feat-value">Header actions trimmed to just "← Active List" (no +New/Download/Email — this view isn't itself a report). Per-row action is <span class="pill pill-action">↺ Reopen</span> instead of ✓ Mark Fixed; Delete stays available.</span>
+        <span class="feat-label">Reopen</span>
+        <span class="feat-value">Same <code>POST /prod_defects/&lt;id&gt;/fixed</code> toggle (value=0) — the row disappears from Archive and reappears on the active list, <code>fixed_at</code> cleared.</span>
       </div>
     </div>
   </div>
@@ -1357,7 +1375,7 @@
         <span class="feat-label">Fields</span>
         <span class="feat-value">Channel (ECOM/Retail) · Type (Defect/Limitation/Risk/Accepted Defect) · Scenario (fixed dropdown — a legacy free-text value not in the list stays selectable as "&lt;value&gt; (current)", never silently lost) · Short Description · Description ("what the defect is") · Sub-case ("which specific sub-case of the scenario it happens in") · Business Impact · How to detect ("how Operations can find these cases in the system") · How to handle · Numbers · References · Next Steps · Comments · Confluence link — all added 2026-08-06 except Numbers/References/Next Steps/Comments/Confluence (pre-existing)</span>
         <span class="feat-label">Actions</span>
-        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation) · <span class="pill pill-action">+ Add note</span> (generic notes module, with attachments)</span>
+        <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">✓ Mark Fixed</span> / <span class="pill pill-action">↺ Reopen</span> (2026-08-27 — same toggle as the list; a FIXED chip shows next to the title when archived) · <span class="pill pill-action">Delete</span> (AJAX, redirects to list after confirmation) · <span class="pill pill-action">+ Add note</span> (generic notes module, with attachments)</span>
         <span class="feat-label">Flash</span>
         <span class="feat-value">Green "Saved." banner on return from POST</span>
         <span class="feat-label">Table written</span>

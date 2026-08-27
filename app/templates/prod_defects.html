@@ -1,20 +1,29 @@
 {% extends "base.html" %}
-{% block title %}Known Production Issues{% endblock %}
+{% block title %}Known Production Issues{% if archived %} — Archive{% endif %}{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div class="page-header-row">
     <div>
-      <h1>Known Production Issues</h1>
+      <h1>Known Production Issues{% if archived %} — Archive{% endif %}</h1>
+      {% if archived %}
+      <p class="page-subtitle">Fixed items — kept for reference, excluded from the active list, downloads, email report and the ECOM Spillover Report section.</p>
+      {% else %}
       <p class="page-subtitle">Defects, limitations, risks and accepted defects that will not be fixed before production</p>
+      {% endif %}
     </div>
     <div class="page-header-actions">
+      {% if archived %}
+      <a href="{{ url_for('prod_defects_list') }}" class="btn">← Active List</a>
+      {% else %}
       <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
+      <a href="{{ url_for('prod_defects_archive') }}" class="btn" title="fixed items — kept for reference, out of the active list and reports">🗄 Archive{% if fixed_count %} ({{ fixed_count }}){% endif %}</a>
       <a href="{{ url_for('email_report.email_page', reports='known_prod_defects') }}" class="btn" title="pick recipients and send this page">✉ Send via email</a>
       <a href="{{ url_for('prod_defects_download') }}" class="btn">⬇ Download HTML</a>
       <a href="{{ url_for('prod_defects_download_review') }}" class="btn" title="offline copy with a Detail popup per row and a comment/feedback feature — no Edit/Delete">📝 Download for review</a>
       <a href="{{ url_for('prod_defects_review_comments') }}" class="btn" title="upload the JSON a reviewer sent back and read their comments">📥 Reviewer feedback{% if review_comment_count %} ({{ review_comment_count }}){% endif %}</a>
       <a href="{{ url_for('prod_defect_new') }}" class="btn btn-primary">+ Add New</a>
+      {% endif %}
     </div>
   </div>
   {% if confluence_url %}
@@ -22,7 +31,7 @@
   {% endif %}
 </div>
 
-<form method="get" action="{{ url_for('prod_defects_list') }}" class="filters-bar">
+<form method="get" action="{{ url_for('prod_defects_archive') if archived else url_for('prod_defects_list') }}" class="filters-bar">
   <div class="filter-group">
     <label for="f-channel">Channel</label>
     <select id="f-channel" name="channel" onchange="this.form.submit()">
@@ -53,7 +62,7 @@
   {% if sel_channel or sel_scenario or sel_type %}
   <div class="filter-group filter-group--submit">
     <label>&nbsp;</label>
-    <a href="{{ url_for('prod_defects_list') }}" class="btn">Clear</a>
+    <a href="{{ url_for('prod_defects_archive') if archived else url_for('prod_defects_list') }}" class="btn">Clear</a>
   </div>
   {% endif %}
 </form>
@@ -84,17 +93,53 @@
         <td>{{ row.confluence or '' }}</td>
         <td class="kpd-actions">
           <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
+          {% if archived %}
+          <button class="btn btn-sm kpd-reopen-btn" title="bring this back to the active list">↺ Reopen</button>
+          {% else %}
+          <button class="btn btn-sm kpd-fix-btn" title="archive — kept for reference, out of the active list and reports">✓ Mark Fixed</button>
+          {% endif %}
           <button class="btn btn-sm btn-danger kpd-del-btn">Delete</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="8" class="table-empty">No entries yet. Click "+ Add New" to get started.</td></tr>
+      <tr><td colspan="8" class="table-empty">{% if archived %}Nothing archived yet — "✓ Mark Fixed" on the active list moves an item here.{% else %}No entries yet. Click "+ Add New" to get started.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
 
 <script>
+const EMPTY_ROW_HTML = {% if archived %}
+  '<td colspan="8" class="table-empty">Nothing archived yet — &quot;✓ Mark Fixed&quot; on the active list moves an item here.</td>'
+{% else %}
+  '<td colspan="8" class="table-empty">No entries yet. Click "+ Add New" to get started.</td>'
+{% endif %};
+
+function showEmptyRowIfNeeded() {
+  const tbody = document.getElementById('kpd-tbody');
+  if (!tbody.querySelector('tr[data-id]')) {
+    const emptyTr = document.createElement('tr');
+    emptyTr.innerHTML = EMPTY_ROW_HTML;
+    tbody.appendChild(emptyTr);
+  }
+}
+
+async function toggleFixed(tr, fixed) {
+  const id   = tr.dataset.id;
+  const body = new URLSearchParams({ value: fixed ? '1' : '0' });
+  const res  = await fetch(`/prod_defects/${id}/fixed`, { method: 'POST', body });
+  const json = await res.json();
+  if (!json.ok) return;
+  tr.remove();
+  showEmptyRowIfNeeded();
+}
+document.querySelectorAll('.kpd-fix-btn').forEach(btn => {
+  btn.addEventListener('click', () => toggleFixed(btn.closest('tr'), true));
+});
+document.querySelectorAll('.kpd-reopen-btn').forEach(btn => {
+  btn.addEventListener('click', () => toggleFixed(btn.closest('tr'), false));
+});
+
 async function deleteDef(tr) {
   if (!confirm('Delete this entry? This cannot be undone.')) return;
   const id  = tr.dataset.id;
@@ -102,12 +147,7 @@ async function deleteDef(tr) {
   const json = await res.json();
   if (!json.ok) return;
   tr.remove();
-  const tbody = document.getElementById('kpd-tbody');
-  if (!tbody.querySelector('tr[data-id]')) {
-    const emptyTr = document.createElement('tr');
-    emptyTr.innerHTML = '<td colspan="7" class="table-empty">No entries. Click "+ Add New" to get started.</td>';
-    tbody.appendChild(emptyTr);
-  }
+  showEmptyRowIfNeeded();
 }
 document.querySelectorAll('.kpd-del-btn').forEach(btn => {
   btn.addEventListener('click', () => deleteDef(btn.closest('tr')));

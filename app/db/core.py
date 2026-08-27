@@ -386,7 +386,13 @@ def init_db(db_path: Path) -> sqlite3.Connection:
                 # these cases in the system; how_to_handle = what to do
                 # about it. channel is optional, never backfilled/forced.
                 "channel TEXT", "type TEXT",
-                "sub_case TEXT", "how_to_detect TEXT", "how_to_handle TEXT"):
+                "sub_case TEXT", "how_to_detect TEXT", "how_to_handle TEXT",
+                # Mark Fixed / Archive [USER 2026-08-27]: fixed items drop out
+                # of the active list, downloads, email report and the ECOM
+                # Spillover Report section (all read via the same
+                # list_known_prod_defects default), but stay in the DB and
+                # are reachable on the Archive view for reference/reopen.
+                "status TEXT NOT NULL DEFAULT 'open'", "fixed_at TEXT"):
         try:
             conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()

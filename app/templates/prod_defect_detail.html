@@ -10,9 +10,15 @@
 
 <div class="page-header">
   <div class="page-header-row">
-    <h1>{% if is_new %}New Production Issue{% else %}Edit Production Issue{% endif %}</h1>
+    <h1>{% if is_new %}New Production Issue{% else %}Edit Production Issue{% endif %}
+      {% if not is_new and record.status == 'fixed' %}<span class="chip chip--pass">FIXED</span>{% endif %}</h1>
     {% if not is_new %}
     <div class="page-header-actions">
+      {% if record.status == 'fixed' %}
+      <button type="button" class="btn" id="btn-reopen" title="bring this back to the active list">↺ Reopen</button>
+      {% else %}
+      <button type="button" class="btn" id="btn-fix" title="archive — kept for reference, out of the active list and reports">✓ Mark Fixed</button>
+      {% endif %}
       <button type="button" class="btn btn-danger" id="btn-delete">Delete</button>
     </div>
     {% endif %}
@@ -141,6 +147,21 @@ document.getElementById('btn-delete').addEventListener('click', async () => {
   const json = await res.json();
   if (json.ok) window.location.href = '{{ url_for("prod_defects_list") }}';
 });
+{% if record.status == 'fixed' %}
+document.getElementById('btn-reopen').addEventListener('click', async () => {
+  const body = new URLSearchParams({ value: '0' });
+  const res  = await fetch('/prod_defects/{{ record.id }}/fixed', { method: 'POST', body });
+  const json = await res.json();
+  if (json.ok) window.location.reload();
+});
+{% else %}
+document.getElementById('btn-fix').addEventListener('click', async () => {
+  const body = new URLSearchParams({ value: '1' });
+  const res  = await fetch('/prod_defects/{{ record.id }}/fixed', { method: 'POST', body });
+  const json = await res.json();
+  if (json.ok) window.location.href = '{{ url_for("prod_defects_list") }}';
+});
+{% endif %}
 </script>
 {% endif %}
 {% endblock %}

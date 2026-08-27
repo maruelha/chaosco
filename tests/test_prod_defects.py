@@ -216,3 +216,85 @@ def test_gather_attachments_includes_known_prod_defects(client):
         conn.close()
     assert [name for name, _ in atts] == ["known_prod_defects_2026-08-06.html"]
     assert "AttachMe" in atts[0][1]
+
+
+# ---------------------------------------------------------------------------
+# Mark Fixed / Archive [USER 2026-08-27]
+
+def test_mark_fixed_removes_from_active_list_and_downloads_and_email(client):
+    record_id = _new(client, short_description="FixMe", scenario="GWC")
+    assert "FixMe" in client.get("/prod_defects").get_data(as_text=True)
+
+    resp = client.post(f"/prod_defects/{record_id}/fixed", data={"value": "1"})
+    assert resp.get_json()["ok"]
+
+    assert "FixMe" not in client.get("/prod_defects").get_data(as_text=True)
+    assert "FixMe" not in client.get("/prod_defects/download").get_data(as_text=True)
+    assert "FixMe" not in client.get("/prod_defects/download-review").get_data(as_text=True)
+
+    conn = database.get_connection(client.db_path)
+    try:
+        atts = emailer.gather_attachments(conn, {}, app, ["known_prod_defects"], "2026-08-06")
+    finally:
+        conn.close()
+    assert "FixMe" not in atts[0][1]
+
+
+def test_mark_fixed_never_deletes_the_record(client):
+    record_id = _new(client, short_description="StillHere", scenario="GWC")
+    client.post(f"/prod_defects/{record_id}/fixed", data={"value": "1"})
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row is not None
+    assert row["status"] == "fixed"
+    assert row["fixed_at"] is not None
+
+
+def test_archive_view_lists_only_fixed_items_with_reopen(client):
+    fixed_id = _new(client, short_description="ArchivedRow", scenario="GWC")
+    active_id = _new(client, short_description="StillActive", scenario="GWC")
+    client.post(f"/prod_defects/{fixed_id}/fixed", data={"value": "1"})
+
+    html = client.get("/prod_defects/archive").get_data(as_text=True)
+    body = html.split("<script>")[0]  # scripts always reference both button
+                                       # classes for their event listeners
+    assert "ArchivedRow" in html and "StillActive" not in html
+    assert "kpd-reopen-btn" in body and "kpd-fix-btn" not in body
+
+    resp = client.post(f"/prod_defects/{fixed_id}/fixed", data={"value": "0"})
+    assert resp.get_json()["ok"]
+    html = client.get("/prod_defects/archive").get_data(as_text=True)
+    assert "ArchivedRow" not in html
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "ArchivedRow" in html
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, fixed_id)
+    finally:
+        conn.close()
+    assert row["status"] == "open" and row["fixed_at"] is None
+
+
+def test_ecom_spillover_report_excludes_fixed_prod_defects(client):
+    fixed_id = _new(client, short_description="HiddenFromReport", scenario="GWC")
+    _new(client, short_description="ShownInReport", scenario="SFDC")
+    client.post(f"/prod_defects/{fixed_id}/fixed", data={"value": "1"})
+
+    html = client.get("/report/ecom").get_data(as_text=True)
+    assert "HiddenFromReport" not in html
+    assert "ShownInReport" in html
+
+
+def test_detail_page_shows_fixed_badge_and_toggle_button(client):
+    record_id = _new(client, short_description="ToggleMe", scenario="GWC")
+    html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)
+    assert "FIXED" not in html
+    assert "✓ Mark Fixed" in html and "↺ Reopen" not in html
+
+    client.post(f"/prod_defects/{record_id}/fixed", data={"value": "1"})
+    html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)
+    assert "FIXED" in html
+    assert "↺ Reopen" in html and "✓ Mark Fixed" not in html

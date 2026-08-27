@@ -156,7 +156,12 @@ def combine_shelf_items(
 def list_known_prod_defects(conn: sqlite3.Connection,
                             channel: str | None = None,
                             scenario: str | None = None,
-                            type_: str | None = None) -> list[dict]:
+                            type_: str | None = None,
+                            status: str | None = "open") -> list[dict]:
+    """status='open' (default) — the active list, downloads, email report
+    and the ECOM Spillover Report section all get only non-fixed rows for
+    free. status='fixed' is the Archive view; status=None returns both
+    [USER 2026-08-27: mark-fixed removes from the report without deleting]."""
     sql = """
         SELECT k.*,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'prod_defect'
@@ -174,6 +179,9 @@ def list_known_prod_defects(conn: sqlite3.Connection,
     if type_:
         sql += " AND k.type = ?"
         params.append(type_)
+    if status:
+        sql += " AND k.status = ?"
+        params.append(status)
     sql += " ORDER BY k.created_at DESC"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -257,6 +265,21 @@ def update_known_prod_defect(
 def delete_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM known_prod_defects WHERE id = ?", (record_id,))
+
+
+def mark_known_prod_defect_fixed(conn: sqlite3.Connection, record_id: int,
+                                 fixed: bool) -> dict | None:
+    """Archive (fixed=True) or reopen (fixed=False) — never deletes. A fixed
+    row drops out of list_known_prod_defects' default status='open' filter,
+    so it stops appearing in the active list, downloads, email report and
+    the ECOM Spillover Report section, without losing the record."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE known_prod_defects SET status=?, fixed_at=?, updated_at=? WHERE id=?",
+            ("fixed" if fixed else "open", now if fixed else None, now, record_id),
+        )
+    return get_known_prod_defect(conn, record_id)
 
 
 def import_review_comments(conn: sqlite3.Connection, payload: dict) -> dict:

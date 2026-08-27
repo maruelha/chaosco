@@ -412,6 +412,28 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    `prod_defect_scenarios` gained "Marketplace"; Biz Impact/How to handle
    dropped the 200px `.kpd-truncate` ellipsis clamp and wrap in full.
    Tests: `tests/test_prod_defects.py` (13); full suite 433 green.
+4. ~~Mark Fixed / Archive~~ ✅ DONE 2026-08-27 [USER: "I want to be able to
+   mark something as fixed - and it is then removed from the list -
+   archived so to speak - so I can check it (it is not deleted) but it is
+   also not added to the report"]. `known_prod_defects` gained `status`
+   ('open'/'fixed', default 'open') + `fixed_at`. `list_known_prod_defects`
+   gained a `status="open"` default param — for free, this excludes fixed
+   rows from the active list, both downloads, the email report AND the
+   ECOM Spillover Report section (`/report/ecom` — the one report that
+   embeds this table), since every one of those already calls the same
+   function with no status override. New `/prod_defects/archive` (same
+   template, `archived=True`) lists only fixed rows; `POST
+   /prod_defects/<id>/fixed` toggles (mirrors the delegated
+   counts-toward-goal pattern — `request.form.get("value") == "1"`, NOT
+   `bool(...)`: a literal `"0"` string is truthy in Python, a latent bug
+   in the pre-existing daily/dtco2c toggles' unused form-fallback branch
+   that this one would have inherited otherwise). List page: ✓ Mark
+   Fixed / ↺ Reopen button per row (AJAX, mirrors Delete); detail page:
+   same toggle in the header + a FIXED chip. Never deletes — Delete stays
+   a separate, unrelated action. Tests: `tests/test_prod_defects.py` (+5,
+   18 total); full suite 525 green. Verified against a disposable copy of
+   the real DB: create → mark fixed → gone from active list + archived +
+   gone from `/report/ecom` → reopen → back.
 
 ### Cross-vertical components — done ad-hoc
 
