@@ -634,11 +634,17 @@
         <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td class="note-text">defect · task · clarification — fixed display order everywhere (<code>db_blockers.TYPE_SECTIONS</code>)</td></tr>
         <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td></td><td class="note-text">NULL for clarifications — stripped server-side even if posted (<code>_clean_jira_key</code>), no FK enforced since the key may not be in <code>jira_issues</code> yet</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — free text on the detail form</td></tr>
+        <tr><td class="col-name">impact</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — what the blocker means for testing</td></tr>
+        <tr><td class="col-name">solman_id</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — optional 2nd id; form shows it for Defects, kept on tasks (no loss on a type flip), stripped for clarifications</td></tr>
+        <tr><td class="col-name">display_id</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — BC-001… for business clarifications (<code>_next_bc_id</code>, partial unique index); assigned at creation (or when a row is edited INTO a clarification), never regenerated; startup backfill oldest-first</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — inline next step (blur-save on list+detail; ↻/🕘 archive, registry entity <code>blocker</code>)</td></tr>
+        <tr><td class="col-name">closed_at</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-27 — manual ✔ Close (list splits open/closed; a jira-backed blocker ALSO auto-closes while its ticket is Resolved/Closed/Done — <code>is_closed</code>, <code>DONE_FAMILY</code>)</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>List/add/edit:</strong> <code>GET /blockers/</code> · <code>GET/POST /blockers/new</code> · <code>GET/POST /blockers/&lt;id&gt;</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('blocker', blocker_id)</code></div>
+    <div class="relations"><strong>List/add/edit:</strong> <code>GET /blockers/</code> · <code>GET/POST /blockers/new</code> · <code>GET/POST /blockers/&lt;id&gt;</code> &nbsp;·&nbsp; <strong>Close/next step:</strong> <code>POST /blockers/&lt;id&gt;/close</code> · <code>POST /blockers/&lt;id&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('blocker', blocker_id)</code></div>
   </div>
 
   <!-- blocker_links -->
@@ -937,7 +943,7 @@
     <div class="table-card-header">
       <span class="tname">report_comments</span>
       <span class="badge badge-shared">Shared</span>
-      <span class="tdesc">Free-text bullet points shown in the "Additional" section at the bottom of Retail and Spillover status reports. Edited inline on the respective list pages.</span>
+      <span class="tdesc">Free-text bullet points / 📣 call-outs on the reports — keys grew over time: <code>spillover</code>, <code>retail</code> (list pages), <code>ecom</code>, <code>sales</code>, <code>delegated</code> (status report), <code>delegated_numbers</code> (Management Summary, 2026-08-27). Editable on screen; static text in downloads/emails. The add route's allowlist (<code>web_reports.report_comment_add</code>) must list every key — <code>delegated</code> was missing there until 2026-08-27 (silent 400 on "+ Add call-out").</span>
     </div>
     <table>
       <thead>

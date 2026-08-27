@@ -242,6 +242,33 @@ one-at-a-time, Marina confirms each:
     across all three views incl. no-type tolerance, badge==board incl.
     blocker exclusion, re-upload type backfill; fixture XML gained a
     Defect-type item + an explicit Story type). Full suite 556 green.
+12. ~~Blocker fields batch + open/closed + id chips + next steps + Mgmt
+    Summary call-outs~~ ✅ DONE 2026-08-27 [USER, one message + a
+    follow-up]: (a) `comment` + `impact` on every blocker; (b) optional
+    `solman_id` for defects (form shows it for Defects only; kept on
+    tasks, stripped for clarifications like the jira key); (c) generated
+    `display_id` **BC-001…** for business clarifications (creation-time,
+    startup backfill oldest-first, partial unique index, assigned late
+    when a row is edited INTO a clarification); (d) chips on
+    board/detail/picker show ONLY the id (jira key → BC id → name) and
+    LINK to the blocker detail [USER: "else everything explodes"];
+    (e) open/closed split [decision via question dialog: auto from Jira
+    done-family + manual ✔ Close/↺ Reopen] — type sections open-only,
+    collapsed "✔ Closed" section below, auto-closed rows can't be
+    manually reopened (Jira drives them); (f) next-step functionality
+    (inline blur-save on list + detail, ↻/🕘 archive — registry entity
+    `blocker`, next_step column on the blockers table itself);
+    (g) Management Summary: 📣 call-outs (report_comments key
+    `delegated_numbers`, editable on screen/static in download) + the
+    blocker overview lists only OPEN blockers. BUG FOUND+FIXED:
+    `report_comment_add`'s allowlist never included `delegated` — the
+    status report's "+ Add call-out" had silently 400ed since
+    2026-08-26 (now covered by a regression test for both keys). ALSO:
+    the delegated test fixture now monkeypatches `web_core._db_path` —
+    the generic report-comments routes had been writing to the REAL dev
+    DB from tests (6 stray rows created+removed the same minute).
+    Tests: `tests/test_blockers.py` (+8, 26 total),
+    `tests/test_delegated_web.py` (+3, 25 total). Full suite 567 green.
 
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 

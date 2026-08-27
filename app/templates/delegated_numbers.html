@@ -36,6 +36,23 @@
     .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
                    color: #94a3b8; margin-top: 0.15rem; text-align: right; }
 
+    /* call-outs (editable, storage report_comments key 'delegated_numbers') */
+    .callout-section {
+      border: 1px solid #fcd34d; background: #fffbeb; border-radius: 7px;
+      padding: 0.75rem 1rem; margin-bottom: 1.5rem;
+      page-break-inside: avoid; break-inside: avoid;
+    }
+    .callout-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+                     letter-spacing: 0.09em; color: #92400e; margin-bottom: 0.5rem; }
+    .callout-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .callout-list li { display: flex; align-items: center; gap: 0.4rem; }
+    .callout-list li::before { content: "•"; color: #b45309; font-weight: 700; }
+    .co-input { flex: 1; border: none; background: transparent; font: inherit;
+                font-size: 0.85rem; color: #334155; padding: 0.15rem 0.3rem;
+                border-bottom: 1px dashed transparent; }
+    .co-input:hover, .co-input:focus { border-bottom-color: #d6a256; outline: none; }
+    .co-x { padding: 0 0.4rem; font-size: 0.72rem; color: #b91c1c; }
+
     /* ---- weekly goal ---- */
     .goal-box {
       display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap;
@@ -98,6 +115,11 @@
                       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .num-table tr.stage-head td { background: #1e293b !important; color: #f1f5f9 !important;
                       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .callout-section { background: #fffbeb !important;
+                         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .co-x, #co-add { display: none !important; }
+      .co-empty { display: none !important; }
+      .co-input { border: none; }
     }
   </style>
 </head>
@@ -125,6 +147,38 @@
     <div class="rh-stat-lbl">Tickets</div>
   </div>
 </div>
+
+{# ---- Call-outs (editable on screen; static text in the download) ----
+   [USER 2026-08-27: "add comments that appear on the report - noteworthy
+   things"] — same component as the delegated status report, own key. #}
+{% if download %}
+{% set filled_callouts = report_comments | selectattr('comment') | list %}
+{% if filled_callouts %}
+<div class="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list">
+    {% for c in filled_callouts %}
+    <li><span style="font-size:0.85rem;color:#334155;padding:0.15rem 0.3rem">{{ c.comment }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% else %}
+<div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
+     id="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list" id="callout-list">
+    {% for c in report_comments %}
+    <li data-id="{{ c.id }}">
+      <input type="text" class="co-input" value="{{ c.comment or '' }}"
+             placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
+</div>
+{% endif %}
 
 <div class="goal-box">
   <div class="goal-item">
@@ -221,6 +275,52 @@ function copyTable() {
   });
   navigator.clipboard.writeText(lines.join("\n"));
 }
+
+function coSave(input) {
+  const li = input.closest('li');
+  const body = new URLSearchParams({ comment: input.value });
+  fetch('/report-comments/' + li.dataset.id + '/update', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 document.getElementById('callout-section').classList.remove('co-empty');
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+function coDel(btn) {
+  const li = btn.closest('li');
+  if (!confirm('Delete this call-out?')) return;
+  fetch('/report-comments/' + li.dataset.id + '/delete', { method: 'POST' })
+    .then(() => li.remove());
+}
+
+function coAdd() {
+  const body = new URLSearchParams({ comment: '' });
+  fetch('/report-comments/delegated_numbers/add', { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      const li = document.createElement('li');
+      li.dataset.id = d.row.id;
+      li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
+      document.getElementById('callout-list').appendChild(li);
+      li.querySelector('input').focus();
+    });
+}
+
+window.addEventListener('beforeprint', () => {
+  let any = false;
+  document.querySelectorAll('#callout-list li').forEach(li => {
+    const filled = li.querySelector('.co-input').value.trim() !== '';
+    li.style.display = filled ? '' : 'none';
+    any = any || filled;
+  });
+  document.getElementById('callout-section').style.display = any ? '' : 'none';
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
+  document.getElementById('callout-section').style.display = '';
+});
 
 function goalSave(input) {
   const body = new URLSearchParams({ goal: input.value });

@@ -81,6 +81,11 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.get_delegated_next_step(c, str(i)),
         lambda c, i: database.set_delegated_next_step(c, str(i), None),
     ),
+    # Blockers (2026-08-27) — authored next step on the blockers table itself
+    "blocker": NSEntity(
+        lambda c, i: database.get_blocker_next_step(c, int(i)),
+        lambda c, i: database.set_blocker_next_step(c, int(i), None),
+    ),
 }
 
 

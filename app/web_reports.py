@@ -18,7 +18,11 @@ from app.web_core import (app, _cfg, _get_conn, _not_found,
 
 @app.route("/report-comments/<report>/add", methods=["POST"])
 def report_comment_add(report: str):
-    if report not in ("spillover", "retail", "ecom", "sales"):
+    # 'delegated' was missing from this allowlist since 2026-08-26 — the
+    # delegated report's "+ Add call-out" silently 400ed (found 2026-08-27
+    # while adding the Management Summary call-outs).
+    if report not in ("spillover", "retail", "ecom", "sales",
+                      "delegated", "delegated_numbers"):
         return jsonify({"ok": False}), 400
     comment = request.form.get("comment", "").strip()
     conn = _get_conn()

@@ -48,10 +48,42 @@ CREATE INDEX IF NOT EXISTS idx_blocker_links_jira ON blocker_links(jira_key);
 """
 
 
+# jira statuses that auto-close a jira-backed blocker [USER 2026-08-27:
+# auto from Jira + manual] — same done-family as the delegated buckets
+DONE_FAMILY = {"resolved", "closed", "done"}
+
+
 def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # migrations (safe to re-run) — 2026-08-27: comment/impact fields,
+        # optional solman id (defects), BC-NNN display id (clarifications),
+        # authored next step (archive entity 'blocker'), manual close.
+        for ddl in (
+            "ALTER TABLE blockers ADD COLUMN comment TEXT",
+            "ALTER TABLE blockers ADD COLUMN impact TEXT",
+            "ALTER TABLE blockers ADD COLUMN solman_id TEXT",
+            "ALTER TABLE blockers ADD COLUMN display_id TEXT",
+            "ALTER TABLE blockers ADD COLUMN next_step TEXT",
+            "ALTER TABLE blockers ADD COLUMN closed_at TEXT",
+        ):
+            try:
+                conn.execute(ddl)
+            except sqlite3.OperationalError:
+                pass  # column already exists
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_blockers_display_id"
+            " ON blockers(display_id) WHERE display_id IS NOT NULL")
+        # Backfill BC ids for pre-existing clarifications, oldest first —
+        # idempotent (only still-NULL rows are touched).
+        pending = conn.execute(
+            "SELECT blocker_id FROM blockers"
+            " WHERE type = 'clarification' AND display_id IS NULL"
+            " ORDER BY created_at, blocker_id").fetchall()
+        for (bid,) in pending:
+            conn.execute("UPDATE blockers SET display_id = ? WHERE blocker_id = ?",
+                         (_next_bc_id(conn), bid))
         conn.commit()
     finally:
         conn.close()
@@ -71,27 +103,108 @@ def _clean_jira_key(type_: str, jira_key: str | None) -> str | None:
     return None if type_ == "clarification" else jira_key
 
 
+def _clean_solman(type_: str, solman_id: str | None) -> str | None:
+    """Optional second id for DEFECTS [USER 2026-08-27]. Kept on tasks too
+    (no data loss on a defect→task type flip); clarifications never carry
+    external system ids — same rule as the jira key."""
+    solman_id = (solman_id or "").strip() or None
+    return None if type_ == "clarification" else solman_id
+
+
+def _next_bc_id(conn: sqlite3.Connection) -> str:
+    """BC-001 style id for business clarifications [USER 2026-08-27] —
+    3-digit zero-padded, grows past 999 without truncating."""
+    max_n = 0
+    for (did,) in conn.execute(
+            "SELECT display_id FROM blockers WHERE display_id LIKE 'BC-%'"):
+        try:
+            max_n = max(max_n, int(did.rsplit("-", 1)[1]))
+        except (ValueError, IndexError):
+            continue
+    return f"BC-{max_n + 1:03d}"
+
+
+def chip_label(row: dict) -> str:
+    """What the compact chips on tickets show [USER 2026-08-27: "I only
+    want to see the id"] — jira key, else BC id, else the name."""
+    return row.get("jira_key") or row.get("display_id") or row.get("name") or ""
+
+
+def is_closed(row: dict, jira_status: str | None) -> bool:
+    """Closed = manually closed OR the jira ticket reached the done family
+    [USER 2026-08-27: auto from Jira + manual]."""
+    if row.get("closed_at"):
+        return True
+    return (jira_status or "").strip().lower() in DONE_FAMILY
+
+
 def create_blocker(conn: sqlite3.Connection, type_: str, name: str,
-                   jira_key: str | None) -> dict:
+                   jira_key: str | None, comment: str | None = None,
+                   impact: str | None = None,
+                   solman_id: str | None = None) -> dict:
     assert type_ in TYPES
     now = _now()
     with conn:
+        display_id = _next_bc_id(conn) if type_ == "clarification" else None
         cur = conn.execute(
-            "INSERT INTO blockers (type, name, jira_key, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?)",
-            (type_, name.strip(), _clean_jira_key(type_, jira_key), now, now))
+            "INSERT INTO blockers (type, name, jira_key, comment, impact,"
+            " solman_id, display_id, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (type_, name.strip(), _clean_jira_key(type_, jira_key),
+             (comment or "").strip() or None, (impact or "").strip() or None,
+             _clean_solman(type_, solman_id), display_id, now, now))
     return get_blocker(conn, cur.lastrowid)
 
 
 def update_blocker(conn: sqlite3.Connection, blocker_id: int, type_: str,
-                   name: str, jira_key: str | None) -> None:
+                   name: str, jira_key: str | None,
+                   comment: str | None = None, impact: str | None = None,
+                   solman_id: str | None = None) -> None:
     assert type_ in TYPES
     with conn:
         conn.execute(
-            "UPDATE blockers SET type=?, name=?, jira_key=?, updated_at=?"
-            " WHERE blocker_id=?",
-            (type_, name.strip(), _clean_jira_key(type_, jira_key), _now(),
-             blocker_id))
+            "UPDATE blockers SET type=?, name=?, jira_key=?, comment=?,"
+            " impact=?, solman_id=?, updated_at=? WHERE blocker_id=?",
+            (type_, name.strip(), _clean_jira_key(type_, jira_key),
+             (comment or "").strip() or None, (impact or "").strip() or None,
+             _clean_solman(type_, solman_id), _now(), blocker_id))
+        # a row edited INTO a clarification gets its BC id if it has none
+        # yet; an existing id is never regenerated or removed
+        row = conn.execute(
+            "SELECT display_id FROM blockers WHERE blocker_id=?",
+            (blocker_id,)).fetchone()
+        if type_ == "clarification" and row and row[0] is None:
+            conn.execute("UPDATE blockers SET display_id=? WHERE blocker_id=?",
+                         (_next_bc_id(conn), blocker_id))
+
+
+def set_blocker_closed(conn: sqlite3.Connection, blocker_id: int,
+                       closed: bool) -> None:
+    """Manual close/reopen [USER 2026-08-27] — reopen only clears the
+    MANUAL flag; a jira-backed blocker whose ticket is done stays closed
+    via the auto rule until Jira reopens it."""
+    now = _now()
+    with conn:
+        conn.execute(
+            "UPDATE blockers SET closed_at=?, updated_at=? WHERE blocker_id=?",
+            (now if closed else None, now, blocker_id))
+
+
+def get_blocker_next_step(conn: sqlite3.Connection, blocker_id: int) -> str | None:
+    row = conn.execute(
+        "SELECT next_step FROM blockers WHERE blocker_id=?",
+        (blocker_id,)).fetchone()
+    return row[0] if row else None
+
+
+def set_blocker_next_step(conn: sqlite3.Connection, blocker_id: int,
+                          next_step: str | None) -> None:
+    """Only-this-field update (inline edit + next-step archive component,
+    entity 'blocker')."""
+    with conn:
+        conn.execute(
+            "UPDATE blockers SET next_step=?, updated_at=? WHERE blocker_id=?",
+            (next_step or None, _now(), blocker_id))
 
 
 def get_blocker(conn: sqlite3.Connection, blocker_id: int) -> dict | None:

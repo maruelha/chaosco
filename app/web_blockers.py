@@ -27,6 +27,15 @@ def _get_conn():
     return database.get_connection(_db_path)
 
 
+def _jira_status_map(conn, rows):
+    status = {}
+    for r in rows:
+        if r["jira_key"]:
+            issue = db_jira.get_jira_issue(conn, r["jira_key"])
+            status[r["blocker_id"]] = issue["jira_status"] if issue else None
+    return status
+
+
 @bp.route("/")
 def blockers_list():
     conn = _get_conn()
@@ -35,17 +44,21 @@ def blockers_list():
         note_counts = {r["blocker_id"]: len(database.list_notes(
             conn, "blocker", str(r["blocker_id"]))) for r in rows}
         blocked_counts = db_blockers.blocked_ticket_counts(conn)
-        jira_status = {}
-        for r in rows:
-            if r["jira_key"]:
-                issue = db_jira.get_jira_issue(conn, r["jira_key"])
-                jira_status[r["blocker_id"]] = issue["jira_status"] if issue else None
+        jira_status = _jira_status_map(conn, rows)
     finally:
         conn.close()
-    sections = [(key, label, [r for r in rows if r["type"] == key])
+    # Open/closed split [USER 2026-08-27: "focus on the open issues"] —
+    # closed = manually closed OR jira in the done family; the type
+    # sections carry only open blockers, closed ones collapse below.
+    open_rows = [r for r in rows
+                 if not db_blockers.is_closed(r, jira_status.get(r["blocker_id"]))]
+    closed_rows = [r for r in rows
+                   if db_blockers.is_closed(r, jira_status.get(r["blocker_id"]))]
+    sections = [(key, label, [r for r in open_rows if r["type"] == key])
                 for key, label in db_blockers.TYPE_SECTIONS]
     return render_template(
-        "blockers.html", sections=sections, total=len(rows),
+        "blockers.html", sections=sections, total=len(open_rows),
+        closed_rows=closed_rows,
         note_counts=note_counts, jira_status=jira_status,
         blocked_counts=blocked_counts,
         type_sections=db_blockers.TYPE_SECTIONS,
@@ -59,6 +72,14 @@ def _form_fields():
     return type_, name, jira_key
 
 
+def _extra_form_fields():
+    return {
+        "comment": request.form.get("comment", "").strip() or None,
+        "impact": request.form.get("impact", "").strip() or None,
+        "solman_id": request.form.get("solman_id", "").strip() or None,
+    }
+
+
 @bp.route("/new", methods=["GET", "POST"])
 def blocker_new():
     error = None
@@ -69,7 +90,8 @@ def blocker_new():
         else:
             conn = _get_conn()
             try:
-                row = db_blockers.create_blocker(conn, type_, name, jira_key)
+                row = db_blockers.create_blocker(conn, type_, name, jira_key,
+                                                 **_extra_form_fields())
             finally:
                 conn.close()
             return redirect(url_for("blockers.blocker_detail",
@@ -98,11 +120,13 @@ def blocker_detail(blocker_id: int):
             if type_ not in db_blockers.TYPES or not name:
                 error = "Pick a type and enter a name."
             else:
-                db_blockers.update_blocker(conn, blocker_id, type_, name, jira_key)
+                db_blockers.update_blocker(conn, blocker_id, type_, name, jira_key,
+                                           **_extra_form_fields())
                 conn.close()
                 return redirect(url_for("blockers.blocker_detail",
                                         blocker_id=blocker_id, saved="1"))
-            record = {**record, "type": type_, "name": name, "jira_key": jira_key}
+            record = {**record, "type": type_, "name": name, "jira_key": jira_key,
+                      **_extra_form_fields()}
         jira_issue = jira_comments = None
         if record.get("jira_key"):
             jira_issue = db_jira.get_jira_issue(conn, record["jira_key"])
@@ -113,13 +137,40 @@ def blocker_detail(blocker_id: int):
             conn, [n["id"] for n in notes])
     finally:
         conn.close()
+    closed = db_blockers.is_closed(
+        record, jira_issue["jira_status"] if jira_issue else None)
     return render_template(
         "blocker_detail.html", record=record, is_new=False, error=error,
         saved=request.args.get("saved") == "1",
-        types=db_blockers.TYPE_SECTIONS,
+        types=db_blockers.TYPE_SECTIONS, closed=closed,
         jira_issue=jira_issue, jira_comments=jira_comments,
         notes=notes, attachments_by_note=attachments_by_note,
     )
+
+
+@bp.route("/<int:blocker_id>/close", methods=["POST"])
+def blocker_toggle_closed(blocker_id: int):
+    """Manual close/reopen [USER 2026-08-27] — jira-backed blockers also
+    auto-close when their ticket reaches Resolved/Closed/Done."""
+    value = request.form.get("value") == "1"
+    conn = _get_conn()
+    try:
+        db_blockers.set_blocker_closed(conn, blocker_id, value)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/<int:blocker_id>/next-step", methods=["POST"])
+def blocker_next_step(blocker_id: int):
+    """Inline blur-save of the authored next step (archive entity 'blocker')."""
+    conn = _get_conn()
+    try:
+        db_blockers.set_blocker_next_step(
+            conn, blocker_id, request.form.get("next_step", "").strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 # ---------------------------------------------------------------------------
@@ -128,8 +179,12 @@ def blocker_detail(blocker_id: int):
 # with data-jira-key + data-name. Drop-in include: _blocker_picker.html.
 
 def _slim(rows: list[dict]) -> list[dict]:
+    # label = jira key / BC id / name — the row chips show ONLY this
+    # [USER 2026-08-27: "I only want to see the id (else everything
+    # explodes)"]; the full name stays for the dialog's pick list + titles.
     return [{"blocker_id": r["blocker_id"], "type": r["type"],
-             "name": r["name"], "jira_key": r["jira_key"]} for r in rows]
+             "name": r["name"], "jira_key": r["jira_key"],
+             "label": db_blockers.chip_label(r)} for r in rows]
 
 
 def _picker_payload(conn, jira_key: str) -> dict:

@@ -272,8 +272,19 @@ def numbers_context(conn) -> dict:
         1 for i in issues
         if bucket_key(i, me) == "blocked" and i["counts_toward_goal"])
     blockers = db_blockers.list_blockers(conn)
+    # only OPEN blockers on the Management Summary [USER 2026-08-27:
+    # "blockers should only show up if they are not closed"] — closed =
+    # manually closed or the jira ticket reached the done family
+    open_blockers = []
+    for b in blockers:
+        jira_status = None
+        if b["jira_key"]:
+            issue = db_jira.get_jira_issue(conn, b["jira_key"])
+            jira_status = issue["jira_status"] if issue else None
+        if not db_blockers.is_closed(b, jira_status):
+            open_blockers.append(b)
     blocked_ticket_counts = db_blockers.blocked_ticket_counts(conn)
-    blocker_sections = [(key, label, [b for b in blockers if b["type"] == key])
+    blocker_sections = [(key, label, [b for b in open_blockers if b["type"] == key])
                         for key, label in db_blockers.TYPE_SECTIONS]
     return {
         "stages": stages, "unexpected": unexpected,
@@ -283,6 +294,7 @@ def numbers_context(conn) -> dict:
         "blocked_counting": blocked_counting,
         "blocker_sections": blocker_sections,
         "blocked_ticket_counts": blocked_ticket_counts,
+        "report_comments": database.list_report_comments(conn, "delegated_numbers"),
         "today": date.today().strftime("%Y-%m-%d"),
     }
 

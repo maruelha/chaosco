@@ -2,10 +2,54 @@
 {% import '_macros.html' as ui %}
 {% block title %}Blockers — Test Coordination{% endblock %}
 
+{% macro blocker_row(b, closed_view, type_label=None) %}
+<tr>
+  {% if type_label is not none %}<td>{{ type_label }}</td>{% endif %}
+  <td>{{ b.name }}</td>
+  <td class="mono" style="font-size:0.8rem">
+    {% if b.jira_key or b.display_id %}
+      <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}">{{ b.jira_key or b.display_id }}</a>
+    {% else %}—{% endif %}
+  </td>
+  <td>
+    {% if b.jira_key %}
+      {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
+    {% elif b.closed_at %}closed manually{% else %}—{% endif %}
+  </td>
+  <td>{{ blocked_counts.get(b.blocker_id, 0) or '—' }}</td>
+  <td>{{ note_counts.get(b.blocker_id, 0) or '—' }}</td>
+  <td>
+    <input type="text" class="rt-comment blk-ns" data-id="{{ b.blocker_id }}"
+           value="{{ b.next_step or '' }}" placeholder="next step…" onblur="blkNsSave(this)">
+  </td>
+  <td style="white-space:nowrap; text-align:right">
+    <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+            data-entity-type="blocker" data-entity-id="{{ b.blocker_id }}"
+            data-ns-target='input.blk-ns[data-id="{{ b.blocker_id }}"]'>↻</button>
+    <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+            data-entity-type="blocker" data-entity-id="{{ b.blocker_id }}"
+            data-ns-label="{{ b.jira_key or b.display_id or b.name }}">🕘</button>
+    {% if closed_view %}
+      {% if b.closed_at %}
+      <button type="button" class="btn btn-sm blk-close-btn" data-id="{{ b.blocker_id }}" data-value="0"
+              title="bring this back to the open list">↺ Reopen</button>
+      {% else %}
+      <span style="color:#888; font-size:0.76rem" title="closed automatically because the Jira ticket is done — reopens itself if Jira reopens">(closed in Jira)</span>
+      {% endif %}
+    {% else %}
+    <button type="button" class="btn btn-sm blk-close-btn" data-id="{{ b.blocker_id }}" data-value="1"
+            title="no longer blocking — moves to the Closed section below">✔ Close</button>
+    {% endif %}
+    <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" class="btn btn-sm">Details</a>
+  </td>
+</tr>
+{% endmacro %}
+
 {% block content %}
 {% set section_color = {'defect': 'blue', 'task': 'teal', 'clarification': 'purple'} %}
+{% set columns = ['Name', 'ID', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
 
-{% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block.') %}
+{% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block. Closed ones collapse at the bottom.') %}
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
   <a href="{{ url_for('blockers.blocker_new') }}" class="btn btn-primary">+ Add Blocker</a>
 {% endcall %}
@@ -13,29 +57,44 @@
 {% for key, label, items in sections %}
 {% call ui.section(label, section_color.get(key, 'slate'), badge=items|length, open=(items|length > 0)) %}
   {% if items %}
-  {% call ui.table(['Name', 'Jira Key', 'Jira Status', 'Blocks', 'Notes', '']) %}
-    {% for b in items %}
-    <tr>
-      <td>{{ b.name }}</td>
-      <td class="mono" style="font-size:0.8rem">
-        {% if b.jira_key %}{{ b.jira_key }}{% else %}—{% endif %}
-      </td>
-      <td>
-        {% if b.jira_key %}
-          {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
-        {% else %}—{% endif %}
-      </td>
-      <td>{{ blocked_counts.get(b.blocker_id, 0) or '—' }}</td>
-      <td>{{ note_counts.get(b.blocker_id, 0) or '—' }}</td>
-      <td style="text-align:right">
-        <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" class="btn btn-sm">Details</a>
-      </td>
-    </tr>
-    {% endfor %}
+  {% call ui.table(columns) %}
+    {% for b in items %}{{ blocker_row(b, False) }}{% endfor %}
   {% endcall %}
   {% else %}
-  <p style="color:#888; margin:0.6rem 1rem">No {{ label|lower }} yet.</p>
+  <p style="color:#888; margin:0.6rem 1rem">No open {{ label|lower }}.</p>
   {% endif %}
 {% endcall %}
 {% endfor %}
+
+{% call ui.section('✔ Closed', 'green', badge=closed_rows|length, open=False) %}
+  {% if closed_rows %}
+  {% set type_labels = dict(type_sections) %}
+  {% call ui.table(['Type'] + columns) %}
+    {% for b in closed_rows %}{{ blocker_row(b, True, type_labels.get(b.type, b.type)) }}{% endfor %}
+  {% endcall %}
+  {% else %}
+  <p style="color:#888; margin:0.6rem 1rem">Nothing closed yet — ✔ Close on an open blocker
+    (or the Jira ticket reaching Resolved/Closed/Done) moves it here.</p>
+  {% endif %}
+{% endcall %}
+
+{% include '_next_step_history.html' %}
+
+<script>
+function blkNsSave(input) {
+  const body = new URLSearchParams({ next_step: input.value });
+  fetch('/blockers/' + input.dataset.id + '/next-step', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#1a7f37';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+document.querySelectorAll('.blk-close-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const body = new URLSearchParams({ value: btn.dataset.value });
+    const resp = await fetch('/blockers/' + btn.dataset.id + '/close', { method: 'POST', body });
+    if ((await resp.json()).ok) window.location.reload();
+  });
+});
+</script>
 {% endblock %}

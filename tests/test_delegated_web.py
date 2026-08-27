@@ -8,6 +8,7 @@ from app import database
 from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
+import app.web_core as web_core
 import app.web_delegated as web_delegated
 from app.web import app
 
@@ -66,6 +67,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setitem(web_delegated._cfg, "database_path", str(db_path))
     monkeypatch.setitem(web_delegated._cfg, "jira_gatekeeper_assignee", "Haase")
     monkeypatch.setattr(web_delegated, "_UPLOAD_FOLDER", tmp_path / "uploads")
+    # the generic /report-comments/... routes go through web_core._get_conn —
+    # without this they would write to the REAL dev DB (bit us 2026-08-27)
+    monkeypatch.setattr(web_core, "_db_path", db_path)
     return app.test_client()
 
 
@@ -411,3 +415,51 @@ def test_reimport_refreshes_status(client):
     finally:
         conn.close()
     assert row[0] == "In Review"
+
+
+# ---------------------------------------------------------------------------
+# Management Summary: call-outs + open-blockers-only overview [USER 2026-08-27]
+
+def test_numbers_calls_out_section_and_add_route(client):
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "callout-section" in html
+    assert "+ Add call-out" in html
+    # regression: 'delegated' was missing from the add-route allowlist since
+    # 2026-08-26 — both delegated keys must be accepted now
+    for key in ("delegated", "delegated_numbers"):
+        resp = client.post(f"/report-comments/{key}/add", data={"comment": "note"})
+        assert resp.get_json()["ok"], key
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert 'value="note"' in html            # delegated_numbers call-out shows
+    report_html = client.get("/delegated/report").get_data(as_text=True)
+    assert 'value="note"' in report_html     # delegated call-out on ITS report
+
+
+def test_numbers_download_shows_callouts_static(client):
+    client.post("/report-comments/delegated_numbers/add",
+                data={"comment": "big note for mgmt"})
+    html = client.get("/delegated/numbers/download").get_data(as_text=True)
+    assert "big note for mgmt" in html
+    assert "co-input" not in html.split("</style>")[1]  # static text, no inputs
+    assert "+ Add call-out" not in html
+
+
+def test_numbers_blocker_overview_hides_closed_blockers(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        open_b = db_blockers.create_blocker(conn, "defect", "OpenBlocker", "S4XYZ-1")
+        manual = db_blockers.create_blocker(conn, "task", "ManuallyClosed", None)
+        db_blockers.set_blocker_closed(conn, manual["blocker_id"], True)
+        # jira-done blocker: S4ECOM-2004 is in the store (fixture) — set done
+        auto = db_blockers.create_blocker(conn, "defect", "JiraDoneBlocker", "S4ECOM-2004")
+        conn.execute("UPDATE jira_issues SET jira_status='Resolved'"
+                     " WHERE jira_key='S4ECOM-2004'")
+        conn.commit()
+    finally:
+        conn.close()
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "OpenBlocker" in html
+    assert "ManuallyClosed" not in html
+    assert "JiraDoneBlocker" not in html
+    assert open_b and auto

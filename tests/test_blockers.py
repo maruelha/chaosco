@@ -6,7 +6,9 @@ import pytest
 from app import database
 from app.db import blockers as db_blockers
 from app.db import jira as db_jira
+from app.db import next_steps as db_ns
 import app.web_blockers as web_blockers
+import app.web_next_steps as web_next_steps
 import app.web_notes as web_notes
 from app.web import app
 
@@ -17,9 +19,11 @@ def client(tmp_path, monkeypatch):
     database.init_db(db_path).close()
     db_jira.init_schema(db_path)
     db_blockers.init_schema(db_path)
+    db_ns.init_schema(db_path)
     monkeypatch.setattr(web_blockers, "_get_conn",
                         lambda: database.get_connection(db_path))
     monkeypatch.setattr(web_notes, "_db_path", db_path)
+    monkeypatch.setattr(web_next_steps, "_db_path", db_path)
     return app.test_client(), db_path
 
 
@@ -276,3 +280,171 @@ def test_blocked_ticket_counts(client):
         assert db_blockers.blocked_ticket_counts(conn) == {b1["blocker_id"]: 2}
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 2026-08-27 batch: comment/impact/solman fields, BC ids, open/closed split,
+# next-step component, id-only picker labels
+
+def test_comment_impact_solman_round_trip_via_form(client):
+    c, db_path = client
+    resp = c.post("/blockers/new", data={
+        "type": "defect", "name": "Pricing bug", "jira_key": "S4DEF-1",
+        "solman_id": "SM12345", "impact": "Blocks all settlement tests",
+        "comment": "raised with vendor"})
+    assert resp.status_code == 302
+    conn = database.get_connection(db_path)
+    try:
+        row = db_blockers.list_blockers(conn)[0]
+        assert row["solman_id"] == "SM12345"
+        assert row["impact"] == "Blocks all settlement tests"
+        assert row["comment"] == "raised with vendor"
+        # edit keeps them updatable
+        c.post(f"/blockers/{row['blocker_id']}", data={
+            "type": "defect", "name": "Pricing bug", "jira_key": "S4DEF-1",
+            "solman_id": "SM99999", "impact": "narrower now", "comment": ""})
+        row2 = db_blockers.get_blocker(conn, row["blocker_id"])
+        assert row2["solman_id"] == "SM99999"
+        assert row2["impact"] == "narrower now"
+        assert row2["comment"] is None
+    finally:
+        conn.close()
+
+
+def test_solman_stripped_for_clarifications(tmp_path):
+    db_path = tmp_path / "s.db"
+    database.init_db(db_path).close()
+    db_blockers.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        row = db_blockers.create_blocker(conn, "clarification", "Open question",
+                                         None, solman_id="SM123")
+        assert row["solman_id"] is None
+    finally:
+        conn.close()
+
+
+def test_bc_id_assigned_to_clarifications(tmp_path):
+    db_path = tmp_path / "s.db"
+    database.init_db(db_path).close()
+    db_blockers.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        c1 = db_blockers.create_blocker(conn, "clarification", "First question", None)
+        d1 = db_blockers.create_blocker(conn, "defect", "A defect", "S4DEF-1")
+        c2 = db_blockers.create_blocker(conn, "clarification", "Second question", None)
+        assert c1["display_id"] == "BC-001"
+        assert d1["display_id"] is None
+        assert c2["display_id"] == "BC-002"
+        # a row edited INTO a clarification gets its id
+        db_blockers.update_blocker(conn, d1["blocker_id"], "clarification",
+                                   "A defect no more", None)
+        assert db_blockers.get_blocker(conn, d1["blocker_id"])["display_id"] == "BC-003"
+        # ...and keeps it on later edits
+        db_blockers.update_blocker(conn, d1["blocker_id"], "clarification",
+                                   "renamed", None)
+        assert db_blockers.get_blocker(conn, d1["blocker_id"])["display_id"] == "BC-003"
+    finally:
+        conn.close()
+
+
+def test_bc_backfill_for_existing_clarifications(tmp_path):
+    db_path = tmp_path / "s.db"
+    database.init_db(db_path).close()
+    db_blockers.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        conn.execute(
+            "INSERT INTO blockers (type, name, created_at, updated_at, display_id)"
+            " VALUES ('clarification', 'Legacy question', '2026-08-26T10:00:00',"
+            " '2026-08-26T10:00:00', NULL)")
+        conn.commit()
+    finally:
+        conn.close()
+    db_blockers.init_schema(db_path)  # re-run migrations = app startup
+    conn = database.get_connection(db_path)
+    try:
+        row = db_blockers.list_blockers(conn)[0]
+        assert row["display_id"] == "BC-001"
+    finally:
+        conn.close()
+
+
+def test_chip_label_prefers_jira_then_bc_then_name():
+    assert db_blockers.chip_label({"jira_key": "S4DEF-1", "display_id": None,
+                                   "name": "Pricing"}) == "S4DEF-1"
+    assert db_blockers.chip_label({"jira_key": None, "display_id": "BC-001",
+                                   "name": "Question"}) == "BC-001"
+    assert db_blockers.chip_label({"jira_key": None, "display_id": None,
+                                   "name": "Task w/o key"}) == "Task w/o key"
+
+
+def test_picker_payload_carries_id_labels(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b = db_blockers.create_blocker(conn, "clarification", "Long clarification name", None)
+        db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-1")
+    finally:
+        conn.close()
+    data = c.get("/blockers/links/S4ECOM-1").get_json()
+    assert data["linked"][0]["label"] == "BC-001"
+    assert data["linked"][0]["name"] == "Long clarification name"
+
+
+def test_open_closed_split_manual_and_auto(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        manual = db_blockers.create_blocker(conn, "task", "ManualClose task", None)
+        db_blockers.create_blocker(conn, "defect", "StillOpen defect", "S4DEF-77")
+        auto = db_blockers.create_blocker(conn, "defect", "JiraDone defect", "S4ECOM-1")
+        # put S4ECOM-1 into the store with a done-family status
+        conn.execute(
+            "INSERT INTO jira_issues (jira_key, jira_status, first_seen, last_seen)"
+            " VALUES ('S4ECOM-1', 'Resolved', '2026-08-27T10:00:00', '2026-08-27T10:00:00')")
+        conn.commit()
+        db_blockers.set_blocker_closed(conn, manual["blocker_id"], True)
+    finally:
+        conn.close()
+    html = c.get("/blockers/").get_data(as_text=True)
+    open_part, closed_part = html.split("✔ Closed")
+    assert "StillOpen defect" in open_part
+    assert "ManualClose task" not in open_part and "ManualClose task" in closed_part
+    assert "JiraDone defect" not in open_part and "JiraDone defect" in closed_part
+    assert "↺ Reopen" in closed_part          # manual close can be reopened
+    assert "(closed in Jira)" in closed_part  # auto close cannot
+    # reopen the manual one
+    resp = c.post(f"/blockers/{manual['blocker_id']}/close", data={"value": "0"})
+    assert resp.get_json()["ok"]
+    html = c.get("/blockers/").get_data(as_text=True)
+    open_part, closed_part = html.split("✔ Closed")
+    assert "ManualClose task" in open_part
+
+
+def test_next_step_save_and_archive(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b = db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+    finally:
+        conn.close()
+    bid = b["blocker_id"]
+    assert c.post(f"/blockers/{bid}/next-step",
+                  data={"next_step": "chase vendor Friday"}).get_json()["ok"]
+    conn = database.get_connection(db_path)
+    try:
+        assert db_blockers.get_blocker_next_step(conn, bid) == "chase vendor Friday"
+    finally:
+        conn.close()
+    # archive via the generic next-steps component (registry entity 'blocker')
+    resp = c.post(f"/next-steps/blocker/{bid}/archive")
+    data = resp.get_json()
+    assert data["ok"] and data["archived"] == "chase vendor Friday"
+    conn = database.get_connection(db_path)
+    try:
+        assert db_blockers.get_blocker_next_step(conn, bid) is None
+    finally:
+        conn.close()
+    hist = c.get(f"/next-steps/blocker/{bid}/list.json").get_json()
+    assert hist["count"] == 1

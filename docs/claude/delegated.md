@@ -134,6 +134,41 @@ blocks one or more delegated tickets. Design decisions:
   the Blockers page.
 - **"Why blocked" stays as-is for now** [USER 2026-08-27] — decide later
   whether structured blockers replace that free-text field.
+- **Fields batch (2026-08-27, second round)** [USER]: `comment` + `impact`
+  free-text fields on every blocker; optional `solman_id` (UI shows it for
+  Defects only; stored for tasks too so a type flip loses nothing;
+  clarifications never keep it — same rule as the jira key). Business
+  clarifications get a generated **`display_id` BC-001…** (assigned at
+  creation, backfilled for existing rows oldest-first on startup, partial
+  unique index; a row edited INTO a clarification gets its id then, an
+  existing id is never regenerated).
+- **Open/closed split** [USER: "focus on the open issues"]: closed =
+  manually closed (`closed_at`, ✔ Close/↺ Reopen on list + detail) OR the
+  jira ticket reached the done family (`db_blockers.DONE_FAMILY` =
+  resolved/closed/done — auto, reopens itself if Jira reopens; a manual
+  reopen cannot override the auto rule). The list page's type sections
+  show only open blockers; closed ones collapse into a "✔ Closed" section
+  at the bottom (with Type column; auto-closed rows show "(closed in
+  Jira)" instead of a Reopen button). The **Management Summary's blocker
+  overview lists only open blockers** [USER: "blockers should only show
+  up if they are not closed"].
+- **Id-only chips** [USER: "I only want to see the id (else everything
+  explodes)"]: the chips on the board's blocked rows, the ticket detail
+  and the picker's attached list show ONLY `chip_label` (jira key → BC id
+  → name fallback) and are LINKS to the blocker's detail page; the full
+  name lives in the tooltip (and next to the chip inside the picker
+  dialog, where you need it to pick). The status report's chips keep
+  name+key (static text; downloads can't link into the app).
+- **Next steps on blockers** [USER]: `next_step` column on the blockers
+  table, inline blur-save on list rows + detail page, ↻ archive / 🕘
+  history via the generic component (registry entity `blocker`).
+- **Management Summary call-outs** [USER: "add comments that appear on
+  the report - noteworthy things"]: same 📣 component as the status
+  report, own `report_comments` key `delegated_numbers` — editable on
+  screen, static text in download/email. Found+fixed while wiring it:
+  `web_reports.report_comment_add`'s allowlist never included
+  `delegated`, so "+ Add call-out" on the delegated STATUS report had
+  silently 400ed since 2026-08-26.
 - Notes: registry entity `blocker` (own thread, `_notes_section.html`).
 - Links: dashboard "Delegated Testing" card + the board toolbar both carry
   a 🚧 Blockers button.

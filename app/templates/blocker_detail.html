@@ -9,7 +9,20 @@
 </div>
 
 <div class="page-header">
-  <h1>{% if is_new %}New Blocker{% else %}Edit Blocker{% endif %}</h1>
+  <div class="page-header-row">
+    <h1>{% if is_new %}New Blocker{% else %}Edit Blocker{% endif %}
+      {% if record.display_id %}<span class="chip chip--none mono">{{ record.display_id }}</span>{% endif %}
+      {% if not is_new and closed %}<span class="chip chip--pass">CLOSED</span>{% endif %}</h1>
+    {% if not is_new %}
+    <div class="page-header-actions">
+      {% if record.closed_at %}
+      <button type="button" class="btn" id="btn-blk-reopen" title="bring this back to the open list">↺ Reopen</button>
+      {% elif not closed %}
+      <button type="button" class="btn" id="btn-blk-close" title="no longer blocking — moves to the Closed section">✔ Close</button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
 </div>
 
 {% if saved %}
@@ -54,6 +67,23 @@
         </p>
       </div>
 
+      <div class="form-field" id="f-solman-field">
+        <label for="f-solman">Solman ID <span class="field-hint">optional</span></label>
+        <input type="text" id="f-solman" name="solman_id"
+               value="{{ record.solman_id or '' }}" placeholder="e.g. SM12345">
+      </div>
+
+      <div class="form-field">
+        <label for="f-impact">Impact</label>
+        <textarea id="f-impact" name="impact" rows="3"
+                  placeholder="what this blocker means for the testing">{{ record.impact or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-comment">Comment</label>
+        <textarea id="f-comment" name="comment" rows="3">{{ record.comment or '' }}</textarea>
+      </div>
+
     </div>
   </div>
 
@@ -96,6 +126,23 @@
 {% endif %}
 
 {% if not is_new %}
+<div class="detail-card" style="margin-top:1.25rem">
+  <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:0.4rem">Next step</div>
+  <div style="display:flex; gap:0.5rem; align-items:center">
+    <input type="text" class="rt-comment blk-ns" data-id="{{ record.blocker_id }}" style="flex:1"
+           value="{{ record.next_step or '' }}" placeholder="next step…" onblur="blkNsSave(this)">
+    <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+            data-entity-type="blocker" data-entity-id="{{ record.blocker_id }}"
+            data-ns-target='input.blk-ns[data-id="{{ record.blocker_id }}"]'>↻</button>
+    <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+            data-entity-type="blocker" data-entity-id="{{ record.blocker_id }}"
+            data-ns-label="{{ record.jira_key or record.display_id or record.name }}">🕘</button>
+  </div>
+</div>
+{% include '_next_step_history.html' %}
+{% endif %}
+
+{% if not is_new %}
 {% with entity_type='blocker', entity_id=record.blocker_id %}
   {% include '_notes_section.html' %}
 {% endwith %}
@@ -103,9 +150,33 @@
 
 <script>
 function blkToggleJiraKey() {
-  const isClarification = document.getElementById('f-type').value === 'clarification';
+  const type = document.getElementById('f-type').value;
+  const isClarification = type === 'clarification';
   document.getElementById('f-jira-key-field').style.display = isClarification ? 'none' : '';
+  // Solman ID is a defect thing [USER 2026-08-27] — hidden for the others
+  document.getElementById('f-solman-field').style.display = type === 'defect' ? '' : 'none';
 }
 blkToggleJiraKey();
+
+function blkNsSave(input) {
+  const body = new URLSearchParams({ next_step: input.value });
+  fetch('/blockers/' + input.dataset.id + '/next-step', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#1a7f37';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+
+{% if not is_new %}
+['btn-blk-close', 'btn-blk-reopen'].forEach(id => {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const body = new URLSearchParams({ value: id === 'btn-blk-close' ? '1' : '0' });
+    const resp = await fetch('/blockers/{{ record.blocker_id }}/close', { method: 'POST', body });
+    if ((await resp.json()).ok) window.location.reload();
+  });
+});
+{% endif %}
 </script>
 {% endblock %}

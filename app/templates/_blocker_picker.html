@@ -73,9 +73,12 @@ if (!window.blkPickerInit) {
     }
 
     function chipHtml(b) {
-      const keyPart = b.jira_key ? ' (' + blkEsc(b.jira_key) + ')' : '';
-      return '<span class="chip chip--other" title="' + TYPE_LABEL[b.type] + '">'
-           + blkEsc(b.name) + keyPart + '</span>';
+      // ID only [USER 2026-08-27: "I only want to see the id (else
+      // everything explodes)"] — full name stays in the tooltip; the
+      // chip links to the blocker's detail page.
+      return '<a class="chip chip--other" href="/blockers/' + b.blocker_id + '"'
+           + ' title="' + TYPE_LABEL[b.type] + ': ' + blkEsc(b.name) + '">'
+           + blkEsc(b.label || b.name) + '</a>';
     }
 
     function renderRowChips(linked) {
@@ -93,6 +96,7 @@ if (!window.blkPickerInit) {
       list.innerHTML = data.linked.length ? data.linked.map(b =>
         '<div style="display:flex; align-items:center; gap:0.5rem; padding:0.2rem 0">'
         + chipHtml(b)
+        + '<span style="color:#666; font-size:0.8rem">' + blkEsc(b.name) + '</span>'
         + '<button type="button" class="btn btn-sm js-blk-detach" data-id="' + b.blocker_id + '" title="detach">✕</button>'
         + '</div>').join('') : '<p style="color:#999; font-size:0.85rem; margin:0">Nothing attached yet.</p>';
 
