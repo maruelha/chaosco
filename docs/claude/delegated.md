@@ -59,9 +59,16 @@ sections while empty; the report shows only non-empty sections.
 **Only user stories (2026-08-27)** [USER: "the main page should only have
 jira user stories"]: the export deliberately also carries the blocker
 DEFECT issues (see Blockers: one upload refreshes everything), so
-`_load_issues` additionally drops every issue whose Jira `type` isn't
-Story — registered as a blocker or not. NULL type (export without
-`<type>`) is tolerated as a story rather than silently dropped. The
+`_load_issues` additionally drops every issue whose Jira `type` isn't a
+story — registered as a blocker or not. Story matches by **SUBSTRING**
+(`db_delegated.is_story_type`: "Story", "User Story", … —
+case-insensitive; the first version compared exactly to 'story' and
+EMPTIED Marina's real board because her Jira wording differed, fixed
+same day). NULL type (export without `<type>`) is tolerated as a story
+rather than silently dropped, and the board shows a "🛈 Not shown (not a
+user story): <type> ×n" hint line (`_hidden_non_story`) so the filter
+can never empty the page silently again — registered blockers don't
+count as "hidden" (they live on the Blockers page by design). The
 dashboard badge (`db_delegated.delegated_counts`) mirrors the same rule
 (stories only, blockers excluded) so badge and board always agree. The
 upsert refresh also writes `type` since 2026-08-27, so one normal upload

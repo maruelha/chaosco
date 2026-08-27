@@ -242,6 +242,16 @@ one-at-a-time, Marina confirms each:
     across all three views incl. no-type tolerance, badge==board incl.
     blocker exclusion, re-upload type backfill; fixture XML gained a
     Defect-type item + an explicit Story type). Full suite 556 green.
+    HOTFIX same day [USER: "after restarting the deegated testing is
+    EMPTY!!!!!!"]: the exact `type == 'story'` comparison emptied her
+    real board — her Jira's story wording differs. Story now matches by
+    SUBSTRING (`db_delegated.is_story_type` — "Story"/"User Story"/…),
+    and the board shows a "🛈 Not shown (not a user story): <type> ×n"
+    hint (`_hidden_non_story`, registered blockers excluded from it) so
+    the type filter can never silently empty the page again — if her
+    types STILL don't match, the hint line names exactly what to add.
+    Tests +2 (User-Story substring case in the fixture, hint appears /
+    disappears once the defect is registered as a blocker); 568 green.
 12. ~~Blocker fields batch + open/closed + id chips + next steps + Mgmt
     Summary call-outs~~ ✅ DONE 2026-08-27 [USER, one message + a
     follow-up]: (a) `comment` + `impact` on every blocker; (b) optional

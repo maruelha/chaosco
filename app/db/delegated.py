@@ -57,11 +57,19 @@ def _now() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
+def is_story_type(type_: str | None) -> bool:
+    """User-story check for the delegated views [USER 2026-08-27]: matches
+    by SUBSTRING ("Story", "User Story", …) — an exact 'story' comparison
+    emptied Marina's board because her Jira wording differed. NULL
+    (export without <type>) is tolerated as a story."""
+    return type_ is None or "story" in type_.strip().lower()
+
+
 def delegated_counts(conn: sqlite3.Connection) -> dict:
     """{'total': n, 'blocked': n} over the delegated-tagged tickets — the
     dashboard card badge. Mirrors web_delegated._load_issues since
-    2026-08-27: user stories only (NULL type tolerated) and registered
-    blockers excluded — the badge must match what the board shows."""
+    2026-08-27: user stories only (is_story_type) and registered blockers
+    excluded — the badge must match what the board shows."""
     try:
         rows = conn.execute(
             "SELECT jira_key, jira_status, type FROM jira_issues"
@@ -71,8 +79,7 @@ def delegated_counts(conn: sqlite3.Connection) -> dict:
     from app.db.blockers import list_blocker_jira_keys
     blocker_keys = list_blocker_jira_keys(conn)
     kept = [(key, status) for key, status, type_ in rows
-            if key not in blocker_keys
-            and (type_ is None or type_.strip().lower() == "story")]
+            if key not in blocker_keys and is_story_type(type_)]
     blocked = sum(1 for _key, status in kept
                   if (status or "").strip().lower() == "blocked")
     return {"total": len(kept), "blocked": blocked}

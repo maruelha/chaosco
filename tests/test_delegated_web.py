@@ -29,6 +29,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
   <item>
     <key id="2">S4ECOM-2002</key>
     <summary>SM2002_Marina gatekeeper case</summary>
+    <type id="18">User Story</type>
     <status id="3">In Progress</status>
     <assignee username="JIRAUSER1">Haase, Marina [External]</assignee>
   </item>
@@ -102,16 +103,36 @@ def test_only_user_stories_on_board_report_and_numbers(client):
     """[USER 2026-08-27]: "the main page should only have jira user
     stories" — the export deliberately carries the blocker defect issues
     (one upload refreshes everything), so a Defect-type issue must never
-    surface as a testing ticket, registered as a blocker or not. Items
-    without a <type> (legacy exports) are tolerated as stories."""
+    surface as a testing ticket, registered as a blocker or not. 'Story'
+    matches by SUBSTRING ("User Story" counts — an exact match emptied
+    Marina's real board). Items without a <type> are tolerated too."""
     _upload(client)
     for url in ("/delegated/", "/delegated/report", "/delegated/numbers"):
         html = client.get(url).get_data(as_text=True)
         assert "S4DEF-3001" not in html, url
     for url in ("/delegated/", "/delegated/report"):  # numbers shows counts, not keys
         html = client.get(url).get_data(as_text=True)
-        assert "S4ECOM-2001" in html, url   # explicit Story stays
+        assert "S4ECOM-2001" in html, url   # explicit "Story" stays
+        assert "S4ECOM-2002" in html, url   # "User Story" stays too (substring)
         assert "S4ECOM-2003" in html, url   # no <type> at all stays too
+
+
+def test_board_shows_what_the_story_filter_hides(client):
+    """The stories-only filter must never empty the board SILENTLY
+    (2026-08-27) — the page names the hidden types and counts."""
+    _upload(client)
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "Not shown (not a user story)" in html
+    assert "Defect ×1" in html
+    # once the defect is registered as a blocker it is no longer "hidden by
+    # the type filter" — it lives on the Blockers page by design
+    conn = web_delegated._get_conn()
+    try:
+        db_blockers.create_blocker(conn, "defect", "Registered now", "S4DEF-3001")
+    finally:
+        conn.close()
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "Not shown (not a user story)" not in html
 
 
 def test_dashboard_badge_counts_match_the_board(client):

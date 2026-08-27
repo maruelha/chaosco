@@ -51,21 +51,39 @@ def _load_issues(conn):
     ONLY USER STORIES [USER 2026-08-27: "the main page should only have
     jira user stories"] — the delegated export deliberately also carries
     the blocker DEFECT issues (blockers design: one upload refreshes
-    everything), so any issue whose Jira type isn't Story is dropped from
-    the board/report/numbers here, registered as a blocker or not. A NULL
-    type (export without <type>) is tolerated as a story rather than
-    silently dropped."""
+    everything), so any issue whose Jira type isn't a story is dropped
+    from the board/report/numbers here, registered as a blocker or not.
+    "Story" matches by SUBSTRING (case-insensitive: "Story", "User
+    Story", …) — an exact match emptied Marina's board on 2026-08-27
+    because her Jira's type wording differed. A NULL type (export without
+    <type>) is tolerated as a story rather than silently dropped; the
+    board additionally SHOWS what the filter hid (_hidden_non_story)."""
     issues = db_jira.list_jira_issues(conn, seen_in="delegated")
     blocker_keys = db_blockers.list_blocker_jira_keys(conn)
     issues = [i for i in issues if i["jira_key"] not in blocker_keys
-              and (i.get("type") is None
-                   or i["type"].strip().lower() == "story")]
+              and db_delegated.is_story_type(i.get("type"))]
     comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                     for i in issues}
     for i in issues:
         i["orders"] = extract_latest_comment_orders(
             comments_map[i["jira_key"]])["orders"]
     return issues, comments_map
+
+
+def _hidden_non_story(conn) -> list[tuple[str, int]]:
+    """[(type, count), …] of delegated-tagged, non-blocker issues the
+    stories-only filter hides — shown on the board so the filter can never
+    empty the page SILENTLY (that happened 2026-08-27)."""
+    issues = db_jira.list_jira_issues(conn, seen_in="delegated")
+    blocker_keys = db_blockers.list_blocker_jira_keys(conn)
+    counts: dict[str, int] = {}
+    for i in issues:
+        if i["jira_key"] in blocker_keys:
+            continue
+        if not db_delegated.is_story_type(i.get("type")):
+            key = (i.get("type") or "").strip() or "(no type)"
+            counts[key] = counts.get(key, 0) + 1
+    return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
 
 
 @bp.route("/")
@@ -83,6 +101,7 @@ def delegated_list():
         docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
         blockers_by_key = db_blockers.blockers_for_tickets(
             conn, [i["jira_key"] for i in issues])
+        hidden_non_story = _hidden_non_story(conn)
     finally:
         conn.close()
     for i in issues:
@@ -100,6 +119,7 @@ def delegated_list():
         note_counts=note_counts,
         chats_by_entity=chats_by_entity,
         docs_s4_jira=docs_s4_jira,
+        hidden_non_story=hidden_non_story,
         jira_ok=request.args.get("jira_ok"),
         jira_msg=request.args.get("jira_msg"),
     )
