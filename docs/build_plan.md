@@ -49,6 +49,71 @@ Last updated: 2026-08-27
 
 ## Part 1 — Feature work by module
 
+### Core South Sustainphase Monitoring (`/sustain/`) — PLANNED 2026-08-27
+
+Daily GBS Operations checklist for the sustain phase (O2C DTC). Source
+file: `…DTC_GBS Operations_checklist.xlsx` — the prefix before `DTC_GBS`
+changes per file (it encodes the date window, e.g. `1_0109_0409-O2C`), so
+the upload matches on the **filename suffix**. Deep-dive doc
+`docs/claude/sustain.md` gets written in step 1 and grows with each step.
+
+**Workbook structure (verified against the real 2026-08-27 file):**
+one tab per stream per day, named `Retail_<ISO date>` / `eCom_<ISO date>`
+(8 tabs = Retail+eCom × Sep 1–4). Headers on row 6, data from row 7.
+Columns: A Task ID · B L4 Taxonomy · C Process/Task · D Cadence ·
+E Due Today · F Country · G Provider/Partner/Financial Account ·
+H–K France/Italy/Portugal/Spain Result · L Task Overall (formula).
+Parent tasks carry a Task ID at outline level 0; country/provider detail
+rows ("↳ Detail check") sit at outline level 1 (collapsed in Excel) —
+openpyxl exposes the outline level, so the parent↔child structure imports
+faithfully. Result-cell vocabulary: `OK` / `Pending` / `Not due` / `N/A` /
+blank / **free text** (the team writes short issue notes directly into the
+cell — that free text is the discussion-point signal). Row 4 holds
+DUE/COMPLETED/PENDING/REVIEW `COUNTIFS` summaries, but cached values are
+only right after a save ("Save file to check" cell) → **we recompute all
+counts in Python and never trust row 4**.
+
+**Decisions (planning chat 2026-08-27):** detail report first, management
+summary only after Marina has seen the detail report; blank-but-due counts
+as Pending (recommended, to confirm); each upload replaces the (date,
+stream) tabs it contains, so consecutive files (different date windows)
+accumulate history. Steps one at a time, Marina confirms each:
+
+1. **Storage `app/db/sustain.py`** — `sustain_tasks` (date, stream,
+   task_id, taxonomy, process, cadence, due_today, provider, 4 country
+   results, overall) + `sustain_task_details` (1:n, country, provider,
+   cadence, due_today, 4 results), technical PKs, portable SQL;
+   `replace_day_stream`, list/get helpers, recomputed
+   `summary_counts(date, stream)` (due/completed/pending/attention);
+   register in the `database.py` facade. Tests first
+   (`tests/test_sustain_storage.py`).
+2. **Importer `app/sustain_importer.py`** — `parse_sustain_workbook`
+   (openpyxl `data_only=True`, tab-name pattern → (stream, date), rows
+   from 7, parent = has Task ID / detail = outline level 1) +
+   `run_sustain_import` (replace per tab). Verify counts against the real
+   file (Retail 09-01: 33 parents / ~360 rows; eCom 09-01: 26 / ~378).
+   `tests/test_sustain_importer.py`.
+3. **Blueprint `app/web_sustain.py`** — `/sustain/` upload page, file
+   picker (.xlsx, suffix-matched), dated copy in `data/uploads/` (Smoke
+   pattern), wired to the importer; registered in `app/web.py`. Plain
+   import-count line until step 4. `tests/test_sustain_web.py`.
+4. **Detail report** — day picker + Retail/eCom toggle; table mirroring
+   the Excel: parent task rows expandable to their detail rows (native
+   `<details>` accordion, Smoke's `scenario_group` pattern); recomputed
+   stat-card summary row on top. Verified by eye against the Excel.
+5. **Management summary** — per day+stream headline Due/Completed/
+   Pending/**Attention**; classification per due result cell: `OK` → done,
+   `Pending`/blank → pending, `Not due`/`N/A` → out of scope, anything
+   else (free text) + overall `Review` → Attention. Attention list =
+   task · country · provider · verbatim cell text (the auto-generated
+   discussion agenda). Plus day-over-day completion trend and "repeat
+   offenders" (same task/provider in Attention on 2+ days). Exact layout
+   to be re-discussed after step 4.
+6. **Dashboard card + docs sweep** — dashboard card (badge TBD),
+   `docs/claude/sustain.md` finalized, `screens.html`,
+   `database_schema.html`, `architecture.html`, `dashboard_cards.html`,
+   CLAUDE.md code-layout/doc tables.
+
 ### CORE SOUTH Smoke Testing (`/smoke/`) — NEW 2026-08-27
 
 Deep-dive: `docs/claude/smoke.md` (workbook structure, filter rules and
