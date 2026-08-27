@@ -119,9 +119,20 @@ one-at-a-time, Marina confirms each:
    `tests/test_blockers.py` (+6: links json, attach/detach, quick-create,
    blocked_ticket_counts), `tests/test_delegated_web.py` (+3: goal toggle
    via checkbox and via the detail form, chips render on board + detail).
-9. **Detailed status report** (name stays): blocker chips on blocked rows +
-   Blocker filter next to Status/Assignee (pick one → see what it blocks).
-   Downloads/exports stay clean automatically (download-mode renders).
+9. ~~Detailed status report~~ ✅ DONE 2026-08-27 (name stays): blocked rows
+   gain a Blockers column (amber chips, name + jira key — own `.rpt-blockers`
+   style since the report's CSS is self-contained, not the app's
+   `style.css`) fed by `report_context`'s `blockers_for_tickets` batch
+   query. A Blocker filter select joins Status/Assignee in the screen-only
+   filter bar (options = only blockers actually attached to a ticket in
+   THIS report, built once in `report_context` — same defect→task→
+   clarification order everywhere); AND-combines client-side via each
+   row's `data-blockers="<comma-separated ids>"`. Downloads/exports stay
+   clean automatically: chips render in every mode (static display, like
+   "Why blocked"), the filter select is inside the existing
+   `{% if not download %}` filterbar block so it never needs separate
+   handling. Tests: `tests/test_delegated_web.py` (+2: chips+filter appear
+   on the screen page, download keeps the chips but drops the filter).
 10. **Management Summary** (Numbers page renamed "Management Summary Status
     Report"; routes/keys/filenames stay `numbers`/`delegated_numbers` so
     export + email keep working): goal field (one-row table, portable SQL)

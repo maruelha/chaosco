@@ -192,6 +192,33 @@ def test_report_download_is_standalone_attachment(client):
     assert "co-input" not in html.split("</style>")[1]  # no call-out inputs in the body
 
 
+def test_report_shows_blocker_chips_and_filter(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-2001")
+    finally:
+        conn.close()
+    html = client.get("/delegated/report").get_data(as_text=True)
+    assert "Pricing bug (S4DEF-1)" in html           # chip on the blocked row
+    assert f'value="{b1["blocker_id"]}">Pricing bug (S4DEF-1)' in html  # filter option
+    assert f'data-blockers="{b1["blocker_id"]}"' in html  # row carries the id for JS filtering
+
+
+def test_report_download_includes_blocker_chips_but_no_filter(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        b1 = db_blockers.create_blocker(conn, "task", "Backfill master data", None)
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-2001")
+    finally:
+        conn.close()
+    html = client.get("/delegated/report/download").get_data(as_text=True)
+    assert "Backfill master data" in html   # chip still shown — static display, not interactive
+    assert "rf-blocker" not in html         # filter dropdown stripped like the rest of the filterbar
+
+
 def test_report_page_keeps_its_buttons(client):
     _upload(client)
     html = client.get("/delegated/report").get_data(as_text=True)

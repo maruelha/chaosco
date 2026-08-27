@@ -134,9 +134,19 @@ blocks one or more delegated tickets. Design decisions:
   overwrote the ticket key, crashing the board whenever an attached
   blocker had no jira_key of its own. Fixed with `AS ticket_key`; caught
   by `test_board_and_detail_show_attached_blocker_chip`.
+- **Status report (step 9, 2026-08-27)**: blocked rows show the SAME
+  chips (name + jira key), and a Blocker filter joins Status/Assignee in
+  the screen-only filter bar — pick one, see only the tickets it blocks.
+  Options list only blockers actually attached to a ticket in this
+  report. The report's CSS is self-contained (not the app's
+  `style.css`, so it stays a clean standalone download) — chips get
+  their own `.rpt-blockers` style rather than reusing `.chip`. Chips
+  render in every mode; the filter select sits inside the existing
+  `{% if not download %}` filterbar block, so downloads/exports drop it
+  automatically with zero extra code.
 
-Next build steps (see `docs/build_plan.md`): 9 blocker filter/chips on the
-status report, 10 Management Summary blocker overview + weekly goal.
+Next build step (see `docs/build_plan.md`): 10 Management Summary blocker
+overview + weekly goal.
 
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 

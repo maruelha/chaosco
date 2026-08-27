@@ -210,17 +210,31 @@ def report_context(conn) -> dict:
     issues, _comments = _load_issues(conn)
     annotations = db_delegated.get_delegated_annotations(conn)
     report_comments = database.list_report_comments(conn, "delegated")
+    blockers_by_key = db_blockers.blockers_for_tickets(
+        conn, [i["jira_key"] for i in issues])
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
+        i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     sections = [(title, css, items)
                 for _key, title, css, items in bucket_issues(issues, _me())]
+    # blocker filter (step 9) — only blockers actually attached to a ticket
+    # in THIS report, same defect/task/clarification order as everywhere else
+    type_order = {key: idx for idx, (key, _) in enumerate(db_blockers.TYPE_SECTIONS)}
+    seen_blockers = {b["blocker_id"]: b for i in issues for b in i["blockers"]}
+    blocker_options = [
+        {"blocker_id": b["blocker_id"],
+         "label": b["name"] + (f" ({b['jira_key']})" if b["jira_key"] else "")}
+        for b in sorted(seen_blockers.values(),
+                        key=lambda b: (type_order.get(b["type"], 9), b["name"].lower()))
+    ]
     filter_options = {
         "statuses": sorted({(i.get("jira_status") or "").strip()
                             for i in issues if (i.get("jira_status") or "").strip()}),
         "assignees": sorted({(i.get("jira_assignee") or "").strip()
                              for i in issues if (i.get("jira_assignee") or "").strip()}),
+        "blockers": blocker_options,
     }
     return {
         "sections": sections, "total": len(issues),

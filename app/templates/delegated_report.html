@@ -98,6 +98,9 @@
     .rpt-orders div { padding: 0.05rem 0; font-size: 0.76rem; color: #475569; }
     .rpt-next { white-space: pre-wrap; }
     .rpt-blocked-reason { white-space: pre-wrap; color: #991b1b; }
+    .rpt-blockers span { display: inline-block; margin: 1px 3px 1px 0; padding: 1px 7px;
+                          border-radius: 10px; background: #fef3c7; color: #92400e;
+                          font-size: 0.72rem; white-space: nowrap; }
     .empty-state { text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.9rem; }
 
     @page { size: A4 landscape; margin: 1.5cm; }
@@ -160,6 +163,11 @@
     <option value="">All</option>
     {% for a in filter_options.assignees %}<option value="{{ a|lower }}">{{ a }}</option>{% endfor %}
   </select>
+  <label for="rf-blocker">Blocker</label>
+  <select id="rf-blocker" class="rf-select">
+    <option value="">All</option>
+    {% for b in filter_options.blockers %}<option value="{{ b.blocker_id }}">{{ b.label }}</option>{% endfor %}
+  </select>
   <button type="button" class="btn" id="rf-clear">Clear</button>
   <span id="rf-hint" style="color:#94a3b8"></span>
 </div>
@@ -218,14 +226,18 @@
         <th style="width:8.5rem">Assignee</th>
         <th style="width:7rem">Market</th>
         <th style="width:13%">Order numbers</th>
-        {% if is_blocked_section %}<th style="width:14%">Why blocked</th>{% endif %}
+        {% if is_blocked_section %}
+        <th style="width:14%">Why blocked</th>
+        <th style="width:14%">Blockers</th>
+        {% endif %}
         <th style="width:15%">Next step</th>
       </tr>
     </thead>
     <tbody>
       {% for i in items %}
       <tr data-status="{{ (i.jira_status or '')|lower }}"
-          data-assignee="{{ (i.jira_assignee or '')|lower }}">
+          data-assignee="{{ (i.jira_assignee or '')|lower }}"
+          data-blockers="{{ i.blockers | map(attribute='blocker_id') | join(',') }}">
         <td style="color:#94a3b8">{{ loop.index }}</td>
         <td class="mono" style="font-size:0.76rem">{{ i.jira_key }}</td>
         <td class="mono" style="font-size:0.76rem">{{ i.solman_id or "—" }}</td>
@@ -236,7 +248,12 @@
         <td class="rpt-orders">
           {% for line in i.orders %}<div>{{ line }}</div>{% else %}—{% endfor %}
         </td>
-        {% if is_blocked_section %}<td class="rpt-blocked-reason">{{ i.blocked_reason or "" }}</td>{% endif %}
+        {% if is_blocked_section %}
+        <td class="rpt-blocked-reason">{{ i.blocked_reason or "" }}</td>
+        <td class="rpt-blockers">
+          {% for b in i.blockers %}<span>{{ b.name }}{% if b.jira_key %} ({{ b.jira_key }}){% endif %}</span>{% else %}—{% endfor %}
+        </td>
+        {% endif %}
         <td class="rpt-next">{{ i.next_step or "" }}</td>
       </tr>
       {% endfor %}
@@ -300,6 +317,7 @@ function rfApply() {
   const want = {
     status:   document.getElementById('rf-status').value,
     assignee: document.getElementById('rf-assignee').value,
+    blocker:  document.getElementById('rf-blocker').value,
   };
   let shown = 0, total = 0;
   document.querySelectorAll('.rpt-section').forEach(sec => {
@@ -307,7 +325,8 @@ function rfApply() {
     sec.querySelectorAll('tbody tr').forEach(tr => {
       total += 1;
       const ok = (!want.status   || tr.dataset.status   === want.status)
-              && (!want.assignee || tr.dataset.assignee === want.assignee);
+              && (!want.assignee || tr.dataset.assignee === want.assignee)
+              && (!want.blocker  || (tr.dataset.blockers || '').split(',').includes(want.blocker));
       tr.style.display = ok ? '' : 'none';
       if (ok) { secShown += 1; shown += 1; }
     });
@@ -319,7 +338,7 @@ function rfApply() {
         : secShown + ' of ' + t + ' tickets';
     }
   });
-  const filtering = want.status || want.assignee;
+  const filtering = want.status || want.assignee || want.blocker;
   document.getElementById('rf-hint').textContent =
     filtering ? ('showing ' + shown + ' of ' + total) : '';
 }
