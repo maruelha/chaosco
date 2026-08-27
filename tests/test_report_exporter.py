@@ -4,6 +4,7 @@ numbers HTML (download-mode renders, no buttons/scripts)."""
 import pytest
 
 from app import database
+from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
 import app.web_delegated as web_delegated
@@ -17,6 +18,7 @@ def env(tmp_path, monkeypatch):
     database.init_db(db_path).close()
     db_jira.init_schema(db_path)
     db_delegated.init_schema(db_path)
+    db_blockers.init_schema(db_path)
     monkeypatch.setattr(web_delegated, "_get_conn",
                         lambda: database.get_connection(db_path))
     cfg = {"database_path": str(db_path),

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Delegated Testing Numbers — {{ today }}</title>
+  <title>Delegated Testing — Management Summary — {{ today }}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       font-size: 13px; color: #1e293b; background: #fff;
-      padding: 2rem 2.5rem; line-height: 1.5; max-width: 760px; margin: 0 auto;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 820px; margin: 0 auto;
     }
     .toolbar {
       display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
@@ -36,25 +36,67 @@
     .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
                    color: #94a3b8; margin-top: 0.15rem; text-align: right; }
 
-    .num-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid #e2e8f0; }
+    /* ---- weekly goal ---- */
+    .goal-box {
+      display: flex; align-items: center; gap: 1.75rem; flex-wrap: wrap;
+      border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px;
+      padding: 0.85rem 1.1rem; margin-bottom: 1.5rem;
+    }
+    .goal-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .goal-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; }
+    .goal-val { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+    .goal-input {
+      font: inherit; font-size: 1.4rem; font-weight: 800; color: #0f172a;
+      border: 1px solid transparent; border-radius: 5px; padding: 0 0.3rem;
+      width: 5rem; background: transparent;
+    }
+    .goal-input:hover, .goal-input:focus { border-color: #cbd5e1; background: #fff; outline: none; }
+    .goal-delta { font-size: 0.82rem; font-weight: 700; }
+    .goal-delta.on-track { color: #15803d; }
+    .goal-delta.behind   { color: #b91c1c; }
+    .goal-hint { font-size: 0.74rem; color: #94a3b8; flex-basis: 100%; }
+
+    /* ---- staged bucket table ---- */
+    .num-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; border: 1px solid #e2e8f0; margin-bottom: 1.75rem; }
     .num-table th {
       background: #f1f5f9; color: #64748b; font-weight: 600;
       font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
       padding: 0.4rem 0.8rem; text-align: left; border-bottom: 1px solid #e2e8f0;
     }
-    .num-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .num-table td { padding: 0.4rem 0.8rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
     .num-table td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
     .num-table tr.is-blocked td { color: #991b1b; font-weight: 600; }
     .num-table tr.is-zero td { color: #94a3b8; font-weight: 400; }
-    .num-table tr.total-row td {
-      border-top: 2px solid #1e293b; font-weight: 800; color: #0f172a;
+    .num-table tr.stage-head td {
+      background: #1e293b; color: #f1f5f9; font-weight: 700;
+      font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.35rem 0.8rem;
     }
+    .num-table tr.stage-total td { font-weight: 700; color: #0f172a; border-bottom: 2px solid #e2e8f0; }
+    .num-table tr.unexpected-row td { color: #6b21a8; }
+    .num-table tr.total-row td { border-top: 2px solid #1e293b; font-weight: 800; color: #0f172a; }
+
+    /* ---- blocker overview ---- */
+    .blk-section { margin-bottom: 1.25rem; }
+    .blk-section-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+                          letter-spacing: 0.09em; color: #64748b; margin-bottom: 0.4rem; }
+    .blk-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; border: 1px solid #e2e8f0; }
+    .blk-table th {
+      background: #f1f5f9; color: #64748b; font-weight: 600;
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.35rem 0.7rem; text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    .blk-table td { padding: 0.35rem 0.7rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    .blk-table td.num { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .blk-empty { color: #94a3b8; font-size: 0.82rem; padding: 0.4rem 0.1rem; }
 
     @page { size: A4 portrait; margin: 2cm; }
     @media print {
       body { padding: 0; max-width: none; }
       .toolbar { display: none !important; }
-      .num-table th { background: #f1f5f9 !important;
+      .num-table th, .blk-table th { background: #f1f5f9 !important;
+                      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .num-table tr.stage-head td { background: #1e293b !important; color: #f1f5f9 !important;
                       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
@@ -63,7 +105,7 @@
 
 {% if not download %}
 <div class="toolbar">
-  <span class="toolbar-title">Delegated Testing Numbers</span>
+  <span class="toolbar-title">Management Summary Status Report</span>
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
   <a href="{{ url_for('delegated.delegated_report') }}" class="btn">📄 Status report</a>
   <a href="{{ url_for('delegated.delegated_numbers_download') }}" class="btn">⬇ Download HTML</a>
@@ -75,13 +117,36 @@
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
-    <div class="rh-title">Delegated Testing Numbers</div>
+    <div class="rh-title">Management Summary Status Report</div>
     <div class="rh-date">{{ today }} · tickets per bucket, from the delegated Jira export</div>
   </div>
   <div>
     <div class="rh-stat-val">{{ total }}</div>
     <div class="rh-stat-lbl">Tickets</div>
   </div>
+</div>
+
+<div class="goal-box">
+  <div class="goal-item">
+    <span class="goal-label">Goal — created test orders</span>
+    {% if download %}
+    <span class="goal-val">{{ goal }}</span>
+    {% else %}
+    <input type="number" min="0" class="goal-input" id="goal-input" value="{{ goal }}"
+           data-actual="{{ actual }}" onblur="goalSave(this)">
+    {% endif %}
+  </div>
+  <div class="goal-item">
+    <span class="goal-label">Actual</span>
+    <span class="goal-val">{{ actual }}</span>
+  </div>
+  <div class="goal-item">
+    <span class="goal-label">Delta</span>
+    <span class="goal-delta {{ 'on-track' if actual >= goal else 'behind' }}" id="goal-delta">
+      {{ '+' if actual >= goal else '' }}{{ actual - goal }}
+    </span>
+  </div>
+  <div class="goal-hint">Actual = Past Gatekeeper Check ({{ stages[2][2] }}) + Blocked counting toward goal ({{ blocked_counting }})</div>
 </div>
 
 <table class="num-table" id="num-table">
@@ -92,12 +157,23 @@
     </tr>
   </thead>
   <tbody>
-    {% for key, title, count in counts %}
+    {% for skey, slabel, stotal, rows in stages %}
+    <tr class="stage-head"><td colspan="2">{{ slabel }}</td></tr>
+    {% for key, title, count in rows %}
     <tr class="{% if key == 'blocked' and count %}is-blocked{% elif not count %}is-zero{% endif %}">
       <td>{{ title }}</td>
       <td class="num">{{ count }}</td>
     </tr>
     {% endfor %}
+    <tr class="stage-total">
+      <td>{{ slabel }} total</td>
+      <td class="num">{{ stotal }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="unexpected-row{% if not unexpected[2] %} is-zero{% endif %}">
+      <td>{{ unexpected[1] }}</td>
+      <td class="num">{{ unexpected[2] }}</td>
+    </tr>
     <tr class="total-row">
       <td>Total</td>
       <td class="num">{{ total }}</td>
@@ -105,15 +181,61 @@
   </tbody>
 </table>
 
+<div class="blk-section-title" style="font-size:0.8rem; color:#0f172a; margin-bottom:0.6rem">Blocker overview</div>
+{% for key, label, items in blocker_sections %}
+<div class="blk-section">
+  <div class="blk-section-title">{{ label }} ({{ items|length }})</div>
+  {% if items %}
+  <table class="blk-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th style="width:8rem">Jira Key</th>
+        <th style="width:6rem; text-align:right">Blocks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in items %}
+      <tr>
+        <td>{{ b.name }}</td>
+        <td class="mono" style="font-size:0.78rem">{{ b.jira_key or "—" }}</td>
+        <td class="num">{{ blocked_ticket_counts.get(b.blocker_id, 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="blk-empty">None.</p>
+  {% endif %}
+</div>
+{% endfor %}
+
 {% if not download %}
 <script>
 function copyTable() {
   const lines = [["Bucket", "Tickets"].join("\t")];
   document.querySelectorAll("#num-table tbody tr").forEach(tr => {
     const c = tr.querySelectorAll("td");
+    if (c.length < 2) { lines.push(c[0].textContent.trim()); return; }
     lines.push([c[0].textContent.trim(), c[1].textContent.trim()].join("\t"));
   });
   navigator.clipboard.writeText(lines.join("\n"));
+}
+
+function goalSave(input) {
+  const body = new URLSearchParams({ goal: input.value });
+  fetch('/delegated/numbers/goal', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#16a34a';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800);
+                 const goal = parseInt(input.value, 10) || 0;
+                 const actual = parseInt(input.dataset.actual, 10) || 0;
+                 const delta = document.getElementById('goal-delta');
+                 const onTrack = actual >= goal;
+                 delta.textContent = (onTrack ? '+' : '') + (actual - goal);
+                 delta.classList.toggle('on-track', onTrack);
+                 delta.classList.toggle('behind', !onTrack); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
 }
 </script>
 {% endif %}

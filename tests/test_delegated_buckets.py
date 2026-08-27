@@ -1,5 +1,6 @@
 """Delegated Testing — bucket rules + latest-comment order extraction."""
-from app.delegated_buckets import SECTIONS, bucket_counts, bucket_issues, bucket_key
+from app.delegated_buckets import (SECTIONS, STAGES, bucket_counts,
+                                   bucket_issues, bucket_key, staged_counts)
 from app.jira_importer import extract_latest_comment_orders
 
 ME = "haase"
@@ -50,6 +51,29 @@ def test_bucket_issues_keeps_order_and_covers_all_sections():
     assert counts == {"blocked": 1, "open": 1, "sales": 1, "team": 0,
                       "marina": 0, "settlement": 0, "gbs": 0, "done": 0,
                       "unexpected": 0}
+
+
+# ---- Management Summary staging (build plan step 10) ----------------------
+
+def test_staged_counts_groups_buckets_into_three_stages():
+    issues = [_issue("Blocked"), _issue("Open"), _issue("In Progress"),
+             _issue("In Verification"), _issue("In Validation"),
+             _issue("In Review"), _issue("Resolved"), _issue("Ready for Verification")]
+    stages, unexpected = staged_counts(issues, ME)
+    assert [key for key, _l, _t, _r in stages] == [key for key, _l, _b in STAGES]
+    blocked_stage = stages[0]
+    assert blocked_stage[0] == "blocked" and blocked_stage[2] == 1
+    pre = stages[1]
+    assert pre[0] == "pre_gatekeeper" and pre[2] == 2   # open + team
+    post = stages[2]
+    assert post[0] == "post_gatekeeper" and post[2] == 4  # settle+gbs+sales+done
+    assert unexpected == ("unexpected", "Unexpected status", 1)
+
+
+def test_staged_counts_all_zero_when_no_issues():
+    stages, unexpected = staged_counts([], ME)
+    assert all(total == 0 for _k, _l, total, _rows in stages)
+    assert unexpected[2] == 0
 
 
 # ---- latest-comment order extraction (acceptance criteria ignored) ---------

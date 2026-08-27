@@ -22,6 +22,12 @@ CREATE TABLE IF NOT EXISTS delegated_annotations (
     next_step      TEXT,
     updated_at     TEXT
 );
+
+CREATE TABLE IF NOT EXISTS delegated_goal (
+    id         INTEGER PRIMARY KEY,  -- always 1 — single row, no history
+    goal       INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT
+);
 """
 
 
@@ -140,3 +146,20 @@ def set_delegated_counts_toward_goal(conn: sqlite3.Connection, jira_key: str,
                 counts_toward_goal = excluded.counts_toward_goal,
                 updated_at         = excluded.updated_at
         """, (jira_key, 1 if value else 0, _now()))
+
+
+def get_delegated_goal(conn: sqlite3.Connection) -> int:
+    """ONE number, editable on the Management Summary — no history is kept
+    [USER 2026-08-27]; downloaded reports are the history."""
+    row = conn.execute("SELECT goal FROM delegated_goal WHERE id = 1").fetchone()
+    return row[0] if row else 0
+
+
+def set_delegated_goal(conn: sqlite3.Connection, goal: int) -> None:
+    with conn:
+        conn.execute("""
+            INSERT INTO delegated_goal (id, goal, updated_at) VALUES (1, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                goal       = excluded.goal,
+                updated_at = excluded.updated_at
+        """, (goal, _now()))

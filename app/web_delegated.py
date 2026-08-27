@@ -21,7 +21,7 @@ from app.config_loader import load_config
 from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
-from app.delegated_buckets import BOARD_CSS, bucket_counts, bucket_issues
+from app.delegated_buckets import BOARD_CSS, bucket_counts, bucket_issues, bucket_key, staged_counts
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -245,11 +245,34 @@ def report_context(conn) -> dict:
 
 
 def numbers_context(conn) -> dict:
-    """Template context for the numbers report — shared like report_context."""
+    """Template context for the Management Summary — shared like
+    report_context. Goal actual [USER 2026-08-27] = tickets past the
+    gatekeeper check (Settlementfile/GBS/Sales/Resolved) + BLOCKED tickets
+    whose defect was found in a way that counts toward the goal
+    (counts_toward_goal, independent of status)."""
     issues, _comments = _load_issues(conn)
+    annotations = db_delegated.get_delegated_annotations(conn)
+    me = _me()
+    for i in issues:
+        i["counts_toward_goal"] = (annotations.get(i["jira_key"]) or {}).get(
+            "counts_toward_goal", False)
+    stages, unexpected = staged_counts(issues, me)
+    post_gatekeeper_total = next(t for k, _l, t, _r in stages if k == "post_gatekeeper")
+    blocked_counting = sum(
+        1 for i in issues
+        if bucket_key(i, me) == "blocked" and i["counts_toward_goal"])
+    blockers = db_blockers.list_blockers(conn)
+    blocked_ticket_counts = db_blockers.blocked_ticket_counts(conn)
+    blocker_sections = [(key, label, [b for b in blockers if b["type"] == key])
+                        for key, label in db_blockers.TYPE_SECTIONS]
     return {
-        "counts": bucket_counts(issues, _me()),
+        "stages": stages, "unexpected": unexpected,
         "total": len(issues),
+        "goal": db_delegated.get_delegated_goal(conn),
+        "actual": post_gatekeeper_total + blocked_counting,
+        "blocked_counting": blocked_counting,
+        "blocker_sections": blocker_sections,
+        "blocked_ticket_counts": blocked_ticket_counts,
         "today": date.today().strftime("%Y-%m-%d"),
     }
 
@@ -287,14 +310,29 @@ def delegated_report_download():
 
 @bp.route("/numbers")
 def delegated_numbers():
-    """Delegated numbers report — counts per bucket (retail-report style).
-    Later backlog items join these counts in delegated_buckets."""
+    """Management Summary Status Report (renamed 2026-08-27, was "numbers" —
+    route/template/filenames kept so exports/email keep working): bucket
+    counts staged into 3 review groups, the weekly goal vs actual, and a
+    blocker overview. Later backlog items join the counts in
+    delegated_buckets."""
     conn = _get_conn()
     try:
         ctx = numbers_context(conn)
     finally:
         conn.close()
     return render_template("delegated_numbers.html", **ctx)
+
+
+@bp.route("/numbers/goal", methods=["POST"])
+def delegated_goal_save():
+    """Inline blur-save of the ONE weekly goal number — no history kept
+    [USER 2026-08-27], downloaded reports serve as the history."""
+    conn = _get_conn()
+    try:
+        db_delegated.set_delegated_goal(conn, request.form.get("goal", type=int) or 0)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/numbers/download")

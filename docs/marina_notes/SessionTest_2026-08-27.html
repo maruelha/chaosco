@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-27</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-27</h1>
+<p class="hint">Everything built in the 27.08. session — <strong>Blockers</strong> (own page +
+attach-to-tickets) and the <strong>Management Summary</strong> (renamed from Numbers) — as a
+click-through checklist. Ticks are remembered by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>).
+New on startup: the <code>blockers</code> / <code>blocker_links</code> / <code>delegated_goal</code>
+tables and the <code>counts_toward_goal</code> column on <code>delegated_annotations</code> (all
+created/migrated automatically) and the <code>/blockers/…</code> routes. No new upload needed —
+add the blocker Jira issues to your existing delegated Jira export filter, the usual
+"⤒ Upload &amp; import" on the Delegated Testing card keeps them current.</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Blockers — own page</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Dashboard → Delegated Testing card → <strong>🚧 Blockers</strong> (also on the board
+      toolbar).
+      <span class="expect">A page listing BLOCKERS — Defects / Tasks / Business Clarifications
+      sections, NOT a list of blocked tickets.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>+ Add Blocker → pick "Defect", type a name and a real Jira key (one already in your
+      delegated export), Save.
+      <span class="expect">Detail page shows the LIVE status/summary/comments from Jira — no
+      separate upload was needed.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span>+ Add Blocker → pick "Business Clarification", type a name, leave Jira Key blank
+      (field hides itself).
+      <span class="expect">Saves with no jira key; list shows "—" in the Jira Key column and
+      Jira Status.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1d">
+      <span>Add a note on a blocker's detail page.
+      <span class="expect">Works exactly like every other module's notes (own thread).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1e">
+      <span>Check the delegated board: the Jira ticket you registered as a blocker.
+      <span class="expect">It's GONE from the board/buckets — a blocker doesn't double as a
+      testing ticket.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-red">
+  <div class="box-head">2 · Attach blockers to tickets</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>On the board, a BLOCKED row → new <strong>Blockers</strong> button.
+      <span class="expect">Dialog opens: "Attached" (empty), a dropdown of existing blockers,
+      and a "+ New blocker" section.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Attach an existing blocker from the dropdown.
+      <span class="expect">Chip appears in the dialog AND on the row immediately (no reload).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Open "+ New blocker", fill type/name/jira key, "Create &amp; attach".
+      <span class="expect">New blocker created AND attached in one step; also now shows on the
+      Blockers page.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2d">
+      <span>Detach a blocker (✕ in the dialog).
+      <span class="expect">Chip disappears from both the dialog and the row.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2e">
+      <span>Same picker on the ticket detail page ("Manage blockers").
+      <span class="expect">Same dialog, same behaviour, chips shown above the button.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2f">
+      <span>On a BLOCKED row, tick the <strong>Goal</strong> checkbox (whether this defect counts
+      toward the weekly goal).
+      <span class="expect">Sticks on reload; also editable on the ticket detail page next to
+      "Why blocked".</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · Status report — blocker chips + filter</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open <strong>📄 Status report</strong>; find a BLOCKED row with an attached blocker.
+      <span class="expect">Amber "Blockers" column shows name + jira key.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Use the new <strong>Blocker</strong> filter next to Status/Assignee.
+      <span class="expect">Only tickets blocked by that blocker show; combines with Status/
+      Assignee like before.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>⬇ Download HTML.
+      <span class="expect">Blockers chips still show (static); the filter dropdown is gone —
+      no dead controls in the file.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-green">
+  <div class="box-head">4 · Management Summary (renamed from Numbers)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Press <strong>📊 Management Summary</strong> on the board or status report.
+      <span class="expect">New title "Management Summary Status Report"; same URL as the old
+      Numbers page.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Set a Goal number in the top box (blur to save).
+      <span class="expect">Border flashes green; Actual/Delta update immediately, no page
+      reload. Delta is green when Actual ≥ Goal, red otherwise.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Tick "counts toward goal" on a couple of BLOCKED tickets (step 2f), reopen this page.
+      <span class="expect">Actual = tickets past the gatekeeper check (Settlementfile/GBS/Sales/
+      Resolved) + those flagged blocked tickets — check the hint line under the goal box does
+      the math you'd expect.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4d">
+      <span>Look at the bucket table.
+      <span class="expect">Bold stage headers "Blocked" / "Until Gatekeeper Check" / "Past
+      Gatekeeper Check", each with its buckets + a stage-total row, then "Unexpected status"
+      and the grand Total — nothing missing.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4e">
+      <span>Scroll to "Blocker overview".
+      <span class="expect">Defects → Tasks → Business Clarifications, each blocker with name,
+      jira key and how many tickets it blocks.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4f">
+      <span>⬇ Download HTML.
+      <span class="expect">Goal shows as plain text (not an input box); toolbar/print/copy
+      buttons gone; everything else (stages, blocker overview) intact.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4g">
+      <span>Dashboard → Export &amp; Backup → Export Reports; then Email Reports page.
+      <span class="expect">Both still list "Delegated Testing — Management Summary" (renamed
+      from "Delegated Testing Numbers") and produce the same clean file.</span></span></label>
+  </div>
+</div>
+
+<div class="box b-slate">
+  <div class="box-head">Parked / next (your call, later)</div>
+  <div class="box-body">
+    Still open per <code>docs/claude/delegated.md</code> + <code>docs/build_plan.md</code>: whether
+    structured Blockers eventually replace the free-text "Why blocked" field (decided to leave
+    both for now); the Excel/ECOM join and manually-managed backlog items (parked since
+    2026-08-26). Suite now at 491 tests.
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0827-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

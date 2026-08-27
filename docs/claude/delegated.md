@@ -144,9 +144,42 @@ blocks one or more delegated tickets. Design decisions:
   render in every mode; the filter select sits inside the existing
   `{% if not download %}` filterbar block, so downloads/exports drop it
   automatically with zero extra code.
+- **Management Summary (step 10, 2026-08-27)** — the Numbers page renamed
+  ("Management Summary Status Report"; routes/keys/filenames stay
+  `numbers`/`delegated_numbers` so exports/email keep working — only
+  visible titles changed, incl. `emailer.REPORT_CHOICES` and the board/
+  report "🔢 Numbers" links, now "📊 Management Summary"). Three pieces:
+  - **Weekly goal**: ONE number, no history [USER 2026-08-27] —
+    `delegated_goal` one-row table (`id=1`, portable
+    `ON CONFLICT DO UPDATE`). Inline blur-save
+    (`POST /delegated/numbers/goal`); the page updates Actual/Delta live
+    via JS, no reload. Actual = Past-Gatekeeper-Check stage total +
+    BLOCKED tickets flagged `counts_toward_goal` — "goal for the week is
+    X CREATED TEST ORDERS" [USER 2026-08-27], not successful ones, so a
+    ticket that reached settlement/GBS/sales/done counts regardless of
+    its eventual outcome, same as a defect found early enough to flag.
+  - **3-stage bucket view**: `delegated_buckets.staged_counts` (pure,
+    tested) groups the 9 buckets into Blocked | Until Gatekeeper Check
+    (open/team/marina) | Past Gatekeeper Check
+    (settlement/gbs/sales/done); Unexpected status is reported outside
+    any stage so it still can't silently disappear. Rendered as one
+    table with bold stage-header rows + a stage-total row, rather than
+    a 3-column layout — stays compact and print-friendly like the
+    original table.
+  - **Blocker overview**: Defects → Tasks → Business Clarifications
+    (same `TYPE_SECTIONS` order as the Blockers page), each blocker's
+    name, jira key and blocked-ticket count — `blocked_ticket_counts`
+    reused from the Blockers list page, one source of truth.
+  - Tests: `tests/test_delegated_buckets.py` (+2: `staged_counts`),
+    `tests/test_delegated_web.py` (+2: goal save + actual calculation,
+    stage/blocker-overview rendering). Also fixed along the way: 3
+    label assertions gone stale from the rename, and a missing
+    `db_blockers.init_schema` in the Export Reports test fixture — gave
+    `list_blockers` the same missing-table tolerance as the rest of the
+    module for consistency.
 
-Next build step (see `docs/build_plan.md`): 10 Management Summary blocker
-overview + weekly goal.
+All four build-plan steps for Blockers + Management Summary (7–10) are
+now done.
 
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 

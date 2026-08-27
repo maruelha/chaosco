@@ -133,17 +133,33 @@ one-at-a-time, Marina confirms each:
    `{% if not download %}` filterbar block so it never needs separate
    handling. Tests: `tests/test_delegated_web.py` (+2: chips+filter appear
    on the screen page, download keeps the chips but drops the filter).
-10. **Management Summary** (Numbers page renamed "Management Summary Status
-    Report"; routes/keys/filenames stay `numbers`/`delegated_numbers` so
-    export + email keep working): goal field (one-row table, portable SQL)
-    vs actual = Settlementfile + GBS validation + Sales validations +
-    Resolved/Closed + blocked(counts_toward_goal); bucket counts shown as 3
-    stages (Blocked | until gatekeeper check | past gatekeeper check);
-    blocker overview grouped Defects → Tasks → Clarifications with per-
-    blocker blocked-ticket count. INCLUDES the full documentation sweep
-    [USER 2026-08-27]: delegated.md, screens.html, database_schema.html,
-    architecture.html, dashboard_cards.html (if the card changes),
-    build_plan ticks, session test checklist.
+10. ~~Management Summary~~ ✅ DONE 2026-08-27 (Numbers page renamed
+    "Management Summary Status Report" — routes/keys/filenames stay
+    `numbers`/`delegated_numbers` so export + email keep working, only
+    visible titles changed, incl. the `emailer.REPORT_CHOICES` label and
+    the "🔢 Numbers" board/report links now "📊 Management Summary").
+    `delegated_goal` one-row table (`app/db/delegated.py`, portable SQL —
+    `ON CONFLICT DO UPDATE`) holds the ONE goal number, no history
+    [USER 2026-08-27] — inline blur-save `POST /delegated/numbers/goal`,
+    live-updates the Delta on the page without a reload. Actual = Past
+    Gatekeeper Check stage total + BLOCKED tickets flagged
+    `counts_toward_goal`. Bucket counts restructured into 3 stages via new
+    `delegated_buckets.staged_counts` (pure, tested) — Blocked | Until
+    Gatekeeper Check (open/team/marina) | Past Gatekeeper Check
+    (settlement/gbs/sales/done); Unexpected status reported separately so
+    nothing silently disappears (same rule as the buckets). Blocker
+    overview: Defects → Tasks → Business Clarifications, each blocker's
+    name/jira key/blocked-ticket count (`blocked_ticket_counts`, shared
+    with the Blockers list page). Tests: `tests/test_delegated_buckets.py`
+    (+2: staged_counts), `tests/test_delegated_web.py` (+2: goal
+    save/actual calc, stage/blocker-overview rendering) — plus fixed 3
+    stale label assertions from the intentional rename and a missing
+    `db_blockers.init_schema` in the exporter test fixture (also gave
+    `list_blockers` the same missing-table tolerance as the rest of the
+    module). Full documentation sweep done: delegated.md, screens.html,
+    database_schema.html (`delegated_goal` table card), dashboard_cards.html,
+    build_plan ticks, session test checklist
+    (`docs/marina_notes/SessionTest_2026-08-27.html`).
 
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 

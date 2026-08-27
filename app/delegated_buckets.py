@@ -84,3 +84,28 @@ def bucket_counts(issues: list[dict], me: str) -> list[tuple[str, str, int]]:
     future backlog items will be added onto these counts here."""
     return [(key, title, len(items))
             for key, title, _, items in bucket_issues(issues, me)]
+
+
+# Management Summary staging (build plan step 10, 2026-08-27) — the same
+# buckets grouped into 3 review stages [USER 2026-08-27]. "unexpected"
+# belongs to no stage and is reported separately so nothing silently
+# disappears (same rule as the buckets themselves).
+STAGES = [
+    ("blocked",        "Blocked",                   ("blocked",)),
+    ("pre_gatekeeper",  "Until Gatekeeper Check",    ("open", "team", "marina")),
+    ("post_gatekeeper", "Past Gatekeeper Check",     ("settlement", "gbs", "sales", "done")),
+]
+
+
+def staged_counts(issues: list[dict], me: str):
+    """(stages, unexpected) — stages: [(key, label, stage_total,
+    [(bucket_key, bucket_title, count), ...]), ...]; unexpected:
+    (bucket_key, bucket_title, count)."""
+    counts = {key: count for key, _title, count in bucket_counts(issues, me)}
+    titles = {key: title for key, title, _css in SECTIONS}
+    stages = []
+    for skey, slabel, bucket_keys in STAGES:
+        rows = [(k, titles[k], counts[k]) for k in bucket_keys]
+        stages.append((skey, slabel, sum(c for _k, _t, c in rows), rows))
+    unexpected = ("unexpected", titles["unexpected"], counts["unexpected"])
+    return stages, unexpected

@@ -169,10 +169,29 @@ def test_status_report_renders_buckets(client):
 def test_numbers_report_counts(client):
     _upload(client)
     html = client.get("/delegated/numbers").get_data(as_text=True)
-    assert "Delegated Testing Numbers" in html
-    # blocked 1 · marina 1 · team 1 · unexpected 1 — all sections listed
+    assert "Management Summary Status Report" in html
+    # blocked 1 · marina 1 · team 1 · unexpected 1 — all sections listed,
+    # grouped under the 3 review stages [USER 2026-08-27]
+    assert "Until Gatekeeper Check" in html
+    assert "Past Gatekeeper Check" in html
     assert "Waiting for Settlementfile creation" in html
     assert "Resolved / Closed" in html
+    assert "Unexpected status" in html
+    assert "Blocker overview" in html
+    # goal box present and editable on the screen page
+    assert 'id="goal-input"' in html
+
+
+def test_numbers_report_goal_actual_counts_post_gatekeeper_and_flagged_blocked(client):
+    _upload(client)
+    client.post("/delegated/numbers/goal", data={"goal": "5"})
+    client.post("/delegated/ticket/S4ECOM-2001/counts-toward-goal", data={"value": "1"})
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert 'value="5"' in html
+    # 4 fixture tickets: S4ECOM-2001 Blocked+flagged, S4ECOM-2002/2003 land
+    # in the pre-gatekeeper stage, S4ECOM-2004 is unexpected — none reach
+    # post-gatekeeper, so actual = 0 (post-gatekeeper) + 1 (flagged blocked)
+    assert '<span class="goal-val">1</span>' in html
 
 
 def test_report_download_is_standalone_attachment(client):
@@ -222,7 +241,7 @@ def test_report_download_includes_blocker_chips_but_no_filter(client):
 def test_report_page_keeps_its_buttons(client):
     _upload(client)
     html = client.get("/delegated/report").get_data(as_text=True)
-    assert "🔢 Numbers" in html
+    assert "📊 Management Summary" in html
     assert "⬇ Download HTML" in html
     # no Print button on the report [USER 2026-08-26] — Ctrl+P still works
     assert 'onclick="window.print()"' not in html
@@ -234,8 +253,10 @@ def test_numbers_download_is_standalone_attachment(client):
     assert resp.status_code == 200
     assert 'attachment; filename="delegated_numbers_' in resp.headers["Content-Disposition"]
     html = resp.get_data(as_text=True)
-    assert "Delegated Testing Numbers" in html
+    assert "Management Summary Status Report" in html
     assert "Waiting for Settlementfile creation" in html
+    # goal renders as static text, not an editable input, in the download
+    assert 'id="goal-input"' not in html
     # toolbar (app-local links) and the copy script are stripped
     assert 'class="toolbar"' not in html
     assert "<script>" not in html
@@ -244,7 +265,7 @@ def test_numbers_download_is_standalone_attachment(client):
 def test_email_choices_and_attachments_include_delegated(client):
     from app import emailer
     assert ("delegated", "Delegated Testing Report") in emailer.REPORT_CHOICES
-    assert ("delegated_numbers", "Delegated Testing Numbers") in emailer.REPORT_CHOICES
+    assert ("delegated_numbers", "Delegated Testing — Management Summary") in emailer.REPORT_CHOICES
     _upload(client)
     conn = web_delegated._get_conn()
     try:

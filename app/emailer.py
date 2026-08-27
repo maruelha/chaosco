@@ -38,7 +38,7 @@ REPORT_CHOICES = [
     ("manual_ecom", "Manual Test Cases ECOM Report"),
     ("known_prod_defects", "Known Production Issues"),
     ("delegated", "Delegated Testing Report"),
-    ("delegated_numbers", "Delegated Testing Numbers"),
+    ("delegated_numbers", "Delegated Testing — Management Summary"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"

@@ -102,11 +102,15 @@ def get_blocker(conn: sqlite3.Connection, blocker_id: int) -> dict | None:
 
 def list_blockers(conn: sqlite3.Connection) -> list[dict]:
     """All blockers — defects, then tasks, then clarifications; alphabetical
-    within each type."""
-    return _rows_to_dicts(conn.execute(
-        "SELECT * FROM blockers ORDER BY"
-        " CASE type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
-        " LOWER(name)"))
+    within each type. Tolerant of the table not existing yet (partial-init
+    test fixtures, same pattern as the rest of this module)."""
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT * FROM blockers ORDER BY"
+            " CASE type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
+            " LOWER(name)"))
+    except sqlite3.OperationalError:
+        return []
 
 
 def list_blocker_jira_keys(conn: sqlite3.Connection) -> set[str]:
