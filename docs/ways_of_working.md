@@ -14,6 +14,8 @@ Even when a plan feels straightforward, split it into discrete steps and execute
 
 **Even simple tasks:** The temptation is to say "just build it all in one go" for small changes. Resist this — the benefit is not about complexity, it is about testability. One step = one thing that can be confirmed to work before moving on.
 
+**The deeper why:** see [why_step_by_step.md](why_step_by_step.md) (2026-08-27) — attention dilution, re-anchoring, self-memory vs. reality, why turn boundaries help even within one session, and how the benefit scales with cheaper models.
+
 ---
 
 ## Always update documentation after completing a task
