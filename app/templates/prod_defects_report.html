@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Known Production Issues Report — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 1100px; margin: 0 auto;
+    }
+
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+    .rh-stats { display: flex; gap: 1.6rem; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+
+    .rpt-section { margin-bottom: 1.75rem; page-break-inside: avoid; break-inside: avoid; }
+    .rpt-section-head {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      color: #f1f5f9; border-radius: 6px 6px 0 0;
+      padding: 0.45rem 0.9rem;
+    }
+    .sec-defects     { background: #7f1d1d; }
+    .sec-limitations { background: #92400e; }
+    .sec-risks       { background: #1e3a8a; }
+    .rpt-section-title { font-size: 0.88rem; font-weight: 700; flex: 1; }
+    .rpt-section-count { font-size: 0.72rem; color: rgba(255,255,255,0.7); }
+
+    .rpt-scenario-head {
+      background: #f1f5f9; color: #0f172a; font-weight: 700; font-size: 0.8rem;
+      padding: 0.35rem 0.9rem; border: 1px solid #e2e8f0; border-top: none;
+      display: flex; align-items: baseline; gap: 0.6rem;
+    }
+    .rpt-scenario-count { font-size: 0.7rem; font-weight: 400; color: #64748b; }
+
+    .rpt-table { width: 100%; border-collapse: collapse; font-size: 0.8rem;
+                 border: 1px solid #e2e8f0; border-top: none; }
+    .rpt-table th {
+      background: #f8fafc; color: #64748b; font-weight: 600;
+      font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.3rem 0.6rem; text-align: left; border-bottom: 1px solid #e2e8f0;
+    }
+    .rpt-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #f1f5f9;
+                    vertical-align: top; color: #334155; }
+    .rpt-table tr:last-child td { border-bottom: none; }
+    .mono { font-family: ui-monospace, Consolas, monospace; }
+    .empty-state { text-align: center; padding: 1.2rem 1rem; color: #94a3b8;
+                   font-size: 0.85rem; border: 1px solid #e2e8f0; border-top: none; }
+
+    @page { size: A4 landscape; margin: 1.5cm; }
+    .print-header { display: none; }
+    @media print {
+      body { padding: 0; max-width: none; font-size: 11px; }
+      .toolbar { display: none !important; }
+      .print-header { display: block; margin-bottom: 1.5rem; }
+      .print-header h1 { font-size: 1.1rem; font-weight: 800; }
+      .print-header p  { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+      .rpt-section-head, .rpt-scenario-head, .rpt-table th {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">Known Production Issues Report</span>
+  <a href="{{ url_for('prod_defects_list') }}" class="btn">← Known Production Issues</a>
+</div>
+{% endif %}
+
+<div class="print-header">
+  <h1>Known Production Issues Report</h1>
+  <p>{{ today }} &nbsp;·&nbsp; ECOM · relevant for Core South &amp; GBS Ops · all ECOM risks</p>
+</div>
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Known Production Issues</div>
+    <div class="rh-title">Known Production Issues Report</div>
+    <div class="rh-date">{{ today }} · ECOM · defects &amp; limitations relevant for Core South and GBS Ops · all ECOM risks</div>
+  </div>
+  <div class="rh-stats">
+    {% for section_title, _css, groups, section_total in sections %}
+    <div>
+      <div class="rh-stat-val">{{ section_total }}</div>
+      <div class="rh-stat-lbl">{{ section_title }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% for section_title, section_css, groups, section_total in sections %}
+<div class="rpt-section">
+  <div class="rpt-section-head {{ section_css }}">
+    <span class="rpt-section-title">{{ section_title }}</span>
+    <span class="rpt-section-count">{{ section_total }} item{{ 's' if section_total != 1 else '' }}</span>
+  </div>
+  {% if groups %}
+  {% for scenario, items in groups %}
+  <div class="rpt-scenario-head">
+    <span>{{ scenario }}</span>
+    <span class="rpt-scenario-count">{{ items|length }} item{{ 's' if items|length != 1 else '' }}</span>
+  </div>
+  <table class="rpt-table">
+    <thead>
+      <tr>
+        <th style="width:6.5rem">ID</th>
+        <th style="width:20%">Sub-case</th>
+        <th style="width:30%">Short Description</th>
+        <th>Business Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+      <tr>
+        <td class="mono" style="font-size:0.76rem">{{ i.display_id or "—" }}</td>
+        <td>{{ i.sub_case or "—" }}</td>
+        <td style="font-weight:500">{{ i.short_description or "—" }}</td>
+        <td>{{ i.biz_impact or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state">Nothing to report in this section.</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+</body>
+</html>

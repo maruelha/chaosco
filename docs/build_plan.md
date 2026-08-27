@@ -600,6 +600,32 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
     a break there regardless of available width. CSS-only; full suite
     543 green; verified rendered HTML against a disposable copy of the
     real DB.
+13. **Management report (planning chat 2026-08-27)** — audience: ECOM
+    Core South management + GBS Ops team. Decisions [USER via
+    AskUserQuestion]: defects/limitations need BOTH audience flags
+    (relevant_core_south AND relevant_gbs_ops, Channel=ECOM); Risks =
+    ALL ECOM risks regardless of flags; fields per item only until Biz
+    Impact (ID · Sub-case · Short Description · Biz Impact, Scenario as
+    group heading); counts per section AND per scenario; delivery =
+    Download HTML + Email Reports for ALL THREE prod-defect outputs
+    (plain download, review copy, management report).
+    1. ~~Report context + route + template~~ ✅ DONE 2026-08-27:
+       `prod_defects_report_context` + `_group_by_scenario` in
+       `web_defects.py`, `GET /prod_defects/report`, standalone
+       print-ready `prod_defects_report.html` (delegated-report style,
+       leaner — no filters/call-outs, none were asked for). Header stat
+       strip = per-section counts; scenario sub-headings carry
+       per-scenario counts (the scenario sort from item 10 makes the
+       grouping free). 📄 Management report button on the list toolbar.
+       KNOWN GAP for Marina: with Channel+both-flags as the gate, her
+       current entries need the data-entry pass (Channel + both ticks)
+       before the report shows anything — same cleanup as the ids.
+       Tests: `tests/test_prod_defects.py` (+6, 42 total); full suite
+       550 green; preview rendered from a disposable real-DB copy and
+       sent to Marina.
+    2. Download route (standalone snapshot) + Email Reports choices for
+       all three outputs.
+    3. Docs sweep (screens, dashboard_cards, build plan close-out).
 
 ### Cross-vertical components — done ad-hoc
 

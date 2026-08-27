@@ -573,6 +573,87 @@ def test_archive_fixed_count_badge_includes_all_three_tables(client):
     assert "🗄 Archive (3)" in html
 
 
+# ---------------------------------------------------------------------------
+# Management report [USER 2026-08-27] — ECOM, defects/limitations need BOTH
+# audience flags, risks always in; grouped by scenario with counts.
+
+def test_report_includes_only_ecom_items_with_both_flags(client):
+    _new(client, short_description="BothFlags", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    _new(client, short_description="OnlyCS", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on")
+    _new(client, short_description="RetailBoth", scenario="GWC", channel="Retail",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    _new(client, short_description="NoChannelBoth", scenario="GWC",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    assert "BothFlags" in html
+    assert "OnlyCS" not in html
+    assert "RetailBoth" not in html
+    assert "NoChannelBoth" not in html
+
+
+def test_report_risks_included_regardless_of_flags(client):
+    _new(client, short_description="UnflaggedRisk", scenario="GWC", channel="ECOM",
+        type="Risk")
+    _new(client, short_description="RetailRisk", scenario="GWC", channel="Retail",
+        type="Risk")
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    assert "UnflaggedRisk" in html
+    assert "RetailRisk" not in html
+
+
+def test_report_limitations_get_their_own_section(client):
+    _new(client, short_description="MgmtLimitation", scenario="GWC", channel="ECOM",
+        type="Limitation", relevant_core_south="on", relevant_gbs_ops="on")
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    body = html.split("</head>")[1]  # skip the <style> block's class definitions
+    limitation_section = body.split("sec-limitations")[1].split("sec-risks")[0]
+    assert "MgmtLimitation" in limitation_section
+
+
+def test_report_excludes_fixed_and_shows_fields_until_biz_impact(client):
+    kept = _new(client, short_description="KeptIssue", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on",
+        sub_case="report sub-case", biz_impact="report impact",
+        how_to_detect="not in the report", how_to_handle="also not in the report")
+    gone = _new(client, short_description="FixedIssue", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    client.post(f"/prod_defects/{gone}/fixed", data={"value": "1"})
+
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    assert "KeptIssue" in html and "FixedIssue" not in html
+    assert "ECOM-001" in html  # display id column
+    assert "report sub-case" in html
+    assert "report impact" in html
+    assert "not in the report" not in html  # nothing past Biz Impact
+    assert kept  # keep the id referenced
+
+
+def test_report_groups_by_scenario_with_counts(client):
+    for i in range(2):
+        _new(client, short_description=f"GwcIssue{i}", scenario="GWC", channel="ECOM",
+            type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    _new(client, short_description="SfdcIssue", scenario="SFDC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    gwc_head = html.split(">GWC<")[1].split("</div>")[0]
+    assert "2 items" in gwc_head
+    sfdc_head = html.split(">SFDC<")[1].split("</div>")[0]
+    assert "1 item" in sfdc_head
+
+
+def test_report_has_no_working_controls(client):
+    _new(client, short_description="ReportRow", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    html = client.get("/prod_defects/report").get_data(as_text=True)
+    assert "kpd-fix-btn" not in html
+    assert "kpd-del-btn" not in html
+    assert 'type="checkbox"' not in html
+
+
 def test_detail_page_shows_fixed_badge_and_toggle_button(client):
     record_id = _new(client, short_description="ToggleMe", scenario="GWC")
     html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)

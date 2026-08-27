@@ -72,6 +72,8 @@
       <a href="{{ url_for('prod_defects_list') }}" class="btn">← Active List</a>
       {% else %}
       <a href="{{ url_for('spillover_list') }}" class="btn">← Spillover</a>
+      <a href="{{ url_for('prod_defects_report') }}" class="btn" target="_blank"
+         title="print-ready management summary — ECOM items relevant for Core South &amp; GBS Ops, plus all ECOM risks">📄 Management report</a>
       <a href="{{ url_for('prod_defects_archive') }}" class="btn" title="fixed items — kept for reference, out of the active list and reports">🗄 Archive{% if fixed_count %} ({{ fixed_count }}){% endif %}</a>
       <a href="{{ url_for('email_report.email_page', reports='known_prod_defects') }}" class="btn" title="pick recipients and send this page">✉ Send via email</a>
       <a href="{{ url_for('prod_defects_download') }}" class="btn">⬇ Download HTML</a>

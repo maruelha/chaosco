@@ -155,6 +155,50 @@ def _split_by_type(rows: list[dict]) -> tuple[list[dict], list[dict], list[dict]
     return other_rows, limitation_rows, risk_rows
 
 
+def _group_by_scenario(rows: list[dict]) -> list[tuple[str, list[dict]]]:
+    """[(scenario, rows), ...] preserving the query's scenario sort order —
+    the management report's per-scenario counts [USER 2026-08-27]."""
+    groups: list[tuple[str, list[dict]]] = []
+    for row in rows:
+        key = row.get("scenario") or "(no scenario)"
+        if not groups or groups[-1][0] != key:
+            groups.append((key, []))
+        groups[-1][1].append(row)
+    return groups
+
+
+def prod_defects_report_context(conn) -> dict:
+    """Management report scope (planning chat 2026-08-27): Channel=ECOM,
+    non-fixed. Defects/Accepted Defects and Limitations require BOTH
+    audience flags (relevant for Core South AND GBS Ops) [USER]; Risks
+    include ALL ECOM risks regardless of the flags [USER: "plus the
+    risks"]. Sections carry per-scenario groups for the counts."""
+    both_flags = database.list_known_prod_defects(
+        conn, channel="ECOM", relevant_core_south="yes", relevant_gbs_ops="yes")
+    defect_rows, limitation_rows, _ = _split_by_type(both_flags)
+    risk_rows = database.list_known_prod_defects(conn, channel="ECOM", type_="Risk")
+    sections = [
+        ("Defects", "sec-defects", _group_by_scenario(defect_rows), len(defect_rows)),
+        ("Limitations", "sec-limitations", _group_by_scenario(limitation_rows),
+         len(limitation_rows)),
+        ("Risks", "sec-risks", _group_by_scenario(risk_rows), len(risk_rows)),
+    ]
+    return {"sections": sections, "today": date.today().isoformat()}
+
+
+@app.route("/prod_defects/report")
+def prod_defects_report():
+    """Management-facing summary [USER 2026-08-27: "management worthy
+    summary"] — standalone print-ready page in the established report
+    style; no working controls."""
+    conn = _get_conn()
+    try:
+        ctx = prod_defects_report_context(conn)
+    finally:
+        conn.close()
+    return render_template("prod_defects_report.html", download=False, **ctx)
+
+
 @app.route("/prod_defects")
 def prod_defects_list():
     channel = request.args.get("channel", "").strip()
