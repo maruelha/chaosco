@@ -405,6 +405,37 @@ def test_gather_attachments_includes_known_prod_defects(client):
     assert "AttachMe" in atts[0][1]
 
 
+def test_email_choices_and_attachments_for_all_three_prod_defect_outputs(client):
+    assert ("known_prod_defects", "Known Production Issues") in emailer.REPORT_CHOICES
+    assert ("known_prod_defects_review",
+            "Known Production Issues — Review Copy") in emailer.REPORT_CHOICES
+    assert ("known_prod_defects_report",
+            "Known Production Issues — Management Report") in emailer.REPORT_CHOICES
+
+    _new(client, short_description="TripleAttach", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    conn = database.get_connection(client.db_path)
+    try:
+        atts = emailer.gather_attachments(
+            conn, {}, app,
+            ["known_prod_defects", "known_prod_defects_review", "known_prod_defects_report"],
+            "2026-08-27")
+    finally:
+        conn.close()
+    assert [name for name, _ in atts] == [
+        "known_prod_defects_2026-08-27.html",
+        "known_prod_defects_review_2026-08-27.html",
+        "known_prod_defects_report_2026-08-27.html",
+    ]
+    for _name, html in atts:
+        assert "TripleAttach" in html
+    # review copy keeps its scripts (comment widget is the point);
+    # list snapshot and management report are script-free
+    assert "<script" not in atts[0][1]
+    assert "<script" in atts[1][1]
+    assert "<script" not in atts[2][1]
+
+
 # ---------------------------------------------------------------------------
 # Mark Fixed / Archive [USER 2026-08-27]
 
@@ -652,6 +683,18 @@ def test_report_has_no_working_controls(client):
     assert "kpd-fix-btn" not in html
     assert "kpd-del-btn" not in html
     assert 'type="checkbox"' not in html
+
+
+def test_report_download_is_standalone_attachment(client):
+    _new(client, short_description="DownloadedReportRow", scenario="GWC", channel="ECOM",
+        type="Defect", relevant_core_south="on", relevant_gbs_ops="on")
+    resp = client.get("/prod_defects/report/download")
+    assert resp.status_code == 200
+    assert 'attachment; filename="known_prod_defects_report_' in resp.headers["Content-Disposition"]
+    html = resp.get_data(as_text=True)
+    assert "DownloadedReportRow" in html
+    assert 'class="toolbar"' not in html  # download drops the screen toolbar
+    assert "<script" not in html
 
 
 def test_detail_page_shows_fixed_badge_and_toggle_button(client):

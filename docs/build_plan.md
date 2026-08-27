@@ -623,8 +623,21 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
        Tests: `tests/test_prod_defects.py` (+6, 42 total); full suite
        550 green; preview rendered from a disposable real-DB copy and
        sent to Marina.
-    2. Download route (standalone snapshot) + Email Reports choices for
-       all three outputs.
+    2. ~~Download route + Email Reports choices~~ ✅ DONE 2026-08-27:
+       `GET /prod_defects/report/download` (dated standalone —
+       template's CSS already inline, `download=True` drops the toolbar,
+       no post-processing; delegated pattern) + ⬇ Download HTML button
+       on the report toolbar. `emailer.REPORT_CHOICES` gained
+       `known_prod_defects_review` ("Review Copy" — fetched from
+       `/prod_defects/download-review`, deliberately NOT run through
+       `standalone_html` since its scripts/comment widget are the point)
+       and `known_prod_defects_report` ("Management Report" — the new
+       download, already clean). All three prod-defect outputs are now
+       separate Email Reports attachments [USER: "but for all the
+       reports we have (download, for review and the new one)"].
+       Tests: `tests/test_prod_defects.py` (+2, 44 total — incl.
+       script-presence assertions per attachment flavour); full suite
+       553 green.
     3. Docs sweep (screens, dashboard_cards, build plan close-out).
 
 ### Cross-vertical components — done ad-hoc

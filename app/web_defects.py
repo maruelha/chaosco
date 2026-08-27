@@ -199,6 +199,24 @@ def prod_defects_report():
     return render_template("prod_defects_report.html", download=False, **ctx)
 
 
+@app.route("/prod_defects/report/download")
+def prod_defects_report_download():
+    """Dated standalone snapshot of the management report — the template's
+    CSS is already inline and download=True drops the toolbar, so no
+    post-processing is needed (same pattern as the delegated downloads)."""
+    conn = _get_conn()
+    try:
+        ctx = prod_defects_report_context(conn)
+    finally:
+        conn.close()
+    html = render_template("prod_defects_report.html", download=True, **ctx)
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="known_prod_defects_report_{ctx["today"]}.html"',
+    }
+
+
 @app.route("/prod_defects")
 def prod_defects_list():
     channel = request.args.get("channel", "").strip()

@@ -37,6 +37,8 @@ REPORT_CHOICES = [
     ("manual_retail", "Manual Test Cases Retail Report"),
     ("manual_ecom", "Manual Test Cases ECOM Report"),
     ("known_prod_defects", "Known Production Issues"),
+    ("known_prod_defects_review", "Known Production Issues — Review Copy"),
+    ("known_prod_defects_report", "Known Production Issues — Management Report"),
     ("delegated", "Delegated Testing Report"),
     ("delegated_numbers", "Delegated Testing — Management Summary"),
 ]
@@ -157,6 +159,17 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         resp = flask_app.test_client().get("/prod_defects")
         out.append((f"known_prod_defects_{day}.html",
                     standalone_html(resp.get_data(as_text=True))))
+    if "known_prod_defects_review" in reports:
+        # already a self-contained interactive copy — its scripts (Detail
+        # dialogs, comment widget) are the point, so NO standalone_html
+        resp = flask_app.test_client().get("/prod_defects/download-review")
+        out.append((f"known_prod_defects_review_{day}.html",
+                    resp.get_data(as_text=True)))
+    if "known_prod_defects_report" in reports:
+        # management report download is already clean standalone HTML
+        resp = flask_app.test_client().get("/prod_defects/report/download")
+        out.append((f"known_prod_defects_report_{day}.html",
+                    resp.get_data(as_text=True)))
     # the delegated download routes already return clean standalone HTML
     # (toolbar/scripts stripped, call-outs static) — no standalone_html needed
     if "delegated" in reports:
