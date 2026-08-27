@@ -442,6 +442,27 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<div class="box b-blue">
+  <div class="box-head">New unique IDs (ECOM-001 / RETAIL-001) — none of your 10 existing issues got one</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="kpd-display-id-backfill">
+      <span><strong>The ID only gets assigned when a Channel is picked</strong> — checked
+      against a disposable copy of the real DB, and all 10 of your existing Known
+      Production Issues have Channel blank, so none of them backfilled with an id.
+      <span class="where">&#8594; /prod_defects</span><br>
+      Set Channel on an entry (Edit → Channel dropdown → Save) and it will pick up
+      the next free number for that channel the moment you save — nothing
+      retroactive, so an entry left without a channel stays id-less on purpose.</span></label>
+    <label class="task"><input type="checkbox" data-k="kpd-limitations-split">
+      <span><strong>You floated (with "maybe") splitting Limitations into their own
+      table too, and dropping the Type column</strong> if that happens.</span>
+      <span class="where">&#8594; /prod_defects</span><br>
+      Left undone on purpose — it's a bigger structural change (a 3rd table, and
+      Type stops being meaningful once Limitations move out) than the rest of this
+      batch, so it needs a clear yes rather than a guess. Say the word.</span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

@@ -397,12 +397,38 @@ def init_db(db_path: Path) -> sqlite3.Connection:
                 # issue is relevant for; independent flags, an item can be
                 # both/neither.
                 "relevant_core_south INTEGER NOT NULL DEFAULT 0",
-                "relevant_gbs_ops INTEGER NOT NULL DEFAULT 0"):
+                "relevant_gbs_ops INTEGER NOT NULL DEFAULT 0",
+                # Human-readable ID [USER 2026-08-27] — ECOM-001 / RETAIL-001,
+                # assigned once at creation (app.db.reference._next_display_id),
+                # never regenerated even if channel changes later. NULL when
+                # no channel is set — the scheme has no prefix without one.
+                "display_id TEXT"):
         try:
             conn.execute(f"ALTER TABLE known_prod_defects ADD COLUMN {col}")
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_known_prod_defects_display_id"
+        " ON known_prod_defects(display_id) WHERE display_id IS NOT NULL")
+    conn.commit()
+    # Backfill display_id for pre-existing rows, oldest first per channel —
+    # idempotent (only rows still NULL are touched, so a second run is a
+    # no-op) [USER 2026-08-27].
+    pending = conn.execute(
+        "SELECT id, channel FROM known_prod_defects"
+        " WHERE display_id IS NULL AND channel IN ('ECOM', 'Retail')"
+        " ORDER BY created_at, id"
+    ).fetchall()
+    if pending:
+        counters = {"ECOM": 0, "Retail": 0}
+        prefixes = {"ECOM": "ECOM", "Retail": "RETAIL"}
+        for rec_id, channel in pending:
+            counters[channel] += 1
+            conn.execute(
+                "UPDATE known_prod_defects SET display_id = ? WHERE id = ?",
+                (f"{prefixes[channel]}-{counters[channel]:03d}", rec_id))
+        conn.commit()
     for col in ("action_needed INTEGER DEFAULT 0",):
         try:
             conn.execute(f"ALTER TABLE retail_annotations ADD COLUMN {col}")

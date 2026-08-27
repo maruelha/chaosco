@@ -72,6 +72,74 @@ def test_create_and_edit_round_trip_new_fields(client):
     assert row["how_to_handle"] == "escalate"
 
 
+# ---------------------------------------------------------------------------
+# Unique display id: ECOM-001 / RETAIL-001 [USER 2026-08-27]
+
+def test_display_id_assigned_sequentially_per_channel(client):
+    ecom1 = _new(client, channel="ECOM")
+    retail1 = _new(client, channel="Retail")
+    ecom2 = _new(client, channel="ECOM")
+    conn = database.get_connection(client.db_path)
+    try:
+        e1 = database.get_known_prod_defect(conn, ecom1)
+        r1 = database.get_known_prod_defect(conn, retail1)
+        e2 = database.get_known_prod_defect(conn, ecom2)
+    finally:
+        conn.close()
+    assert e1["display_id"] == "ECOM-001"
+    assert r1["display_id"] == "RETAIL-001"
+    assert e2["display_id"] == "ECOM-002"
+
+
+def test_display_id_none_without_a_channel(client):
+    record_id = _new(client)  # no channel picked
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["display_id"] is None
+
+
+def test_display_id_never_changes_when_channel_is_edited(client):
+    record_id = _new(client, channel="ECOM")
+    client.post(f"/prod_defects/{record_id}", data={
+        "short_description": "issue", "scenario": "GWC", "channel": "Retail"})
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["display_id"] == "ECOM-001"  # stays put even though channel changed
+    assert row["channel"] == "Retail"
+
+
+def test_display_id_backfilled_for_legacy_rows_oldest_first(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    conn = database.init_db(db_path)
+    conn.execute(
+        "INSERT INTO known_prod_defects (short_description, channel, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?)",
+        ("Old ECOM issue", "ECOM", "2026-01-01T00:00:00", "2026-01-01T00:00:00"))
+    conn.execute(
+        "INSERT INTO known_prod_defects (short_description, channel, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?)",
+        ("Old Retail issue", "Retail", "2026-01-02T00:00:00", "2026-01-02T00:00:00"))
+    conn.commit()
+    conn.close()
+
+    database.init_db(db_path).close()  # re-run migrations, same as app startup
+
+    conn = database.get_connection(db_path)
+    try:
+        rows = {r["short_description"]: r["display_id"]
+                for r in database.list_known_prod_defects(conn, status=None)}
+    finally:
+        conn.close()
+    assert rows["Old ECOM issue"] == "ECOM-001"
+    assert rows["Old Retail issue"] == "RETAIL-001"
+
+
 def test_relevant_checkboxes_round_trip(client):
     record_id = _new(client, relevant_core_south="on")  # GBS Ops left unchecked
     conn = database.get_connection(client.db_path)
@@ -176,10 +244,11 @@ def test_list_columns_filters_and_note_count(client):
 
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "Known Production Issues" in html
-    for col in ("Channel", "Type", "Scenario", "Short Description", "Biz Impact",
-               "How to handle", "Confluence"):
+    for col in ("ID", "Channel", "Type", "Scenario", "Short Description", "Biz Impact",
+               "Sub-case"):
         assert col in html
-    assert "EcomIssue" in html and "RetailIssue" in html
+    assert "How to handle" not in html  # Confluence still appears in the header link (config-driven)
+    assert "EcomIssue" in html and "RetailIssue" in html  # RetailIssue (Risk) is in the Risks table
 
     html = client.get("/prod_defects?channel=ECOM").get_data(as_text=True)
     assert "EcomIssue" in html and "RetailIssue" not in html
@@ -204,14 +273,23 @@ def test_marketplace_scenario_option_available(client):
     assert "Marketplace" in web_defects._prod_defect_scenarios()
 
 
-def test_biz_impact_and_how_to_handle_not_truncated(client):
+def test_biz_impact_not_truncated(client):
     long_impact = ("This is a much longer business impact description than the "
                    "old 200px truncation allowed to show " * 2).strip()
-    _new(client, short_description="LongTextRow", scenario="GWC", biz_impact=long_impact,
-         how_to_handle="Also a long how-to-handle description that used to get cut off with an ellipsis")
+    _new(client, short_description="LongTextRow", scenario="GWC", biz_impact=long_impact)
     html = client.get("/prod_defects").get_data(as_text=True)
     assert long_impact in html
     assert "kpd-truncate" not in html
+
+
+def test_sub_case_shown_how_to_handle_and_confluence_removed_from_list(client):
+    _new(client, short_description="SubCaseRow", scenario="GWC",
+        sub_case="specific edge case text", how_to_handle="should not render here",
+        confluence="should-not-render-either")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "specific edge case text" in html
+    assert "should not render here" not in html
+    assert "should-not-render-either" not in html
 
 
 def test_confluence_link_rendered_from_config(client, monkeypatch):

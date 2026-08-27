@@ -482,6 +482,36 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    (+4, 27 total in the file); full suite 534 green. Verified against a
    disposable copy of the real DB: filter narrows correctly, AJAX toggle
    round-trips.
+8. ~~Unique display id + first-view column rework~~ ✅ DONE 2026-08-27
+   [USER: "add a unique id for each defect/issue ECOM-001 or RETAIL-001";
+   "remove 'how to handle' and add sub-case"; "add the edit button at the
+   front"; "remove confluence column"]. New `display_id` column
+   (`app.db.reference._next_display_id`) — `ECOM-NNN` / `RETAIL-NNN`
+   (3-digit zero-padded, grows past 999 without truncating), assigned
+   ONCE at creation from the channel and never regenerated even if the
+   channel is edited later; NULL when no channel is set (the scheme has
+   no prefix without one). Partial unique index guards against
+   duplicates. Existing rows backfilled on startup, oldest-first per
+   channel, idempotent (only still-NULL rows touched) — verified against
+   a disposable copy of the real DB: her 10 existing rows all have a
+   blank Channel, so **none got backfilled with an id yet**; the moment a
+   Channel is set on one it stays without an id until edited to pick one
+   [flag for Marina]. Main table columns reordered: Edit (now first,
+   split out of the macro into its own `kpd_edit_cell(row)`) · ID ·
+   Channel · Type · Scenario · Short Description · Biz Impact · Sub-case
+   (replaces How to handle) · Core South · GBS Ops · Fix/Delete — How to
+   handle and Confluence dropped from this view (still editable on the
+   detail page, just not shown here). Same Edit-first + ID treatment on
+   the Risks table (its shorter column set otherwise unchanged). Detail
+   page shows the id as a chip next to the title (read-only — the field
+   has no input, it's derived) and uses it in the breadcrumb as a
+   fallback below scenario/short description. NOT implemented — genuinely
+   tentative in the ask ("maybe we pull out the limitations to a new
+   list as well" / "maybe we can lose the Type column"): flagged back to
+   Marina rather than guessed at, since it cascades into a 3rd table and
+   a column removal that only makes sense if that split happens.
+   Tests: `tests/test_prod_defects.py` (+6 new, 2 rewritten for the new
+   column set; 32 total in the file); full suite 539 green.
 
 ### Cross-vertical components — done ad-hoc
 

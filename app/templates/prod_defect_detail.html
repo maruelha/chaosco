@@ -5,12 +5,13 @@
 <div class="breadcrumb">
   <a href="{{ url_for('prod_defects_list') }}">Known Production Issues</a>
   <span>›</span>
-  <span>{% if is_new %}New Entry{% else %}{{ record.scenario or record.short_description or ('ID ' ~ record.id) }}{% endif %}</span>
+  <span>{% if is_new %}New Entry{% else %}{{ record.scenario or record.short_description or record.display_id or ('ID ' ~ record.id) }}{% endif %}</span>
 </div>
 
 <div class="page-header">
   <div class="page-header-row">
     <h1>{% if is_new %}New Production Issue{% else %}Edit Production Issue{% endif %}
+      {% if record.display_id %}<span class="chip chip--none mono">{{ record.display_id }}</span>{% endif %}
       {% if not is_new and record.status == 'fixed' %}<span class="chip chip--pass">FIXED</span>{% endif %}</h1>
     {% if not is_new %}
     <div class="page-header-actions">

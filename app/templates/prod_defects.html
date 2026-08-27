@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Known Production Issues{% if archived %} — Archive{% endif %}{% endblock %}
 
-{% macro kpd_actions(row, archived) %}
+{% macro kpd_edit_cell(row) %}
 <a href="{{ url_for('prod_defect_detail', record_id=row.id) }}" class="btn btn-sm">Edit{% if row.note_count %} ({{ row.note_count }}){% endif %}</a>
+{% endmacro %}
+
+{% macro kpd_actions(row, archived) %}
 {% if archived %}
 <button class="btn btn-sm kpd-reopen-btn" title="bring this back to the active list">↺ Reopen</button>
 {% else %}
@@ -108,13 +111,14 @@
   <table style="min-width:1400px">
     <thead>
       <tr>
-        <th style="width:90px">Channel</th>
+        <th style="width:80px"></th>
+        <th style="width:90px">ID</th>
+        <th style="width:80px">Channel</th>
         <th style="width:110px">Type</th>
         <th style="width:150px">Scenario</th>
         <th style="width:170px">Short Description</th>
         <th style="width:220px">Biz Impact</th>
-        <th style="width:220px">How to handle</th>
-        <th style="width:140px">Confluence</th>
+        <th style="width:200px">Sub-case</th>
         <th style="width:80px" title="relevant for Core South">Core South</th>
         <th style="width:80px" title="relevant for GBS Ops">GBS Ops</th>
         <th style="width:100px"></th>
@@ -124,18 +128,19 @@
            data-empty="{% if archived %}Nothing archived yet — &quot;✓ Mark Fixed&quot; on the active list moves an item here.{% else %}No entries yet. Click &quot;+ Add New&quot; to get started.{% endif %}">
     {% for row in rows %}
       <tr data-id="{{ row.id }}">
+        <td>{{ kpd_edit_cell(row) }}</td>
+        <td class="mono">{{ row.display_id or '—' }}</td>
         <td>{{ row.channel or '' }}</td>
         <td>{{ row.type or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
         <td style="font-weight:500;white-space:normal;word-break:break-word">{{ row.short_description or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.biz_impact or '' }}</td>
-        <td style="white-space:normal;word-break:break-word">{{ row.how_to_handle or '' }}</td>
-        <td>{{ row.confluence or '' }}</td>
+        <td style="white-space:normal;word-break:break-word">{{ row.sub_case or '' }}</td>
         {{ kpd_relevant_cells(row) }}
         <td class="kpd-actions">{{ kpd_actions(row, archived) }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="10" class="table-empty">{% if archived %}Nothing archived yet — "✓ Mark Fixed" on the active list moves an item here.{% else %}No entries yet. Click "+ Add New" to get started.{% endif %}</td></tr>
+      <tr><td colspan="11" class="table-empty">{% if archived %}Nothing archived yet — "✓ Mark Fixed" on the active list moves an item here.{% else %}No entries yet. Click "+ Add New" to get started.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -143,10 +148,12 @@
 
 <h2 style="margin:1.5rem 0 0.5rem; font-size:1.1rem">⚠ Risks</h2>
 <div class="table-wrap" style="overflow-x:auto">
-  <table style="min-width:900px">
+  <table style="min-width:1000px">
     <thead>
       <tr>
-        <th style="width:90px">Channel</th>
+        <th style="width:80px"></th>
+        <th style="width:90px">ID</th>
+        <th style="width:80px">Channel</th>
         <th style="width:110px">Type</th>
         <th style="width:220px">Scenario</th>
         <th style="width:300px">Short Description</th>
@@ -159,6 +166,8 @@
            data-empty="{% if archived %}No archived risks.{% else %}No risks currently listed.{% endif %}">
     {% for row in risk_rows %}
       <tr data-id="{{ row.id }}">
+        <td>{{ kpd_edit_cell(row) }}</td>
+        <td class="mono">{{ row.display_id or '—' }}</td>
         <td>{{ row.channel or '' }}</td>
         <td>{{ row.type or '' }}</td>
         <td style="white-space:normal;word-break:break-word">{{ row.scenario or '' }}</td>
@@ -167,7 +176,7 @@
         <td class="kpd-actions">{{ kpd_actions(row, archived) }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="7" class="table-empty">{% if archived %}No archived risks.{% else %}No risks currently listed.{% endif %}</td></tr>
+      <tr><td colspan="9" class="table-empty">{% if archived %}No archived risks.{% else %}No risks currently listed.{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

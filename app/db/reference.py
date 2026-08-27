@@ -205,6 +205,28 @@ def get_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> dict | No
     return rows[0] if rows else None
 
 
+_DISPLAY_ID_PREFIX = {"ECOM": "ECOM", "Retail": "RETAIL"}
+
+
+def _next_display_id(conn: sqlite3.Connection, channel: str | None) -> str | None:
+    """ECOM-001 / RETAIL-001 — next free number for the channel, 3-digit
+    zero-padded (grows past 999 without truncating) [USER 2026-08-27].
+    None when channel isn't ECOM/Retail — the scheme has no prefix without
+    one, and the id is never backfilled onto an existing row later."""
+    prefix = _DISPLAY_ID_PREFIX.get(channel or "")
+    if prefix is None:
+        return None
+    max_n = 0
+    for (did,) in conn.execute(
+            "SELECT display_id FROM known_prod_defects WHERE display_id LIKE ?",
+            (f"{prefix}-%",)):
+        try:
+            max_n = max(max_n, int(did.rsplit("-", 1)[1]))
+        except (ValueError, IndexError):
+            continue  # tolerate any malformed id rather than crash the count
+    return f"{prefix}-{max_n + 1:03d}"
+
+
 def create_known_prod_defect(
     conn: sqlite3.Connection,
     short_description: str | None,
@@ -226,19 +248,20 @@ def create_known_prod_defect(
 ) -> dict:
     now = datetime.now().isoformat(timespec="seconds")
     with conn:
+        display_id = _next_display_id(conn, channel)
         cur = conn.execute(
             """INSERT INTO known_prod_defects
                (short_description, scenario, description, biz_impact,
                 numbers, refs, next_steps, comments, confluence,
                 channel, type, sub_case, how_to_detect, how_to_handle,
-                relevant_core_south, relevant_gbs_ops,
+                relevant_core_south, relevant_gbs_ops, display_id,
                 created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (short_description, scenario, description, biz_impact,
              numbers, refs, next_steps, comments, confluence,
              channel, type_, sub_case, how_to_detect, how_to_handle,
              1 if relevant_core_south else 0, 1 if relevant_gbs_ops else 0,
-             now, now),
+             display_id, now, now),
         )
         new_id = cur.lastrowid
     return get_known_prod_defect(conn, new_id)
