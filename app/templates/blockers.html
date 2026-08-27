@@ -13,7 +13,7 @@
 {% for key, label, items in sections %}
 {% call ui.section(label, section_color.get(key, 'slate'), badge=items|length, open=(items|length > 0)) %}
   {% if items %}
-  {% call ui.table(['Name', 'Jira Key', 'Jira Status', 'Notes', '']) %}
+  {% call ui.table(['Name', 'Jira Key', 'Jira Status', 'Blocks', 'Notes', '']) %}
     {% for b in items %}
     <tr>
       <td>{{ b.name }}</td>
@@ -25,6 +25,7 @@
           {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
         {% else %}—{% endif %}
       </td>
+      <td>{{ blocked_counts.get(b.blocker_id, 0) or '—' }}</td>
       <td>{{ note_counts.get(b.blocker_id, 0) or '—' }}</td>
       <td style="text-align:right">
         <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" class="btn btn-sm">Details</a>

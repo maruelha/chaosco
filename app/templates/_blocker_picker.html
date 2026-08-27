@@ -1,0 +1,172 @@
+{# Blocker picker — drop-in component for the Delegated Testing board /
+   ticket detail (build plan step 8, 2026-08-27):
+
+     {% include '_blocker_picker.html' %}
+
+   Fully AJAX-driven like _order_details.html — no route/context changes
+   needed. An opening button only needs:
+
+     <button type="button" class="btn btn-sm js-open-blockers"
+             data-jira-key="<key>" data-blk-name="<summary>">Blockers</button>
+
+   After any change the button's row is refreshed: chips live in
+   `<span class="blk-chips" data-key="<key>">` inside the SAME <tr> (or any
+   ancestor) as the opening button.
+#}
+<dialog id="dlg-blockers">
+  <div class="dlg-header">
+    <div class="dlg-title">Blockers</div>
+    <div class="dlg-subtitle" id="blk-row-name"></div>
+  </div>
+  <div class="dlg-body">
+    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:0.4rem">Attached</div>
+    <div id="blk-linked-list" style="margin-bottom:1rem"></div>
+
+    <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:1rem">
+      <select id="blk-select" style="flex:1; min-width:12rem"></select>
+      <button type="button" class="btn btn-sm" id="btn-blk-attach">Attach</button>
+    </div>
+
+    <details id="blk-new-details">
+      <summary style="cursor:pointer; font-size:0.85rem; color:#555">+ New blocker</summary>
+      <div style="display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap; margin-top:0.6rem">
+        <div>
+          <label style="display:block; font-size:0.72rem; color:#888">Type</label>
+          <select id="blk-new-type">
+            <option value="defect">Defect</option>
+            <option value="task">Task</option>
+            <option value="clarification">Business Clarification</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block; font-size:0.72rem; color:#888">Name</label>
+          <input type="text" id="blk-new-name" placeholder="What is blocking?" style="width:14rem">
+        </div>
+        <div id="blk-new-jira-field">
+          <label style="display:block; font-size:0.72rem; color:#888">Jira Key</label>
+          <input type="text" id="blk-new-jira-key" placeholder="optional" style="width:9rem">
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="btn-blk-create">Create &amp; attach</button>
+      </div>
+      <div id="blk-new-error" style="color:#c00; font-size:0.8rem; margin-top:0.4rem; display:none"></div>
+    </details>
+  </div>
+  <div class="dlg-footer">
+    <button type="button" class="btn" onclick="document.getElementById('dlg-blockers').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+if (!window.blkPickerInit) {
+  window.blkPickerInit = true;
+  (function () {
+    const dlg = document.getElementById('dlg-blockers');
+    let blkJiraKey = null;
+    let blkOpenBtn = null;
+
+    const TYPE_LABEL = { defect: 'Defect', task: 'Task', clarification: 'Clarification' };
+
+    function blkEsc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+    }
+
+    function chipHtml(b) {
+      const keyPart = b.jira_key ? ' (' + blkEsc(b.jira_key) + ')' : '';
+      return '<span class="chip chip--other" title="' + TYPE_LABEL[b.type] + '">'
+           + blkEsc(b.name) + keyPart + '</span>';
+    }
+
+    function renderRowChips(linked) {
+      if (!blkOpenBtn) return;
+      const row = blkOpenBtn.closest('tr') || blkOpenBtn.closest('.detail-card') || document;
+      const target = row.querySelector('.blk-chips[data-key="' + blkJiraKey + '"]')
+                  || document.querySelector('.blk-chips[data-key="' + blkJiraKey + '"]');
+      if (target) target.innerHTML = linked.length ? linked.map(chipHtml).join(' ') : '—';
+      const badge = blkOpenBtn.querySelector('.blk-count');
+      if (badge) badge.textContent = linked.length ? ' ' + linked.length : '';
+    }
+
+    function renderDialog(data) {
+      const list = document.getElementById('blk-linked-list');
+      list.innerHTML = data.linked.length ? data.linked.map(b =>
+        '<div style="display:flex; align-items:center; gap:0.5rem; padding:0.2rem 0">'
+        + chipHtml(b)
+        + '<button type="button" class="btn btn-sm js-blk-detach" data-id="' + b.blocker_id + '" title="detach">✕</button>'
+        + '</div>').join('') : '<p style="color:#999; font-size:0.85rem; margin:0">Nothing attached yet.</p>';
+
+      const select = document.getElementById('blk-select');
+      select.innerHTML = data.available.length
+        ? data.available.map(b =>
+            '<option value="' + b.blocker_id + '">[' + TYPE_LABEL[b.type] + '] '
+            + blkEsc(b.name) + (b.jira_key ? ' (' + blkEsc(b.jira_key) + ')' : '') + '</option>').join('')
+        : '<option value="">No other blockers to attach</option>';
+
+      list.querySelectorAll('.js-blk-detach').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const fd = new FormData();
+          fd.append('blocker_id', btn.dataset.id);
+          const resp = await fetch('/blockers/links/' + encodeURIComponent(blkJiraKey) + '/detach',
+                                   { method: 'POST', body: fd });
+          const d = await resp.json();
+          if (d.ok) { renderDialog(d); renderRowChips(d.linked); }
+        });
+      });
+    }
+
+    function toggleNewJiraField() {
+      const isClarification = document.getElementById('blk-new-type').value === 'clarification';
+      document.getElementById('blk-new-jira-field').style.display = isClarification ? 'none' : '';
+    }
+    document.getElementById('blk-new-type').addEventListener('change', toggleNewJiraField);
+
+    document.addEventListener('click', async e => {
+      const btn = e.target.closest('.js-open-blockers');
+      if (!btn) return;
+      blkJiraKey = btn.dataset.jiraKey;
+      blkOpenBtn = btn;
+      document.getElementById('blk-row-name').textContent = btn.dataset.blkName || blkJiraKey;
+      document.getElementById('blk-new-details').open = false;
+      document.getElementById('blk-new-name').value = '';
+      document.getElementById('blk-new-jira-key').value = '';
+      document.getElementById('blk-new-type').value = 'defect';
+      toggleNewJiraField();
+      document.getElementById('blk-new-error').style.display = 'none';
+      const resp = await fetch('/blockers/links/' + encodeURIComponent(blkJiraKey));
+      renderDialog(await resp.json());
+      dlg.showModal();
+    });
+
+    document.getElementById('btn-blk-attach').addEventListener('click', async () => {
+      const id = document.getElementById('blk-select').value;
+      if (!id) return;
+      const fd = new FormData();
+      fd.append('blocker_id', id);
+      const resp = await fetch('/blockers/links/' + encodeURIComponent(blkJiraKey) + '/attach',
+                               { method: 'POST', body: fd });
+      const d = await resp.json();
+      if (d.ok) { renderDialog(d); renderRowChips(d.linked); }
+    });
+
+    document.getElementById('btn-blk-create').addEventListener('click', async () => {
+      const errBox = document.getElementById('blk-new-error');
+      errBox.style.display = 'none';
+      const fd = new FormData();
+      fd.append('type', document.getElementById('blk-new-type').value);
+      fd.append('name', document.getElementById('blk-new-name').value.trim());
+      fd.append('jira_key', document.getElementById('blk-new-jira-key').value.trim());
+      const resp = await fetch('/blockers/links/' + encodeURIComponent(blkJiraKey) + '/quick-create',
+                               { method: 'POST', body: fd });
+      const d = await resp.json();
+      if (!d.ok) { errBox.textContent = d.error || 'Could not create the blocker.'; errBox.style.display = ''; return; }
+      renderDialog(d);
+      renderRowChips(d.linked);
+      document.getElementById('blk-new-name').value = '';
+      document.getElementById('blk-new-jira-key').value = '';
+    });
+
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  }());
+}
+</script>

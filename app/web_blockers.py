@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from app import database
 from app.config_loader import load_config
@@ -34,6 +34,7 @@ def blockers_list():
         rows = db_blockers.list_blockers(conn)
         note_counts = {r["blocker_id"]: len(database.list_notes(
             conn, "blocker", str(r["blocker_id"]))) for r in rows}
+        blocked_counts = db_blockers.blocked_ticket_counts(conn)
         jira_status = {}
         for r in rows:
             if r["jira_key"]:
@@ -46,6 +47,7 @@ def blockers_list():
     return render_template(
         "blockers.html", sections=sections, total=len(rows),
         note_counts=note_counts, jira_status=jira_status,
+        blocked_counts=blocked_counts,
         type_sections=db_blockers.TYPE_SECTIONS,
     )
 
@@ -118,3 +120,74 @@ def blocker_detail(blocker_id: int):
         jira_issue=jira_issue, jira_comments=jira_comments,
         notes=notes, attachments_by_note=attachments_by_note,
     )
+
+
+# ---------------------------------------------------------------------------
+# Attach-to-ticket picker (build plan step 8) — AJAX-driven, same pattern as
+# _order_details.html: no per-page context needed, only an opening button
+# with data-jira-key + data-name. Drop-in include: _blocker_picker.html.
+
+def _slim(rows: list[dict]) -> list[dict]:
+    return [{"blocker_id": r["blocker_id"], "type": r["type"],
+             "name": r["name"], "jira_key": r["jira_key"]} for r in rows]
+
+
+def _picker_payload(conn, jira_key: str) -> dict:
+    linked = db_blockers.list_blockers_for_ticket(conn, jira_key)
+    linked_ids = {b["blocker_id"] for b in linked}
+    available = [b for b in db_blockers.list_blockers(conn)
+                if b["blocker_id"] not in linked_ids]
+    return {"linked": _slim(linked), "available": _slim(available)}
+
+
+@bp.route("/links/<jira_key>")
+def blocker_links_json(jira_key: str):
+    conn = _get_conn()
+    try:
+        payload = _picker_payload(conn, jira_key)
+    finally:
+        conn.close()
+    return jsonify(payload)
+
+
+@bp.route("/links/<jira_key>/attach", methods=["POST"])
+def blocker_link_attach(jira_key: str):
+    blocker_id = request.form.get("blocker_id", type=int)
+    if not blocker_id:
+        return jsonify({"ok": False, "error": "no blocker selected"}), 400
+    conn = _get_conn()
+    try:
+        db_blockers.link_blocker(conn, blocker_id, jira_key)
+        payload = _picker_payload(conn, jira_key)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, **payload})
+
+
+@bp.route("/links/<jira_key>/detach", methods=["POST"])
+def blocker_link_detach(jira_key: str):
+    blocker_id = request.form.get("blocker_id", type=int)
+    conn = _get_conn()
+    try:
+        db_blockers.unlink_blocker(conn, blocker_id, jira_key)
+        payload = _picker_payload(conn, jira_key)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, **payload})
+
+
+@bp.route("/links/<jira_key>/quick-create", methods=["POST"])
+def blocker_link_quick_create(jira_key: str):
+    """Create a new blocker and attach it to this ticket in one step —
+    the "add name, jira key and type while attaching" flow [USER 2026-08-27]."""
+    type_, name, blocker_jira_key = _form_fields()
+    if type_ not in db_blockers.TYPES or not name:
+        return jsonify({"ok": False, "error": "Pick a type and enter a name."}), 400
+    conn = _get_conn()
+    try:
+        row = db_blockers.create_blocker(conn, type_, name, blocker_jira_key)
+        db_blockers.link_blocker(conn, row["blocker_id"], jira_key)
+        payload = _picker_payload(conn, jira_key)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, **payload})

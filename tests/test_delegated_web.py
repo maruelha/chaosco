@@ -5,6 +5,7 @@ import io
 import pytest
 
 from app import database
+from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
 import app.web_delegated as web_delegated
@@ -51,6 +52,7 @@ def client(tmp_path, monkeypatch):
     database.init_db(db_path).close()
     db_jira.init_schema(db_path)
     db_delegated.init_schema(db_path)
+    db_blockers.init_schema(db_path)
     monkeypatch.setattr(web_delegated, "_get_conn",
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_delegated._cfg, "database_path", str(db_path))
@@ -228,6 +230,57 @@ def test_email_choices_and_attachments_include_delegated(client):
     for _name, html in atts:
         assert 'class="toolbar"' not in html
         assert "<script>" not in html
+
+
+def test_counts_toward_goal_toggle_via_checkbox(client):
+    _upload(client)
+    resp = client.post("/delegated/ticket/S4ECOM-2001/counts-toward-goal",
+                       data={"value": "1"})
+    assert resp.get_json()["ok"]
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_counts_toward_goal(conn, "S4ECOM-2001") is True
+    finally:
+        conn.close()
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert 'data-key="S4ECOM-2001"' in html and "checked" in html
+
+
+def test_counts_toward_goal_saved_via_detail_form(client):
+    _upload(client)
+    resp = client.post("/delegated/ticket/S4ECOM-2001", data={
+        "blocked_reason": "waiting", "next_step": "chase",
+        "counts_toward_goal": "1"})
+    assert resp.status_code == 302
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_counts_toward_goal(conn, "S4ECOM-2001") is True
+    finally:
+        conn.close()
+    # unchecking (checkbox simply absent from the POST) clears it
+    client.post("/delegated/ticket/S4ECOM-2001", data={
+        "blocked_reason": "waiting", "next_step": "chase"})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_counts_toward_goal(conn, "S4ECOM-2001") is False
+    finally:
+        conn.close()
+
+
+def test_board_and_detail_show_attached_blocker_chip(client):
+    from app.db import blockers as db_blockers
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing bug", None)
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-2001")
+    finally:
+        conn.close()
+    board_html = client.get("/delegated/").get_data(as_text=True)
+    assert "Pricing bug" in board_html
+    detail_html = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "Pricing bug" in detail_html
+    assert "Manage blockers" in detail_html
 
 
 def test_reimport_refreshes_status(client):

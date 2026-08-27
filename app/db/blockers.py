@@ -118,3 +118,72 @@ def list_blocker_jira_keys(conn: sqlite3.Connection) -> set[str]:
             "SELECT jira_key FROM blockers WHERE jira_key IS NOT NULL")}
     except sqlite3.OperationalError:
         return set()
+
+
+# ---------------------------------------------------------------------------
+# Attach to tickets (build plan step 8, 2026-08-27) — blocker_links, m:n
+# between a blocker and the delegated ticket(s) it blocks.
+
+def link_blocker(conn: sqlite3.Connection, blocker_id: int, jira_key: str) -> None:
+    with conn:
+        conn.execute(
+            "INSERT INTO blocker_links (blocker_id, jira_key, created_at)"
+            " VALUES (?, ?, ?) ON CONFLICT (blocker_id, jira_key) DO NOTHING",
+            (blocker_id, jira_key, _now()))
+
+
+def unlink_blocker(conn: sqlite3.Connection, blocker_id: int, jira_key: str) -> None:
+    with conn:
+        conn.execute(
+            "DELETE FROM blocker_links WHERE blocker_id=? AND jira_key=?",
+            (blocker_id, jira_key))
+
+
+def list_blockers_for_ticket(conn: sqlite3.Connection, jira_key: str) -> list[dict]:
+    """Blockers attached to one delegated ticket — defects, then tasks,
+    then clarifications; used for the chips on the board/detail page.
+    Tolerant of the tables not existing yet (partial-init test fixtures)."""
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT b.* FROM blockers b"
+            " JOIN blocker_links l ON l.blocker_id = b.blocker_id"
+            " WHERE l.jira_key = ?"
+            " ORDER BY CASE b.type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
+            " LOWER(b.name)", (jira_key,)))
+    except sqlite3.OperationalError:
+        return []
+
+
+def blockers_for_tickets(conn: sqlite3.Connection,
+                         jira_keys: list[str]) -> dict[str, list[dict]]:
+    """{jira_key: [blocker, ...]} for a batch of delegated tickets — one
+    query for the whole board instead of one per row. Tolerant of the
+    tables not existing yet (partial-init test fixtures)."""
+    if not jira_keys:
+        return {}
+    out: dict[str, list[dict]] = {k: [] for k in jira_keys}
+    placeholders = ",".join("?" for _ in jira_keys)
+    try:
+        rows = conn.execute(
+            f"SELECT l.jira_key AS ticket_key, b.* FROM blocker_links l"
+            f" JOIN blockers b ON b.blocker_id = l.blocker_id"
+            f" WHERE l.jira_key IN ({placeholders})"
+            f" ORDER BY CASE b.type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
+            f" LOWER(b.name)", jira_keys)
+    except sqlite3.OperationalError:
+        return out
+    cols = [d[0] for d in rows.description]
+    for row in rows.fetchall():
+        rec = dict(zip(cols, row))
+        out[rec.pop("ticket_key")].append(rec)
+    return out
+
+
+def blocked_ticket_counts(conn: sqlite3.Connection) -> dict[int, int]:
+    """{blocker_id: count of delegated tickets it blocks} — Blockers list
+    page and (later) the Management Summary blocker overview."""
+    try:
+        return dict(conn.execute(
+            "SELECT blocker_id, COUNT(*) FROM blocker_links GROUP BY blocker_id"))
+    except sqlite3.OperationalError:
+        return {}

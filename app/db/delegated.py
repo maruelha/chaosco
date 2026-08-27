@@ -29,6 +29,19 @@ def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # migrations (safe to re-run)
+        for ddl in (
+            # counts_toward_goal (2026-08-27, build plan step 8): per-ticket
+            # authored flag — whether a BLOCKED ticket's defect was found in
+            # a way that counts toward the weekly goal (depends on WHERE the
+            # defect was found [USER 2026-08-27]); NOT derived from status.
+            "ALTER TABLE delegated_annotations ADD COLUMN"
+            " counts_toward_goal INTEGER NOT NULL DEFAULT 0",
+        ):
+            try:
+                conn.execute(ddl)
+            except sqlite3.OperationalError:
+                pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -55,11 +68,13 @@ def delegated_counts(conn: sqlite3.Connection) -> dict:
 
 
 def get_delegated_annotations(conn: sqlite3.Connection) -> dict[str, dict]:
-    """{jira_key: {'blocked_reason': ..., 'next_step': ...}} for the card."""
+    """{jira_key: {'blocked_reason': ..., 'next_step': ..., 'counts_toward_goal': ...}}
+    for the card."""
     try:
-        return {k: {"blocked_reason": br, "next_step": ns}
-                for k, br, ns in conn.execute(
-                    "SELECT jira_key, blocked_reason, next_step"
+        return {k: {"blocked_reason": br, "next_step": ns,
+                    "counts_toward_goal": bool(ctg)}
+                for k, br, ns, ctg in conn.execute(
+                    "SELECT jira_key, blocked_reason, next_step, counts_toward_goal"
                     " FROM delegated_annotations")}
     except sqlite3.OperationalError:
         return {}  # schema not initialised (partial-init test fixtures)
@@ -103,3 +118,25 @@ def set_delegated_blocked_reason(conn: sqlite3.Connection, jira_key: str,
                 blocked_reason = excluded.blocked_reason,
                 updated_at     = excluded.updated_at
         """, (jira_key, reason or None, _now()))
+
+
+def get_delegated_counts_toward_goal(conn: sqlite3.Connection, jira_key: str) -> bool:
+    row = conn.execute(
+        "SELECT counts_toward_goal FROM delegated_annotations WHERE jira_key=?",
+        (jira_key,)).fetchone()
+    return bool(row[0]) if row else False
+
+
+def set_delegated_counts_toward_goal(conn: sqlite3.Connection, jira_key: str,
+                                     value: bool) -> None:
+    """Only-this-field upsert — whether a BLOCKED ticket's defect counts
+    toward the weekly goal (depends on WHERE the defect was found, not on
+    status; authored, an import never touches it)."""
+    with conn:
+        conn.execute("""
+            INSERT INTO delegated_annotations (jira_key, counts_toward_goal, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(jira_key) DO UPDATE SET
+                counts_toward_goal = excluded.counts_toward_goal,
+                updated_at         = excluded.updated_at
+        """, (jira_key, 1 if value else 0, _now()))

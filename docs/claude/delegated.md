@@ -89,8 +89,23 @@ blocks one or more delegated tickets. Design decisions:
   blocks several tickets — modelling it as per-ticket `blocked_reason` text
   would mean retyping the same defect and never being able to ask "what
   does S4DEF-1 block?". `blockers` (id, type, name, jira_key) is the
-  BLOCKER; `blocker_links` (m:n to delegated jira_key) is the "attach to
-  tickets" step — schema exists, UI comes in build step 8.
+  BLOCKER; `blocker_links` (m:n to delegated jira_key) is the attach-to-
+  tickets step — live since build step 8 (2026-08-27).
+- **Attach picker (step 8).** `_blocker_picker.html` — same drop-in AJAX
+  dialog pattern as `_order_details.html`: one opening button
+  (`data-jira-key` + `data-blk-name`), no per-page context wiring. On the
+  board's blocked rows + the ticket detail page: attach an existing
+  blocker, detach one, or quick-create-and-attach in one step (type, name,
+  jira key — "add name+key+type while attaching" [USER 2026-08-27]).
+  Chips (name + jira key) render inline via `blockers_for_tickets` (one
+  batch query for the whole board) / `list_blockers_for_ticket` (detail).
+- **`counts_toward_goal`** (step 8) — per-ticket authored flag on
+  `delegated_annotations`, checkbox on blocked board rows + the detail
+  form, shown/editable only when blocked or already set (same convention
+  as "Why blocked"). Depends on WHERE the defect was found, so it is NOT
+  derived from status [USER 2026-08-27]. Toggle route
+  `POST /delegated/ticket/<key>/counts-toward-goal`; feeds the weekly goal
+  actual in the Management Summary (build step 10).
 - **Three types, fixed order everywhere**: Defects → Tasks → Business
   Clarifications (`db_blockers.TYPE_SECTIONS`). Clarifications never carry
   a jira key — just a name (`_clean_jira_key` strips it even if posted).
@@ -111,10 +126,16 @@ blocks one or more delegated tickets. Design decisions:
 - Links: dashboard "Delegated Testing" card + the board toolbar both carry
   a 🚧 Blockers button.
 - Tests: `tests/test_blockers.py` (storage, list/detail pages, notes,
-  board-exclusion).
+  board-exclusion, attach/detach/quick-create, blocked_ticket_counts),
+  `tests/test_delegated_web.py` (goal toggle, chips on board + detail).
+- **Bug fixed 2026-08-27**: `blockers_for_tickets`' join selected both
+  `l.jira_key` (the delegated ticket) and `b.jira_key` (the blocker's own,
+  often NULL) under the same column name — the blocker's key silently
+  overwrote the ticket key, crashing the board whenever an attached
+  blocker had no jira_key of its own. Fixed with `AS ticket_key`; caught
+  by `test_board_and_detail_show_attached_blocker_chip`.
 
-Next build steps (see `docs/build_plan.md`): 8 attach blockers to tickets
-(picker + chips + `counts_toward_goal` flag), 9 blocker filter/chips on the
+Next build steps (see `docs/build_plan.md`): 9 blocker filter/chips on the
 status report, 10 Management Summary blocker overview + weekly goal.
 
 ## PARKED — explicitly pushed to later [USER 2026-08-26]

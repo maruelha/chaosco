@@ -108,8 +108,13 @@
         <label for="f-blocked">Why blocked</label>
         <textarea id="f-blocked" name="blocked_reason" rows="2">{{ blocked_reason or '' }}</textarea>
       </div>
+      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.4rem 0 0.2rem">
+        <input type="checkbox" name="counts_toward_goal" value="1" {% if counts_toward_goal %}checked{% endif %}>
+        Counts toward the weekly goal
+      </label>
       {% else %}
       <input type="hidden" name="blocked_reason" value="{{ blocked_reason or '' }}">
+      <input type="hidden" name="counts_toward_goal" value="{{ '1' if counts_toward_goal else '0' }}">
       {% endif %}
       <div class="form-field">
         <label for="f-nextstep">Next step
@@ -132,6 +137,25 @@
 </div>
 
 {% include '_next_step_history.html' %}
+
+{# ---- Blockers (authored, build plan step 8) — only meaningful for BLOCKED
+   tickets, but stays visible if something is already attached ---- #}
+{% if is_blocked or blockers %}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>Blockers</h2>
+  </div>
+  <p class="blk-chips" data-key="{{ issue.jira_key }}" style="margin-bottom:0.6rem">
+    {% if blockers %}
+      {% for b in blockers %}<span class="chip chip--other" title="{{ b.type }}">{{ b.name }}{% if b.jira_key %} ({{ b.jira_key }}){% endif %}</span>{% endfor %}
+    {% else %}—{% endif %}
+  </p>
+  <button type="button" class="btn js-open-blockers"
+          data-jira-key="{{ issue.jira_key }}"
+          data-blk-name="{{ issue.jira_key }} — {{ issue.summary or '' }}">Manage blockers</button>
+</div>
+{% include '_blocker_picker.html' %}
+{% endif %}
 
 {# ---- Order details (authored) — shared with the Gatekeeper/ECOM boards ---- #}
 <div class="detail-card">

@@ -68,7 +68,11 @@
         <th style="width:7.5rem">Status</th>
         <th style="width:9rem">Assignee</th>
         <th style="width:11rem" title="from the latest comment that carries one">Orders</th>
-        {% if is_blocked_section %}<th style="width:13rem">Why blocked</th>{% endif %}
+        {% if is_blocked_section %}
+        <th style="width:13rem">Why blocked</th>
+        <th style="width:11rem">Blockers</th>
+        <th style="width:5.5rem" title="whether this defect counts toward the weekly goal">Goal</th>
+        {% endif %}
         <th style="width:13rem">Next step</th>
         <th style="width:12rem"></th>
       </tr>
@@ -92,6 +96,21 @@
           <input type="text" class="rt-comment dlg-br" data-key="{{ i.jira_key }}"
                  value="{{ i.blocked_reason or '' }}"
                  placeholder="why blocked…" onblur="dlgBrSave(this)">
+        </td>
+        <td>
+          <p class="blk-chips" data-key="{{ i.jira_key }}" style="margin:0 0 0.3rem; font-size:0.76rem">
+            {% if i.blockers %}
+              {% for b in i.blockers %}<span class="chip chip--other" title="{{ b.type }}">{{ b.name }}{% if b.jira_key %} ({{ b.jira_key }}){% endif %}</span>{% endfor %}
+            {% else %}—{% endif %}
+          </p>
+          <button type="button" class="btn btn-sm js-open-blockers"
+                  data-jira-key="{{ i.jira_key }}"
+                  data-blk-name="{{ i.jira_key }} — {{ i.summary or '' }}">Blockers</button>
+        </td>
+        <td style="text-align:center">
+          <input type="checkbox" class="dlg-goal" data-key="{{ i.jira_key }}"
+                 {% if i.counts_toward_goal %}checked{% endif %}
+                 onchange="dlgGoalSave(this)" title="counts toward the weekly goal">
         </td>
         {% endif %}
         <td>
@@ -119,7 +138,7 @@
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 9 if is_blocked_section else 8 }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 11 if is_blocked_section else 8 }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -151,6 +170,7 @@
 {% include '_next_step_history.html' %}
 {% include '_teams_chat_links.html' %}
 {% include '_issue_message.html' %}
+{% include '_blocker_picker.html' %}
 
 <script>
 function dlgJira(btn) {
@@ -175,6 +195,13 @@ function dlgNsSave(input) {
 
 function dlgBrSave(input) {
   dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/blocked-reason', 'blocked_reason');
+}
+
+function dlgGoalSave(checkbox) {
+  const body = new URLSearchParams({ value: checkbox.checked ? '1' : '0' });
+  fetch('/delegated/ticket/' + encodeURIComponent(checkbox.dataset.key) + '/counts-toward-goal',
+        { method: 'POST', body })
+    .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
 }
 </script>
 {% endblock %}

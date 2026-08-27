@@ -99,10 +99,26 @@ one-at-a-time, Marina confirms each:
    it). Links: dashboard Delegated Testing card + board toolbar → 🚧
    Blockers. Tests: `tests/test_blockers.py` (13, incl. the board-exclusion
    regression).
-8. **Attach to tickets**: blocker picker (link existing / quick-create) on
-   the board's blocked rows + ticket detail, shown as chips. Same step:
-   `counts_toward_goal` flag on blocked tickets (`delegated_annotations` —
-   authored, import never touches it).
+8. ~~Attach to tickets~~ ✅ DONE 2026-08-27: `blocker_links` now in active
+   use (was schema-only after step 7). Shared AJAX picker
+   `_blocker_picker.html` (pattern copied from `_order_details.html` — no
+   route/context wiring per page, one opening button with
+   `data-jira-key`/`data-blk-name`) on the board's blocked rows + ticket
+   detail: attach an existing blocker, detach, or quick-create-and-attach
+   in one step (type/name/jira_key — the "add while attaching" flow
+   [USER 2026-08-27]). Chips render from `blockers_for_tickets` (one batch
+   query for the whole board) / `list_blockers_for_ticket` (detail).
+   `counts_toward_goal` flag added to `delegated_annotations` (migration in
+   `init_schema`) — checkbox on blocked board rows + the ticket detail form,
+   shown/editable only when blocked (or already set, same convention as
+   "Why blocked"); toggle route `POST .../counts-toward-goal`. Bug caught
+   by the new tests and fixed: `blockers_for_tickets`' join selected both
+   `l.jira_key` (the ticket) and `b.jira_key` (the blocker's own, often
+   NULL) under the same column name — the blocker's key silently
+   overwrote the ticket key. Fixed with `AS ticket_key`. Tests:
+   `tests/test_blockers.py` (+6: links json, attach/detach, quick-create,
+   blocked_ticket_counts), `tests/test_delegated_web.py` (+3: goal toggle
+   via checkbox and via the detail form, chips render on board + detail).
 9. **Detailed status report** (name stays): blocker chips on blocked rows +
    Blocker filter next to Status/Assignee (pick one → see what it blocks).
    Downloads/exports stay clean automatically (download-mode renders).

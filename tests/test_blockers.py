@@ -206,3 +206,73 @@ def test_registered_blocker_excluded_from_delegated_board(client, monkeypatch):
     html = c.get("/delegated/").get_data(as_text=True)
     assert "S4ECOM-1" in html
     assert "S4DEF-1" not in html
+
+
+# ---------------------------------------------------------------------------
+# Attach to tickets (build plan step 8) — blocker_links picker routes
+
+def test_links_json_lists_linked_and_available(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+        db_blockers.create_blocker(conn, "task", "Backfill master data", None)
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-1")
+    finally:
+        conn.close()
+    data = c.get("/blockers/links/S4ECOM-1").get_json()
+    assert [b["name"] for b in data["linked"]] == ["Pricing bug"]
+    assert [b["name"] for b in data["available"]] == ["Backfill master data"]
+
+
+def test_attach_and_detach_blocker(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+    finally:
+        conn.close()
+    resp = c.post("/blockers/links/S4ECOM-1/attach",
+                  data={"blocker_id": b1["blocker_id"]})
+    data = resp.get_json()
+    assert data["ok"] and [b["name"] for b in data["linked"]] == ["Pricing bug"]
+
+    resp = c.post("/blockers/links/S4ECOM-1/detach",
+                  data={"blocker_id": b1["blocker_id"]})
+    data = resp.get_json()
+    assert data["ok"] and data["linked"] == []
+
+
+def test_quick_create_and_attach(client):
+    c, db_path = client
+    resp = c.post("/blockers/links/S4ECOM-1/quick-create",
+                  data={"type": "defect", "name": "New defect", "jira_key": "S4DEF-9"})
+    data = resp.get_json()
+    assert data["ok"]
+    assert [b["name"] for b in data["linked"]] == ["New defect"]
+    conn = database.get_connection(db_path)
+    try:
+        rows = db_blockers.list_blockers(conn)
+    finally:
+        conn.close()
+    assert len(rows) == 1 and rows[0]["jira_key"] == "S4DEF-9"
+
+
+def test_quick_create_requires_type_and_name(client):
+    c, _db_path = client
+    resp = c.post("/blockers/links/S4ECOM-1/quick-create",
+                  data={"type": "", "name": ""})
+    assert resp.status_code == 400
+    assert resp.get_json()["ok"] is False
+
+
+def test_blocked_ticket_counts(client):
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-1")
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-2")
+        assert db_blockers.blocked_ticket_counts(conn) == {b1["blocker_id"]: 2}
+    finally:
+        conn.close()

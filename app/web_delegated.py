@@ -71,12 +71,16 @@ def delegated_list():
         # shared order-details component at ('jira', key) — same rows as the
         # gatekeeper/ECOM boards; green ✓ when any row has S4 docs
         docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
+        blockers_by_key = db_blockers.blockers_for_tickets(
+            conn, [i["jira_key"] for i in issues])
     finally:
         conn.close()
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
+        i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
+        i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     return render_template(
         "delegated.html",
         sections=bucket_issues(issues, _me()),
@@ -140,6 +144,19 @@ def delegated_blocked_reason(jira_key: str):
     return jsonify({"ok": True})
 
 
+@bp.route("/ticket/<jira_key>/counts-toward-goal", methods=["POST"])
+def delegated_counts_toward_goal(jira_key: str):
+    """Inline checkbox toggle — whether this BLOCKED ticket's defect counts
+    toward the weekly goal (depends on WHERE it was found, not on status)."""
+    conn = _get_conn()
+    try:
+        db_delegated.set_delegated_counts_toward_goal(
+            conn, jira_key, request.form.get("value") == "1")
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @bp.route("/ticket/<jira_key>", methods=["GET", "POST"])
 def delegated_ticket_detail(jira_key: str):
     """Detail page per delegated ticket — read-only Jira data (details +
@@ -157,12 +174,16 @@ def delegated_ticket_detail(jira_key: str):
             db_delegated.set_delegated_blocked_reason(
                 conn, jira_key,
                 request.form.get("blocked_reason", "").strip() or None)
+            db_delegated.set_delegated_counts_toward_goal(
+                conn, jira_key, request.form.get("counts_toward_goal") == "1")
             conn.close()
             return redirect(url_for("delegated.delegated_ticket_detail",
                                     jira_key=jira_key, saved="1"))
         comments = db_jira.list_jira_comments(conn, jira_key)
         next_step = db_delegated.get_delegated_next_step(conn, jira_key)
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
+        counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
+        blockers = db_blockers.list_blockers_for_ticket(conn, jira_key)
         notes = database.list_notes(conn, "delegated", jira_key)
         attachments_by_note = database.get_attachments_for_notes(
             conn, [n["id"] for n in notes])
@@ -174,6 +195,7 @@ def delegated_ticket_detail(jira_key: str):
         orders=extract_latest_comment_orders(comments),
         is_blocked=(issue.get("jira_status") or "").strip().lower() == "blocked",
         next_step=next_step, blocked_reason=blocked_reason,
+        counts_toward_goal=counts_toward_goal, blockers=blockers,
         notes=notes, attachments_by_note=attachments_by_note,
         saved=request.args.get("saved") == "1",
         note_added=request.args.get("note_added") == "1",
