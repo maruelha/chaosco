@@ -455,13 +455,33 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
    [USER: "two checkboxes - relevant for Core South and relevant for GBS
    Ops"]. `known_prod_defects` gained `relevant_core_south` +
    `relevant_gbs_ops` (INTEGER DEFAULT 0, independent flags). Checkboxes
-   on the create/edit form only for now — not yet surfaced as list
-   columns or filters (say the word if that's wanted too).
+   on the create/edit form.
    Tests: `tests/test_prod_defects.py` (+6 across both items, 29 total);
    full suite 530 green. Verified against a disposable copy of the real
    DB: risk row excluded from the main table + biz impact/how to
    handle/confluence hidden from the risk table; checkbox state
    round-trips through create → detail page.
+7. ~~Relevant for filters + list columns~~ ✅ DONE 2026-08-27 [USER: "add
+   relevant for filters and columns to the list"]. `list_known_prod_defects`
+   gained `relevant_core_south`/`relevant_gbs_ops` params — same tri-state
+   `'yes'|'no'|None` convention as the defects board's dtco2c/daily
+   filters (`docs/claude/verticals.md` precedent). Two new dropdowns in
+   the filter bar (All/Relevant/Not relevant), applied on both
+   `/prod_defects` and `/prod_defects/archive`. Two new inline-editable
+   checkbox columns on BOTH the main table and the Risks table (shared
+   `kpd_relevant_cells(row)` macro) — AJAX toggle via `POST
+   /prod_defects/<id>/relevant-core-south` /
+   `.../relevant-gbs-ops`, mirroring the defects board's dtco2c/daily
+   toggle (JSON body from a checkbox `change` event, not the earlier
+   form-encoded `"0"`/`"1"` convention — no risk of the truthy-string
+   bug this time since checkboxes never submit "0"). Column count grew
+   (8→10 main, 5→7 risk); the JS empty-row helper already computed
+   colspan dynamically from `<thead th>` count (built that way in the
+   risk-split step for exactly this kind of future column change), so no
+   JS changes were needed there. Tests: `tests/test_prod_defects.py`
+   (+4, 27 total in the file); full suite 534 green. Verified against a
+   disposable copy of the real DB: filter narrows correctly, AJAX toggle
+   round-trips.
 
 ### Cross-vertical components — done ad-hoc
 

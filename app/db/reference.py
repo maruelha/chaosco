@@ -157,11 +157,15 @@ def list_known_prod_defects(conn: sqlite3.Connection,
                             channel: str | None = None,
                             scenario: str | None = None,
                             type_: str | None = None,
-                            status: str | None = "open") -> list[dict]:
+                            status: str | None = "open",
+                            relevant_core_south: str | None = None,
+                            relevant_gbs_ops: str | None = None) -> list[dict]:
     """status='open' (default) — the active list, downloads, email report
     and the ECOM Spillover Report section all get only non-fixed rows for
     free. status='fixed' is the Archive view; status=None returns both
-    [USER 2026-08-27: mark-fixed removes from the report without deleting]."""
+    [USER 2026-08-27: mark-fixed removes from the report without deleting].
+    relevant_core_south/relevant_gbs_ops: 'yes'|'no'|None(=all) — same
+    tri-state filter convention as the defects board's dtco2c/daily."""
     sql = """
         SELECT k.*,
                (SELECT COUNT(*) FROM notes n WHERE n.entity_type = 'prod_defect'
@@ -182,6 +186,14 @@ def list_known_prod_defects(conn: sqlite3.Connection,
     if status:
         sql += " AND k.status = ?"
         params.append(status)
+    if relevant_core_south == "yes":
+        sql += " AND k.relevant_core_south = 1"
+    elif relevant_core_south == "no":
+        sql += " AND k.relevant_core_south = 0"
+    if relevant_gbs_ops == "yes":
+        sql += " AND k.relevant_gbs_ops = 1"
+    elif relevant_gbs_ops == "no":
+        sql += " AND k.relevant_gbs_ops = 0"
     sql += " ORDER BY k.created_at DESC"
     return _rows_to_dicts(conn.execute(sql, params))
 
@@ -274,6 +286,26 @@ def update_known_prod_defect(
 def delete_known_prod_defect(conn: sqlite3.Connection, record_id: int) -> None:
     with conn:
         conn.execute("DELETE FROM known_prod_defects WHERE id = ?", (record_id,))
+
+
+def set_known_prod_defect_relevant_core_south(conn: sqlite3.Connection, record_id: int,
+                                              value: bool) -> None:
+    """Inline list-column checkbox toggle (2026-08-27)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE known_prod_defects SET relevant_core_south=?, updated_at=? WHERE id=?",
+            (1 if value else 0, now, record_id))
+
+
+def set_known_prod_defect_relevant_gbs_ops(conn: sqlite3.Connection, record_id: int,
+                                           value: bool) -> None:
+    """Inline list-column checkbox toggle (2026-08-27)."""
+    now = datetime.now().isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            "UPDATE known_prod_defects SET relevant_gbs_ops=?, updated_at=? WHERE id=?",
+            (1 if value else 0, now, record_id))
 
 
 def mark_known_prod_defect_fixed(conn: sqlite3.Connection, record_id: int,

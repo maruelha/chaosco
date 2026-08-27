@@ -99,6 +99,69 @@ def test_relevant_checkboxes_round_trip(client):
     assert row["relevant_gbs_ops"] == 1
 
 
+def test_relevant_columns_shown_and_checked_in_list(client):
+    record_id = _new(client, relevant_core_south="on")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    assert "Core South" in html and "GBS Ops" in html
+    row_html = html.split(f'<tr data-id="{record_id}">')[1].split("</tr>")[0]
+    cs_cb = row_html.split('class="kpd-cs-toggle"')[1].split(">")[0]
+    gbs_cb = row_html.split('class="kpd-gbs-toggle"')[1].split(">")[0]
+    assert "checked" in cs_cb
+    assert "checked" not in gbs_cb
+
+
+def test_relevant_toggle_routes_update_the_record(client):
+    record_id = _new(client)
+    resp = client.post(f"/prod_defects/{record_id}/relevant-core-south", data={"value": "1"})
+    assert resp.get_json()["ok"]
+    resp = client.post(f"/prod_defects/{record_id}/relevant-gbs-ops", data={"value": "1"})
+    assert resp.get_json()["ok"]
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["relevant_core_south"] == 1 and row["relevant_gbs_ops"] == 1
+
+    resp = client.post(f"/prod_defects/{record_id}/relevant-core-south", data={"value": "0"})
+    assert resp.get_json()["ok"]
+    conn = database.get_connection(client.db_path)
+    try:
+        row = database.get_known_prod_defect(conn, record_id)
+    finally:
+        conn.close()
+    assert row["relevant_core_south"] == 0 and row["relevant_gbs_ops"] == 1
+
+
+def test_relevant_filters_narrow_the_list(client):
+    cs_id = _new(client, short_description="CSOnly", scenario="GWC", relevant_core_south="on")
+    _new(client, short_description="Neither", scenario="GWC")
+
+    html = client.get("/prod_defects?relevant_core_south=yes").get_data(as_text=True)
+    assert "CSOnly" in html and "Neither" not in html
+
+    html = client.get("/prod_defects?relevant_core_south=no").get_data(as_text=True)
+    assert "CSOnly" not in html and "Neither" in html
+
+    html = client.get("/prod_defects?relevant_gbs_ops=yes").get_data(as_text=True)
+    assert "CSOnly" not in html and "Neither" not in html
+
+    html = client.get(f"/prod_defects?relevant_core_south=yes").get_data(as_text=True)
+    assert 'value="yes" selected' in html
+    assert ">Clear</a>" in html
+    assert cs_id  # keep the id referenced
+
+
+def test_relevant_columns_on_risk_table(client):
+    risk_id = _new(client, short_description="RiskWithFlag", scenario="GWC", type="Risk",
+                   relevant_gbs_ops="on")
+    html = client.get("/prod_defects").get_data(as_text=True)
+    _, risk_html = html.split("⚠ Risks")
+    row_html = risk_html.split(f'<tr data-id="{risk_id}">')[1].split("</tr>")[0]
+    gbs_cb = row_html.split('class="kpd-gbs-toggle"')[1].split(">")[0]
+    assert "checked" in gbs_cb
+
+
 def test_legacy_scenario_not_in_fixed_list_stays_visible(client):
     record_id = _new(client, scenario="A very old free-text scenario")
     html = client.get(f"/prod_defects/{record_id}").get_data(as_text=True)

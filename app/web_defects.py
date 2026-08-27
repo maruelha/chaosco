@@ -159,10 +159,13 @@ def prod_defects_list():
     channel = request.args.get("channel", "").strip()
     scenario = request.args.get("scenario", "").strip()
     type_ = request.args.get("type", "").strip()
+    relevant_cs = request.args.get("relevant_core_south", "").strip()
+    relevant_gbs = request.args.get("relevant_gbs_ops", "").strip()
     conn = _get_conn()
     try:
         rows = database.list_known_prod_defects(
-            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None)
+            conn, channel=channel or None, scenario=scenario or None, type_=type_ or None,
+            relevant_core_south=relevant_cs or None, relevant_gbs_ops=relevant_gbs or None)
         review_comment_count = len(database.list_review_comments(conn))
         fixed_count = len(database.list_known_prod_defects(conn, status="fixed"))
     finally:
@@ -173,6 +176,7 @@ def prod_defects_list():
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        sel_relevant_cs=relevant_cs, sel_relevant_gbs=relevant_gbs,
         review_comment_count=review_comment_count,
         confluence_url=_cfg.get("prod_defects_confluence_url", ""),
         archived=False, fixed_count=fixed_count)
@@ -186,11 +190,14 @@ def prod_defects_archive():
     channel = request.args.get("channel", "").strip()
     scenario = request.args.get("scenario", "").strip()
     type_ = request.args.get("type", "").strip()
+    relevant_cs = request.args.get("relevant_core_south", "").strip()
+    relevant_gbs = request.args.get("relevant_gbs_ops", "").strip()
     conn = _get_conn()
     try:
         rows = database.list_known_prod_defects(
             conn, channel=channel or None, scenario=scenario or None, type_=type_ or None,
-            status="fixed")
+            status="fixed",
+            relevant_core_south=relevant_cs or None, relevant_gbs_ops=relevant_gbs or None)
     finally:
         conn.close()
     rows, risk_rows = _split_risks(rows)
@@ -199,6 +206,7 @@ def prod_defects_archive():
         channels=_PROD_DEFECT_CHANNELS, scenarios=_prod_defect_scenarios(),
         types=_PROD_DEFECT_TYPES,
         sel_channel=channel, sel_scenario=scenario, sel_type=type_,
+        sel_relevant_cs=relevant_cs, sel_relevant_gbs=relevant_gbs,
         review_comment_count=0,
         confluence_url="",
         archived=True, fixed_count=len(rows) + len(risk_rows))
@@ -376,6 +384,30 @@ def prod_defect_toggle_fixed(record_id: int):
     conn = _get_conn()
     try:
         database.mark_known_prod_defect_fixed(conn, record_id, value)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/prod_defects/<int:record_id>/relevant-core-south", methods=["POST"])
+def prod_defect_toggle_relevant_cs(record_id: int):
+    """Inline list-column checkbox (2026-08-27) — mirrors the defects
+    board's dtco2c/daily toggles (JSON body from a checkbox change)."""
+    value = request.json.get("value", False) if request.is_json else request.form.get("value") == "1"
+    conn = _get_conn()
+    try:
+        database.set_known_prod_defect_relevant_core_south(conn, record_id, value)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@app.route("/prod_defects/<int:record_id>/relevant-gbs-ops", methods=["POST"])
+def prod_defect_toggle_relevant_gbs(record_id: int):
+    value = request.json.get("value", False) if request.is_json else request.form.get("value") == "1"
+    conn = _get_conn()
+    try:
+        database.set_known_prod_defect_relevant_gbs_ops(conn, record_id, value)
     finally:
         conn.close()
     return jsonify({"ok": True})
