@@ -199,9 +199,33 @@ Images render as thumbnails; documents as download links (`is_image` filter).
   (`prod_defect_scenarios` in settings.yaml, legacy values stay visible
   as "(current)"). List page: Channel/Scenario filters, note count on
   Edit, Confluence link at the top (`prod_defects_confluence_url`),
-  `⬇ Download HTML` + `✉ Send via email` (7th entry in
-  `emailer.REPORT_CHOICES`; the Email Reports page now supports
+  `⬇ Download HTML` + `✉ Send via email` (entry in
+  `emailer.REPORT_CHOICES`; the Email Reports page supports
   `?reports=<key>` to pre-tick just one report).
+  **Big rework 2026-08-27** (details: build_plan.md "Known Production
+  Issues" items 4–13 + the screens.html cards):
+  - **Mark Fixed / Archive**: `status` ('open'/'fixed') + `fixed_at`;
+    `list_known_prod_defects` defaults to open-only, so fixed items drop
+    out of the list, downloads, email and the ECOM Spillover Report
+    section without being deleted; `/prod_defects/archive` + ↺ Reopen.
+  - **Splits**: Limitations and Risks live in their own lists below the
+    main one (`web_defects._split_by_type`); their rows carry only
+    Edit + Delete (no Mark Fixed / audience checkboxes).
+  - **Unique ids**: `display_id` ECOM-NNN/RETAIL-NNN, assigned once at
+    creation from Channel (`_next_display_id`, partial unique index),
+    never regenerated; legacy rows backfilled on startup oldest-first —
+    but only rows that HAVE a channel.
+  - **Audience flags**: `relevant_core_south`/`relevant_gbs_ops` —
+    checkboxes on form + expanded row, tri-state filters on the list.
+  - **Expandable rows** replace the wide table (kpd-row accordion,
+    shares the smoke-scenario CSS); Channel/Type dropped as columns
+    (Channel = id prefix, still filterable; Type = which list you're in);
+    lists presorted by Scenario (portable LOWER() sort, blanks last).
+  - **Management report** `/prod_defects/report` (+`/download`): ECOM,
+    Defects/Limitations need BOTH audience flags, Risks = all ECOM;
+    per-section + per-scenario counts; columns ID·Sub-case·Short
+    Description·Biz Impact only. Context builder
+    `prod_defects_report_context` shared by screen/download/email.
 - `ecom_gatekeeper` — inline-editable pre-handoff table; notes + order
   details; future handover re-points order_details to the ECOM vertical
 - `order_details` — generic per-entity order log
@@ -212,7 +236,9 @@ Images render as thumbnails; documents as download links (`is_image` filter).
 
 `/email-report` — send the status reports as standalone-HTML attachments via
 GMX SMTP. Checkbox per report (`emailer.REPORT_CHOICES` — Spillover / Retail /
-Requirements Board / ECOM / Manual Retail+ECOM / Known Production Issues /
+Requirements Board / ECOM / Manual Retail+ECOM / Known Production Issues
+(+ since 2026-08-27 its Review Copy — attached AS-IS, scripts kept on
+purpose — and its Management Report, both separate choices) /
 Delegated Testing Report + Numbers since 2026-08-26, the delegated pair
 attaches the clean `/delegated/*/download` renders),
 date field (default today) drives subject + body text (both editable),
