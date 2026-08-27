@@ -255,7 +255,6 @@ def test_list_shows_id_scenario_subcase_and_filters(client):
     assert "Known Production Issues" in html
     assert "ECOM-001" in html  # display id shown
     assert "a specific sub-case" in html
-    assert "How to handle" not in html  # Confluence still appears in the header link (config-driven)
     assert "EcomIssue" in html and "RetailIssue" in html  # RetailIssue (Risk) is in the Risks table
     assert 'id="f-channel"' in html  # Channel stays filterable even though it's not a column
     assert 'id="f-type"' not in html  # Type filter dropped along with the column
@@ -301,13 +300,14 @@ def test_biz_impact_not_truncated(client):
     assert "kpd-truncate" not in html
 
 
-def test_sub_case_shown_how_to_handle_and_confluence_removed_from_list(client):
+def test_sub_case_shown_confluence_removed_how_to_detect_and_handle_shown(client):
     _new(client, short_description="SubCaseRow", scenario="GWC",
-        sub_case="specific edge case text", how_to_handle="should not render here",
-        confluence="should-not-render-either")
+        sub_case="specific edge case text", how_to_detect="detect it this way",
+        how_to_handle="handle it this way", confluence="should-not-render-either")
     html = client.get("/prod_defects").get_data(as_text=True)
     assert "specific edge case text" in html
-    assert "should not render here" not in html
+    assert "detect it this way" in html
+    assert "handle it this way" in html
     assert "should-not-render-either" not in html
 
 
@@ -500,14 +500,15 @@ def test_risks_and_limitations_split_into_their_own_tables(client):
     assert "ADefect" not in risk_html and "ALimitation" not in risk_html
 
 
-def test_risk_table_omits_biz_impact_how_to_handle_confluence(client):
+def test_risk_table_omits_biz_impact_how_to_detect_handle_confluence(client):
     _new(client, short_description="RiskRow", scenario="GWC", type="Risk",
-        biz_impact="Big impact text", how_to_handle="Handle it this way",
-        confluence="https://confluence.example/risk")
+        biz_impact="Big impact text", how_to_detect="Detect it this way",
+        how_to_handle="Handle it this way", confluence="https://confluence.example/risk")
     html = client.get("/prod_defects").get_data(as_text=True)
     _, _, risk_html = _split_sections(html)
     assert "RiskRow" in risk_html
     assert "Big impact text" not in risk_html
+    assert "Detect it this way" not in risk_html
     assert "Handle it this way" not in risk_html
     assert "https://confluence.example/risk" not in risk_html
     # channel/type/scenario/short description still there

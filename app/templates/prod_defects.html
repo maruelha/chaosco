@@ -23,6 +23,8 @@
   <div class="kpd-row-body">
     {% if not narrow %}
     <p><strong>Biz Impact:</strong> {{ row.biz_impact or '—' }}</p>
+    <p><strong>How to detect:</strong> {{ row.how_to_detect or '—' }}</p>
+    <p><strong>How to handle:</strong> {{ row.how_to_handle or '—' }}</p>
     <p class="kpd-row-relevant">
       <label><input type="checkbox" class="kpd-cs-toggle" data-id="{{ row.id }}"
                     {% if row.relevant_core_south %}checked{% endif %}> Relevant for Core South</label>

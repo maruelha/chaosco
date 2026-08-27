@@ -577,6 +577,20 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
     total in the file); full suite 543 green. Verified against a
     disposable copy of the real DB: no wide table, both filters/dropdowns
     behave as expected, real scenario names sort correctly.
+11. ~~How to detect / How to handle shown in the expanded row~~ ✅ DONE
+    2026-08-27 [USER: "can we now add the how to detect and how to
+    handle (similar to business impact)"]. Two more `<p><strong>label:</strong>
+    ...</p>` lines in the main table's expanded panel, right after Biz
+    Impact — same order as the detail form (Biz Impact → How to detect →
+    How to handle). Main table only, matching how Biz Impact already
+    worked — Limitations/Risks rows don't show either (narrow rows never
+    entered that `{% if not narrow %}` block). Tests:
+    `tests/test_prod_defects.py` (1 rewritten to assert both fields now
+    show instead of asserting How to handle's absence, 1 extended with
+    How to detect; 36 total in the file, same count — no new test
+    needed since the narrow-table omission tests already cover this by
+    construction); full suite 543 green. Verified against a disposable
+    copy of the real DB.
 
 ### Cross-vertical components — done ad-hoc
 
