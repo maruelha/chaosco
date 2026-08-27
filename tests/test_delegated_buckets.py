@@ -50,7 +50,14 @@ def test_bucket_issues_keeps_order_and_covers_all_sections():
     counts = dict((k, n) for k, _, n in bucket_counts(issues, ME))
     assert counts == {"blocked": 1, "open": 1, "sales": 1, "team": 0,
                       "marina": 0, "settlement": 0, "gbs": 0, "done": 0,
-                      "unexpected": 0}
+                      "unexpected": 0, "backlog": 0}
+
+
+def test_backlog_flag_wins_over_every_status():
+    parked = {**_issue("Blocked"), "backlog": True}
+    assert bucket_key(parked, ME) == "backlog"
+    assert bucket_key({**_issue("In Review"), "backlog": True}, ME) == "backlog"
+    assert bucket_key(_issue("Blocked"), ME) == "blocked"  # unflagged unchanged
 
 
 # ---- Management Summary staging (build plan step 10) ----------------------

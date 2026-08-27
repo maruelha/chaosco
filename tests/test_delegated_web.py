@@ -522,3 +522,63 @@ def test_numbers_blocker_overview_hides_closed_blockers(client):
     assert "ManuallyClosed" not in html
     assert "JiraDoneBlocker" not in html
     assert open_b and auto
+
+
+# ---------------------------------------------------------------------------
+# Backlog [USER 2026-08-27]: park tickets in their own section, excluded
+# from the Management Summary
+
+def test_backlog_ticket_moves_to_own_section_on_board_and_report(client):
+    _upload(client)
+    resp = client.post("/delegated/ticket/S4ECOM-2003/backlog", data={"value": "1"})
+    assert resp.get_json()["ok"]
+
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "<summary>📦 Backlog" in html  # the section header, not a tooltip
+    backlog_part = html.split("<summary>📦 Backlog")[1]
+    assert "S4ECOM-2003" in backlog_part
+    # gone from its old bucket (In progress with testing team)
+    team_part = html.split("In progress with testing team")[1].split("<summary>📦 Backlog")[0]
+    assert 'data-key="S4ECOM-2003"' not in team_part
+
+    report_html = client.get("/delegated/report").get_data(as_text=True)
+    assert ">📦 Backlog</span>" in report_html
+    assert "S4ECOM-2003" in report_html.split(">📦 Backlog</span>")[1]
+
+
+def test_backlog_excluded_from_management_summary(client):
+    _upload(client)
+    before = client.get("/delegated/numbers").get_data(as_text=True)
+    client.post("/delegated/ticket/S4ECOM-2003/backlog", data={"value": "1"})
+    after = client.get("/delegated/numbers").get_data(as_text=True)
+
+    def total_of(html):
+        return int(html.split('rh-stat-val">')[1].split("<")[0])
+    assert total_of(after) == total_of(before) - 1
+    assert "📦 Backlog" not in after  # no backlog row/section in the summary
+
+    # unpark → back in the numbers
+    client.post("/delegated/ticket/S4ECOM-2003/backlog", data={"value": "0"})
+    restored = client.get("/delegated/numbers").get_data(as_text=True)
+    assert total_of(restored) == total_of(before)
+
+
+def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
+    _upload(client)
+    # S4ECOM-2001 is Blocked — parking it moves it OUT of BLOCKED
+    client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "1"})
+    html = client.get("/delegated/").get_data(as_text=True)
+    blocked_part = html.split("<summary>🔴 BLOCKED")[1].split("<summary>")[0]
+    assert "S4ECOM-2001" not in blocked_part
+    assert "S4ECOM-2001" in html.split("<summary>📦 Backlog")[1]
+
+    # detail form round-trip (unpark via the form's missing checkbox)
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert 'name="backlog" value="1" checked' in detail
+    client.post("/delegated/ticket/S4ECOM-2001", data={
+        "next_step": "", "blocked_reason": "", "counts_toward_goal": "0"})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2001") is False
+    finally:
+        conn.close()

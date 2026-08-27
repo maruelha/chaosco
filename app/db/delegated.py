@@ -43,6 +43,10 @@ def init_schema(db_path: Path) -> None:
             # defect was found [USER 2026-08-27]); NOT derived from status.
             "ALTER TABLE delegated_annotations ADD COLUMN"
             " counts_toward_goal INTEGER NOT NULL DEFAULT 0",
+            # backlog (2026-08-27): parked tickets — own board section,
+            # excluded from the Management Summary [USER 2026-08-27].
+            "ALTER TABLE delegated_annotations ADD COLUMN"
+            " backlog INTEGER NOT NULL DEFAULT 0",
         ):
             try:
                 conn.execute(ddl)
@@ -86,14 +90,14 @@ def delegated_counts(conn: sqlite3.Connection) -> dict:
 
 
 def get_delegated_annotations(conn: sqlite3.Connection) -> dict[str, dict]:
-    """{jira_key: {'blocked_reason': ..., 'next_step': ..., 'counts_toward_goal': ...}}
-    for the card."""
+    """{jira_key: {'blocked_reason': ..., 'next_step': ...,
+    'counts_toward_goal': ..., 'backlog': ...}} for the card."""
     try:
         return {k: {"blocked_reason": br, "next_step": ns,
-                    "counts_toward_goal": bool(ctg)}
-                for k, br, ns, ctg in conn.execute(
-                    "SELECT jira_key, blocked_reason, next_step, counts_toward_goal"
-                    " FROM delegated_annotations")}
+                    "counts_toward_goal": bool(ctg), "backlog": bool(bl)}
+                for k, br, ns, ctg, bl in conn.execute(
+                    "SELECT jira_key, blocked_reason, next_step,"
+                    " counts_toward_goal, backlog FROM delegated_annotations")}
     except sqlite3.OperationalError:
         return {}  # schema not initialised (partial-init test fixtures)
 
@@ -157,6 +161,27 @@ def set_delegated_counts_toward_goal(conn: sqlite3.Connection, jira_key: str,
             ON CONFLICT(jira_key) DO UPDATE SET
                 counts_toward_goal = excluded.counts_toward_goal,
                 updated_at         = excluded.updated_at
+        """, (jira_key, 1 if value else 0, _now()))
+
+
+def get_delegated_backlog(conn: sqlite3.Connection, jira_key: str) -> bool:
+    row = conn.execute(
+        "SELECT backlog FROM delegated_annotations WHERE jira_key=?",
+        (jira_key,)).fetchone()
+    return bool(row[0]) if row else False
+
+
+def set_delegated_backlog(conn: sqlite3.Connection, jira_key: str,
+                          value: bool) -> None:
+    """Only-this-field upsert — parked ticket: own Backlog board section,
+    excluded from the Management Summary [USER 2026-08-27]."""
+    with conn:
+        conn.execute("""
+            INSERT INTO delegated_annotations (jira_key, backlog, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(jira_key) DO UPDATE SET
+                backlog    = excluded.backlog,
+                updated_at = excluded.updated_at
         """, (jira_key, 1 if value else 0, _now()))
 
 

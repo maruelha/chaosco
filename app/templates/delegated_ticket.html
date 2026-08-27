@@ -116,6 +116,11 @@
       <input type="hidden" name="blocked_reason" value="{{ blocked_reason or '' }}">
       <input type="hidden" name="counts_toward_goal" value="{{ '1' if counts_toward_goal else '0' }}">
       {% endif %}
+      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.2rem 0 0.2rem"
+             title="park in the 📦 Backlog section — excluded from the Management Summary">
+        <input type="checkbox" name="backlog" value="1" {% if backlog %}checked{% endif %}>
+        📦 Backlog (parked — not in the Management Summary)
+      </label>
       <div class="form-field">
         <label for="f-nextstep">Next step
           <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"

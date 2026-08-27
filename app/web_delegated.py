@@ -109,6 +109,7 @@ def delegated_list():
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
+        i["backlog"] = ann.get("backlog", False)
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     return render_template(
         "delegated.html",
@@ -189,6 +190,19 @@ def delegated_counts_toward_goal(jira_key: str):
     return jsonify({"ok": True})
 
 
+@bp.route("/ticket/<jira_key>/backlog", methods=["POST"])
+def delegated_backlog(jira_key: str):
+    """Inline checkbox toggle — park a ticket in the 📦 Backlog section
+    (excluded from the Management Summary) [USER 2026-08-27]."""
+    conn = _get_conn()
+    try:
+        db_delegated.set_delegated_backlog(
+            conn, jira_key, request.form.get("value") == "1")
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @bp.route("/ticket/<jira_key>", methods=["GET", "POST"])
 def delegated_ticket_detail(jira_key: str):
     """Detail page per delegated ticket — read-only Jira data (details +
@@ -208,6 +222,8 @@ def delegated_ticket_detail(jira_key: str):
                 request.form.get("blocked_reason", "").strip() or None)
             db_delegated.set_delegated_counts_toward_goal(
                 conn, jira_key, request.form.get("counts_toward_goal") == "1")
+            db_delegated.set_delegated_backlog(
+                conn, jira_key, request.form.get("backlog") == "1")
             conn.close()
             return redirect(url_for("delegated.delegated_ticket_detail",
                                     jira_key=jira_key, saved="1"))
@@ -215,6 +231,7 @@ def delegated_ticket_detail(jira_key: str):
         next_step = db_delegated.get_delegated_next_step(conn, jira_key)
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
+        backlog = db_delegated.get_delegated_backlog(conn, jira_key)
         blockers = db_blockers.list_blockers_for_ticket(conn, jira_key)
         notes = database.list_notes(conn, "delegated", jira_key)
         attachments_by_note = database.get_attachments_for_notes(
@@ -227,7 +244,7 @@ def delegated_ticket_detail(jira_key: str):
         orders=extract_latest_comment_orders(comments),
         is_blocked=(issue.get("jira_status") or "").strip().lower() == "blocked",
         next_step=next_step, blocked_reason=blocked_reason,
-        counts_toward_goal=counts_toward_goal, blockers=blockers,
+        counts_toward_goal=counts_toward_goal, backlog=backlog, blockers=blockers,
         notes=notes, attachments_by_note=attachments_by_note,
         saved=request.args.get("saved") == "1",
         note_added=request.args.get("note_added") == "1",
@@ -248,6 +265,7 @@ def report_context(conn) -> dict:
         ann = annotations.get(i["jira_key"]) or {}
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
+        i["backlog"] = ann.get("backlog", False)
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     sections = [(title, css, items)
                 for _key, title, css, items in bucket_issues(issues, _me())]
@@ -286,8 +304,12 @@ def numbers_context(conn) -> dict:
     annotations = db_delegated.get_delegated_annotations(conn)
     me = _me()
     for i in issues:
-        i["counts_toward_goal"] = (annotations.get(i["jira_key"]) or {}).get(
-            "counts_toward_goal", False)
+        ann = annotations.get(i["jira_key"]) or {}
+        i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
+        i["backlog"] = ann.get("backlog", False)
+    # backlog tickets are parked — OUT of the Management Summary entirely
+    # (total, stages, goal actual) [USER 2026-08-27]
+    issues = [i for i in issues if not i["backlog"]]
     stages, unexpected = staged_counts(issues, me)
     post_gatekeeper_total = next(t for k, _l, t, _r in stages if k == "post_gatekeeper")
     blocked_counting = sum(

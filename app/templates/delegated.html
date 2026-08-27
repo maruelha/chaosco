@@ -54,7 +54,7 @@
 
 {% for section_key, section_title, section_css, section_items in sections %}
 {% set is_blocked_section = section_key == 'blocked' %}
-{% if section_items or section_key not in ('done', 'unexpected') %}
+{% if section_items or section_key not in ('done', 'unexpected', 'backlog') %}
 <details class="rt-section {{ board_css[section_key] }}" {% if section_items %}open{% endif %}>
   <summary>{{ section_title }}
     <span class="rt-count">{{ section_items|length }}</span>
@@ -82,6 +82,7 @@
         <th style="width:5.5rem" title="whether this defect counts toward the weekly goal">Goal</th>
         {% endif %}
         <th style="width:13rem">Next step</th>
+        <th style="width:4.5rem" title="park the ticket in the 📦 Backlog section — excluded from the Management Summary">Backlog</th>
         <th style="width:12rem"></th>
       </tr>
     </thead>
@@ -126,6 +127,12 @@
                  value="{{ i.next_step or '' }}"
                  placeholder="next step…" onblur="dlgNsSave(this)">
         </td>
+        <td style="text-align:center">
+          <input type="checkbox" class="dlg-backlog" data-key="{{ i.jira_key }}"
+                 {% if i.backlog %}checked{% endif %}
+                 onchange="dlgBacklogSave(this)"
+                 title="park in 📦 Backlog — excluded from the Management Summary">
+        </td>
         <td style="white-space:nowrap; text-align:right">
           <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
                   data-entity-type="delegated" data-entity-id="{{ i.jira_key }}"
@@ -146,7 +153,7 @@
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 11 if is_blocked_section else 8 }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 12 if is_blocked_section else 9 }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -209,6 +216,15 @@ function dlgGoalSave(checkbox) {
   const body = new URLSearchParams({ value: checkbox.checked ? '1' : '0' });
   fetch('/delegated/ticket/' + encodeURIComponent(checkbox.dataset.key) + '/counts-toward-goal',
         { method: 'POST', body })
+    .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
+}
+
+function dlgBacklogSave(checkbox) {
+  const body = new URLSearchParams({ value: checkbox.checked ? '1' : '0' });
+  fetch('/delegated/ticket/' + encodeURIComponent(checkbox.dataset.key) + '/backlog',
+        { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 window.location.reload(); })  // the row moves to/from 📦 Backlog
     .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
 }
 </script>

@@ -584,6 +584,7 @@
         <tr><td class="col-name">blocked_reason</td><td class="col-type">TEXT</td><td></td><td class="note-text">"Why blocked" — editable on BLOCKED rows (card, blur-save) and on the detail page</td></tr>
         <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">Authored inline next step (blur-save; ↻/🕘 next-step archive, entity <code>delegated</code>)</td></tr>
         <tr><td class="col-name">counts_toward_goal</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">DEFAULT 0 (2026-08-27). Checkbox on blocked board rows + detail page — whether this ticket's defect counts toward the weekly goal (depends on WHERE it was found, NOT derived from status). Feeds the Management Summary goal actual (build plan step 10).</td></tr>
+        <tr><td class="col-name">backlog</td><td class="col-type">INTEGER</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">DEFAULT 0 (2026-08-27). Parked ticket — 📦 Backlog section on the board + status report (wins over every status, even Blocked), EXCLUDED from the Management Summary entirely. Checkbox on every board row + the detail form; toggle <code>POST /delegated/ticket/&lt;key&gt;/backlog</code>.</td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of last save</td></tr>
       </tbody>
     </table>

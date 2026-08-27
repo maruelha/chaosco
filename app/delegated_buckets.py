@@ -28,6 +28,10 @@ SECTIONS = [
     ("sales",      "Ready for Sales validations",         "sec-sales"),
     ("done",       "Resolved / Closed",                   "sec-done"),
     ("unexpected", "Unexpected status",                   "sec-unexpected"),
+    # per-ticket authored flag [USER 2026-08-27]: parked work — own section
+    # at the bottom, EXCLUDED from the Management Summary (numbers_context
+    # filters backlog issues out before staged_counts/goal/total)
+    ("backlog",    "📦 Backlog",                          "sec-backlog"),
 ]
 
 _DONE_STATUSES = {"resolved", "closed", "done"}
@@ -44,12 +48,17 @@ BOARD_CSS = {
     "sales":      "ui-section--green",
     "done":       "ui-section--gray",
     "unexpected": "ui-section--gray",
+    "backlog":    "ui-section--gray",
 }
 
 
 def bucket_key(issue: dict, me: str) -> str:
     """Section key for one issue. `me` = jira_gatekeeper_assignee (lowered);
-    substring match on the assignee, same rule as the gatekeeper card."""
+    substring match on the assignee, same rule as the gatekeeper card.
+    The authored backlog flag wins over EVERYTHING (even Blocked) — a
+    parked ticket is out of the active workflow [USER 2026-08-27]."""
+    if issue.get("backlog"):
+        return "backlog"
     status = (issue.get("jira_status") or "").strip().lower()
     assignee = (issue.get("jira_assignee") or "").lower()
     mine = bool(me) and me in assignee

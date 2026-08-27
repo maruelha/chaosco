@@ -251,9 +251,15 @@ now done.
    tracking import) matched by Jira key, so the board/detail also shows the
    Excel-side info next to the Jira data. Marina was "not quite sure" about
    this — re-discuss scope before building.
-2. **Backlog items**: manually managed items that are COUNTED in the
-   numbers report but NOT listed in any detail view. Likely a small
-   `delegated_backlog` table; the counting seam is
-   `delegated_buckets.bucket_counts` (add backlog counts onto the bucket
-   counts there). Will "get more complex" per Marina — expect follow-up
-   requirements when she brings it back.
+2. ~~Backlog items~~ RESOLVED 2026-08-27 — the requirement came back
+   INVERTED [USER: "define some open tickets as 'backlog' - and then they
+   are in their own section 'backlog' - and do not appear on the
+   management summary report"]: not extra counted-only items, but a
+   per-ticket authored flag (`delegated_annotations.backlog`, checkbox on
+   every board row + the ticket detail form). Flagged tickets land in a
+   📦 Backlog section at the bottom of the board AND the status report
+   (`bucket_key` returns `backlog` FIRST — wins even over Blocked), and
+   are excluded from the Management Summary entirely (total, staged
+   counts, goal actual — `numbers_context` filters them before
+   `staged_counts`). Toggle `POST /delegated/ticket/<key>/backlog`
+   (board checkbox reloads the page so the row visibly moves).

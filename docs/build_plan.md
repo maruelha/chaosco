@@ -132,9 +132,10 @@ planning chat).
 5. **PARKED — Excel/ECOM join** [USER 2026-08-26]: show the `ecom` rows
    (from the ROE tracking import) matched by Jira key next to the Jira
    data. Marina unsure about scope — re-discuss first.
-6. **PARKED — Backlog items** [USER 2026-08-26]: manually managed items
-   counted in the numbers report but not listed in detail. Seam:
-   `delegated_buckets.bucket_counts`. Requirements to come.
+6. ~~PARKED — Backlog items~~ ✅ RESOLVED 2026-08-27 as item 14 below —
+   the requirement came back inverted (flagged tickets get their own
+   section and are EXCLUDED from the Management Summary, instead of
+   invisible items being counted in).
 
 **Blockers + Management Summary (planning chat 2026-08-27)** — decisions:
 a BLOCKER is its own entity (Marina's design), types defect / task /
@@ -268,6 +269,24 @@ one-at-a-time, Marina confirms each:
     assertion split — the auto-registered defect legitimately appears in
     the blocker overview, still never in the bucket table). Full suite
     569 green.
+14. ~~Backlog flag on tickets~~ ✅ DONE 2026-08-27 [USER: "define some
+    open tickets as 'backlog' - and then they are in their own section
+    'backlog' - and do not appear on the management summary report" —
+    resolves parked item 6, inverted]. `delegated_annotations.backlog`
+    (migration) + only-this-field upsert; `bucket_key` returns `backlog`
+    FIRST (wins over Blocked — a parked ticket is out of the active
+    workflow), new 📦 Backlog SECTION at the bottom of board + status
+    report (hidden while empty on the board like done/unexpected;
+    `sec-backlog` CSS added to the report's self-contained styles).
+    Management Summary EXCLUDES parked tickets entirely (total, staged
+    counts, goal actual). Checkbox column on every board section
+    (reloads on toggle so the row visibly moves) + a checkbox in the
+    ticket-detail working-fields form. Tests:
+    `tests/test_delegated_buckets.py` (+1 backlog-wins-over-status),
+    `tests/test_delegated_web.py` (+3: moves to own section on board +
+    report, excluded/restored in the numbers, backlog-beats-blocked +
+    detail-form round trip; split markers hardened against the emoji
+    appearing in checkbox tooltips). Full suite 573 green.
 12. ~~Blocker fields batch + open/closed + id chips + next steps + Mgmt
     Summary call-outs~~ ✅ DONE 2026-08-27 [USER, one message + a
     follow-up]: (a) `comment` + `impact` on every blocker; (b) optional
