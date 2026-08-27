@@ -104,14 +104,17 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict],
                 "SELECT 1 FROM jira_issues WHERE jira_key=?",
                 (iss["jira_key"],)).fetchone()
             if exists:
-                # reporter refreshes too — immutable in Jira, so this only
-                # backfills rows imported before the column existed
+                # reporter + type refresh too — near-immutable in Jira, so
+                # this mainly backfills rows imported before these fields
+                # were filled/used (type drives the delegated stories-only
+                # filter since 2026-08-27: one upload fixes old rows)
                 conn.execute(
                     "UPDATE jira_issues SET jira_status=?, jira_assignee=?,"
-                    " acceptance_criteria=?, reporter=?, last_seen=? WHERE jira_key=?",
+                    " acceptance_criteria=?, reporter=?, type=?, last_seen=?"
+                    " WHERE jira_key=?",
                     (iss.get("jira_status"), iss.get("jira_assignee"),
                      iss.get("acceptance_criteria"), iss.get("reporter"),
-                     now, iss["jira_key"]))
+                     iss.get("type"), now, iss["jira_key"]))
                 updated += 1
             else:
                 conn.execute(

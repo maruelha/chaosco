@@ -59,18 +59,23 @@ def _now() -> str:
 
 def delegated_counts(conn: sqlite3.Connection) -> dict:
     """{'total': n, 'blocked': n} over the delegated-tagged tickets — the
-    dashboard card badge."""
+    dashboard card badge. Mirrors web_delegated._load_issues since
+    2026-08-27: user stories only (NULL type tolerated) and registered
+    blockers excluded — the badge must match what the board shows."""
     try:
-        total = conn.execute(
-            "SELECT COUNT(*) FROM jira_issues WHERE seen_in_delegated = 1"
-        ).fetchone()[0]
-        blocked = conn.execute(
-            "SELECT COUNT(*) FROM jira_issues WHERE seen_in_delegated = 1"
-            " AND LOWER(TRIM(COALESCE(jira_status,''))) = 'blocked'"
-        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT jira_key, jira_status, type FROM jira_issues"
+            " WHERE seen_in_delegated = 1").fetchall()
     except sqlite3.OperationalError:
         return {"total": 0, "blocked": 0}  # jira schema not initialised yet
-    return {"total": total, "blocked": blocked}
+    from app.db.blockers import list_blocker_jira_keys
+    blocker_keys = list_blocker_jira_keys(conn)
+    kept = [(key, status) for key, status, type_ in rows
+            if key not in blocker_keys
+            and (type_ is None or type_.strip().lower() == "story")]
+    blocked = sum(1 for _key, status in kept
+                  if (status or "").strip().lower() == "blocked")
+    return {"total": len(kept), "blocked": blocked}
 
 
 def get_delegated_annotations(conn: sqlite3.Connection) -> dict[str, dict]:

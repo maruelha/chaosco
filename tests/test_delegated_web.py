@@ -16,6 +16,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
   <item>
     <key id="1">S4ECOM-2001</key>
     <summary>SM2001_Blocked settlement case</summary>
+    <type id="17">Story</type>
     <status id="3">Blocked</status>
     <assignee username="JIRAUSER2">Tester, Tom</assignee>
     <link>https://jira.example.com/browse/S4ECOM-2001</link>
@@ -40,6 +41,13 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
     <key id="4">S4ECOM-2004</key>
     <summary>SM2004_Odd status case</summary>
     <status id="3">Ready for Verification</status>
+    <assignee username="JIRAUSER2">Tester, Tom</assignee>
+  </item>
+  <item>
+    <key id="5">S4DEF-3001</key>
+    <summary>SM3001_Unregistered defect in the export</summary>
+    <type id="1">Defect</type>
+    <status id="3">Open</status>
     <assignee username="JIRAUSER2">Tester, Tom</assignee>
   </item>
 </channel></rss>
@@ -86,6 +94,65 @@ def test_upload_imports_and_page_shows_buckets(client):
     assert "ui-section--red" in html                   # BLOCKED section color
 
 
+def test_only_user_stories_on_board_report_and_numbers(client):
+    """[USER 2026-08-27]: "the main page should only have jira user
+    stories" — the export deliberately carries the blocker defect issues
+    (one upload refreshes everything), so a Defect-type issue must never
+    surface as a testing ticket, registered as a blocker or not. Items
+    without a <type> (legacy exports) are tolerated as stories."""
+    _upload(client)
+    for url in ("/delegated/", "/delegated/report", "/delegated/numbers"):
+        html = client.get(url).get_data(as_text=True)
+        assert "S4DEF-3001" not in html, url
+    for url in ("/delegated/", "/delegated/report"):  # numbers shows counts, not keys
+        html = client.get(url).get_data(as_text=True)
+        assert "S4ECOM-2001" in html, url   # explicit Story stays
+        assert "S4ECOM-2003" in html, url   # no <type> at all stays too
+
+
+def test_dashboard_badge_counts_match_the_board(client):
+    """The card badge mirrors the board: no defects, no registered
+    blockers [2026-08-27]."""
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        counts = db_delegated.delegated_counts(conn)
+        assert counts == {"total": 4, "blocked": 1}  # defect not counted
+        b = db_blockers.create_blocker(conn, "defect", "Now a blocker", "S4ECOM-2004")
+        counts = db_delegated.delegated_counts(conn)
+        assert counts == {"total": 3, "blocked": 1}  # registered blocker drops out
+        assert b
+    finally:
+        conn.close()
+
+
+def test_reupload_backfills_type_on_existing_rows(client):
+    """"can this be fixed for already uploaded issues?" [USER 2026-08-27]
+    — yes: the upsert refresh now also writes type, so one normal upload
+    corrects rows that were imported without one."""
+    # first upload with NO type on S4ECOM-2003
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        row = conn.execute("SELECT type FROM jira_issues WHERE jira_key='S4ECOM-2003'").fetchone()
+        assert row[0] is None
+    finally:
+        conn.close()
+    # second upload where S4ECOM-2003 now carries a type
+    typed = XML.replace(
+        "<key id=\"3\">S4ECOM-2003</key>",
+        "<key id=\"3\">S4ECOM-2003</key>\n    <type id=\"1\">Defect</type>")
+    _upload(client, data=typed)
+    conn = web_delegated._get_conn()
+    try:
+        row = conn.execute("SELECT type FROM jira_issues WHERE jira_key='S4ECOM-2003'").fetchone()
+        assert row[0] == "Defect"
+    finally:
+        conn.close()
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "S4ECOM-2003" not in html  # now filtered as a defect
+
+
 def test_upload_rejects_non_xml_and_missing_file(client):
     resp = _upload(client, filename="delegated.xlsx")
     assert "jira_ok=0" in resp.headers["Location"]
@@ -102,7 +169,7 @@ def test_upload_tags_delegated_without_touching_other_sources(client):
             " FROM jira_issues").fetchall()
     finally:
         conn.close()
-    assert len(rows) == 4
+    assert len(rows) == 5  # incl. the Defect-type issue — tagged in the STORE, filtered in the views
     assert all(r[0] == 1 and r[1] == 0 and r[2] == 0 for r in rows)
 
 

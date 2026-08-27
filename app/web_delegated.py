@@ -46,10 +46,20 @@ def _load_issues(conn):
     [USER 2026-08-27] — a defect/task that blocks testing must not also show
     up as a testing ticket to work through; it lives on the Blockers page
     instead. Same shared jira store, so its status/comments still refresh
-    on the usual delegated upload."""
+    on the usual delegated upload.
+
+    ONLY USER STORIES [USER 2026-08-27: "the main page should only have
+    jira user stories"] — the delegated export deliberately also carries
+    the blocker DEFECT issues (blockers design: one upload refreshes
+    everything), so any issue whose Jira type isn't Story is dropped from
+    the board/report/numbers here, registered as a blocker or not. A NULL
+    type (export without <type>) is tolerated as a story rather than
+    silently dropped."""
     issues = db_jira.list_jira_issues(conn, seen_in="delegated")
     blocker_keys = db_blockers.list_blocker_jira_keys(conn)
-    issues = [i for i in issues if i["jira_key"] not in blocker_keys]
+    issues = [i for i in issues if i["jira_key"] not in blocker_keys
+              and (i.get("type") is None
+                   or i["type"].strip().lower() == "story")]
     comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                     for i in issues}
     for i in issues:

@@ -1695,7 +1695,7 @@
         <tr><td class="col-name">jira_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">Refreshed on re-import</td></tr>
         <tr><td class="col-name">jira_assignee</td><td class="col-type">TEXT</td><td></td><td class="note-text">Refreshed on re-import</td></tr>
         <tr><td class="col-name">reporter</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">"Lastname, Firstname" — drives the reporter filters, per-reporter Sales reports and the unexpected-reporter data check (config ecom_reporters)</td></tr>
-        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td></td><td class="note-text">Jira issue type ("Story", "Defect", …). Since 2026-08-27 refreshed on re-import and load-bearing: the Delegated board/report/numbers + dashboard badge keep ONLY Story rows (NULL tolerated) — the export carries blocker defects that must not show as testing tickets.</td></tr>
         <tr><td class="col-name">priority</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">HTML as exported</td></tr>
         <tr><td class="col-name">acceptance_criteria</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">Checklist text; source of the ⤵ take-over order numbers; refreshed on re-import</td></tr>

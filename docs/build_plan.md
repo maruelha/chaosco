@@ -223,6 +223,25 @@ one-at-a-time, Marina confirms each:
     database_schema.html (`delegated_goal` table card), dashboard_cards.html,
     build_plan ticks, session test checklist
     (`docs/marina_notes/SessionTest_2026-08-27.html`).
+11. ~~Only user stories on the board/report/numbers~~ ✅ DONE 2026-08-27
+    [USER: "why are defects being added to the status report?????? so the
+    main page should only have jira user stories"]. Root cause: the
+    Blockers design has Marina's export carry the blocker DEFECT issues —
+    any defect NOT registered as a blocker landed on the board as a
+    testing ticket. Fix in `web_delegated._load_issues` (board/report/
+    numbers all route through it): drop every issue whose stored Jira
+    `type` isn't Story; NULL type tolerated as story (nothing silently
+    lost on legacy exports without `<type>`). `delegated_counts`
+    (dashboard badge) reworked to mirror the same rule + the blocker
+    exclusion it never had — badge and board now always agree. For
+    already-uploaded issues [USER: "can this be fixed for already
+    uploaded issues?"]: type was stored on insert since day one, so the
+    filter bites immediately; additionally the upsert refresh now also
+    writes `type`, so one normal upload backfills any row imported
+    without one. Tests: `tests/test_delegated_web.py` (+3: stories-only
+    across all three views incl. no-type tolerance, badge==board incl.
+    blocker exclusion, re-upload type backfill; fixture XML gained a
+    Defect-type item + an explicit Story type). Full suite 556 green.
 
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 

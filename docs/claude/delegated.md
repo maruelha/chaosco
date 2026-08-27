@@ -56,6 +56,18 @@ uploaded as a file on the card; tickets bucketed by status/assignee from
 Case-insensitive, whitespace-tolerant. Board hides Resolved+Unexpected
 sections while empty; the report shows only non-empty sections.
 
+**Only user stories (2026-08-27)** [USER: "the main page should only have
+jira user stories"]: the export deliberately also carries the blocker
+DEFECT issues (see Blockers: one upload refreshes everything), so
+`_load_issues` additionally drops every issue whose Jira `type` isn't
+Story — registered as a blocker or not. NULL type (export without
+`<type>`) is tolerated as a story rather than silently dropped. The
+dashboard badge (`db_delegated.delegated_counts`) mirrors the same rule
+(stories only, blockers excluded) so badge and board always agree. The
+upsert refresh also writes `type` since 2026-08-27, so one normal upload
+backfills rows imported without one ("can this be fixed for already
+uploaded issues?" — yes).
+
 ## Pieces
 
 - `app/db/delegated.py` — schema + all SQL (annotations, `delegated_counts`
