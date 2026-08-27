@@ -145,6 +145,8 @@ def delegated_upload():
         msg = (f"{f.filename}: {result['parsed']} tickets — "
                f"{result['inserted']} new · {result['updated']} refreshed · "
                f"{result['comments']} comments")
+        if result.get("blockers_registered"):
+            msg += f" · {result['blockers_registered']} blockers registered"
         return redirect(url_for("delegated.delegated_list", jira_ok="1", jira_msg=msg))
     return redirect(url_for("delegated.delegated_list", jira_ok="0",
                             jira_msg=result["error"]))

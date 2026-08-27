@@ -134,6 +134,16 @@ blocks one or more delegated tickets. Design decisions:
   filter to include the blocker issues, and the existing
   `POST /delegated/upload` keeps them current by key, same as any other
   ticket [USER 2026-08-27].
+- **AUTO-REGISTER on upload (2026-08-27, second round)** [USER: "why cant
+  i see all the defects I uploaded in the list of blockers?"]: every
+  Defect/Bug/Task-type issue in the export becomes a blocker row
+  automatically during `run_delegated_import` (`_blocker_type_for`:
+  defect/bug→defect, task→task; name = summary, solman_id from the
+  summary prefix) unless its key is already registered — re-upload never
+  duplicates, and one normal upload backfills defects uploaded before
+  this existed. Stories and other types (Epic, …) are never
+  auto-registered; unhandled non-story types show in the board's 🛈
+  hint. The upload flash message appends "· n blockers registered".
 - **Excluded from the delegated board.** A jira key registered as a
   blocker is filtered out in `web_delegated._load_issues` (the board,
   status report and numbers all route through it) — a blocking defect must

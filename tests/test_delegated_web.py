@@ -8,6 +8,7 @@ from app import database
 from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import jira as db_jira
+import app.web_blockers as web_blockers
 import app.web_core as web_core
 import app.web_delegated as web_delegated
 from app.web import app
@@ -52,6 +53,12 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
     <status id="3">Open</status>
     <assignee username="JIRAUSER2">Tester, Tom</assignee>
   </item>
+  <item>
+    <key id="6">S4EPIC-4001</key>
+    <summary>SM4001_An epic that slipped into the export</summary>
+    <type id="6">Epic</type>
+    <status id="3">Open</status>
+  </item>
 </channel></rss>
 """
 
@@ -71,6 +78,8 @@ def client(tmp_path, monkeypatch):
     # the generic /report-comments/... routes go through web_core._get_conn —
     # without this they would write to the REAL dev DB (bit us 2026-08-27)
     monkeypatch.setattr(web_core, "_db_path", db_path)
+    monkeypatch.setattr(web_blockers, "_get_conn",
+                        lambda: database.get_connection(db_path))
     return app.test_client()
 
 
@@ -107,9 +116,13 @@ def test_only_user_stories_on_board_report_and_numbers(client):
     matches by SUBSTRING ("User Story" counts — an exact match emptied
     Marina's real board). Items without a <type> are tolerated too."""
     _upload(client)
-    for url in ("/delegated/", "/delegated/report", "/delegated/numbers"):
+    for url in ("/delegated/", "/delegated/report"):
         html = client.get(url).get_data(as_text=True)
         assert "S4DEF-3001" not in html, url
+    # numbers: not in the bucket table — it MAY appear below it, in the
+    # blocker overview (auto-registered as a blocker on upload)
+    numbers_html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "S4DEF-3001" not in numbers_html.split("Blocker overview")[0]
     for url in ("/delegated/", "/delegated/report"):  # numbers shows counts, not keys
         html = client.get(url).get_data(as_text=True)
         assert "S4ECOM-2001" in html, url   # explicit "Story" stays
@@ -119,20 +132,45 @@ def test_only_user_stories_on_board_report_and_numbers(client):
 
 def test_board_shows_what_the_story_filter_hides(client):
     """The stories-only filter must never empty the board SILENTLY
-    (2026-08-27) — the page names the hidden types and counts."""
+    (2026-08-27) — the page names the hidden types and counts. Defects
+    auto-register as blockers on upload, so only genuinely unhandled
+    types (the Epic) appear in the hint."""
     _upload(client)
     html = client.get("/delegated/").get_data(as_text=True)
     assert "Not shown (not a user story)" in html
-    assert "Defect ×1" in html
-    # once the defect is registered as a blocker it is no longer "hidden by
-    # the type filter" — it lives on the Blockers page by design
+    assert "Epic ×1" in html
+    assert "Defect" not in html.split("Not shown (not a user story)")[1].split("</p>")[0]
+
+
+def test_upload_auto_registers_defects_as_blockers(client):
+    """[USER 2026-08-27: "why cant i see all the defects I uploaded in
+    the list of blockers?"] — Defect/Bug/Task issues in the export become
+    blocker rows automatically; stories and Epics don't; re-upload never
+    duplicates."""
+    resp = _upload(client)
+    assert "1+blockers+registered" in resp.headers["Location"].replace("%20", "+") \
+        or "1 blockers registered" in resp.headers["Location"]
     conn = web_delegated._get_conn()
     try:
-        db_blockers.create_blocker(conn, "defect", "Registered now", "S4DEF-3001")
+        rows = db_blockers.list_blockers(conn)
     finally:
         conn.close()
-    html = client.get("/delegated/").get_data(as_text=True)
-    assert "Not shown (not a user story)" not in html
+    assert len(rows) == 1
+    b = rows[0]
+    assert b["type"] == "defect"
+    assert b["jira_key"] == "S4DEF-3001"
+    assert b["name"] == "SM3001_Unregistered defect in the export"
+    assert b["solman_id"] == "SM3001"  # from the summary prefix
+    # blockers list page shows it
+    html = client.get("/blockers/").get_data(as_text=True)
+    assert "S4DEF-3001" in html
+    # re-upload: no duplicate
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        assert len(db_blockers.list_blockers(conn)) == 1
+    finally:
+        conn.close()
 
 
 def test_dashboard_badge_counts_match_the_board(client):
@@ -194,7 +232,7 @@ def test_upload_tags_delegated_without_touching_other_sources(client):
             " FROM jira_issues").fetchall()
     finally:
         conn.close()
-    assert len(rows) == 5  # incl. the Defect-type issue — tagged in the STORE, filtered in the views
+    assert len(rows) == 6  # incl. the Defect + Epic issues — tagged in the STORE, filtered in the views
     assert all(r[0] == 1 and r[1] == 0 and r[2] == 0 for r in rows)
 
 

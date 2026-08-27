@@ -252,6 +252,22 @@ one-at-a-time, Marina confirms each:
     types STILL don't match, the hint line names exactly what to add.
     Tests +2 (User-Story substring case in the fixture, hint appears /
     disappears once the defect is registered as a blocker); 568 green.
+13. ~~Auto-register uploaded defects as blockers~~ ✅ DONE 2026-08-27
+    [USER: "why cant i see all the defects I uploaded in the list of
+    blockers?" — the picker would have been acceptable but was invisible
+    because the (then-broken) empty board had no blocked rows to carry
+    it]. `run_delegated_import` now auto-creates a blocker row for every
+    Defect/Bug/Task-type issue in the export (`_blocker_type_for`; name =
+    summary, solman_id from the summary prefix) unless the key is already
+    registered — idempotent on re-upload, and one normal upload
+    backfills previously uploaded defects. Stories/Epics never
+    auto-register (Epics show in the board's 🛈 hint). Upload flash
+    appends "· n blockers registered". Tests:
+    `tests/test_delegated_web.py` (+1 auto-register incl. no-duplicate,
+    hint test reworked around an Epic fixture item; numbers-page
+    assertion split — the auto-registered defect legitimately appears in
+    the blocker overview, still never in the bucket table). Full suite
+    569 green.
 12. ~~Blocker fields batch + open/closed + id chips + next steps + Mgmt
     Summary call-outs~~ ✅ DONE 2026-08-27 [USER, one message + a
     follow-up]: (a) `comment` + `impact` on every blocker; (b) optional

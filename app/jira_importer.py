@@ -252,15 +252,40 @@ def newest_xml(folder: Path) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _blocker_type_for(jira_type: str | None) -> str | None:
+    """Which blocker type a NON-STORY export issue auto-registers as
+    [USER 2026-08-27: "why cant i see all the defects I uploaded in the
+    list of blockers?"] — Defect/Bug → defect, Task → task; stories and
+    anything else (Epic, …) return None (not auto-registered; the board's
+    🛈 hint shows those)."""
+    t = (jira_type or "").strip().lower()
+    if not t or "story" in t:
+        return None
+    if "defect" in t or "bug" in t:
+        return "defect"
+    if "task" in t:
+        return "task"
+    return None
+
+
 def run_delegated_import(cfg: dict, xml_path: Path) -> dict:
     """Delegated Testing import (2026-08-26) — the card has its OWN Jira
     export, picked as a file in the browser and saved by the upload route;
     this parses that file. Unlike the unified import there is no filtering:
     the export itself defines the scope, so EVERY ticket in it is accepted
     and tagged seen_in_delegated (shared-store rules apply — status,
-    assignee, acceptance criteria refresh; comments replaced wholesale)."""
+    assignee, acceptance criteria refresh; comments replaced wholesale).
+
+    AUTO-REGISTER BLOCKERS (2026-08-27): every Defect/Bug/Task-type issue
+    in the export becomes a blocker row automatically (name = summary,
+    solman id from the summary prefix) unless its key is already
+    registered — the export carries those issues BECAUSE they block
+    testing, so they must show on the Blockers page without hand-adding
+    [USER]. One normal upload therefore also backfills defects uploaded
+    before this existed."""
     result: dict = {"ok": False, "error": None, "xml_path": str(xml_path),
-                    "parsed": 0, "inserted": 0, "updated": 0, "comments": 0}
+                    "parsed": 0, "inserted": 0, "updated": 0, "comments": 0,
+                    "blockers_registered": 0}
     try:
         issues = parse_jira_xml(xml_path)
     except ET.ParseError as exc:
@@ -272,11 +297,21 @@ def run_delegated_import(cfg: dict, xml_path: Path) -> dict:
         return result
 
     from app import database
+    from app.db import blockers as db_blockers
     db_path = Path(cfg["database_path"])
     db_jira.init_schema(db_path)
+    db_blockers.init_schema(db_path)
     conn = database.get_connection(db_path)
     try:
         counts = db_jira.upsert_jira_issues(conn, issues, seen_in="delegated")
+        registered_keys = db_blockers.list_blocker_jira_keys(conn)
+        for iss in issues:
+            btype = _blocker_type_for(iss.get("type"))
+            if btype and iss["jira_key"] not in registered_keys:
+                db_blockers.create_blocker(
+                    conn, btype, iss.get("summary") or iss["jira_key"],
+                    iss["jira_key"], solman_id=iss.get("solman_id"))
+                result["blockers_registered"] += 1
     finally:
         conn.close()
     result.update(counts)
