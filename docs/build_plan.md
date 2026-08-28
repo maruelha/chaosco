@@ -119,14 +119,20 @@ accumulate history. Steps one at a time, Marina confirms each:
    day-table links here. Verified against the real workbook through the
    actual route: 33 parents / 328 details / 16-1-15-0 stat cards ==
    Excel row 4. `tests/test_sustain_web.py` (+3, now 9).
-5. **Management summary** — per day+stream headline Due/Completed/
-   Pending/**Attention**; classification per due result cell: `OK` → done,
-   `Pending`/blank → pending, `Not due`/`N/A` → out of scope, anything
-   else (free text) + overall `Review` → Attention. Attention list =
-   task · country · provider · verbatim cell text (the auto-generated
-   discussion agenda). Plus day-over-day completion trend and "repeat
-   offenders" (same task/provider in Attention on 2+ days). Exact layout
-   to be re-discussed after step 4.
+5. ~~Management summary~~ ✅ DONE 2026-08-28 (v1 — layout was "to be
+   re-discussed after step 4" but Marina was away, so a sensible v1 went
+   in; flagged in MarinaCheckSoon): `/sustain/summary[/<day>]`
+   (`sustain_summary.html`), defaults to the latest imported day. Per
+   stream: stat cards + Attention list (task · country · provider ·
+   verbatim note as red pill; storage `attention_items` — free text +
+   literal Review marks, due detail rows only). Below: day-over-day
+   trend table (all tabs, completion %, rows link to the day reports;
+   storage `overview`) and repeat offenders (same stream+task+country+
+   provider in Attention on 2+ days, days + deduped notes; storage
+   `repeat_offenders`). 📊 button on the card page. Jinja gotcha
+   documented in-template: per-stream dict key is "attention", NOT
+   "items" (dict.items() shadows it). Storage +2 tests (10), web +4
+   (13); suite 603.
 6. **Dashboard card + docs sweep** — dashboard card (badge TBD),
    `docs/claude/sustain.md` finalized, `screens.html`,
    `database_schema.html`, `architecture.html`, `dashboard_cards.html`,

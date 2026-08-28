@@ -18,24 +18,29 @@ HEADERS = ["Task ID", "L4 Taxonomy", "Process / Task", "Cadence",
 FILENAME = "1_0109_0409-O2C DTC_GBS Operations_checklist.xlsx"
 
 
-def _xlsx_bytes() -> bytes:
+def _xlsx_bytes(retail_fr="OK", days=("2026-09-01",)) -> bytes:
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    for title in ("Retail_2026-09-01", "eCom_2026-09-01"):
+    tabs = [f"{stream}_{day}" for day in days
+            for stream in ("Retail", "eCom")]
+    for title in tabs:
         ws = wb.create_sheet(title)
         for col, header in enumerate(HEADERS, start=1):
             ws.cell(6, col, header)
         ws.append([])  # row 7 filled below
+        # results live at detail level when a task has details (like the
+        # real workbook); retail_fr lands in the detail row's France cell
+        fr = retail_fr if title.startswith("Retail_") else "OK"
         for col, v in enumerate(["1", "Settlement", "Monitor files", "Daily",
-                                 "Yes", None, "Adyen", "OK", "N/A", "N/A",
-                                 "N/A", "OK"], start=1):
+                                 "Yes", None, "Adyen", None, None, None,
+                                 None, "Pending"], start=1):
             ws.cell(7, col, v)
         ws.cell(8, 3, "↳ Detail check")
         ws.cell(8, 4, "Daily")
         ws.cell(8, 5, "Yes")
         ws.cell(8, 6, "France")
         ws.cell(8, 7, "Adyen for cards")
-        ws.cell(8, 8, "OK")
+        ws.cell(8, 8, fr)
         ws.row_dimensions[8].outline_level = 1
     buf = io.BytesIO()
     wb.save(buf)
@@ -131,6 +136,45 @@ def test_home_links_days_to_day_report(client):
     html = client.get("/sustain/").get_data(as_text=True)
     assert 'href="/sustain/day/2026-09-01/Retail"' in html
     assert 'href="/sustain/day/2026-09-01/eCom"' in html
+
+
+# ---------------------------------------------------------------------------
+# Management summary (build plan step 5)
+
+def test_summary_defaults_to_latest_day_and_lists_attention(client):
+    _upload(client, data=_xlsx_bytes(
+        retail_fr="acct 4711 unclear", days=("2026-09-01", "2026-09-02")))
+    html = client.get("/sustain/summary").get_data(as_text=True)
+    # latest day selected, both streams present
+    assert "Retail — 2026-09-02" in html and "eCom — 2026-09-02" in html
+    # the verbatim note is the discussion point
+    assert "acct 4711 unclear" in html
+    # eCom is all clear
+    assert "Nothing needs attention" in html
+    # trend has a row per tab (4) linking to the day reports
+    assert html.count('href="/sustain/day/') >= 4
+    # the recurring Retail note shows up as a repeat offender
+    assert "Repeat offenders" in html
+    # once in the selected day's attention list + once (deduped) in the
+    # repeat-offenders table
+    assert html.count("acct 4711 unclear") == 2
+
+
+def test_summary_explicit_day_and_all_clear(client):
+    _upload(client)
+    html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert "Retail — 2026-09-01" in html
+    assert "No recurring attention items" in html
+
+
+def test_summary_empty_state(client):
+    html = client.get("/sustain/summary").get_data(as_text=True)
+    assert "No checklist imported yet" in html
+
+
+def test_home_links_to_summary(client):
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert 'href="/sustain/summary"' in html
 
 
 def test_upload_reports_error_when_no_day_tabs(client):

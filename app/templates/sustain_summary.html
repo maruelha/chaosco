@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Management Summary {{ day or '' }} — Sustainphase Monitoring{% endblock %}
+
+{# Build plan step 5 (v1 layout, to be reviewed with Marina): per-stream
+   headline + Attention list for one day, then the day-over-day trend and
+   repeat offenders across all imported days. NOTE: the per-stream dicts
+   use key "attention", not "items" — dict.items() shadows that name in
+   Jinja attribute lookup. #}
+
+{% block content %}
+{% call ui.page_header('Sustainphase Management Summary',
+                       'Due vs completed vs pending per stream, plus the '
+                       ~ 'discussion points: every checklist entry that is '
+                       ~ 'neither OK nor pending, with the verbatim note.') %}
+<a href="{{ url_for('sustain.sustain_home') }}" class="btn">← Sustainphase Monitoring</a>
+{% endcall %}
+
+{% if not days %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No checklist imported yet — upload one on the
+  <a href="{{ url_for('sustain.sustain_home') }}">Sustainphase Monitoring card</a>.
+</p>
+{% else %}
+
+<div class="ui-filterbar" style="margin-bottom:0.8rem">
+  <span style="color:#888; font-size:0.85rem">Day:</span>
+  {% for d in days %}
+    {% if d == day %}
+    <strong style="font-size:0.85rem">{{ d }}</strong>
+    {% else %}
+    <a href="{{ url_for('sustain.sustain_summary', day=d) }}"
+       style="font-size:0.85rem">{{ d }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% for s in streams %}
+{% call ui.section(s.stream ~ ' — ' ~ day,
+                   'blue' if s.stream == 'Retail' else 'teal',
+                   badge=(s.attention|length ~ ' attention') if s.attention else 'all clear') %}
+{% call ui.stat_cards() %}
+  {{ ui.stat_card(s.counts.due, 'due tasks', 'info') }}
+  {{ ui.stat_card(s.counts.completed, 'completed', 'done') }}
+  {{ ui.stat_card(s.counts.pending, 'pending', 'open') }}
+  {{ ui.stat_card(s.counts.attention, 'attention', 'alarm') }}
+{% endcall %}
+{% if s.attention %}
+{% call ui.table(['Task', 'Process', 'Country', 'Provider / Account', 'Note']) %}
+  {% for i in s.attention %}
+  <tr>
+    <td class="mono">{{ i.task_id }}</td>
+    <td>
+      {{ i.process or '—' }}
+      {% if i.taxonomy %}<br><span style="color:#888; font-size:0.78rem">{{ i.taxonomy }}</span>{% endif %}
+    </td>
+    <td>{{ i.country or '—' }}</td>
+    <td style="font-size:0.82rem">{{ i.provider or '—' }}</td>
+    <td><span class="pill pill--red">{{ i.text }}</span></td>
+  </tr>
+  {% endfor %}
+{% endcall %}
+{% else %}
+<p style="color:#1a7f37; margin:0.4rem 1rem 0.8rem">
+  ✓ Nothing needs attention — every due entry is OK or still pending.
+</p>
+{% endif %}
+{% endcall %}
+{% endfor %}
+
+{% call ui.section('Day-over-day trend', 'slate') %}
+{% call ui.table(['Day', 'Stream', 'Due', 'Completed', 'Pending', 'Attention',
+                  'Completion']) %}
+  {% for o in overview %}
+  <tr{% if o.day == day %} style="font-weight:600"{% endif %}>
+    <td><a href="{{ url_for('sustain.sustain_day', day=o.day, stream=o.stream) }}">{{ o.day }}</a></td>
+    <td>{{ o.stream }}</td>
+    <td>{{ o.counts.due }}</td>
+    <td>{{ o.counts.completed }}</td>
+    <td>{{ o.counts.pending }}</td>
+    <td>{% if o.counts.attention %}<span class="pill pill--red">{{ o.counts.attention }}</span>{% else %}0{% endif %}</td>
+    <td>{{ (o.completion ~ ' %') if o.completion is not none else '—' }}</td>
+  </tr>
+  {% endfor %}
+{% endcall %}
+{% endcall %}
+
+{% call ui.section('Repeat offenders (attention on 2+ days)', 'purple',
+                   badge=offenders|length) %}
+{% if offenders %}
+{% call ui.table(['Stream', 'Task', 'Process', 'Country',
+                  'Provider / Account', 'Days', 'Notes']) %}
+  {% for o in offenders %}
+  <tr>
+    <td>{{ o.stream }}</td>
+    <td class="mono">{{ o.task_id }}</td>
+    <td>
+      {{ o.process or '—' }}
+      {% if o.taxonomy %}<br><span style="color:#888; font-size:0.78rem">{{ o.taxonomy }}</span>{% endif %}
+    </td>
+    <td>{{ o.country or '—' }}</td>
+    <td style="font-size:0.82rem">{{ o.provider or '—' }}</td>
+    <td style="white-space:nowrap">{% for d in o.days %}<span class="pill pill--gray">{{ d[5:] }}</span>{% endfor %}</td>
+    <td>{% for t in o.texts %}<span class="pill pill--red">{{ t }}</span>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+{% endcall %}
+{% else %}
+<p style="color:#888; margin:0.4rem 1rem 0.8rem">
+  No recurring attention items across the imported days.
+</p>
+{% endif %}
+{% endcall %}
+
+{% endif %}
+{% endblock %}

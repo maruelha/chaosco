@@ -118,9 +118,26 @@ pills — OK green, Pending amber, Review + **free-text issue notes red
 `summary_counts` (due/completed/pending/attention). Header: back link,
 ⇄ toggle to the other stream of the same day, day-link row per stream.
 
-## Still to build (build-plan steps 5–6)
-4. Detail report (day picker + stream toggle, expandable parents, stat
-   cards from `summary_counts`).
-5. Management summary (headline + Attention list + trend + repeat
-   offenders) — layout to re-discuss with Marina after step 4.
+### Management summary — `/sustain/summary[/<day>]` (`sustain_summary.html`)
+
+v1 layout (built 2026-08-28 while Marina was away; layout review flagged
+in MarinaCheckSoon). Defaults to the **latest** imported day; day-link
+row to switch. Per stream a `ui.section` (Retail blue, eCom teal, badge
+"N attention"/"all clear"): stat cards (due/completed/pending/attention)
++ the **Attention list** — task · country · provider · verbatim note as
+a red pill (`attention_items`: free-text cells + literal `Review` marks;
+for tasks with details only DUE detail rows are scanned — a note on a
+not-due row isn't today's business; simple parents use their literal
+cells). Then **Day-over-day trend** (`overview`: every tab, completion %
+= completed/due, rows link to the day reports) and **Repeat offenders**
+(`repeat_offenders`: same stream+task+country+provider in attention on
+2+ days → sorted days + deduped verbatim notes; sorted by day-count
+desc). 📊 button on the card page.
+
+Jinja gotcha (cost one debugging round): a template-visible dict must
+not use the key `items` — `dict.items()` shadows it in attribute lookup;
+the per-stream dicts use `attention`.
+
+## Still to build (build-plan step 6)
+
 6. Dashboard card + docs sweep.

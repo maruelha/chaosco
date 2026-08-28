@@ -73,6 +73,41 @@ def sustain_day(day, stream):
         counts=counts, day_links=day_links, other_streams=other_streams)
 
 
+@bp.route("/summary")
+@bp.route("/summary/<day>")
+def sustain_summary(day=None):
+    """Management summary (build plan step 5, v1 layout — to be reviewed
+    with Marina): headline per stream for one day, the Attention list
+    (verbatim issue notes = the discussion agenda), day-over-day trend
+    and repeat offenders."""
+    conn = _get_conn()
+    try:
+        ov = db_sustain.overview(conn)
+        days = sorted({o["day"] for o in ov})
+        if day is None and days:
+            day = days[-1]   # default: latest imported day
+        streams = []
+        for o in ov:
+            if o["day"] == day:
+                # key must not be called "items" — dict.items() shadows
+                # it in Jinja attribute lookup
+                streams.append({
+                    "stream": o["stream"], "counts": o["counts"],
+                    "attention": db_sustain.attention_items(conn, day,
+                                                            o["stream"]),
+                })
+        offenders = db_sustain.repeat_offenders(conn)
+    finally:
+        conn.close()
+    for o in ov:
+        due = o["counts"]["due"]
+        o["completion"] = round(100 * o["counts"]["completed"] / due) \
+            if due else None
+    return render_template(
+        "sustain_summary.html", day=day, days=days, streams=streams,
+        overview=ov, offenders=offenders)
+
+
 @bp.route("/upload", methods=["POST"])
 def sustain_upload():
     """A dated copy is kept in data/uploads (traceability; mirrored by the

@@ -280,6 +280,78 @@ def list_tasks(conn: sqlite3.Connection, day: str, stream: str) -> list[dict]:
     return tasks
 
 
+def attention_items(conn: sqlite3.Connection, day: str,
+                    stream: str) -> list[dict]:
+    """The discussion agenda for one tab: every result cell that is
+    neither OK/Pending/N-A/blank — i.e. free-text issue notes plus literal
+    'Review' marks — with the verbatim text. Parent literal cells for
+    simple tasks, due detail entries for tasks with details; not-due
+    detail rows are skipped (their notes aren't today's business)."""
+    items: list[dict] = []
+    for task in list_tasks(conn, day, stream):
+        base = {"task_id": task.get("task_id"),
+                "process": task.get("process"),
+                "taxonomy": task.get("taxonomy"),
+                "excel_row": task.get("excel_row")}
+        details = task.get("details") or []
+        if details:
+            for d in details:
+                if _norm(d.get("due_today")) != "yes":
+                    continue
+                entry = detail_result(d)
+                if is_free_text(entry) or _norm(entry) == "review":
+                    items.append({**base, "country": d.get("country"),
+                                  "provider": d.get("provider"),
+                                  "text": str(entry).strip()})
+        else:
+            for country, col in COUNTRY_COLUMNS:
+                value = task.get(col)
+                if is_free_text(value) or _norm(value) == "review":
+                    items.append({**base, "country": country,
+                                  "provider": task.get("provider"),
+                                  "text": str(value).strip()})
+    return items
+
+
+def overview(conn: sqlite3.Connection) -> list[dict]:
+    """summary_counts for every imported tab, in list_tabs order —
+    drives the management summary's headline grid and day-over-day
+    trend."""
+    return [{"day": t["day"], "stream": t["stream"],
+             "task_count": t["task_count"],
+             "counts": summary_counts(conn, t["day"], t["stream"])}
+            for t in list_tabs(conn)]
+
+
+def repeat_offenders(conn: sqlite3.Connection) -> list[dict]:
+    """Attention items recurring on 2+ days for the same
+    (stream, task, country, provider) — a one-day issue is noise, a
+    multi-day one is a topic. Returns dicts with the sorted 'days' and
+    the deduped verbatim 'texts' (first-seen order)."""
+    grouped: dict[tuple, dict] = {}
+    for tab in list_tabs(conn):
+        for item in attention_items(conn, tab["day"], tab["stream"]):
+            key = (tab["stream"], item.get("task_id"), item.get("country"),
+                   item.get("provider"))
+            entry = grouped.setdefault(key, {
+                "stream": tab["stream"], "task_id": item.get("task_id"),
+                "process": item.get("process"),
+                "taxonomy": item.get("taxonomy"),
+                "country": item.get("country"),
+                "provider": item.get("provider"),
+                "days": [], "texts": []})
+            if tab["day"] not in entry["days"]:
+                entry["days"].append(tab["day"])
+            if item["text"] not in entry["texts"]:
+                entry["texts"].append(item["text"])
+    offenders = [e for e in grouped.values() if len(e["days"]) >= 2]
+    for e in offenders:
+        e["days"].sort()
+    offenders.sort(key=lambda e: (-len(e["days"]), e["stream"],
+                                  str(e["task_id"])))
+    return offenders
+
+
 def summary_counts(conn: sqlite3.Connection, day: str, stream: str) -> dict:
     """Recomputed due/completed/pending/attention for one tab (never the
     workbook's cached row 4). completed + pending partition the due tasks

@@ -158,6 +158,61 @@ def test_task_status_and_free_text_attention():
         == "attention"
 
 
+def test_attention_items_collects_verbatim_notes(tmp_path):
+    conn = _setup(tmp_path)
+    try:
+        db_sustain.replace_day_stream(conn, "2026-09-01", "Retail", [
+            _task(7, 1, results=("file missing", "N/A", "N/A", "N/A"),
+                  provider="Adyen (POS)"),
+            _task(8, 2, results=("OK", "N/A", "N/A", "N/A")),
+            _task(10, 4, details=[
+                _detail(11, "Italy", value="diff 12,50 EUR",
+                        provider="Cash"),
+                _detail(12, "Spain", value="Review", provider="Cash"),
+                _detail(13, "France", value="OK"),
+                _detail(14, "France", due_today="No", value="odd but not due"),
+            ]),
+        ])
+        items = db_sustain.attention_items(conn, "2026-09-01", "Retail")
+        assert [(i["task_id"], i["country"], i["provider"], i["text"])
+                for i in items] == [
+            ("1", "France", "Adyen (POS)", "file missing"),
+            ("4", "Italy", "Cash", "diff 12,50 EUR"),
+            ("4", "Spain", "Cash", "Review"),
+        ]
+        assert items[0]["process"] == "Task 1"
+    finally:
+        conn.close()
+
+
+def test_overview_counts_per_tab_and_repeat_offenders(tmp_path):
+    conn = _setup(tmp_path)
+    try:
+        for day in ("2026-09-01", "2026-09-02", "2026-09-03"):
+            db_sustain.replace_day_stream(conn, day, "Retail", [
+                _task(7, 1, results=(
+                    "same issue" if day != "2026-09-02" else "OK",
+                    "N/A", "N/A", "N/A"), provider="Adyen (POS)"),
+                _task(8, 2, results=(
+                    "one-day thing" if day == "2026-09-01" else "OK",
+                    "N/A", "N/A", "N/A"), provider="Cash"),
+            ])
+        overview = db_sustain.overview(conn)
+        assert [(o["day"], o["stream"], o["counts"]["attention"])
+                for o in overview] == [
+            ("2026-09-01", "Retail", 2), ("2026-09-02", "Retail", 0),
+            ("2026-09-03", "Retail", 1)]
+
+        offenders = db_sustain.repeat_offenders(conn)
+        assert len(offenders) == 1   # task 1 on 2 days; task 2 only once
+        off = offenders[0]
+        assert off["task_id"] == "1" and off["stream"] == "Retail"
+        assert off["days"] == ["2026-09-01", "2026-09-03"]
+        assert off["texts"] == ["same issue"]   # deduped verbatim notes
+    finally:
+        conn.close()
+
+
 def test_summary_counts(tmp_path):
     conn = _setup(tmp_path)
     try:
