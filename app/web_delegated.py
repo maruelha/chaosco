@@ -414,6 +414,9 @@ def numbers_context(conn) -> dict:
         "blocker_sections": blocker_sections,
         "blocked_ticket_counts": blocked_ticket_counts,
         "report_comments": database.list_report_comments(conn, "delegated_numbers"),
+        # call-out archive (2026-08-28 [USER: "especially there"])
+        "archived_callouts": database.list_archived_report_comments(
+            conn, "delegated_numbers"),
         "today": date.today().strftime("%Y-%m-%d"),
     }
 

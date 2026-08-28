@@ -11,6 +11,21 @@
       <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}">{{ b.jira_key or b.display_id }}</a>
     {% else %}—{% endif %}
   </td>
+  {# Responsible team [USER 2026-08-28] — fixed picks + custom "Other"
+     values already in use; Other… prompts for the new value #}
+  <td>
+    <select class="blk-team" data-id="{{ b.blocker_id }}" onchange="blkTeamSave(this)"
+            style="font-size:0.82rem; max-width:9.5rem">
+      <option value="">—</option>
+      {% for t in team_options %}
+      <option value="{{ t }}" {% if b.team == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+      {% if b.team and b.team not in team_options %}
+      <option value="{{ b.team }}" selected>{{ b.team }}</option>
+      {% endif %}
+      <option value="__other__">Other…</option>
+    </select>
+  </td>
   {# Impact [USER 2026-08-28: "see at a glance what functionality is
      blocked"] — same field as the detail form + the Mgmt Summary #}
   <td>
@@ -54,7 +69,7 @@
 
 {% block content %}
 {% set section_color = {'defect': 'blue', 'task': 'teal', 'clarification': 'purple'} %}
-{% set columns = ['Name', 'ID', 'Impact — what is blocked', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
+{% set columns = ['Name', 'ID', 'Team', 'Impact — what is blocked', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
 
 {% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block. Closed ones collapse at the bottom.') %}
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
@@ -95,6 +110,17 @@ function blkNsSave(input) {
                  input.style.borderColor = '#1a7f37';
                  setTimeout(() => { input.style.borderColor = ''; }, 800); })
     .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+function blkTeamSave(sel) {
+  let team = sel.value;
+  if (team === '__other__') {
+    team = (window.prompt('Which team?') || '').trim();
+    if (!team) { sel.value = ''; return; }
+  }
+  const body = new URLSearchParams({ team });
+  fetch('/blockers/' + sel.dataset.id + '/team', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error(); window.location.reload(); })
+    .catch(() => alert('Saving failed — try again.'));
 }
 function blkImpactSave(input) {
   const body = new URLSearchParams({ impact: input.value });

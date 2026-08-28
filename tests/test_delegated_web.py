@@ -770,3 +770,64 @@ def test_blockers_list_has_editable_impact_column(client):
     _upload(client)
     html = client.get("/blockers/").get_data(as_text=True)
     assert "Impact" in html and 'class="rt-comment blk-impact"' in html
+
+
+# ---------------------------------------------------------------------------
+# Responsible team per blocker + Mgmt Summary call-out archive (2026-08-28)
+
+def test_blocker_team_fixed_other_and_learned_options(client):
+    _upload(client)   # registers the S4DEF-3001 defect blocker
+    conn = web_delegated._get_conn()
+    try:
+        blocker = next(b for b in db_blockers.list_blockers(conn)
+                       if b["jira_key"] == "S4DEF-3001")
+        bid = blocker["blocker_id"]
+    finally:
+        conn.close()
+    # fixed pick via the inline route
+    resp = client.post(f"/blockers/{bid}/team", data={"team": "PDM"})
+    assert resp.get_json()["ok"]
+    html = client.get("/blockers/").get_data(as_text=True)
+    assert "Team" in html
+    assert f'<option value="PDM" selected>' in html
+    # custom "Other" value via the detail form
+    resp = client.post(f"/blockers/{bid}", data={
+        "type": "defect", "name": blocker["name"],
+        "jira_key": "S4DEF-3001", "team": "__other__",
+        "team_other": "Warehouse IT"})
+    assert resp.status_code == 302
+    conn = web_delegated._get_conn()
+    try:
+        assert db_blockers.get_blocker(conn, bid)["team"] == "Warehouse IT"
+        # the learned value joins the combobox after the fixed teams
+        assert db_blockers.team_options(conn) == \
+            db_blockers.FIXED_TEAMS + ["Warehouse IT"]
+    finally:
+        conn.close()
+    # visible on the blockers list, the Mgmt Summary and the board chip
+    assert "Warehouse IT" in client.get("/blockers/").get_data(as_text=True)
+    numbers = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "Warehouse IT" in numbers
+    conn = web_delegated._get_conn()
+    try:
+        db_blockers.link_blocker(conn, bid, "S4ECOM-2001")
+    finally:
+        conn.close()
+    board = client.get("/delegated/").get_data(as_text=True)
+    assert "Warehouse IT" in board
+    report = client.get("/delegated/report").get_data(as_text=True)
+    assert "Warehouse IT" in report
+
+
+def test_numbers_callout_archive(client):
+    _upload(client)
+    resp = client.post("/report-comments/delegated_numbers/add",
+                       data={"comment": "goal raised to 25"})
+    cid = resp.get_json()["row"]["id"]
+    client.post(f"/report-comments/{cid}/archive")
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert 'value="goal raised to 25"' not in html   # off the live list
+    assert "Archived call-outs (1)" in html
+    assert "goal raised to 25" in html
+    download = client.get("/delegated/numbers/download").get_data(as_text=True)
+    assert "goal raised to 25" not in download

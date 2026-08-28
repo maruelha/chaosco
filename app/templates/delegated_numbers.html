@@ -172,12 +172,27 @@
     <li data-id="{{ c.id }}">
       <input type="text" class="co-input" value="{{ c.comment or '' }}"
              placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coArchive(this)"
+              title="archive — off the live report, kept with its dates below">🗄</button>
       <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
     </li>
     {% endfor %}
   </ul>
   <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
 </div>
+{% if archived_callouts %}
+<details style="margin:0 0 1rem; font-size:0.82rem; color:#64748b">
+  <summary style="cursor:pointer">🗄 Archived call-outs ({{ archived_callouts|length }})</summary>
+  <ul style="margin:0.4rem 0 0; padding-left:1.2rem">
+    {% for c in archived_callouts %}
+    <li style="padding:0.15rem 0">
+      <span style="color:#94a3b8; white-space:nowrap">{{ (c.created_at or '')[:10] }} → archived {{ (c.archived_at or '')[:10] }}:</span>
+      {{ c.comment }}
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
 {% endif %}
 
 <div class="goal-box">
@@ -245,7 +260,8 @@
       <tr>
         <th>Name</th>
         <th style="width:8rem">Jira Key</th>
-        <th style="width:32%" title="what this blocker blocks — at-a-glance for management">Impact — what is blocked</th>
+        <th style="width:8rem" title="responsible team">Team</th>
+        <th style="width:30%" title="what this blocker blocks — at-a-glance for management">Impact — what is blocked</th>
         <th style="width:6rem; text-align:right">Blocks</th>
       </tr>
     </thead>
@@ -254,6 +270,7 @@
       <tr>
         <td>{{ b.name }}</td>
         <td class="mono" style="font-size:0.78rem">{{ b.jira_key or "—" }}</td>
+        <td style="font-size:0.82rem">{{ b.team or "—" }}</td>
         {# Impact [USER 2026-08-28]: editable here on screen (same field as
            the blocker detail form), static text in the download #}
         <td style="white-space:pre-wrap">
@@ -287,6 +304,13 @@ function copyTable() {
     lines.push([c[0].textContent.trim(), c[1].textContent.trim()].join("\t"));
   });
   navigator.clipboard.writeText(lines.join("\n"));
+}
+
+function coArchive(btn) {
+  const li = btn.closest('li');
+  fetch('/report-comments/' + li.dataset.id + '/archive', { method: 'POST' })
+    .then(r => { if (!r.ok) throw new Error(); li.remove(); })
+    .catch(() => alert('Archiving failed — try again.'));
 }
 
 function blkImpactSave(input) {
@@ -324,6 +348,7 @@ function coAdd() {
       const li = document.createElement('li');
       li.dataset.id = d.row.id;
       li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coArchive(this)" title="archive — off the live report, kept with its dates below">🗄</button>' +
                      ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
       document.getElementById('callout-list').appendChild(li);
       li.querySelector('input').focus();

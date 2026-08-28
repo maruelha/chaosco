@@ -147,7 +147,7 @@
         <td>
           <p class="blk-chips" data-key="{{ i.jira_key }}" style="margin:0 0 0.3rem; font-size:0.76rem">
             {% if i.blockers %}
-              {% for b in i.blockers %}<a class="chip chip--other" href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" title="{{ b.type }}: {{ b.name }}">{{ b.jira_key or b.display_id or b.name }}</a>{% endfor %}
+              {% for b in i.blockers %}<a class="chip chip--other" href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" title="{{ b.type }}: {{ b.name }}{% if b.team %} · team: {{ b.team }}{% endif %}">{{ b.jira_key or b.display_id or b.name }}{% if b.team %} · {{ b.team }}{% endif %}</a>{% endfor %}
             {% else %}—{% endif %}
           </p>
           <button type="button" class="btn btn-sm js-open-blockers"

@@ -161,6 +161,21 @@ a delegated ticket is 1:1). New pieces:
   live call-outs only, no archive section. Numbers-page call-outs can
   get the same treatment on request — not asked yet.
 
+## Responsible team per blocker + Mgmt Summary call-out archive (2026-08-28, third batch [USER])
+
+- `blockers.team` (migration). Combobox = `FIXED_TEAMS` (Sales BIZ ·
+  Omni · DTC O2C · PDM · MB BIZ) + every custom "Other" value already in
+  use (`team_options`, case-insensitively deduped) — [USER: "once added
+  it appears in the combobox"]. Detail form: select + Other… text field
+  (`team='__other__'` + `team_other`); Blockers list: inline select per
+  row (Other… uses a prompt, saves via `POST /blockers/<id>/team`,
+  reloads so the new value joins every combobox). Visible: Blockers
+  list column, Mgmt Summary blocker overview column, and "· team" suffix
+  on the board/report blocker chips (id stays first).
+- Call-out archive extended to the **Management Summary** ("especially
+  there"): same 🗄 button / archived expander / live-only download as
+  the status report, key `delegated_numbers`.
+
 ## Blocker impact on the Management Summary (2026-08-28)
 
 The blocker `impact` field ("what is blocked", already on the blocker

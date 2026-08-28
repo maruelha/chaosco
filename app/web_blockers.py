@@ -45,6 +45,7 @@ def blockers_list():
             conn, "blocker", str(r["blocker_id"]))) for r in rows}
         blocked_counts = db_blockers.blocked_ticket_counts(conn)
         jira_status = _jira_status_map(conn, rows)
+        team_options = db_blockers.team_options(conn)
     finally:
         conn.close()
     # Open/closed split [USER 2026-08-27: "focus on the open issues"] —
@@ -62,6 +63,7 @@ def blockers_list():
         note_counts=note_counts, jira_status=jira_status,
         blocked_counts=blocked_counts,
         type_sections=db_blockers.TYPE_SECTIONS,
+        team_options=team_options,
     )
 
 
@@ -73,10 +75,16 @@ def _form_fields():
 
 
 def _extra_form_fields():
+    # team [USER 2026-08-28]: fixed picks + "Other" free text — the form
+    # sends team='__other__' plus team_other when Other is chosen
+    team = request.form.get("team", "").strip()
+    if team == "__other__":
+        team = request.form.get("team_other", "").strip()
     return {
         "comment": request.form.get("comment", "").strip() or None,
         "impact": request.form.get("impact", "").strip() or None,
         "solman_id": request.form.get("solman_id", "").strip() or None,
+        "team": team or None,
     }
 
 
@@ -98,10 +106,16 @@ def blocker_new():
                                     blocker_id=row["blocker_id"], saved="1"))
     else:
         type_, name, jira_key = "", "", ""
+    conn = _get_conn()
+    try:
+        team_options = db_blockers.team_options(conn)
+    finally:
+        conn.close()
     return render_template(
         "blocker_detail.html", record={"type": type_, "name": name,
                                         "jira_key": jira_key},
         is_new=True, saved=False, types=db_blockers.TYPE_SECTIONS, error=error,
+        team_options=team_options,
     )
 
 
@@ -135,6 +149,7 @@ def blocker_detail(blocker_id: int):
         notes = database.list_notes(conn, "blocker", str(blocker_id))
         attachments_by_note = database.get_attachments_for_notes(
             conn, [n["id"] for n in notes])
+        team_options = db_blockers.team_options(conn)
     finally:
         conn.close()
     closed = db_blockers.is_closed(
@@ -145,6 +160,7 @@ def blocker_detail(blocker_id: int):
         types=db_blockers.TYPE_SECTIONS, closed=closed,
         jira_issue=jira_issue, jira_comments=jira_comments,
         notes=notes, attachments_by_note=attachments_by_note,
+        team_options=team_options,
     )
 
 
@@ -156,6 +172,19 @@ def blocker_toggle_closed(blocker_id: int):
     conn = _get_conn()
     try:
         db_blockers.set_blocker_closed(conn, blocker_id, value)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/<int:blocker_id>/team", methods=["POST"])
+def blocker_team(blocker_id: int):
+    """Inline team pick on the Blockers list [USER 2026-08-28] — the
+    client resolves 'Other…' to the typed value before posting."""
+    conn = _get_conn()
+    try:
+        db_blockers.set_blocker_team(
+            conn, blocker_id, request.form.get("team", ""))
     finally:
         conn.close()
     return jsonify({"ok": True})

@@ -20,6 +20,10 @@ from app.db.core import get_connection
 
 TYPES = ("defect", "task", "clarification")
 
+# responsible team [USER 2026-08-28] — the fixed combobox picks; "Other"
+# adds a free-text value which then joins the combobox (team_options)
+FIXED_TEAMS = ["Sales BIZ", "Omni", "DTC O2C", "PDM", "MB BIZ"]
+
 # (type key, section label) — fixed display order everywhere: defects first,
 # then tasks, then clarifications [USER 2026-08-27]
 TYPE_SECTIONS = [
@@ -67,6 +71,9 @@ def init_schema(db_path: Path) -> None:
             "ALTER TABLE blockers ADD COLUMN display_id TEXT",
             "ALTER TABLE blockers ADD COLUMN next_step TEXT",
             "ALTER TABLE blockers ADD COLUMN closed_at TEXT",
+            # responsible team (2026-08-28 [USER]) — fixed picks + free
+            # "Other" text; custom values re-appear in the combobox
+            "ALTER TABLE blockers ADD COLUMN team TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -141,33 +148,37 @@ def is_closed(row: dict, jira_status: str | None) -> bool:
 def create_blocker(conn: sqlite3.Connection, type_: str, name: str,
                    jira_key: str | None, comment: str | None = None,
                    impact: str | None = None,
-                   solman_id: str | None = None) -> dict:
+                   solman_id: str | None = None,
+                   team: str | None = None) -> dict:
     assert type_ in TYPES
     now = _now()
     with conn:
         display_id = _next_bc_id(conn) if type_ == "clarification" else None
         cur = conn.execute(
             "INSERT INTO blockers (type, name, jira_key, comment, impact,"
-            " solman_id, display_id, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " solman_id, team, display_id, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (type_, name.strip(), _clean_jira_key(type_, jira_key),
              (comment or "").strip() or None, (impact or "").strip() or None,
-             _clean_solman(type_, solman_id), display_id, now, now))
+             _clean_solman(type_, solman_id), (team or "").strip() or None,
+             display_id, now, now))
     return get_blocker(conn, cur.lastrowid)
 
 
 def update_blocker(conn: sqlite3.Connection, blocker_id: int, type_: str,
                    name: str, jira_key: str | None,
                    comment: str | None = None, impact: str | None = None,
-                   solman_id: str | None = None) -> None:
+                   solman_id: str | None = None,
+                   team: str | None = None) -> None:
     assert type_ in TYPES
     with conn:
         conn.execute(
             "UPDATE blockers SET type=?, name=?, jira_key=?, comment=?,"
-            " impact=?, solman_id=?, updated_at=? WHERE blocker_id=?",
+            " impact=?, solman_id=?, team=?, updated_at=? WHERE blocker_id=?",
             (type_, name.strip(), _clean_jira_key(type_, jira_key),
              (comment or "").strip() or None, (impact or "").strip() or None,
-             _clean_solman(type_, solman_id), _now(), blocker_id))
+             _clean_solman(type_, solman_id), (team or "").strip() or None,
+             _now(), blocker_id))
         # a row edited INTO a clarification gets its BC id if it has none
         # yet; an existing id is never regenerated or removed
         row = conn.execute(
@@ -205,6 +216,34 @@ def set_blocker_next_step(conn: sqlite3.Connection, blocker_id: int,
         conn.execute(
             "UPDATE blockers SET next_step=?, updated_at=? WHERE blocker_id=?",
             (next_step or None, _now(), blocker_id))
+
+
+def team_options(conn: sqlite3.Connection) -> list[str]:
+    """Combobox choices: the fixed teams + every custom "Other" value
+    already in use (case-insensitively deduped against the fixed list,
+    alphabetical) [USER 2026-08-28: "once added it appears in the
+    combobox"]. Tolerant of the table not existing yet."""
+    fixed_norm = {t.casefold() for t in FIXED_TEAMS}
+    custom: dict[str, str] = {}
+    try:
+        for (team,) in conn.execute(
+                "SELECT DISTINCT team FROM blockers"
+                " WHERE team IS NOT NULL AND TRIM(team) <> ''"):
+            t = team.strip()
+            if t.casefold() not in fixed_norm:
+                custom.setdefault(t.casefold(), t)
+    except sqlite3.OperationalError:
+        pass
+    return FIXED_TEAMS + sorted(custom.values(), key=str.casefold)
+
+
+def set_blocker_team(conn: sqlite3.Connection, blocker_id: int,
+                     team: str | None) -> None:
+    """Only-this-field update — inline team pick on the Blockers list."""
+    with conn:
+        conn.execute(
+            "UPDATE blockers SET team=?, updated_at=? WHERE blocker_id=?",
+            ((team or "").strip() or None, _now(), blocker_id))
 
 
 def set_blocker_impact(conn: sqlite3.Connection, blocker_id: int,

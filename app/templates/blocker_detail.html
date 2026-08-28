@@ -74,6 +74,22 @@
       </div>
 
       <div class="form-field">
+        <label for="f-team">Responsible team</label>
+        {% set known_team = record.team and record.team in team_options %}
+        <select id="f-team" name="team" onchange="teamOtherToggle()">
+          <option value="">—</option>
+          {% for t in team_options %}
+          <option value="{{ t }}" {% if record.team == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+          <option value="__other__" {% if record.team and not known_team %}selected{% endif %}>Other…</option>
+        </select>
+        <input type="text" id="f-team-other" name="team_other"
+               value="{{ record.team if record.team and not known_team else '' }}"
+               placeholder="which team?"
+               style="margin-top:0.3rem; {% if known_team or not record.team %}display:none{% endif %}">
+      </div>
+
+      <div class="form-field">
         <label for="f-impact">Impact</label>
         <textarea id="f-impact" name="impact" rows="3"
                   placeholder="what this blocker means for the testing">{{ record.impact or '' }}</textarea>
@@ -149,6 +165,11 @@
 {% endif %}
 
 <script>
+function teamOtherToggle() {
+  const other = document.getElementById('f-team').value === '__other__';
+  document.getElementById('f-team-other').style.display = other ? '' : 'none';
+}
+
 function blkToggleJiraKey() {
   const type = document.getElementById('f-type').value;
   const isClarification = type === 'clarification';
