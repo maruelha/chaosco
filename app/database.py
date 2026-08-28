@@ -36,3 +36,4 @@ from app.db.delegated import *     # noqa: F401,F403
 from app.db.blockers import *      # noqa: F401,F403
 from app.db.smoke import *         # noqa: F401,F403
 from app.db.sustain import *       # noqa: F401,F403
+from app.db.sustain_issues import *  # noqa: F401,F403

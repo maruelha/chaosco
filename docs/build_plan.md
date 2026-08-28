@@ -70,12 +70,16 @@ comment + next step (generic archive, entity `sustain_issue`).
 Dashboard card next to Sustainphase Monitoring / Smoke — NOT linked to
 them for now. Steps one at a time, test+commit after each:
 
-1. **Storage `app/db/sustain_issues.py`** — imported `sustain_issues`
-   (all columns minus Exists-in-production; technical PK; upsert by
-   defect_id, fallback match by normalized short description;
-   placeholder assignment SUS-nnn + `former_placeholder` migration when
-   the real id arrives) + authored `sustain_issue_annotations`
-   (callouts, next_step, keyed by the issue key). Tests first.
+1. ~~Storage `app/db/sustain_issues.py`~~ ✅ DONE 2026-08-28:
+   `sustain_issues` (issue_key UNIQUE = defect_id or SUS-nnn
+   placeholder; `former_placeholder` kept when the real id "promotes"
+   the issue — placeholder numbers never reused; upsert by defect_id,
+   fallback match by normalized short description; absent rows KEPT,
+   last_seen shows staleness; Exists-in-production ignored) + authored
+   `sustain_issue_annotations` (callouts + next_step, follow the key on
+   promotion). Registered in the `database.py` facade.
+   `tests/test_sustain_issues_storage.py` (6 tests, incl. the
+   promotion + annotation-migration path); suite 617.
 2. **Importer + upload** — Defects tab (header row 1), name-contains
    guard, dated copy in uploads; `/sustain-issues/` Blueprint registered
    in web.py.
