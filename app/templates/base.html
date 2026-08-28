@@ -11,7 +11,9 @@
 <header>
   <a href="{{ url_for('dashboard') }}" class="site-title">Test Coordination</a>
 </header>
-<main class="container">
+{# container_class: pages with wide tables (delegated board) opt into
+   container--wide [USER 2026-08-28: board content cut off at 1200px] #}
+<main class="container {% block container_class %}{% endblock %}">
   {% block content %}{% endblock %}
 </main>
 

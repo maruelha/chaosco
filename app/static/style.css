@@ -35,6 +35,9 @@ header {
   margin: 0 auto;
   padding: 2rem 2rem 4rem;
 }
+/* wide variant — pages whose tables need the full window (delegated
+   board, 2026-08-28 [USER: "the card is too slim"]) */
+.container--wide { max-width: none; }
 
 .page-header { margin-bottom: 1.5rem; }
 .page-header-row {
