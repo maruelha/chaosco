@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-27 (67 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (69 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -276,6 +276,8 @@
     <li class="group-label">CORE SOUTH Smoke Testing</li>
     <li><a href="#smoke_scenarios">smoke_scenarios</a></li>
     <li><a href="#smoke_steps">smoke_steps</a></li>
+    <li><a href="#sustain_tasks">sustain_tasks</a></li>
+    <li><a href="#sustain_task_details">sustain_task_details</a></li>
 
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
@@ -724,6 +726,65 @@
         <tr><td class="col-name">aspen_ticket</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">execution_status</td><td class="col-type">TEXT</td><td></td><td class="note-text">empty in the 2026-08-27 export; imported for when it fills in</td></tr>
         <tr><td class="col-name">progress</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: CORE SOUTH SUSTAINPHASE MONITORING (added 2026-08-28) -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Core South Sustainphase Monitoring — imported, replaced per (day, stream) tab</div>
+
+  <!-- sustain_tasks -->
+  <div class="table-card" id="sustain_tasks">
+    <div class="table-card-header">
+      <span class="tname">sustain_tasks</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Parent tasks of the daily GBS Operations checklist (…DTC_GBS Operations_checklist.xlsx), one row per Task-ID row of a Retail_/eCom_ day tab. Replaced per (day, stream) on each upload — consecutive files with different date windows accumulate history. All aggregation (overall status, summary counts) is RECOMPUTED from the raw cells in app/db/sustain.py; the workbook's cached formula values are never trusted.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">day</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO date from the tab name (Retail_2026-09-01); indexed with stream</td></tr>
+        <tr><td class="col-name">stream</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">'Retail' or 'eCom' — canonicalised on import</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">source row (data starts at 7) — preserves workbook order</td></tr>
+        <tr><td class="col-name">task_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Task ID" — arrives as text or number, normalised to text</td></tr>
+        <tr><td class="col-name">taxonomy</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "L4 Taxonomy"</td></tr>
+        <tr><td class="col-name">process</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Process / Task"</td></tr>
+        <tr><td class="col-name">cadence</td><td class="col-type">TEXT</td><td></td><td class="note-text">Daily / Monthly / Mixed / Ad-hoc …</td></tr>
+        <tr><td class="col-name">due_today</td><td class="col-type">TEXT</td><td></td><td class="note-text">Yes / No / On occurrence (cached formula from Cadence)</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">blank on parents in the current workbook — kept for fidelity</td></tr>
+        <tr><td class="col-name">provider</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Provider / Partner / Financial Account"</td></tr>
+        <tr><td class="col-name">result_fr / result_it / result_pt / result_es</td><td class="col-type">TEXT</td><td></td><td class="note-text">France/Italy/Portugal/Spain result cells (H–K) — OK / Pending / Not due / N/A / Review / free-text issue note; rollup formulas on parents with details (cached — recomputed instead)</td></tr>
+        <tr><td class="col-name">overall</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Task Overall" cached value — stored for reference, NEVER shown (derive_overall recomputes it)</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Card/day report/summary:</strong> <code>GET /sustain/</code> · <code>GET /sustain/day/&lt;day&gt;/&lt;stream&gt;</code> · <code>GET /sustain/summary[/&lt;day&gt;]</code> &nbsp;·&nbsp; <strong>Upload:</strong> <code>POST /sustain/upload</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain.py</code> &nbsp;·&nbsp; <strong>Importer:</strong> <code>app/sustain_importer.py</code></div>
+  </div>
+
+  <!-- sustain_task_details -->
+  <div class="table-card" id="sustain_task_details">
+    <div class="table-card-header">
+      <span class="tname">sustain_task_details</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Country/provider detail rows ("↳ Detail check", Excel outline level ≥ 1) attached to their parent task. A detail row's entry lives in its own country's result column (the other three hold literal 'N/A').</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">task_pk</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → sustain_tasks</span></td><td></td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td></td></tr>
+        <tr><td class="col-name">cadence</td><td class="col-type">TEXT</td><td></td><td class="note-text">detail rows can have their own cadence (e.g. a Monthly voucher check under a Daily task)</td></tr>
+        <tr><td class="col-name">due_today</td><td class="col-type">TEXT</td><td></td><td class="note-text">Yes / No / On occurrence — not-due details are excluded from rollups and the attention list</td></tr>
+        <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td></td><td class="note-text">France / Italy / Portugal / Spain</td></tr>
+        <tr><td class="col-name">provider</td><td class="col-type">TEXT</td><td></td><td class="note-text">provider / account / store of this check</td></tr>
+        <tr><td class="col-name">result_fr / result_it / result_pt / result_es</td><td class="col-type">TEXT</td><td></td><td class="note-text">detail_result() picks the row's own-country column</td></tr>
+        <tr><td class="col-name">overall</td><td class="col-type">TEXT</td><td></td><td class="note-text">blank in the workbook for detail rows — kept for fidelity</td></tr>
       </tbody>
     </table>
   </div>

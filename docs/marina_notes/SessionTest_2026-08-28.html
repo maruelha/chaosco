@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-28</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-28</h1>
+<p class="hint">The new <strong>Core South Sustainphase Monitoring</strong> mini app,
+built autonomously per the build plan while you were away (all 6 steps). Ticks are
+remembered by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
+new tables <code>sustain_tasks</code> / <code>sustain_task_details</code> are created on
+startup. You need the checklist file in Downloads:
+<code>1_0109_0409-O2C DTC_GBS Operations_checklist.xlsx</code> (any prefix before
+<code>DTC_GBS</code> works, a browser "&nbsp;(1)" copy too). Also check the two open
+judgment calls in <a href="MarinaCheckSoon.html">MarinaCheckSoon</a> (free-text ⇒
+Attention deviation; summary v1 layout).</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Card &amp; upload</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Dashboard → new card <strong>Core South Sustainphase Monitoring</strong>
+      (after Smoke Testing) → Open.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">Empty state: "No checklist imported yet" + file picker +
+      📊 Management summary button.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Pick the checklist from Downloads → ⤒ Upload &amp; import.
+      <span class="expect">Green banner "…8 day tabs · 236 tasks · 2720 detail rows
+      imported". "Imported days" table: 4 days × Retail (33 tasks) + eCom (26 tasks),
+      each linked.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span>Try a wrong file (e.g. the UAT tracking Excel).
+      <span class="expect">Red banner "That doesn't look like the GBS Operations
+      checklist…" — nothing imported.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1d">
+      <span>Back on the dashboard.
+      <span class="expect">Card badge shows 236 (total tasks).</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · Day report — the Excel mirrored</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>Imported days → click <strong>Retail 2026-09-01</strong>.
+      <span class="where">→ /sustain/day/2026-09-01/Retail</span>
+      <span class="expect">Stat cards 16 due · 1 completed · 15 pending · 0 attention —
+      same numbers as row 4 in the Excel tab. Table in the workbook's structure,
+      33 task rows.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Click a task row with a ▸ arrow (e.g. task 4, Bank Statement monitoring).
+      <span class="expect">Its ↳ country/provider detail rows fold out under it —
+      like the +/- outline in Excel; click again to collapse.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Check the pills: compare a few cells against the Excel tab.
+      <span class="expect">Pending amber, N/A &amp; Not due gray, blank = —. (No OK/green
+      or red yet — the file is untouched.)</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2d">
+      <span>Use the day-link row + the ⇄ eCom button.
+      <span class="expect">Same-stream day switch; ⇄ jumps to eCom of the same day
+      (14 due · 0 · 14 · 0 on 09-01).</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · Management summary</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Card page → 📊 Management summary.
+      <span class="where">→ /sustain/summary</span>
+      <span class="expect">Latest day (2026-09-04) preselected; Retail + eCom sections,
+      each stat cards + "✓ Nothing needs attention" (pristine file); day-over-day trend
+      table with 8 rows linking to the day reports; Repeat offenders empty.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span><strong>The real test — a filled file:</strong> in a COPY of the checklist,
+      type <code>OK</code> in a few due cells and a short issue note (e.g.
+      <code>diff 12,50 EUR</code>) in one, on two different days, then re-upload.
+      <span class="expect">Completed counts rise; the note appears in that day's
+      Attention list (red pill, verbatim) AND — if on 2+ days for the same task —
+      under Repeat offenders with day chips.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>Re-upload the ORIGINAL file afterwards.
+      <span class="expect">The tabs are replaced — counts back to the pristine
+      numbers (no duplicates).</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-slate">
+  <div class="box-head">4 · Judgment calls to sign off (MarinaCheckSoon)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span><strong>Free text ⇒ Attention</strong> — an issue note typed into any result
+      cell always classifies the task as Attention, even where Excel's own formula would
+      let it fall through to OK. OK for you?</span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span><strong>Summary v1 layout</strong> — we had agreed to discuss it after the
+      detail report; a first version went in instead. Tell me what to change.</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0828-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

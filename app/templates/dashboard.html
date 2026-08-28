@@ -82,6 +82,13 @@
   </div>
 
   <div class="action-card">
+    <h2>Core South Sustainphase Monitoring {% if sustain_count %}<span class="notes-count-badge">{{ sustain_count }}</span>{% endif %}</h2>
+    <p>Daily GBS Operations checklist (O2C DTC) per day for Retail and eCom — Excel-structure day reports with expandable detail rows, plus the management summary with the attention list.</p>
+    <a href="{{ url_for('sustain.sustain_home') }}" class="btn btn-primary">Open</a>
+    <a href="{{ url_for('sustain.sustain_summary') }}" class="btn">📊 Summary</a>
+  </div>
+
+  <div class="action-card">
     <h2>Manual Test Cases Retail</h2>
     <p>Manual test cases from the "Manual Test Cases | Retail" tab — read-only list plus a simple status report (same buckets as Retail, defects from the Defects tab).</p>
     <a href="{{ url_for('manual_tests.manual_list', stream='retail') }}" class="btn">View List</a>

@@ -138,6 +138,12 @@ Jinja gotcha (cost one debugging round): a template-visible dict must
 not use the key `items` — `dict.items()` shadows it in attribute lookup;
 the per-stream dicts use `attention`.
 
-## Still to build (build-plan step 6)
+## Dashboard card
 
-6. Dashboard card + docs sweep.
+"Core South Sustainphase Monitoring" (after the Smoke card), task-count
+badge (`db_sustain.task_count`), Open + 📊 Summary buttons.
+
+All 6 build-plan steps done 2026-08-28 (steps 2–6 executed autonomously —
+Marina's click-through checklist: `docs/marina_notes/SessionTest_2026-08-28.html`;
+open review points in `MarinaCheckSoon.html`: the free-text-attention
+deviation and the summary v1 layout).

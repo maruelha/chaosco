@@ -43,6 +43,8 @@ def dashboard():
         delegated_counts   = db_delegated.delegated_counts(conn)
         from app.db import smoke as db_smoke
         smoke_count        = db_smoke.scenario_count(conn)
+        from app.db import sustain as db_sustain
+        sustain_count      = db_sustain.task_count(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,
@@ -59,6 +61,7 @@ def dashboard():
                            retrofit_count=retrofit_count,
                            delegated_counts=delegated_counts,
                            smoke_count=smoke_count,
+                           sustain_count=sustain_count,
                            backup_info=last_backup(_cfg))
 
 

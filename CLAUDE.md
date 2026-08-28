@@ -15,6 +15,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Import verticals (Defects / Spillover / Retail), reports, PPT | `docs/claude/verticals.md` |
 | Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
 | CORE SOUTH Smoke Testing (workbook import, eCOM/Retail reports) | `docs/claude/smoke.md` |
+| Core South Sustainphase Monitoring (GBS Ops checklist, day reports, mgmt summary) | `docs/claude/sustain.md` |
 | Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
@@ -92,6 +93,15 @@ app/
                     overview + eCOM (OMNI/ECOM split) + Retail scenario
                     lists with expandable steps; storage db/smoke.py,
                     importer smoke_importer.py)
+  web_sustain.py    Core South Sustainphase Monitoring Blueprint
+                    (/sustain/ — daily GBS Operations checklist
+                    …DTC_GBS Operations_checklist.xlsx, file-picker
+                    upload, one tab per stream per day replaced per tab;
+                    Excel-structure day reports w/ expandable detail
+                    rows + management summary with attention list;
+                    storage db/sustain.py — recomputes ALL statuses,
+                    never trusts the workbook's cached formulas;
+                    importer sustain_importer.py)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -105,7 +115,7 @@ app/
                     reference topics entity_links entity_connections email
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
-                    retrofits urgent delegated blockers smoke
+                    retrofits urgent delegated blockers smoke sustain
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py
@@ -114,6 +124,9 @@ app/
   smoke_importer.py EU CS Smoke Test execution workbook → smoke_scenarios/
                     smoke_steps (WS eCOM/Retail + MB Invoice Validation
                     WAHR filter, steps linked via ParentRow==RowID)
+  sustain_importer.py  GBS Operations checklist → sustain_tasks/
+                    sustain_task_details (tab pattern (Retail|eCom)_<date>,
+                    parent = Task ID row, detail = outline level ≥ 1)
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export

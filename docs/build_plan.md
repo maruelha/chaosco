@@ -133,10 +133,18 @@ accumulate history. Steps one at a time, Marina confirms each:
    documented in-template: per-stream dict key is "attention", NOT
    "items" (dict.items() shadows it). Storage +2 tests (10), web +4
    (13); suite 603.
-6. **Dashboard card + docs sweep** — dashboard card (badge TBD),
-   `docs/claude/sustain.md` finalized, `screens.html`,
-   `database_schema.html`, `architecture.html`, `dashboard_cards.html`,
-   CLAUDE.md code-layout/doc tables.
+6. ~~Dashboard card + docs sweep~~ ✅ DONE 2026-08-28: dashboard card
+   after the Smoke card (task-count badge via `db_sustain.task_count`,
+   Open + 📊 Summary buttons). Docs: `screens.html` (3 screen-cards +
+   sidebar group), `database_schema.html` (new group, 2 table-cards,
+   count 67→69), `architecture.html` (blueprint/db/importer lists),
+   `dashboard_cards.html`, CLAUDE.md (doc table + code layout),
+   `docs/claude/sustain.md` finalized. Click-through checklist for
+   Marina: `docs/marina_notes/SessionTest_2026-08-28.html`.
+
+All 6 build-plan steps for Sustainphase Monitoring are done (steps 2–6
+ran autonomously 2026-08-28 while Marina was away). Open review points
+in MarinaCheckSoon: free-text-attention deviation, summary v1 layout.
 
 ### CORE SOUTH Smoke Testing (`/smoke/`) — NEW 2026-08-27
 

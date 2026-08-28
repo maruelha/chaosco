@@ -208,6 +208,10 @@
     <li><a href="#smoke-overview">Smoke Testing — Overview &amp; Upload</a></li>
     <li><a href="#smoke-ecom">Smoke Testing — eCOM (OMNI / ECOM)</a></li>
     <li><a href="#smoke-retail">Smoke Testing — Retail</a></li>
+    <li class="group-label">Core South Sustainphase Monitoring</li>
+    <li><a href="#sustain-home">Sustainphase — Card &amp; Upload</a></li>
+    <li><a href="#sustain-day">Sustainphase — Day Report</a></li>
+    <li><a href="#sustain-summary">Sustainphase — Management Summary</a></li>
 
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
@@ -1064,6 +1068,68 @@
     </div>
     <div class="screen-card-body">
       <p class="screen-desc">Same expandable-scenario list and Scenario filter as the eCOM page, one section (no OMNI/ECOM split for Retail) — thin wrapper around the same <code>scenario_group</code> macro.</p>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ================================================================ -->
+<!-- CORE SOUTH SUSTAINPHASE MONITORING -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-heading">Core South Sustainphase Monitoring</div>
+
+  <!-- Sustain card & upload -->
+  <div class="screen-card" id="sustain-home">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Monitoring — Card &amp; Upload</span>
+      <span class="screen-url">GET /sustain/ · POST /sustain/upload</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-28. File-picker upload of the daily GBS Operations checklist workbook <code>…DTC_GBS Operations_checklist.xlsx</code> (the prefix before <code>DTC_GBS</code> varies per file — the guard checks the name <em>contains</em> <code>DTC_GBS Operations_checklist</code>, so browser " (1)" double-download copies still import; dated copy at <code>data/uploads/sustain_&lt;timestamp&gt;.xlsx</code>). <code>app/sustain_importer.py</code> parses one tab per stream per day (<code>Retail_&lt;date&gt;</code> / <code>eCom_&lt;date&gt;</code>): parent tasks = rows with a Task ID, country/provider detail rows = Excel outline level ≥ 1. <strong>Replace per (day, stream) tab</strong> — consecutive files with different date windows accumulate history; re-uploading a day refreshes it.</p>
+      <div class="features">
+        <span class="feat-label">Imported days</span>
+        <span class="feat-value">Table of imported (day, stream) tabs with task counts (<code>db_sustain.list_tabs</code>), each linking to its day report.</span>
+        <span class="feat-label">Recomputed, never cached</span>
+        <span class="feat-value">The workbook's summary row 4 and rollup cells are cached formula values ("Save file to check") — every shown status is recomputed in Python from the raw cells (<code>docs/claude/sustain.md</code> documents the decoded formulas).</span>
+        <span class="feat-label">Dashboard card</span>
+        <span class="feat-value">"Core South Sustainphase Monitoring" with a task-count badge (<code>db_sustain.task_count</code>) + 📊 Summary button.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sustain day report -->
+  <div class="screen-card" id="sustain-day">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Monitoring — Day Report</span>
+      <span class="screen-url">GET /sustain/day/&lt;day&gt;/&lt;stream&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">One checklist tab in the Excel's structure: a real table (# · Process/Task with taxonomy · Cadence · Due · Provider/Account · France/Italy/Portugal/Spain · Overall). Parent rows with detail rows expand/collapse them like the workbook's +/- outline (<code>sustainToggle()</code> toggles hidden <code>&lt;tr&gt;</code>s, CSS component <code>.sustain-*</code>). Result cells render as pills — OK green, Pending amber, Review red, N/A / Not due gray, and <strong>free-text issue notes as red pills with the verbatim text</strong>.</p>
+      <div class="features">
+        <span class="feat-label">Stat cards</span>
+        <span class="feat-value">Due / completed / pending / attention from <code>db_sustain.summary_counts</code> — recomputed; matches Excel's DUE/COMPLETED/PENDING logic (all-N/A due counts completed) plus the attention deviation for free text.</span>
+        <span class="feat-label">Navigation</span>
+        <span class="feat-value">Day-link row (all imported days of the stream) + ⇄ toggle to the other stream of the same day.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sustain management summary -->
+  <div class="screen-card" id="sustain-summary">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Monitoring — Management Summary</span>
+      <span class="screen-url">GET /sustain/summary · GET /sustain/summary/&lt;day&gt;</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">v1 layout (review pending with Marina). Defaults to the latest imported day. Per stream: stat cards + the <strong>Attention list</strong> — every entry that is neither OK nor pending (free-text notes + Review marks) with task, country, provider and the verbatim note: the auto-generated discussion agenda.</p>
+      <div class="features">
+        <span class="feat-label">Trend</span>
+        <span class="feat-value">Day-over-day table across all imported tabs — due/completed/pending/attention + completion %, rows link to the day reports (<code>db_sustain.overview</code>).</span>
+        <span class="feat-label">Repeat offenders</span>
+        <span class="feat-value">Same stream+task+country+provider in attention on 2+ days — day chips + deduped verbatim notes (<code>db_sustain.repeat_offenders</code>); a one-day issue is noise, a multi-day one is a topic.</span>
+      </div>
     </div>
   </div>
 
