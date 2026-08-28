@@ -99,9 +99,6 @@ def delegated_list():
         annotations = db_delegated.get_delegated_annotations(conn)
         note_counts = {i["jira_key"]: len(database.list_notes(
             conn, "delegated", i["jira_key"])) for i in issues}
-        # shared order-details component at ('jira', key) — same rows as the
-        # gatekeeper/ECOM boards; green ✓ when any row has S4 docs
-        docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
         blockers_by_key = db_blockers.blockers_for_tickets(
             conn, [i["jira_key"] for i in issues])
         hidden_non_story = _hidden_non_story(conn)
@@ -130,7 +127,6 @@ def delegated_list():
                           key=str.lower),
         jira_comments=comments_map,
         note_counts=note_counts,
-        docs_s4_jira=docs_s4_jira,
         hidden_non_story=hidden_non_story,
         jira_ok=request.args.get("jira_ok"),
         jira_msg=request.args.get("jira_msg"),
@@ -356,9 +352,8 @@ def report_context(conn) -> dict:
         "assignees": sorted({(i.get("jira_assignee") or "").strip()
                              for i in issues if (i.get("jira_assignee") or "").strip()}),
         "blockers": blocker_options,
-        # Jira labels (2026-08-28 [USER: "would help while filtering"])
-        "labels": sorted({l for i in issues for l in i.get("labels", [])},
-                         key=str.lower),
+        # (label filter removed again 2026-08-28 [USER: "not interesting"
+        # on the report] — the board keeps its Label filter)
     }
     return {
         "sections": sections, "total": len(issues),

@@ -98,11 +98,16 @@
         <th style="width:8.5rem" title="Status from the ECOM tab of the UAT test-tracking workbook (⤒ MB tracking upload), matched by Jira ID — red when it doesn't fit this bucket's expected MB status">MB Status</th>
         {% endif %}
         <th style="width:9rem">Assignee</th>
+        <th style="width:11rem" title="from the latest comment that carries one">Orders</th>
         {% if is_blocked_section %}
         <th style="width:11rem">Blockers</th>
         <th style="width:5.5rem" title="whether this defect counts toward the weekly goal">Goal</th>
-        {% endif %}
+        {% else %}
+        {# no Next step for BLOCKED tickets [USER 2026-08-28: "I need the
+           next step for the blockers - not for the blocked test cases"];
+           still editable on the detail page #}
         <th style="width:13rem">Next step</th>
+        {% endif %}
         <th style="width:4.5rem" title="park the ticket in the 📦 Backlog section — excluded from the Management Summary">Backlog</th>
         <th style="width:12rem"></th>
       </tr>
@@ -133,8 +138,12 @@
         </td>
         {% endif %}
         <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
-        {# Orders + Why blocked moved to the detail page [USER 2026-08-28:
-           board content was cut off — too many columns] #}
+        {# Why blocked lives on the detail page [USER 2026-08-28]; the
+           Orders COLUMN is back [USER: "I like those"] — the Orders
+           popup button went instead #}
+        <td style="font-size:0.76rem">
+          {% for line in i.orders %}<div class="mono">{{ line }}</div>{% else %}—{% endfor %}
+        </td>
         {% if is_blocked_section %}
         <td>
           <p class="blk-chips" data-key="{{ i.jira_key }}" style="margin:0 0 0.3rem; font-size:0.76rem">
@@ -151,12 +160,13 @@
                  {% if i.counts_toward_goal %}checked{% endif %}
                  onchange="dlgGoalSave(this)" title="counts toward the weekly goal">
         </td>
-        {% endif %}
+        {% else %}
         <td>
           <input type="text" class="rt-comment dlg-ns" data-key="{{ i.jira_key }}"
                  value="{{ i.next_step or '' }}"
                  placeholder="next step…" onblur="dlgNsSave(this)">
         </td>
+        {% endif %}
         <td style="text-align:center">
           <input type="checkbox" class="dlg-backlog" data-key="{{ i.jira_key }}"
                  {% if i.backlog %}checked{% endif %}
@@ -164,24 +174,24 @@
                  title="park in 📦 Backlog — excluded from the Management Summary">
         </td>
         <td style="white-space:nowrap; text-align:right">
+          {% if not is_blocked_section %}
           <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
                   data-entity-type="delegated" data-entity-id="{{ i.jira_key }}"
                   data-ns-target='input.dlg-ns[data-key="{{ i.jira_key }}"]'>↻</button>
           <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
                   data-entity-type="delegated" data-entity-id="{{ i.jira_key }}"
                   data-ns-label="{{ i.jira_key }} — {{ i.summary or '' }}">🕘</button>
-          <button type="button" class="btn btn-sm js-open-orders" title="order details — the same rows appear on the Gatekeeper and ECOM boards"
-                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
-                  data-od-name="{{ i.jira_key }} — {{ i.summary or '' }}">Orders{% if i.jira_key in docs_s4_jira %}<span class="s4-tick"> ✓</span>{% endif %}</button>
-          {# 💬 chat + ✉️ message buttons moved to the detail page
-             [USER 2026-08-28 — board slimming] #}
+          {% endif %}
+          {# 💬 chat + ✉️ message + Orders-popup buttons live on the
+             detail page [USER 2026-08-28 — board slimming; the Orders
+             COLUMN returned instead of the popup button] #}
           <a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}"
              class="btn btn-sm">Details{% if note_counts.get(i.jira_key) %} ({{ note_counts[i.jira_key] }}){% endif %}</a>
           <button type="button" class="rt-cbtn" title="description + comments inline" onclick="dlgJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 11 if is_blocked_section else (9 if has_mb else 8) }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 11 if is_blocked_section else (10 if has_mb else 9) }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -209,7 +219,6 @@
 {% endif %}
 {% endfor %}
 
-{% include '_order_details.html' %}
 {% include '_next_step_history.html' %}
 {% include '_blocker_picker.html' %}
 

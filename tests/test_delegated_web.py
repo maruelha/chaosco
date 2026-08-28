@@ -253,13 +253,20 @@ def test_blocked_reason_and_next_step_save(client):
             conn, "S4ECOM-2001") == "chase GBS on Friday"
     finally:
         conn.close()
-    # why-blocked left the board 2026-08-28 (detail page only); the next
-    # step is still an inline board field
+    # why-blocked AND the next step left the board for BLOCKED tickets
+    # 2026-08-28 [USER: "I need the next step for the blockers - not for
+    # the blocked test cases"] — both stay editable on the detail page
     html = client.get("/delegated/").get_data(as_text=True)
     assert "waiting for settlement file" not in html
-    assert "chase GBS on Friday" in html
+    assert "chase GBS on Friday" not in html   # S4ECOM-2001 is BLOCKED
     detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
     assert "waiting for settlement file" in detail
+    assert "chase GBS on Friday" in detail
+    # a NON-blocked ticket keeps its inline next-step field
+    client.post("/delegated/ticket/S4ECOM-2003/next-step",
+                data={"next_step": "ping the team"})
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "ping the team" in html
 
 
 def test_detail_page_has_tabs_and_working_fields(client):
@@ -615,14 +622,16 @@ def test_labels_replaced_on_reimport(client):
     assert "fr_scope" not in html
 
 
-def test_report_and_detail_show_labels(client):
+def test_report_has_no_labels_but_detail_does(client):
+    # labels left the report again 2026-08-28 [USER: "not interesting"];
+    # the detail view lists them (Details tab)
     _upload(client)
     report = client.get("/delegated/report").get_data(as_text=True)
-    assert 'id="rf-label"' in report
-    assert 'data-labels="fr_scope settlement"' in report
+    assert 'id="rf-label"' not in report
+    assert "fr_scope" not in report
     detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
     assert "Labels" in detail
-    assert "fr_scope" in detail
+    assert "fr_scope · settlement" in detail
 
 
 # ---------------------------------------------------------------------------
@@ -843,20 +852,23 @@ def test_numbers_callout_archive(client):
 def test_board_is_slim_but_filter_and_detail_keep_the_data(client):
     _upload(client)
     html = client.get("/delegated/").get_data(as_text=True)
-    # gone from the board: label chips, Orders column, Why blocked column,
-    # chat + message buttons
+    # gone from the board: label chips, Why blocked column, chat +
+    # message buttons, the Orders POPUP button
     assert 'class="chip chip--none"' not in html
-    assert ">Orders</th>" not in html and ">Why blocked</th>" not in html
+    assert ">Why blocked</th>" not in html
     assert "js-open-msg" not in html
-    # still there: the Label filter (fed by data-labels), the Orders popup
-    # button, next step, Details
+    assert "js-open-orders" not in html
+    # still there: the Orders COLUMN [USER 2026-08-28: "I like those"],
+    # the Label filter (fed by data-labels), Details
+    assert ">Orders</th>" in html
+    assert "Return Order: 6000084252" in html
     assert 'id="dlg-label-filter"' in html
     assert 'data-labels="fr_scope settlement"' in html
-    assert "js-open-orders" in html
-    # detail view still carries labels + orders + chat/message buttons
+    # detail view still carries labels + chat/message + order details
     detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
     assert "fr_scope" in detail
     assert "js-open-msg" in detail
+    assert "js-open-orders" in detail
 
 
 def test_gbs_accepts_ready_for_validation():

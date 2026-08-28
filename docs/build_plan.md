@@ -562,7 +562,15 @@ one-at-a-time, Marina confirms each:
     for messy Jira-ID cells + "matches X of Y board tickets" diagnostic
     in the upload result; Blockers list lost the Notes column; Mgmt
     Summary blocker overview gained Next step. Web +4/−adjusted tests
-    (46); suite 652. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+    (46); suite 652.
+20. ~~Board pass two + report/summary layout~~ ✅ DONE 2026-08-28
+    [USER]: BLOCKED section loses the Next step column (blockers carry
+    the next steps; ticket next step stays on the detail page); Orders
+    COLUMN restored, Orders popup button off the board; status report
+    loses labels entirely + section head now spans the wide BLOCKED
+    table (`width:fit-content`); Mgmt Summary widened 820→1150px,
+    blocker overview reordered (Impact 2nd, ID falls back to the BC
+    id). Suite 652. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 

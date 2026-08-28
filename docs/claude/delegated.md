@@ -195,6 +195,27 @@ a delegated ticket is 1:1). New pieces:
 - Blockers LIST: Notes column removed [USER]; Mgmt Summary blocker
   overview gained a **Next step** column (the blocker's own next step).
 
+## Board pass two + report/summary layout (2026-08-28, fifth batch [USER])
+
+- BLOCKED section: **no Next step column** ("I need the next step for
+  the blockers - not for the blocked test cases") — blocked tickets'
+  next step stays editable on the detail page; other sections keep the
+  inline field + ↻/🕘.
+- Orders COLUMN restored ("I like those"); the Orders POPUP button left
+  the board instead (detail page keeps it, `_order_details.html`
+  include removed from the board template).
+- Status report: labels removed entirely (chips + rf-label filter +
+  `filter_options.labels`) ["not interesting"]; `.rpt-section` got
+  `width: fit-content; min-width: 100%` so the colored section head
+  spans the full BLOCKED table width instead of stopping at the
+  viewport.
+- Management Summary: body max-width 820px → 1150px ("why is it so
+  thin?"); blocker overview reordered to Name · **Impact (2nd)** · ID
+  (jira_key **or the BC display id**) · Team · Next step · Blocks.
+- Labels in the ticket detail need a FRESH XML upload to show — they
+  only enter `jira_labels` at import time (the row renders "—" until
+  then).
+
 ## Blocker impact on the Management Summary (2026-08-28)
 
 The blocker `impact` field ("what is blocked", already on the blocker
