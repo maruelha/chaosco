@@ -135,3 +135,35 @@ def test_latest_comment_orders_empty_when_no_comment_carries_one():
     assert extract_latest_comment_orders([]) == {"orders": [], "source": None}
     assert extract_latest_comment_orders(
         [{"created": "1", "body": "no orders here"}])["orders"] == []
+
+
+# ---------------------------------------------------------------------------
+# MB Status expectations (2026-08-28) - ECOM-tab Status vs the bucket
+
+def test_mb_status_state_per_bucket():
+    from app.delegated_buckets import mb_status_state
+    row = lambda s: {"status": s}
+    # only the four buckets carry the column
+    assert mb_status_state("open", row("Passed")) == ""
+    assert mb_status_state("team", None) == ""
+    # no ECOM row -> neutral
+    assert mb_status_state("gbs", None) == "none"
+    # settlement: empty or Not Ready expected
+    assert mb_status_state("settlement", row("")) == "ok"
+    assert mb_status_state("settlement", row(None)) == "ok"
+    assert mb_status_state("settlement", row("Not Ready")) == "ok"
+    assert mb_status_state("settlement", row("Passed")) == "mismatch"
+    # gbs: In Progress / clarification needed
+    assert mb_status_state("gbs", row("In Progress")) == "ok"
+    assert mb_status_state("gbs", row("Clarification needed")) == "ok"
+    assert mb_status_state("gbs", row("Passed")) == "mismatch"
+    # sales: Passed / conditionally passed
+    assert mb_status_state("sales", row("Passed")) == "ok"
+    assert mb_status_state("sales", row("Conditionally Passed")) == "ok"
+    assert mb_status_state("sales", row("In Progress")) == "mismatch"
+    # blocked: the two blocked wordings, dash/spacing tolerant
+    assert mb_status_state("blocked", row("Blocked - returned to Sales")) == "ok"
+    assert mb_status_state("blocked", row("Blocked-returned to sales")) == "ok"
+    assert mb_status_state("blocked", row("Blocked DTC")) == "ok"
+    assert mb_status_state("blocked", row("")) == "mismatch"
+    assert mb_status_state("blocked", row("Passed")) == "mismatch"

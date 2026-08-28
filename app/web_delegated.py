@@ -20,8 +20,11 @@ from app import database
 from app.config_loader import load_config
 from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
+from app.db import ecom as db_ecom
 from app.db import jira as db_jira
-from app.delegated_buckets import BOARD_CSS, bucket_counts, bucket_issues, bucket_key, staged_counts
+from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, bucket_counts,
+                                   bucket_issues, bucket_key,
+                                   mb_status_state, staged_counts)
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -104,6 +107,10 @@ def delegated_list():
         blockers_by_key = db_blockers.blockers_for_tickets(
             conn, [i["jira_key"] for i in issues])
         hidden_non_story = _hidden_non_story(conn)
+        # MB join (2026-08-28 [USER]): the ECOM tab's row for the same
+        # Jira ID — MB Status column on four buckets, full card on detail
+        mb_rows = db_ecom.ecom_rows_for_jira_keys(
+            conn, [i["jira_key"] for i in issues])
     finally:
         conn.close()
     for i in issues:
@@ -113,6 +120,9 @@ def delegated_list():
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
         i["backlog"] = ann.get("backlog", False)
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
+        mb_row = mb_rows.get(i["jira_key"])
+        i["mb_status"] = (mb_row or {}).get("status")
+        i["mb_state"] = mb_status_state(bucket_key(i, _me()), mb_row)
     return render_template(
         "delegated.html",
         sections=bucket_issues(issues, _me()),
@@ -207,6 +217,55 @@ def delegated_backlog(jira_key: str):
     return jsonify({"ok": True})
 
 
+@bp.route("/upload-tracking", methods=["POST"])
+def delegated_upload_tracking():
+    """Upload the DTC_UAT_testtracking_ROE workbook and import ONLY its
+    ECOM tab into the shared `ecom` table (2026-08-28 [USER] — same
+    parse + upsert as the dashboard Import, so this also refreshes what
+    the ECOM board shows; the other tabs stay with the dashboard
+    Import). Feeds the MB Status column/card on this board."""
+    f = request.files.get("file")
+    if f is None or not f.filename:
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg="No file selected."))
+    name = f.filename.lower()
+    stem = (_cfg.get("filename_stem") or "").strip().lower()
+    if not name.endswith(".xlsx"):
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg="That is not an .xlsx file — pick the"
+                                         " UAT test-tracking workbook."))
+    if "testtracking" not in name and (not stem or stem not in name):
+        return redirect(url_for(
+            "delegated.delegated_list", jira_ok="0",
+            jira_msg="That doesn't look like the UAT test-tracking workbook"
+                     " — expected a filename containing 'testtracking'."))
+    _UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    xlsx_path = _UPLOAD_FOLDER / f"delegated_tracking_{stamp}.xlsx"
+    f.save(str(xlsx_path))
+    from app.ecom_importer import ParseError, parse_ecom
+    try:
+        rows = parse_ecom(_cfg, xlsx_path=xlsx_path)["rows"]
+    except ParseError as exc:
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg=str(exc)))
+    # path read at call time (not the module-level _db_path) so the
+    # schema lands in the SAME DB _get_conn writes to — also under test
+    # monkeypatching
+    db_ecom.init_schema(Path(_cfg["database_path"]))
+    conn = _get_conn()
+    try:
+        counts = db_ecom.upsert_ecom_rows(
+            conn, rows, date.today().strftime("%Y-%m-%d"))
+    finally:
+        conn.close()
+    msg = (f"{f.filename} (ECOM tab): {counts['inserted']} new ·"
+           f" {counts['updated']} updated ·"
+           f" {counts['skipped_missing_jira_id']} without Jira ID skipped")
+    return redirect(url_for("delegated.delegated_list", jira_ok="1",
+                            jira_msg=msg))
+
+
 @bp.route("/ticket/<jira_key>", methods=["GET", "POST"])
 def delegated_ticket_detail(jira_key: str):
     """Detail page per delegated ticket — read-only Jira data (details +
@@ -234,6 +293,8 @@ def delegated_ticket_detail(jira_key: str):
         comments = db_jira.list_jira_comments(conn, jira_key)
         issue["labels"] = db_jira.labels_for_issues(
             conn, [jira_key]).get(jira_key, [])
+        mb_row = db_ecom.ecom_rows_for_jira_keys(
+            conn, [jira_key]).get(jira_key)
         next_step = db_delegated.get_delegated_next_step(conn, jira_key)
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
@@ -251,6 +312,7 @@ def delegated_ticket_detail(jira_key: str):
         is_blocked=(issue.get("jira_status") or "").strip().lower() == "blocked",
         next_step=next_step, blocked_reason=blocked_reason,
         counts_toward_goal=counts_toward_goal, backlog=backlog, blockers=blockers,
+        mb_row=mb_row,
         notes=notes, attachments_by_note=attachments_by_note,
         saved=request.args.get("saved") == "1",
         note_added=request.args.get("note_added") == "1",

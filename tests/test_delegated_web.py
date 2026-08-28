@@ -642,3 +642,86 @@ def test_blocker_impact_editable_on_numbers_page(client):
     download = client.get("/delegated/numbers/download").get_data(as_text=True)
     assert "blocks FR settlement retests" in download        # static text
     assert 'class="blk-impact"' not in download
+
+
+# ---------------------------------------------------------------------------
+# MB tracking join (2026-08-28) - ECOM tab of the UAT tracking workbook
+
+def _tracking_xlsx(status_for_2001="Not Ready", extra_rows=None) -> bytes:
+    import openpyxl
+    headers = ["Status", "Assigned to", "Country", "Testcase Scenario",
+               "Test Case ID", "Testcase Name", "Description Change",
+               "Jira ID", "Date execution started",
+               "Order Number/Transaction Number",
+               "Defect ID (if applicable)", "S4 Sales Order",
+               "S4 Billing Documents", "S4 Journal Invoice Entry",
+               "Delivery Note (for TradeCo)",
+               "Reason for pass with reservation",
+               "Old Order Numbers/Transaction Numbers", "Comments"]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "ECOM"
+    ws.append(headers)
+    ws.append([status_for_2001, "Tom", "FR", "Scenario X", "TC-42",
+               "Standard order FR", None, "S4ECOM-2001", None, "600123",
+               "DEF-7", "SO-1", "BD-1", "JE-1", None, "minor diff", None,
+               "watch the refund"])
+    for r in (extra_rows or []):
+        ws.append(r)
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _upload_tracking(client, data=None,
+                     filename="DTC_UAT_testtracking_ROE(31).xlsx"):
+    data = data if data is not None else _tracking_xlsx()
+    return client.post("/delegated/upload-tracking", data={
+        "file": (io.BytesIO(data), filename)})
+
+
+def test_tracking_upload_imports_ecom_tab(client):
+    _upload(client)
+    resp = _upload_tracking(client)
+    assert "jira_ok=1" in resp.headers["Location"]
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "1 new" in html
+    # wrong files rejected
+    resp = _upload_tracking(client, filename="whatever.xlsx")
+    assert "jira_ok=0" in resp.headers["Location"]
+    resp = _upload_tracking(client, filename="notes.txt")
+    assert "jira_ok=0" in resp.headers["Location"]
+
+
+def test_board_mb_status_column_with_mismatch_color(client):
+    _upload(client)
+    # before any tracking upload: the blocked ticket has no ECOM row ->
+    # neutral dash with explanatory title
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "no ECOM-tab row for this Jira ID yet" in html
+    # S4ECOM-2001 is in the BLOCKED bucket; "Not Ready" is NOT an expected
+    # blocked MB status -> red mismatch chip
+    _upload_tracking(client)
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "MB Status" in html
+    assert 'background:#c1121f' in html and "Not Ready" in html
+    # now with an expected blocked wording -> plain text, no red chip on it
+    _upload_tracking(client, data=_tracking_xlsx(
+        status_for_2001="Blocked - returned to Sales"))
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "Blocked - returned to Sales" in html
+    mb_cell = html.split("Blocked - returned to Sales")[0][-200:]
+    assert "c1121f" not in mb_cell
+
+
+def test_ticket_detail_shows_mb_card(client):
+    _upload(client)
+    _upload_tracking(client)
+    html = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "MB tracking (ECOM tab)" in html
+    for value in ("TC-42", "Standard order FR", "Not Ready", "DEF-7",
+                  "SO-1", "BD-1", "JE-1", "minor diff", "watch the refund"):
+        assert value in html, value
+    # a ticket without an ECOM row shows no MB card
+    html = client.get("/delegated/ticket/S4ECOM-2002").get_data(as_text=True)
+    assert "MB tracking (ECOM tab)" not in html

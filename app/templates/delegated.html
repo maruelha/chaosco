@@ -21,6 +21,14 @@
                 title="upload the delegated Jira XML export — refreshes status, assignee and comments">
           ⤒ Upload &amp; import</button>
       </form>
+      <form method="post" action="{{ url_for('delegated.delegated_upload_tracking') }}"
+            enctype="multipart/form-data" style="display:inline">
+        <input type="file" name="file" accept=".xlsx" required
+               style="font-size:0.8rem; max-width:13rem">
+        <button type="submit" class="btn"
+                title="upload the DTC_UAT_testtracking_ROE workbook — imports ONLY its ECOM tab (shared ecom store, also refreshes the ECOM board) and feeds the MB Status column">
+          ⤒ MB tracking</button>
+      </form>
     </div>
   </div>
   <p class="page-subtitle">Testing delegated to the team — tickets from the
@@ -65,6 +73,7 @@
 
 {% for section_key, section_title, section_css, section_items in sections %}
 {% set is_blocked_section = section_key == 'blocked' %}
+{% set has_mb = section_key in ('blocked', 'settlement', 'gbs', 'sales') %}
 {% if section_items or section_key not in ('done', 'unexpected', 'backlog') %}
 <details class="rt-section {{ board_css[section_key] }}" {% if section_items %}open{% endif %}>
   <summary>{{ section_title }}
@@ -85,6 +94,9 @@
         <th style="width:8.5rem">Solman ID</th>
         <th>Summary</th>
         <th style="width:7.5rem">Status</th>
+        {% if has_mb %}
+        <th style="width:8.5rem" title="Status from the ECOM tab of the UAT test-tracking workbook (⤒ MB tracking upload), matched by Jira ID — red when it doesn't fit this bucket's expected MB status">MB Status</th>
+        {% endif %}
         <th style="width:9rem">Assignee</th>
         <th style="width:11rem" title="from the latest comment that carries one">Orders</th>
         {% if is_blocked_section %}
@@ -110,6 +122,18 @@
           {% if i.labels %}<span style="white-space:nowrap">{% for l in i.labels %}<span class="chip chip--none" style="font-size:0.68rem; padding:1px 6px">{{ l }}</span>{% endfor %}</span>{% endif %}
         </td>
         <td>{{ i.jira_status or "—" }}</td>
+        {% if has_mb %}
+        <td style="font-size:0.8rem">
+          {%- if i.mb_state == 'mismatch' -%}
+            <span class="chip" style="background:#c1121f; color:#fff"
+                  title="unexpected MB status for this bucket">{{ i.mb_status or '(empty)' }}</span>
+          {%- elif i.mb_state == 'ok' -%}
+            {{ i.mb_status or '—' }}
+          {%- else -%}
+            <span style="color:#bbb" title="no ECOM-tab row for this Jira ID yet">—</span>
+          {%- endif -%}
+        </td>
+        {% endif %}
         <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
         <td style="font-size:0.76rem">
           {% for line in i.orders %}<div class="mono">{{ line }}</div>{% else %}—{% endfor %}

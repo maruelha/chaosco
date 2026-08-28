@@ -177,6 +177,30 @@ def upsert_ecom_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> 
     }
 
 
+def ecom_rows_for_jira_keys(conn: sqlite3.Connection,
+                            jira_keys: list[str]) -> dict[str, dict]:
+    """{jira_key: ecom row} for a batch of Jira keys — the Delegated
+    board/detail MB join (2026-08-28 [USER]). Matched via the normalized
+    match_key (1:1 — match_key is UNIQUE). Tolerant of the table not
+    existing yet (partial-init test fixtures)."""
+    if not jira_keys:
+        return {}
+    wanted = {_ecom_match_key(k): k for k in jira_keys}
+    placeholders = ",".join("?" for _ in wanted)
+    out: dict[str, dict] = {}
+    try:
+        cur = conn.execute(
+            f"SELECT * FROM ecom WHERE match_key IN ({placeholders})",
+            list(wanted))
+    except sqlite3.OperationalError:
+        return {}
+    cols = [d[0] for d in cur.description]
+    for r in cur.fetchall():
+        rec = dict(zip(cols, r))
+        out[wanted[rec["match_key"]]] = rec
+    return out
+
+
 def get_ecom_rows(conn: sqlite3.Connection,
                   statuses: list[str] | None = None,
                   countries: list[str] | None = None,

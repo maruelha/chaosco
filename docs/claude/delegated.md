@@ -113,6 +113,36 @@ never contain spaces) and an rf-label select in the report's filter bar
 (AND-combines with status/assignee/blocker); the ticket detail lists
 them in the Details tab.
 
+## MB tracking join (2026-08-28 [USER], resolves parked item 5)
+
+The ECOM tab of `DTC_UAT_testtracking_ROE` already imports into the
+shared `ecom` table (unique match key = normalized Jira ID → the join to
+a delegated ticket is 1:1). New pieces:
+
+- **⤒ MB tracking upload** on the board: picks the workbook (filename
+  must contain `testtracking` or the configured `filename_stem`), runs
+  ONLY the ECOM-tab import (`parse_ecom(xlsx_path=…)` + the same
+  `upsert_ecom_rows` the dashboard Import uses, dated copy
+  `delegated_tracking_*.xlsx`). CONSEQUENCE BY DESIGN: also refreshes
+  what the ECOM board/reports show — one store. Schema init reads
+  `_cfg["database_path"]` at call time (NOT the module `_db_path`) so it
+  hits the same DB as `_get_conn` under test monkeypatching.
+- **MB Status column** on the board, only in the four buckets with
+  expectations (`delegated_buckets.MB_EXPECTED`, [USER wordings]):
+  blocked → "Blocked - returned to Sales"/"Blocked DTC"; settlement →
+  empty/"Not Ready"; gbs → "In Progress"/"clarification needed"; sales →
+  "Passed"/"Conditionally Passed". `mb_status_state()` → ''/'none'/'ok'/
+  'mismatch' (normalized: casefold, whitespace, en/em dashes). Only a
+  MISMATCH gets color (red chip, [USER: "a color to show if the status
+  does not match"]); ok renders plain, no ECOM row renders a neutral —
+  ("not tracked is not wrong"). Wordings adjustable in MB_EXPECTED.
+- **"MB tracking (ECOM tab)" card** on the ticket detail (read-only,
+  shown only when a row matches): Test Case ID, Testcase name, MB
+  Status, Defect ID, S4 Sales order/Billing documents/Journal invoice
+  entry, Reason for pass with reservation, MB Comments + a link to the
+  row's ECOM detail page. Report/Management Summary deliberately
+  untouched [USER].
+
 ## Blocker impact on the Management Summary (2026-08-28)
 
 The blocker `impact` field ("what is blocked", already on the blocker

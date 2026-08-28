@@ -163,6 +163,36 @@
 {% include '_blocker_picker.html' %}
 {% endif %}
 
+{# ---- MB tracking (2026-08-28 [USER]) — the ECOM tab's row for this Jira
+   ID, read-only; imported via the board's ⤒ MB tracking upload (or the
+   normal dashboard Import — same shared ecom table) ---- #}
+{% if mb_row %}
+<div class="detail-card">
+  <div class="card-header-row">
+    <h2>MB tracking (ECOM tab)</h2>
+    <a class="editable-badge" href="{{ url_for('ecom.ecom_detail', ecom_id=mb_row.ecom_id) }}"
+       title="open this row on the ECOM board">→ ECOM detail</a>
+  </div>
+  <dl class="field-list">
+    {% set mb_fields = [
+      ("Test Case ID",             mb_row.test_case_id),
+      ("Testcase name",            mb_row.testcase_name),
+      ("MB Status",                mb_row.status),
+      ("Defect ID",                mb_row.defect_id_ref),
+      ("S4 Sales order",           mb_row.s4_sales_order),
+      ("S4 Billing documents",     mb_row.s4_billing_documents),
+      ("S4 Journal invoice entry", mb_row.s4_journal_invoice_entry),
+      ("Reason for pass with reservation", mb_row.reason_for_pass_with_reservation),
+      ("MB Comments",              mb_row.comment),
+    ] %}
+    {% for label, value in mb_fields %}
+    <dt>{{ label }}</dt>
+    <dd>{{ value or "—" }}</dd>
+    {% endfor %}
+  </dl>
+</div>
+{% endif %}
+
 {# ---- Order details (authored) — shared with the Gatekeeper/ECOM boards ---- #}
 <div class="detail-card">
   <div class="card-header-row">

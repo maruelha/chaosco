@@ -524,8 +524,18 @@ one-at-a-time, Marina confirms each:
     Summary's Blocker overview (blur-save `POST /blockers/<id>/impact`,
     only-field `set_blocker_impact`; static text in the download).
     Tests: `tests/test_delegated_web.py` (+4, 34 total); suite 639.
-
-### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+16. ~~MB tracking join (resolves parked item 5)~~ ✅ DONE 2026-08-28
+    [USER, planning chat]: ⤒ MB tracking upload on the board (ECOM tab
+    only → shared `ecom` table, same upsert as the dashboard Import —
+    by design also refreshes the ECOM board); MB Status column in the
+    blocked/settlement/gbs/sales buckets with per-bucket expected
+    wordings (`MB_EXPECTED` + `mb_status_state` in delegated_buckets —
+    only a MISMATCH gets the red chip); read-only "MB tracking (ECOM
+    tab)" card on the ticket detail (Test Case ID, name, status, defect,
+    S4 sales order/billing/journal entry, reason for pass w/
+    reservation, comments + link to the ECOM detail). Report/Mgmt
+    Summary untouched [USER]. Buckets +1 test (15), web +3 (37);
+    suite 643. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 

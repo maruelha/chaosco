@@ -95,6 +95,40 @@ def bucket_counts(issues: list[dict], me: str) -> list[tuple[str, str, int]]:
             for key, title, _, items in bucket_issues(issues, me)]
 
 
+# MB Status expectations per bucket [USER 2026-08-28] — the ECOM tab's
+# Status (column A) joined by Jira ID; only these four buckets show the
+# MB Status column, and a value outside the expected set gets the
+# mismatch color on the board. Matching is normalized (casefold,
+# collapsed whitespace, en/em dashes unified) so "Blocked – returned to
+# Sales" still matches. The literal wordings come from Marina — adjust
+# HERE if her workbook spells them differently.
+MB_EXPECTED = {
+    "blocked":    {"blocked - returned to sales", "blocked dtc"},
+    "settlement": {"", "not ready"},
+    "gbs":        {"in progress", "clarification needed"},
+    "sales":      {"passed", "conditionally passed"},
+}
+
+
+def _norm_mb(status) -> str:
+    import re
+    s = str(status or "").replace("–", "-").replace("—", "-")
+    s = re.sub(r"\s*-\s*", " - ", s)
+    return re.sub(r"\s+", " ", s).strip().casefold()
+
+
+def mb_status_state(bucket: str, ecom_row: dict | None) -> str:
+    """'' = this bucket has no MB Status column; 'none' = no ECOM-tab row
+    for the ticket (neutral — not tracked is not wrong); 'ok' /
+    'mismatch' = the row's Status against MB_EXPECTED."""
+    expected = MB_EXPECTED.get(bucket)
+    if expected is None:
+        return ""
+    if ecom_row is None:
+        return "none"
+    return "ok" if _norm_mb(ecom_row.get("status")) in expected else "mismatch"
+
+
 # Management Summary staging (build plan step 10, 2026-08-27) — the same
 # buckets grouped into 3 review stages [USER 2026-08-27]. "unexpected"
 # belongs to no stage and is reported separately so nothing silently
