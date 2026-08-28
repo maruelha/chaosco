@@ -464,6 +464,20 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<div class="box b-blue">
+  <div class="box-head">2026-08-27 — Sustainphase Monitoring build (ran autonomously while you were away)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="sustain-free-text-attention">
+      <span><strong>Judgment call: free-text result cells always count as "Attention"</strong>
+      — the workbook's own Task Overall formula can let an issue note typed into
+      one country's cell fall through to OK when another country is OK. Our
+      recomputed status deviates there on purpose (an issue note never hides
+      behind an OK). Everything else mirrors the Excel formulas exactly, incl.
+      blank-but-due = Pending and all-N/A due tasks counting as completed.
+      <span class="where">&#8594; /sustain/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

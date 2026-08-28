@@ -1,0 +1,90 @@
+# Core South Sustainphase Monitoring (`/sustain/`)
+
+Daily GBS Operations checklist for the sustain phase (O2C DTC), one
+workbook per date window. Built step-by-step per the build-plan section
+"Core South Sustainphase Monitoring" (planning chat 2026-08-27, executed
+autonomously the same day — Marina was away; open judgment calls are
+flagged in `docs/marina_notes/MarinaCheckSoon.html`).
+
+## Source workbook
+
+Filename: `<prefix>DTC_GBS Operations_checklist.xlsx` — the prefix
+changes per file (encodes the date window, e.g. `1_0109_0409-O2C`), so
+the upload matches on the **suffix** `DTC_GBS Operations_checklist.xlsx`.
+
+- One tab per stream per day: `Retail_<ISO date>` / `eCom_<ISO date>`
+  (verified file: 8 tabs = Retail+eCom × 2026-09-01..04).
+- Headers row 6, data from row 7. Columns: A Task ID · B L4 Taxonomy ·
+  C Process/Task · D Cadence · E Due Today · F Country · G Provider/
+  Partner/Financial Account · H–K France/Italy/Portugal/Spain Result ·
+  L Task Overall (formula, "DO NOT EDIT").
+- **Parent tasks** carry a Task ID at outline level 0. **Detail rows**
+  ("↳ Detail check", one per country × provider/account/store) sit at
+  outline level 1, collapsed in Excel; openpyxl exposes
+  `row_dimensions[r].outline_level`, so the structure imports faithfully.
+- Result-cell vocabulary: `OK` / `Pending` / `Not due` / `N/A` /
+  `Review`, or **free text** — the team writes short issue notes directly
+  into the cell (how-to in row 5). Free text is the discussion-point
+  signal.
+- Row 4 holds DUE/COMPLETED/PENDING/REVIEW `COUNTIFS` summaries; L4 is a
+  save-check ("Save file to check"). Cached formula values are only right
+  after a save → **never trust row 4 or the rollup cells; recompute in
+  Python** (see below).
+
+### The workbook's own rollup logic (decoded from the formulas)
+
+- Parent country cell H–K (parents WITH details, e.g. `H10`): over that
+  country's **due** detail rows — none due → `N/A`, any blank →
+  `Pending`, any value that is neither OK nor N/A (i.e. free text!) →
+  `Review`, else `OK`.
+- Task Overall `L`: Due `No` → `Not due`. `On occurrence` → all four
+  cells blank → `No occurrence`, any `Review` → `Review`, any blank →
+  `Pending`, else `OK`. Otherwise (due): any `Review` → `Review`, any
+  `Pending` → `Pending`, any `OK` → `OK`, all four `N/A` → `N/A`, else
+  `Pending` (this fallback is what makes blank-but-due = Pending).
+- Row 4: DUE = parents with E=Yes; COMPLETED = due parents with L in
+  {OK, **N/A**}; PENDING = due parents with L=Pending; REVIEW = **all**
+  parents with L=Review (not only due ones).
+- `COUNTIF` matches case-insensitively → every comparison in our Python
+  mirror does too (`casefold`).
+
+## Storage — `app/db/sustain.py`
+
+`sustain_tasks` / `sustain_task_details` (1:n via `task_pk`, technical
+PKs, portable SQL). Each upload calls `replace_day_stream` per tab, so
+consecutive files with different date windows **accumulate history**;
+re-uploading a tab replaces it. Import tables only — never user-authored
+data. Registered in the `database.py` facade; `init_schema` called from
+`app/web.py` and the importer.
+
+Classification (pure functions, tested in
+`tests/test_sustain_storage.py`):
+
+- `derive_country_cell(details, country)` — mirror of the H–K rollup.
+- `derive_cells(task)` — the four FR/IT/PT/ES cells: rolled up from
+  details if the task has any, its own literal cells otherwise.
+- `derive_overall(due_today, cells)` — mirror of the L formula.
+- `is_free_text(value)` — non-blank and outside the vocabulary.
+- `task_status(task)` → `done | pending | attention | not_due`.
+  Excel-faithful **except one deliberate deviation**: any free-text
+  result cell forces `attention`. (Excel's L lets free text on a simple
+  parent fall through to OK if another country is OK — an issue note must
+  never hide behind an OK elsewhere in the row.)
+- `summary_counts(conn, day, stream)` → recomputed
+  due/completed/pending/attention. completed+pending partition the due
+  tasks that need no attention; attention counts over ALL parents (like
+  Excel's REVIEW — an on-occurrence issue must surface too).
+- `list_tabs` (day picker), `list_tasks` (workbook order, details
+  attached), `task_count` (dashboard badge).
+
+## Still to build (build-plan steps 2–6)
+
+2. Importer `app/sustain_importer.py` (openpyxl `data_only=True`, tab
+   pattern → stream+day, parent = has Task ID / detail = outline level 1).
+3. Upload page `/sustain/` (file picker, suffix match, dated copy in
+   `data/uploads/`).
+4. Detail report (day picker + stream toggle, expandable parents, stat
+   cards from `summary_counts`).
+5. Management summary (headline + Attention list + trend + repeat
+   offenders) — layout to re-discuss with Marina after step 4.
+6. Dashboard card + docs sweep.

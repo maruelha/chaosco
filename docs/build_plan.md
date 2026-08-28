@@ -79,14 +79,19 @@ as Pending (recommended, to confirm); each upload replaces the (date,
 stream) tabs it contains, so consecutive files (different date windows)
 accumulate history. Steps one at a time, Marina confirms each:
 
-1. **Storage `app/db/sustain.py`** — `sustain_tasks` (date, stream,
-   task_id, taxonomy, process, cadence, due_today, provider, 4 country
-   results, overall) + `sustain_task_details` (1:n, country, provider,
-   cadence, due_today, 4 results), technical PKs, portable SQL;
-   `replace_day_stream`, list/get helpers, recomputed
-   `summary_counts(date, stream)` (due/completed/pending/attention);
-   register in the `database.py` facade. Tests first
-   (`tests/test_sustain_storage.py`).
+1. ~~Storage `app/db/sustain.py`~~ ✅ DONE 2026-08-27: `sustain_tasks` +
+   `sustain_task_details` (1:n, technical PKs, portable SQL),
+   `replace_day_stream` (per-tab replace → history accumulates across
+   date-window files), `list_tabs`/`list_tasks`/`task_count`, and the
+   recomputed classification decoded from the workbook's actual formulas
+   (`derive_country_cell` = H–K rollup, `derive_overall` = L formula,
+   case-insensitive like COUNTIF; details in sustain.md). One deliberate
+   deviation [flag for Marina]: free-text result cells always classify
+   as "attention" — Excel's L can let an issue note fall through to OK.
+   `summary_counts` = due/completed/pending/attention (completed
+   includes all-N/A due tasks, matching Excel's COMPLETED; attention
+   counts over ALL parents like Excel's REVIEW). Registered in the
+   `database.py` facade; `tests/test_sustain_storage.py` (8 tests).
 2. **Importer `app/sustain_importer.py`** — `parse_sustain_workbook`
    (openpyxl `data_only=True`, tab-name pattern → (stream, date), rows
    from 7, parent = has Task ID / detail = outline level 1) +
