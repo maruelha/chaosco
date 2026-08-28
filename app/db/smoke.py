@@ -9,6 +9,7 @@ holds user-authored data.
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 from app.db.core import get_connection
@@ -35,6 +36,16 @@ CREATE TABLE IF NOT EXISTS smoke_scenarios (
     store_code   TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_smoke_scenarios_ws ON smoke_scenarios(ws);
+
+-- USER-AUTHORED (2026-08-28): Marina's own comment + next step per
+-- scenario, keyed by the Excel RowID (stable across re-imports —
+-- replace_all rewrites smoke_scenarios/smoke_steps but NEVER this table).
+CREATE TABLE IF NOT EXISTS smoke_annotations (
+    row_id     INTEGER PRIMARY KEY,
+    comment    TEXT,
+    next_step  TEXT,
+    updated_at TEXT
+);
 
 CREATE TABLE IF NOT EXISTS smoke_steps (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -66,6 +77,64 @@ def init_schema(db_path: Path) -> None:
 def _rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
     cols = [d[0] for d in cursor.description]
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
+
+
+def _now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def get_smoke_annotations(conn: sqlite3.Connection) -> dict[int, dict]:
+    """{row_id: {'comment': ..., 'next_step': ...}} — Marina's authored
+    fields, merged onto the scenarios in the web layer. Tolerant of the
+    table not existing yet (partial-init test fixtures)."""
+    try:
+        return {r: {"comment": c, "next_step": ns}
+                for r, c, ns in conn.execute(
+                    "SELECT row_id, comment, next_step"
+                    " FROM smoke_annotations")}
+    except sqlite3.OperationalError:
+        return {}
+
+
+def get_smoke_comment(conn: sqlite3.Connection, row_id: int) -> str | None:
+    row = conn.execute(
+        "SELECT comment FROM smoke_annotations WHERE row_id=?",
+        (row_id,)).fetchone()
+    return row[0] if row else None
+
+
+def set_smoke_comment(conn: sqlite3.Connection, row_id: int,
+                      comment: str | None) -> None:
+    """Only-this-field upsert (inline edit on the scenario accordion)."""
+    with conn:
+        conn.execute("""
+            INSERT INTO smoke_annotations (row_id, comment, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(row_id) DO UPDATE SET
+                comment    = excluded.comment,
+                updated_at = excluded.updated_at
+        """, (row_id, comment or None, _now()))
+
+
+def get_smoke_next_step(conn: sqlite3.Connection, row_id: int) -> str | None:
+    row = conn.execute(
+        "SELECT next_step FROM smoke_annotations WHERE row_id=?",
+        (row_id,)).fetchone()
+    return row[0] if row else None
+
+
+def set_smoke_next_step(conn: sqlite3.Connection, row_id: int,
+                        next_step: str | None) -> None:
+    """Only-this-field upsert (inline edit + next-step archive component,
+    entity type 'smoke')."""
+    with conn:
+        conn.execute("""
+            INSERT INTO smoke_annotations (row_id, next_step, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(row_id) DO UPDATE SET
+                next_step  = excluded.next_step,
+                updated_at = excluded.updated_at
+        """, (row_id, next_step or None, _now()))
 
 
 def scenario_count(conn: sqlite3.Connection) -> int:

@@ -209,6 +209,18 @@ the design decisions from the planning chat 2026-08-27).
 All 7 build-plan steps for CORE SOUTH Smoke Testing are now done. 519
 tests passing.
 
+8. ~~Scenario annotations + step filters + section order~~ ✅ DONE
+   2026-08-28 [USER]: (a) authored comment per scenario
+   (`smoke_annotations` keyed by Excel RowID — survives re-imports;
+   textarea saved onblur, 📝 marker in the summary); (b) next step per
+   scenario (same table, generic archive component entity `smoke`,
+   ↻/🕘 buttons, blue → preview in the summary); (c) eCOM page order
+   flipped to ECOM first, OMNI second; (d) WS Executing + Owner
+   dropdown filters per section — hide non-matching step rows AND
+   scenarios with zero matching steps. Page JS consolidated into the
+   partial's `smoke_js()` macro (was duplicated per page). Storage +3
+   tests (11), web +3 & 1 rewritten (13); suite 609.
+
 ### Delegated Testing (`/delegated/`) — NEW 2026-08-26
 
 Deep-dive: `docs/claude/delegated.md` (incl. the design decisions from the

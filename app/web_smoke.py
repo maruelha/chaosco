@@ -8,7 +8,8 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import (Blueprint, jsonify, redirect, render_template, request,
+                   url_for)
 
 from app import database
 from app.config_loader import load_config
@@ -45,13 +46,24 @@ def smoke_home():
     )
 
 
+def _attach_annotations(scenarios: list[dict], annotations: dict) -> None:
+    """Merge Marina's authored comment/next step onto the scenario dicts
+    (key user_comment — 'comment' is taken by the imported Excel column)."""
+    for s in scenarios:
+        ann = annotations.get(s.get("row_id")) or {}
+        s["user_comment"] = ann.get("comment")
+        s["next_step"] = ann.get("next_step")
+
+
 @bp.route("/ecom")
 def smoke_ecom():
     conn = _get_conn()
     try:
         all_ecom = db_smoke.list_scenarios(conn, "eCOM")
+        annotations = db_smoke.get_smoke_annotations(conn)
     finally:
         conn.close()
+    _attach_annotations(all_ecom, annotations)
     omni = [s for s in all_ecom if db_smoke.is_omni_package(s.get("package"))]
     ecom = [s for s in all_ecom if not db_smoke.is_omni_package(s.get("package"))]
     return render_template("smoke_ecom.html", omni=omni, ecom=ecom)
@@ -62,9 +74,37 @@ def smoke_retail():
     conn = _get_conn()
     try:
         retail = db_smoke.list_scenarios(conn, "Retail")
+        annotations = db_smoke.get_smoke_annotations(conn)
     finally:
         conn.close()
+    _attach_annotations(retail, annotations)
     return render_template("smoke_retail.html", retail=retail)
+
+
+@bp.route("/scenario/<int:row_id>/comment", methods=["POST"])
+def smoke_comment(row_id: int):
+    """Save Marina's scenario comment (inline, onblur — delegated-board
+    pattern). Keyed by Excel RowID, survives re-imports."""
+    value = (request.get_json(silent=True) or {}).get("comment", "")
+    conn = _get_conn()
+    try:
+        db_smoke.set_smoke_comment(conn, row_id, value.strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/scenario/<int:row_id>/next-step", methods=["POST"])
+def smoke_next_step(row_id: int):
+    """Save the scenario's next step (inline; ↻ archive runs via the
+    generic /next-steps 'smoke' entity)."""
+    value = (request.get_json(silent=True) or {}).get("next_step", "")
+    conn = _get_conn()
+    try:
+        db_smoke.set_smoke_next_step(conn, row_id, value.strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/upload", methods=["POST"])

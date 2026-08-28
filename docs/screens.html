@@ -1052,10 +1052,10 @@
       <span class="screen-url">GET /smoke/ecom</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Two colour-coded <code>ui.section</code>s — OMNI then ECOM — each listing its scenarios via the shared <code>scenario_group</code> macro (<code>_smoke_scenarios.html</code>, reused by the Retail page below so the identical structure isn't tripled). Each scenario is a native <code>&lt;details class="smoke-scenario"&gt;</code> accordion (no custom JS needed to expand/collapse) showing Package, Status pill, RowID and step count in the summary; expanding shows Company code/Sales org/Plant/Store metadata, any scenario Comment, and the full steps table (Step · Expected result · Owner · WS Executing · ASPEN Ticket · Execution status · Progress · Comment).</p>
+      <p class="screen-desc">Two colour-coded <code>ui.section</code>s — <strong>ECOM first, then OMNI</strong> [USER 2026-08-28, was OMNI first] — each listing its scenarios via the shared <code>scenario_group</code> macro (<code>_smoke_scenarios.html</code>, reused by the Retail page below so the identical structure isn't tripled). Each scenario is a native <code>&lt;details class="smoke-scenario"&gt;</code> accordion showing Package, Status pill, RowID and step count in the summary (plus a 📝 marker and a blue "→ next step" preview when set); expanding shows Company code/Sales org/Plant/Store metadata, any imported scenario Comment, <strong>Marina's own comment textarea and next-step input</strong> (2026-08-28 — saved onblur to <code>smoke_annotations</code> keyed by RowID, so they survive re-imports; ↻ archive + 🕘 history via the generic next-step component, entity type <code>smoke</code>), and the full steps table (Step · Expected result · Owner · WS Executing · ASPEN Ticket · Execution status · Progress · Comment).</p>
       <div class="features">
-        <span class="feat-label">Scenario filter</span>
-        <span class="feat-value">Live text filter on the Scenario column, one per section — <code>smokeFilterScenarios(groupKey)</code>, <code>oninput</code> + lowercased <code>data-scenario</code> attribute match, same pattern as the Retail Tracker's payment-method filter.</span>
+        <span class="feat-label">Filterbar</span>
+        <span class="feat-value">Per section: live Scenario text filter + <strong>WS Executing</strong> and <strong>Owner</strong> dropdowns (2026-08-28, distinct step values). Step filters hide non-matching step rows and scenarios with zero matching steps — <code>smokeApplyFilters(groupKey)</code> in the partial's <code>smoke_js()</code> macro.</span>
       </div>
     </div>
   </div>
@@ -1067,7 +1067,7 @@
       <span class="screen-url">GET /smoke/retail</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Same expandable-scenario list and Scenario filter as the eCOM page, one section (no OMNI/ECOM split for Retail) — thin wrapper around the same <code>scenario_group</code> macro.</p>
+      <p class="screen-desc">Same expandable-scenario list and filterbar (Scenario text + WS Executing/Owner dropdowns) as the eCOM page, one section (no OMNI/ECOM split for Retail) — thin wrapper around the same <code>scenario_group</code> macro, incl. the comment/next-step fields per scenario.</p>
     </div>
   </div>
 

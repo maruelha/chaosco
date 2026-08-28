@@ -62,6 +62,12 @@ def client(tmp_path, monkeypatch):
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_smoke._cfg, "database_path", str(db_path))
     monkeypatch.setattr(web_smoke, "_UPLOAD_FOLDER", tmp_path / "uploads")
+    # the generic next-step archive (entity 'smoke') runs in its own module
+    import app.web_next_steps as web_next_steps
+    from app.db import next_steps as db_ns
+    db_ns.init_schema(db_path)
+    monkeypatch.setattr(web_next_steps, "_get_conn",
+                        lambda: database.get_connection(db_path))
     return app.test_client()
 
 
@@ -124,7 +130,8 @@ def _ecom_split_rows() -> list[list]:
              Scenario="Fulfill Click and Collect order", Status="Not Started",
              **{"MB Invoice Validation": 1.0}),
         _row(RowID=101, RowType="Step", ParentRow=100, Step="Create order",
-             **{"Expected result": "Order created"}),
+             Owner="Alice", **{"Expected result": "Order created",
+                               "WS Executing": "GBS"}),
         _row(RowID=150, RowType="Scenario", WS="eCOM", Package="Ship from Campus South",
              Scenario="Ship standard order", Status="Completed",
              **{"MB Invoice Validation": 1.0}),
@@ -138,9 +145,11 @@ def test_ecom_page_splits_omni_and_ecom(client):
     html = client.get("/smoke/ecom").get_data(as_text=True)
     assert "Fulfill Click and Collect order" in html
     assert "Ship standard order" in html
-    omni_block, ecom_block = html.split('data-group="ecom"')
-    assert 'data-scenario="fulfill click and collect order"' in omni_block
-    assert "Ship standard order" not in omni_block  # lands in the ECOM section, not OMNI
+    # C&C is OMNI, Ship standard is ECOM — and since 2026-08-28 the ECOM
+    # section comes FIRST [USER], so the ECOM scenario renders before the
+    # OMNI one
+    assert html.find('data-scenario="ship standard order"') \
+        < html.find('data-scenario="fulfill click and collect order"')
 
 
 def test_ecom_page_expands_to_show_steps(client):
@@ -188,3 +197,53 @@ def test_overview_links_retail_header_to_retail_page(client):
     _upload(client, data=_xlsx_bytes(_retail_rows()))
     html = client.get("/smoke/").get_data(as_text=True)
     assert 'href="/smoke/retail">Retail' in html
+
+
+# ---------------------------------------------------------------------------
+# Scenario comment + next step (2026-08-28) — authored, keyed by RowID
+
+def test_comment_and_next_step_save_and_render(client):
+    _upload(client, data=_xlsx_bytes(_ecom_split_rows()))
+    resp = client.post("/smoke/scenario/150/comment",
+                       json={"comment": "flaky on FR store"})
+    assert resp.get_json()["ok"]
+    resp = client.post("/smoke/scenario/150/next-step",
+                       json={"next_step": "retest after deploy"})
+    assert resp.get_json()["ok"]
+
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert "flaky on FR store" in html          # textarea + 📝 marker
+    assert "📝" in html
+    assert "retest after deploy" in html        # input + summary preview
+
+    # survives a re-import (annotations are never replaced)
+    _upload(client, data=_xlsx_bytes(_ecom_split_rows()))
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert "flaky on FR store" in html
+
+
+def test_next_step_archive_via_generic_component(client):
+    _upload(client, data=_xlsx_bytes(_ecom_split_rows()))
+    client.post("/smoke/scenario/150/next-step",
+                json={"next_step": "ask the owner"})
+    resp = client.post("/next-steps/smoke/150/archive")
+    data = resp.get_json()
+    assert data["ok"] and data["archived"] == "ask the owner"
+    listing = client.get("/next-steps/smoke/150/list.json").get_json()
+    assert [i["next_step"] for i in listing["items"]] == ["ask the owner"]
+    # live field cleared
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert "ask the owner" not in html
+
+
+# ---------------------------------------------------------------------------
+# Step filters: WS Executing + Owner (2026-08-28)
+
+def test_step_rows_carry_filter_data_and_dropdowns_list_values(client):
+    _upload(client, data=_xlsx_bytes(_ecom_split_rows()))
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert 'data-ws="GBS"' in html and 'data-owner="Alice"' in html
+    # dropdowns exist per group with the distinct values
+    assert 'id="smoke-ws-omni"' in html and 'id="smoke-owner-omni"' in html
+    omni_bar = html.split('id="smoke-ws-omni"')[1].split("</select>")[0]
+    assert '<option value="GBS">GBS</option>' in omni_bar

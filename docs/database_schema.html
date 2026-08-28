@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (69 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (70 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -276,6 +276,7 @@
     <li class="group-label">CORE SOUTH Smoke Testing</li>
     <li><a href="#smoke_scenarios">smoke_scenarios</a></li>
     <li><a href="#smoke_steps">smoke_steps</a></li>
+    <li><a href="#smoke_annotations">smoke_annotations</a></li>
     <li><a href="#sustain_tasks">sustain_tasks</a></li>
     <li><a href="#sustain_task_details">sustain_task_details</a></li>
 
@@ -728,6 +729,25 @@
         <tr><td class="col-name">progress</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- smoke_annotations -->
+  <div class="table-card" id="smoke_annotations">
+    <div class="table-card-header">
+      <span class="tname">smoke_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Marina's own comment + next step per scenario (2026-08-28), keyed by the Excel RowID — the stable business key, so the fields survive re-imports (replace_all rewrites the two imported tables but never this one). Next step wired into the generic /next-steps archive as entity type 'smoke'.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">row_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">= smoke_scenarios.row_id (Excel RowID)</td></tr>
+        <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">textarea in the expanded scenario, saved onblur; 📝 marker in the summary</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">live next step; ↻ archives into next_step_history (entity 'smoke')</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Save:</strong> <code>POST /smoke/scenario/&lt;row_id&gt;/comment</code> · <code>POST /smoke/scenario/&lt;row_id&gt;/next-step</code> &nbsp;·&nbsp; <strong>Archive:</strong> <code>/next-steps/smoke/&lt;row_id&gt;/…</code></div>
   </div>
 </div>
 

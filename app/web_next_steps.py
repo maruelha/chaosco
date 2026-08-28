@@ -86,6 +86,12 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.get_blocker_next_step(c, int(i)),
         lambda c, i: database.set_blocker_next_step(c, int(i), None),
     ),
+    # Smoke Testing scenarios (2026-08-28) — authored next step in
+    # smoke_annotations, keyed by the Excel RowID (stable across imports)
+    "smoke": NSEntity(
+        lambda c, i: database.get_smoke_next_step(c, int(i)),
+        lambda c, i: database.set_smoke_next_step(c, int(i), None),
+    ),
 }
 
 

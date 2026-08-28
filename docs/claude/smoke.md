@@ -52,14 +52,31 @@ and an empty `Summary` sheet — both ignored).
 - `smoke_steps`: id PK, scenario_id FK→smoke_scenarios, row_id, step,
   expected_result, comment, owner_email, owner, ws_executing,
   aspen_ticket, execution_status, progress
+- `smoke_annotations` (2026-08-28, USER-AUTHORED): row_id PK (= Excel
+  RowID, the stable business key), comment, next_step, updated_at.
+  `replace_all` NEVER touches it — Marina's comment + next step survive
+  re-imports. Only-field upserts (`set_smoke_comment` /
+  `set_smoke_next_step`), merged onto scenarios in the web layer as
+  `user_comment`/`next_step` (`user_comment` because `comment` is the
+  imported Excel column).
 
 ## Pages
 
 - **Overview**: stat cards per report — ECOM / OMNI / Retail — total,
   not started, in progress, completed (scenario `Status`).
-- **eCOM page**: OMNI section + ECOM section; scenario rows expandable to
-  show their steps; text filter on the `Scenario` column.
-- **Retail page**: same list, single section.
+- **eCOM page**: ECOM section FIRST, then OMNI [USER 2026-08-28 — was
+  OMNI first]; scenario rows expandable to show their steps; filterbar
+  per section: Scenario text filter + **WS Executing** and **Owner**
+  dropdowns (distinct step values, computed in the template). The step
+  filters hide non-matching step rows AND scenarios with zero matching
+  steps.
+- **Retail page**: same list, single section, same filterbar.
+- **Per scenario (expanded)**: Marina's comment textarea (saved onblur →
+  `POST /smoke/scenario/<row_id>/comment`; 📝 marker + tooltip in the
+  summary when set) and a next-step input (`POST …/next-step`, onblur)
+  with ↻ archive / 🕘 history via the generic next-step component
+  (entity type `smoke`, registered in `web_next_steps.REGISTRY`; the
+  summary shows a blue "→ next step" preview).
 
 ## Pieces
 
@@ -74,9 +91,12 @@ and an empty `Summary` sheet — both ignored).
   Scenario filter, reused by all three groups so the identical structure
   isn't tripled). New CSS
   component `details.smoke-scenario` in style.css (per-scenario
-  accordion — native `<details>`, no custom JS needed to expand/collapse;
-  the only page JS is the live filter, `smokeFilterScenarios()`, mirrors
-  the tracker payment-method filter's `oninput` + `data-*` pattern).
+  accordion — native `<details>`, no custom JS needed to expand/collapse).
+  Page JS lives in the partial's `smoke_js()` macro (called once per page,
+  replaced the two per-page script copies 2026-08-28): combined
+  scenario+step filtering (`smokeApplyFilters`) and the onblur savers
+  (`smokeCommentSave`/`smokeNsSave`, delegated-board pattern). Both pages
+  also include `_next_step_history.html`.
 - Tests: `tests/test_smoke_storage.py`, `tests/test_smoke_importer.py`,
   `tests/test_smoke_web.py`; route smoke test (`test_routes_smoke.py`)
   auto-covers new GET routes.

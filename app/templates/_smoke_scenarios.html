@@ -1,13 +1,34 @@
-{# CORE SOUTH Smoke Testing (build plan step 5) — one scenario group
-   (OMNI / ECOM / Retail): filter-by-Scenario textbox + expandable scenario
-   list, each expanding to its steps. Shared by smoke_ecom.html (OMNI +
-   ECOM) and smoke_retail.html so the identical structure isn't tripled. #}
+{# CORE SOUTH Smoke Testing (build plan step 5; extended 2026-08-28) — one
+   scenario group (OMNI / ECOM / Retail): filterbar (Scenario text +
+   WS Executing / Owner step filters) + expandable scenario list, each
+   expanding to its steps and Marina's authored comment + next step
+   (smoke_annotations, keyed by Excel RowID — survive re-imports).
+   Shared by smoke_ecom.html and smoke_retail.html. Pages must call
+   {{ sg.smoke_js() }} once and include '_next_step_history.html'. #}
 {% import '_macros.html' as ui %}
 
 {% macro scenario_group(scenarios, group_key) %}
+{#- distinct step values for the WS Executing / Owner dropdowns -#}
+{%- set ws_values = [] -%}
+{%- set owner_values = [] -%}
+{%- for s in scenarios %}{% for st in s.steps -%}
+  {%- if st.ws_executing and st.ws_executing not in ws_values %}{% set _ = ws_values.append(st.ws_executing) %}{% endif -%}
+  {%- set own = st.owner or st.owner_email -%}
+  {%- if own and own not in owner_values %}{% set _ = owner_values.append(own) %}{% endif -%}
+{%- endfor %}{% endfor -%}
 <div class="ui-filterbar">
   <input type="text" id="smoke-filter-{{ group_key }}" placeholder="Filter by Scenario…"
-         oninput="smokeFilterScenarios('{{ group_key }}')">
+         oninput="smokeApplyFilters('{{ group_key }}')">
+  <select id="smoke-ws-{{ group_key }}" onchange="smokeApplyFilters('{{ group_key }}')"
+          title="show only steps with this WS Executing">
+    <option value="">WS Executing: all</option>
+    {% for v in ws_values|sort %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  </select>
+  <select id="smoke-owner-{{ group_key }}" onchange="smokeApplyFilters('{{ group_key }}')"
+          title="show only steps with this Owner">
+    <option value="">Owner: all</option>
+    {% for v in owner_values|sort %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  </select>
   <span id="smoke-info-{{ group_key }}" style="color:#888; font-size:0.82rem"></span>
 </div>
 {% if scenarios %}
@@ -21,6 +42,9 @@
     <strong>{{ s.scenario or '(no name)' }}</strong>
     <span style="color:#666; font-size:0.78rem">{{ s.package or '—' }}</span>
     <span class="chip {{ status_chip }}">{{ status }}</span>
+    {% if s.user_comment %}<span title="{{ s.user_comment }}">📝</span>{% endif %}
+    {% if s.next_step %}<span style="color:#2b6cb0; font-size:0.78rem"
+        title="next step">→ {{ s.next_step }}</span>{% endif %}
     <span style="color:#999; font-size:0.78rem; margin-left:0.4rem">
       RowID {{ s.row_id }} · {{ s.steps|length }} step{{ 's' if s.steps|length != 1 else '' }}
     </span>
@@ -37,10 +61,30 @@
     {% if s.comment %}
     <p style="color:#666; font-size:0.82rem; margin:0 0 0.6rem"><em>{{ s.comment }}</em></p>
     {% endif %}
+    {# authored fields — saved onblur, survive re-imports #}
+    <div style="display:flex; gap:0.6rem; align-items:flex-start; flex-wrap:wrap; margin:0 0 0.7rem">
+      <textarea class="smoke-comment" data-row="{{ s.row_id }}" rows="2"
+                placeholder="my comment on this scenario…"
+                style="flex:1 1 18rem; font-size:0.85rem"
+                onblur="smokeCommentSave(this)">{{ s.user_comment or '' }}</textarea>
+      <span style="display:flex; gap:0.3rem; align-items:center; flex:1 1 18rem">
+        <input type="text" class="rt-comment smoke-ns" data-row="{{ s.row_id }}"
+               value="{{ s.next_step or '' }}" placeholder="next step…"
+               style="flex:1" onblur="smokeNsSave(this)">
+        <button type="button" class="btn btn-sm js-ns-archive"
+                title="archive the current next step and start fresh"
+                data-entity-type="smoke" data-entity-id="{{ s.row_id }}"
+                data-ns-target='input.smoke-ns[data-row="{{ s.row_id }}"]'>↻</button>
+        <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+                data-entity-type="smoke" data-entity-id="{{ s.row_id }}"
+                data-ns-label="{{ s.scenario or ('RowID ' ~ s.row_id) }}">🕘</button>
+      </span>
+    </div>
     {% call ui.table(['Step', 'Expected result', 'Owner', 'WS Executing',
                       'ASPEN Ticket', 'Execution status', 'Progress', 'Comment']) %}
       {% for st in s.steps %}
-      <tr>
+      <tr class="smoke-step" data-ws="{{ st.ws_executing or '' }}"
+          data-owner="{{ st.owner or st.owner_email or '' }}">
         <td>{{ st.step or '—' }}</td>
         <td>{{ st.expected_result or '—' }}</td>
         <td>{{ st.owner or st.owner_email or '—' }}</td>
@@ -60,4 +104,47 @@
 {% else %}
 <p style="color:#888; margin:0.6rem 1rem">No scenarios.</p>
 {% endif %}
+{% endmacro %}
+
+{# shared page JS — call ONCE per page, after the scenario groups #}
+{% macro smoke_js() %}
+<script>
+function smokeApplyFilters(groupKey) {
+  const q = (document.getElementById('smoke-filter-' + groupKey).value || '').trim().toLowerCase();
+  const ws = document.getElementById('smoke-ws-' + groupKey).value;
+  const owner = document.getElementById('smoke-owner-' + groupKey).value;
+  const stepFilterOn = !!(ws || owner);
+  let shown = 0, hidden = 0;
+  document.querySelectorAll('details.smoke-scenario[data-group="' + groupKey + '"]').forEach(d => {
+    let matches = 0;
+    d.querySelectorAll('tr.smoke-step').forEach(r => {
+      const rowOk = (!ws || r.dataset.ws === ws) && (!owner || r.dataset.owner === owner);
+      r.style.display = rowOk ? '' : 'none';
+      if (rowOk) matches++;
+    });
+    // with a step filter active, scenarios without any matching step are hidden
+    const ok = (!q || d.dataset.scenario.includes(q)) && (!stepFilterOn || matches > 0);
+    d.style.display = ok ? '' : 'none';
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('smoke-info-' + groupKey).textContent =
+    (q || stepFilterOn) ? (shown + ' shown, ' + hidden + ' hidden') : '';
+}
+function smokeFilterScenarios(groupKey) { smokeApplyFilters(groupKey); }
+
+function smokeSave(el, url, payload) {
+  fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload) })
+    .then(r => { if (!r.ok) throw new Error();
+                 el.style.borderColor = '#1a7f37';
+                 setTimeout(() => { el.style.borderColor = ''; }, 800); })
+    .catch(() => { el.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+function smokeCommentSave(el) {
+  smokeSave(el, '/smoke/scenario/' + el.dataset.row + '/comment', { comment: el.value });
+}
+function smokeNsSave(el) {
+  smokeSave(el, '/smoke/scenario/' + el.dataset.row + '/next-step', { next_step: el.value });
+}
+</script>
 {% endmacro %}

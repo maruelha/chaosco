@@ -14,17 +14,6 @@
 {{ sg.scenario_group(retail, 'retail') }}
 {% endcall %}
 
-<script>
-function smokeFilterScenarios(groupKey) {
-  const q = document.getElementById('smoke-filter-' + groupKey).value.trim().toLowerCase();
-  let shown = 0, hidden = 0;
-  document.querySelectorAll('details.smoke-scenario[data-group="' + groupKey + '"]').forEach(d => {
-    const ok = !q || d.dataset.scenario.includes(q);
-    d.style.display = ok ? '' : 'none';
-    ok ? shown++ : hidden++;
-  });
-  document.getElementById('smoke-info-' + groupKey).textContent =
-    q ? (shown + ' shown, ' + hidden + ' hidden') : '';
-}
-</script>
+{{ sg.smoke_js() }}
+{% include '_next_step_history.html' %}
 {% endblock %}

@@ -5,31 +5,21 @@
 
 {% block content %}
 {% call ui.page_header('CORE SOUTH Smoke Testing — eCOM',
-                       'eCOM scenarios split into OMNI (Click & Collect / Ship '
-                       ~ 'From Store / Return in Store) and ECOM (everything '
-                       ~ 'else). Expand a scenario to see its steps.') %}
+                       'eCOM scenarios split into ECOM and OMNI (Click & Collect '
+                       ~ '/ Ship From Store / Return in Store). Expand a '
+                       ~ 'scenario to see its steps.') %}
 <a href="{{ url_for('smoke.smoke_home') }}" class="btn">← Overview</a>
+{% endcall %}
+
+{# ECOM before OMNI [USER 2026-08-28] #}
+{% call ui.section('ECOM', 'blue', badge=ecom|length, open=True) %}
+{{ sg.scenario_group(ecom, 'ecom') }}
 {% endcall %}
 
 {% call ui.section('OMNI', 'teal', badge=omni|length, open=True) %}
 {{ sg.scenario_group(omni, 'omni') }}
 {% endcall %}
 
-{% call ui.section('ECOM', 'blue', badge=ecom|length, open=True) %}
-{{ sg.scenario_group(ecom, 'ecom') }}
-{% endcall %}
-
-<script>
-function smokeFilterScenarios(groupKey) {
-  const q = document.getElementById('smoke-filter-' + groupKey).value.trim().toLowerCase();
-  let shown = 0, hidden = 0;
-  document.querySelectorAll('details.smoke-scenario[data-group="' + groupKey + '"]').forEach(d => {
-    const ok = !q || d.dataset.scenario.includes(q);
-    d.style.display = ok ? '' : 'none';
-    ok ? shown++ : hidden++;
-  });
-  document.getElementById('smoke-info-' + groupKey).textContent =
-    q ? (shown + ' shown, ' + hidden + ' hidden') : '';
-}
-</script>
+{{ sg.smoke_js() }}
+{% include '_next_step_history.html' %}
 {% endblock %}

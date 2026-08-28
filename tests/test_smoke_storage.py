@@ -138,3 +138,49 @@ def test_scenario_count_tolerates_missing_table(tmp_path):
         assert db_smoke.scenario_count(conn) == 0
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Scenario annotations (comment + next step, 2026-08-28) - user-authored,
+# keyed by Excel RowID, must survive a re-import (replace_all).
+
+def test_annotations_upsert_only_their_field(tmp_path):
+    conn = _setup(tmp_path)
+    try:
+        db_smoke.set_smoke_comment(conn, 100, "flaky on FR store")
+        db_smoke.set_smoke_next_step(conn, 100, "retest after fix")
+        db_smoke.set_smoke_next_step(conn, 200, "ask owner")
+        assert db_smoke.get_smoke_comment(conn, 100) == "flaky on FR store"
+        assert db_smoke.get_smoke_next_step(conn, 100) == "retest after fix"
+        # setting one field never clobbers the other
+        db_smoke.set_smoke_comment(conn, 100, "updated comment")
+        assert db_smoke.get_smoke_next_step(conn, 100) == "retest after fix"
+        anns = db_smoke.get_smoke_annotations(conn)
+        assert anns[100]["comment"] == "updated comment"
+        assert anns[200] == {"comment": None, "next_step": "ask owner"}
+        # blank clears
+        db_smoke.set_smoke_comment(conn, 100, "")
+        assert db_smoke.get_smoke_comment(conn, 100) is None
+    finally:
+        conn.close()
+
+
+def test_annotations_survive_replace_all(tmp_path):
+    conn = _setup(tmp_path)
+    try:
+        db_smoke.replace_all(conn, [_scenario(100, "eCOM")])
+        db_smoke.set_smoke_comment(conn, 100, "keep me")
+        db_smoke.replace_all(conn, [_scenario(100, "eCOM")])  # re-import
+        assert db_smoke.get_smoke_comment(conn, 100) == "keep me"
+    finally:
+        conn.close()
+
+
+def test_annotations_tolerate_missing_table(tmp_path):
+    db_path = tmp_path / "bare.db"
+    database.init_db(db_path).close()
+    conn = database.get_connection(db_path)
+    try:
+        assert db_smoke.get_smoke_annotations(conn) == {}
+    finally:
+        conn.close()
