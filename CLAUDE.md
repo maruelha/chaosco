@@ -16,6 +16,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
 | CORE SOUTH Smoke Testing (workbook import, eCOM/Retail reports) | `docs/claude/smoke.md` |
 | Core South Sustainphase Monitoring (GBS Ops checklist, day reports, mgmt summary) | `docs/claude/sustain.md` |
+| Sustainphase Issues (Defects tab, SUS-nnn placeholder keys, call-outs) | `docs/claude/sustain-issues.md` |
 | Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
@@ -102,6 +103,13 @@ app/
                     storage db/sustain.py — recomputes ALL statuses,
                     never trusts the workbook's cached formulas;
                     importer sustain_importer.py)
+  web_sustain_issues.py  Sustainphase Issues Blueprint (/sustain-issues/
+                    — Defects tab of DTC_Sustainphase_Tracking….xlsx,
+                    upserted by ASPEN Defect ID with SUS-nnn placeholder
+                    keys until the id arrives (then searchable as former
+                    id); expandable rows, filters, authored call-outs +
+                    next steps; storage db/sustain_issues.py, importer
+                    sustain_issues_importer.py)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
                     many-to-many topic↔defect/retail/ecom/spillover;
@@ -116,6 +124,7 @@ app/
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
                     retrofits urgent delegated blockers smoke sustain
+                    sustain_issues
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py
@@ -127,6 +136,9 @@ app/
   sustain_importer.py  GBS Operations checklist → sustain_tasks/
                     sustain_task_details (tab pattern (Retail|eCom)_<date>,
                     parent = Task ID row, detail = outline level ≥ 1)
+  sustain_issues_importer.py  Sustainphase tracking Defects tab →
+                    sustain_issues (columns mapped by header name,
+                    Exists-in-production ignored, upsert w/ placeholders)
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export

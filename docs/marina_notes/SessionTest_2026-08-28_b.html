@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-28 (afternoon)</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-28 (afternoon)</h1>
+<p class="hint">The afternoon batch: <strong>Smoke Testing upgrades</strong> (comments,
+next steps, KT tracking, ECOM-first order, step filters), the new
+<strong>Sustainphase Issues</strong> mini app, and the <strong>search extensions</strong>.
+Links assume <a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
+new tables <code>smoke_annotations</code> (with kt columns),
+<code>sustain_issues</code> / <code>sustain_issue_annotations</code>. You need
+<code>DTC_Sustainphase_Tracking (1).xlsx</code> in Downloads (Defects tab is still an
+empty template — for a real test, type 1–2 defect rows into a COPY, one WITHOUT a
+Defect ID).</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Smoke — comments, next steps, KT</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b1a">
+      <span>Open <span class="where">/smoke/ecom</span> — check the section order.
+      <span class="expect">ECOM first, OMNI second (was the other way around).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b1b">
+      <span>Expand a scenario → type into "my comment on this scenario…" → click elsewhere.
+      <span class="expect">Border flashes green; reload → comment still there + 📝 marker
+      (hover shows the text) in the collapsed summary. Re-upload the smoke workbook →
+      comment SURVIVES.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b1c">
+      <span>Type a next step → blur; then try ↻ and 🕘.
+      <span class="expect">Blue "→ …" preview in the summary after reload; ↻ empties the
+      field (archived), 🕘 shows the history dialog with the archived entry.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b1d">
+      <span>Tick <strong>KT</strong> + pick a date on a scenario.
+      <span class="expect">Saves on change; after reload the summary shows a green
+      "KT ✓ &lt;date&gt;" chip — your which-smoke-tests-had-KT overview.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b1e">
+      <span>Use the new <strong>WS Executing</strong> / <strong>Owner</strong> dropdowns in a
+      section's filterbar.
+      <span class="expect">Non-matching step rows disappear inside scenarios; scenarios with
+      zero matching steps hide entirely; "N shown, M hidden" counter. Works on
+      <span class="where">/smoke/retail</span> too.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · Sustainphase Issues</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b2a">
+      <span>Dashboard → new card <strong>Sustainphase Issues</strong> (after Sustainphase
+      Monitoring) → Open → upload the tracking workbook.
+      <span class="where">→ /sustain-issues/</span>
+      <span class="expect">Empty template: "0 rows" green banner. With your test rows: each
+      appears as an expandable row; the row WITHOUT a Defect ID gets key
+      <strong>SUS-001</strong>.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b2b">
+      <span>In your copy, give the SUS row its ASPEN id (same Short description!) → re-upload.
+      <span class="expect">Banner "…1 got their ASPEN id"; the row now shows the real id,
+      hovering it shows "formerly SUS-001"; call-outs/next step written before are still
+      attached.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b2c">
+      <span>Try the filters (Channel / ASPEN status / Country / Priority) + expand a row.
+      <span class="expect">Open vs Closed sections split by Date Closed; "blocks execution"
+      = yes shows a red chip; body has description, meta line, call-outs textarea (📣 in
+      summary when set) + next step with ↻/🕘.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · Search extensions (🔍 widget)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b3a">
+      <span>Search an issue's order number, its key, or "SUS-001" (after the promotion test).
+      <span class="expect">Group "Sustainphase Issues" — the promoted issue is found by its
+      OLD placeholder too.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b3b">
+      <span>Search part of a smoke scenario name (e.g. "click and collect").
+      <span class="expect">Group "Smoke scenarios", hit links to the eCOM or Retail page.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b3c">
+      <span>Search a delegated ticket key or summary word.
+      <span class="expect">New group "Delegated Testing" linking straight to the DELEGATED
+      ticket detail (the old "Jira tickets" group still exists separately).</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-slate">
+  <div class="box-head">4 · To sign off (also in MarinaCheckSoon)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b4a">
+      <span><strong>SUS- prefix</strong> instead of your "AS-001" suggestion — chosen so
+      placeholders can't be mistaken for real ASPEN ids. OK?</span></label>
+    <label class="task"><input type="checkbox" data-k="b4b">
+      <span><strong>Placeholder identity = Short description</strong> — if the team rewords
+      it before the ASPEN id arrives, it counts as a new issue. Acceptable?</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0828b-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

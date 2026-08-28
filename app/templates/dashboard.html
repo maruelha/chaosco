@@ -89,6 +89,12 @@
   </div>
 
   <div class="action-card">
+    <h2>Sustainphase Issues {% if sustain_issue_count %}<span class="notes-count-badge">{{ sustain_issue_count }}</span>{% endif %}</h2>
+    <p>Defects from the DTC_Sustainphase_Tracking workbook (Defects tab) — upserted by ASPEN Defect ID with SUS-nnn placeholders until the id arrives; filters, open/closed split, call-outs + next steps.</p>
+    <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn btn-primary">Open</a>
+  </div>
+
+  <div class="action-card">
     <h2>Manual Test Cases Retail</h2>
     <p>Manual test cases from the "Manual Test Cases | Retail" tab — read-only list plus a simple status report (same buckets as Retail, defects from the Defects tab).</p>
     <a href="{{ url_for('manual_tests.manual_list', stream='retail') }}" class="btn">View List</a>

@@ -114,8 +114,15 @@ them for now. Steps one at a time, test+commit after each:
    the gatekeeper view). All new SQL uses portable
    `LOWER(col) LIKE LOWER(?)`; every block tolerates its tables missing.
    `tests/test_search_new_sources.py` (3); suite 635.
-5. **Dashboard card + docs sweep** (card after Smoke; sustain-issues.md,
-   screens, schema, architecture, dashboard_cards, CLAUDE.md).
+5. ~~Dashboard card + docs sweep~~ ✅ DONE 2026-08-28: card after
+   Sustainphase Monitoring (issue-count badge). Docs:
+   `docs/claude/sustain-issues.md` (new deep-dive), `screens.html`,
+   `database_schema.html` (2 table-cards, count 70→72),
+   `architecture.html`, `dashboard_cards.html`, CLAUDE.md; judgment
+   calls (SUS- prefix, description-as-placeholder-identity) flagged in
+   MarinaCheckSoon; click-through checklist
+   `docs/marina_notes/SessionTest_2026-08-28_b.html` (also covers the
+   Smoke upgrades + search extensions).
 
 **Parked [USER 2026-08-28]:** SPOT_CHECKS tab → its own similar
 upload-and-view mini app, ANOTHER session. SMOKETEST_KT tab: ignored

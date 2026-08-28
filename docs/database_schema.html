@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (70 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (72 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -279,6 +279,8 @@
     <li><a href="#smoke_annotations">smoke_annotations</a></li>
     <li><a href="#sustain_tasks">sustain_tasks</a></li>
     <li><a href="#sustain_task_details">sustain_task_details</a></li>
+    <li><a href="#sustain_issues">sustain_issues</a></li>
+    <li><a href="#sustain_issue_annotations">sustain_issue_annotations</a></li>
 
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
@@ -807,6 +809,54 @@
         <tr><td class="col-name">provider</td><td class="col-type">TEXT</td><td></td><td class="note-text">provider / account / store of this check</td></tr>
         <tr><td class="col-name">result_fr / result_it / result_pt / result_es</td><td class="col-type">TEXT</td><td></td><td class="note-text">detail_result() picks the row's own-country column</td></tr>
         <tr><td class="col-name">overall</td><td class="col-type">TEXT</td><td></td><td class="note-text">blank in the workbook for detail rows — kept for fidelity</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ======================================================= -->
+<!-- GROUP: SUSTAINPHASE ISSUES (added 2026-08-28) -->
+<!-- ======================================================= -->
+<div class="group">
+  <div class="group-heading">Sustainphase Issues — imported (upserted), + authored annotations</div>
+
+  <!-- sustain_issues -->
+  <div class="table-card" id="sustain_issues">
+    <div class="table-card-header">
+      <span class="tname">sustain_issues</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Defects tab of DTC_Sustainphase_Tracking….xlsx, UPSERTED per upload (not replaced): key = ASPEN Defect ID, or an auto-assigned SUS-nnn placeholder until the id arrives (matched across uploads by normalized short description; on promotion the placeholder moves to former_placeholder — invisible but searchable, numbers never reused). Issues absent from an upload are kept (last_seen). "Exists in production" is ignored at import [USER 2026-08-28].</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">issue_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> UNIQUE</td><td class="note-text">defect_id when known, else SUS-nnn placeholder</td></tr>
+        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">ASPEN Defect ID (NULL until it exists)</td></tr>
+        <tr><td class="col-name">former_placeholder</td><td class="col-type">TEXT</td><td></td><td class="note-text">old SUS-nnn key after promotion — searchable, shown only as tooltip</td></tr>
+        <tr><td class="col-name">channel · sales_dtc · aspen_status · short_description · description · comment · raised_by · order_number · date_reported · date_closed · priority · assigned_to · tech_team · country · scenario · affected_testcases · retest_dependency · blocks_execution · defect_reason</td><td class="col-type">TEXT</td><td></td><td class="note-text">imported Defects-tab columns (dates as ISO; blocks_execution drives the red chip; order_number feeds the global search)</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">list order</td></tr>
+        <tr><td class="col-name">first_seen / last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">upsert bookkeeping; stale kept issues show an old last_seen</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>List/upload:</strong> <code>GET /sustain-issues/</code> · <code>POST /sustain-issues/upload</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain_issues.py</code> &nbsp;·&nbsp; <strong>Importer:</strong> <code>app/sustain_issues_importer.py</code> &nbsp;·&nbsp; <strong>Search:</strong> order number + issue_key + former_placeholder</div>
+  </div>
+
+  <!-- sustain_issue_annotations -->
+  <div class="table-card" id="sustain_issue_annotations">
+    <div class="table-card-header">
+      <span class="tname">sustain_issue_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Marina's call-outs/comment + next step per issue — imports never touch it except to follow a key promotion (SUS-nnn → Defect ID). Next step wired into the generic /next-steps archive as entity type 'sustain_issue'.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">issue_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">= sustain_issues.issue_key (migrated on promotion)</td></tr>
+        <tr><td class="col-name">callouts</td><td class="col-type">TEXT</td><td></td><td class="note-text">call-outs textarea in the expanded row; 📣 marker in the summary</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">live next step; ↻ archives into next_step_history (entity 'sustain_issue')</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
   </div>

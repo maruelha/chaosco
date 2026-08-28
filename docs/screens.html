@@ -212,6 +212,8 @@
     <li><a href="#sustain-home">Sustainphase — Card &amp; Upload</a></li>
     <li><a href="#sustain-day">Sustainphase — Day Report</a></li>
     <li><a href="#sustain-summary">Sustainphase — Management Summary</a></li>
+    <li class="group-label">Sustainphase Issues</li>
+    <li><a href="#sustain-issues">Sustainphase Issues — List &amp; Upload</a></li>
 
     <li class="group-label">Retail</li>
     <li><a href="#retail-list">Retail — List</a></li>
@@ -1129,6 +1131,35 @@
         <span class="feat-value">Day-over-day table across all imported tabs — due/completed/pending/attention + completion %, rows link to the day reports (<code>db_sustain.overview</code>).</span>
         <span class="feat-label">Repeat offenders</span>
         <span class="feat-value">Same stream+task+country+provider in attention on 2+ days — day chips + deduped verbatim notes (<code>db_sustain.repeat_offenders</code>); a one-day issue is noise, a multi-day one is a topic.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SUSTAINPHASE ISSUES -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-heading">Sustainphase Issues</div>
+
+  <div class="screen-card" id="sustain-issues">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Issues — List &amp; Upload</span>
+      <span class="screen-url">GET /sustain-issues/ · POST /sustain-issues/upload · POST /sustain-issues/issue/&lt;key&gt;/callouts|next-step</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-28. Defects from the <strong>Defects tab</strong> of <code>DTC_Sustainphase_Tracking….xlsx</code> (file picker, name must contain <code>DTC_Sustainphase_Tracking</code>; columns mapped by header name, "Exists in production" ignored [USER]). <strong>Upserted</strong> by ASPEN Defect ID; issues not yet in ASPEN get a <code>SUS-nnn</code> placeholder key (matched across uploads by short description) — when the real id arrives the issue is promoted and the placeholder stays searchable as "formerly SUS-nnn" tooltip. Expandable rows (kpd pattern), split into Open / Closed (Date Closed) sections.</p>
+      <div class="features">
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">Channel · ASPEN status · Country · Priority dropdowns (client-side, distinct values); red <strong>blocks execution</strong> chip on issues with "Does it block execution" = yes.</span>
+        <span class="feat-label">Authored fields</span>
+        <span class="feat-value">Call-outs/comment textarea (📣 marker in the summary) + next step with ↻ archive / 🕘 history (entity <code>sustain_issue</code>) — saved onblur, survive uploads, follow a key promotion.</span>
+        <span class="feat-label">Search</span>
+        <span class="feat-value">Global 🔍 finds issues by order number, key and former placeholder; same change added "Smoke scenarios" and "Delegated Testing" search groups.</span>
+        <span class="feat-label">Dashboard card</span>
+        <span class="feat-value">"Sustainphase Issues" with an issue-count badge (<code>db_sustain_issues.issue_count</code>), placed after Sustainphase Monitoring.</span>
       </div>
     </div>
   </div>
