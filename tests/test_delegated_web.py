@@ -253,9 +253,13 @@ def test_blocked_reason_and_next_step_save(client):
             conn, "S4ECOM-2001") == "chase GBS on Friday"
     finally:
         conn.close()
+    # why-blocked left the board 2026-08-28 (detail page only); the next
+    # step is still an inline board field
     html = client.get("/delegated/").get_data(as_text=True)
-    assert "waiting for settlement file" in html
+    assert "waiting for settlement file" not in html
     assert "chase GBS on Friday" in html
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "waiting for settlement file" in detail
 
 
 def test_detail_page_has_tabs_and_working_fields(client):
@@ -831,3 +835,64 @@ def test_numbers_callout_archive(client):
     assert "goal raised to 25" in html
     download = client.get("/delegated/numbers/download").get_data(as_text=True)
     assert "goal raised to 25" not in download
+
+
+# ---------------------------------------------------------------------------
+# Board slimming + MB robustness (2026-08-28, follow-up batch)
+
+def test_board_is_slim_but_filter_and_detail_keep_the_data(client):
+    _upload(client)
+    html = client.get("/delegated/").get_data(as_text=True)
+    # gone from the board: label chips, Orders column, Why blocked column,
+    # chat + message buttons
+    assert 'class="chip chip--none"' not in html
+    assert ">Orders</th>" not in html and ">Why blocked</th>" not in html
+    assert "js-open-msg" not in html
+    # still there: the Label filter (fed by data-labels), the Orders popup
+    # button, next step, Details
+    assert 'id="dlg-label-filter"' in html
+    assert 'data-labels="fr_scope settlement"' in html
+    assert "js-open-orders" in html
+    # detail view still carries labels + orders + chat/message buttons
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "fr_scope" in detail
+    assert "js-open-msg" in detail
+
+
+def test_gbs_accepts_ready_for_validation():
+    from app.delegated_buckets import mb_status_state
+    assert mb_status_state("gbs", {"status": "Ready for Validation"}) == "ok"
+
+
+def test_mb_join_token_fallback(client):
+    """The workbook Jira-ID cell may carry more than the bare key -> the
+    exact match misses; the token scan still finds it."""
+    _upload(client)
+    xlsx = _tracking_xlsx()
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(xlsx))
+    ws = wb["ECOM"]
+    ws.cell(2, 8, "S4ECOM-2001 / S4ECOM-9999 (retest)")   # Jira ID column H
+    buf = io.BytesIO()
+    wb.save(buf)
+    resp = _upload_tracking(client, data=buf.getvalue())
+    assert "MB+rows+match+1" in resp.headers["Location"].replace("%20", "+")
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "Not Ready" in html   # matched despite the messy cell
+
+
+def test_numbers_blocker_overview_shows_next_step(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        blocker = next(b for b in db_blockers.list_blockers(conn)
+                       if b["jira_key"] == "S4DEF-3001")
+        db_blockers.set_blocker_next_step(conn, blocker["blocker_id"],
+                                          "escalate to PDM lead")
+    finally:
+        conn.close()
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "Next step" in html and "escalate to PDM lead" in html
+    # blockers list lost the Notes column
+    blockers_html = client.get("/blockers/").get_data(as_text=True)
+    assert ">Notes</th>" not in blockers_html

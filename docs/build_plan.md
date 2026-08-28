@@ -554,7 +554,15 @@ one-at-a-time, Marina confirms each:
     columns on the Blockers list + Mgmt Summary blocker overview and as
     "· team" suffix on board/report chips. Call-out 🗄 archive extended
     to the Management Summary ("especially there"). Web +2 tests (42);
-    suite 648. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+    suite 648.
+19. ~~Board slimming + MB follow-ups~~ ✅ DONE 2026-08-28 [USER: "content
+    is cut off"]: labels/Orders column/Why blocked/💬✉️ moved to the
+    detail page (Label filter + Orders popup button stay); GBS bucket
+    also accepts MB "Ready for Validation"; MB join token-scan fallback
+    for messy Jira-ID cells + "matches X of Y board tickets" diagnostic
+    in the upload result; Blockers list lost the Notes column; Mgmt
+    Summary blocker overview gained Next step. Web +4/−adjusted tests
+    (46); suite 652. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 

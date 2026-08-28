@@ -99,8 +99,6 @@ def delegated_list():
         annotations = db_delegated.get_delegated_annotations(conn)
         note_counts = {i["jira_key"]: len(database.list_notes(
             conn, "delegated", i["jira_key"])) for i in issues}
-        from app.db import teams_chats as db_tc
-        chats_by_entity = db_tc.chats_by_entity(conn, "jira")
         # shared order-details component at ('jira', key) — same rows as the
         # gatekeeper/ECOM boards; green ✓ when any row has S4 docs
         docs_s4_jira = database.get_docs_s4_entity_ids(conn, "jira")
@@ -132,7 +130,6 @@ def delegated_list():
                           key=str.lower),
         jira_comments=comments_map,
         note_counts=note_counts,
-        chats_by_entity=chats_by_entity,
         docs_s4_jira=docs_s4_jira,
         hidden_non_story=hidden_non_story,
         jira_ok=request.args.get("jira_ok"),
@@ -257,11 +254,17 @@ def delegated_upload_tracking():
     try:
         counts = db_ecom.upsert_ecom_rows(
             conn, rows, date.today().strftime("%Y-%m-%d"))
+        # diagnostic (2026-08-28): say immediately how many board tickets
+        # now have an MB row, so a key mismatch is visible at upload time
+        issues, _ = _load_issues(conn)
+        keys = [i["jira_key"] for i in issues]
+        matched = len(db_ecom.ecom_rows_for_jira_keys(conn, keys))
     finally:
         conn.close()
     msg = (f"{f.filename} (ECOM tab): {counts['inserted']} new ·"
            f" {counts['updated']} updated ·"
-           f" {counts['skipped_missing_jira_id']} without Jira ID skipped")
+           f" {counts['skipped_missing_jira_id']} without Jira ID skipped ·"
+           f" MB rows match {matched} of {len(keys)} board tickets")
     return redirect(url_for("delegated.delegated_list", jira_ok="1",
                             jira_msg=msg))
 

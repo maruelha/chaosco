@@ -38,8 +38,9 @@
       {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
     {% elif b.closed_at %}closed manually{% else %}—{% endif %}
   </td>
+  {# Notes column removed [USER 2026-08-28]; note count stays on the
+     Details button of the detail page #}
   <td>{{ blocked_counts.get(b.blocker_id, 0) or '—' }}</td>
-  <td>{{ note_counts.get(b.blocker_id, 0) or '—' }}</td>
   <td>
     <input type="text" class="rt-comment blk-ns" data-id="{{ b.blocker_id }}"
            value="{{ b.next_step or '' }}" placeholder="next step…" onblur="blkNsSave(this)">
@@ -69,7 +70,7 @@
 
 {% block content %}
 {% set section_color = {'defect': 'blue', 'task': 'teal', 'clarification': 'purple'} %}
-{% set columns = ['Name', 'ID', 'Team', 'Impact — what is blocked', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
+{% set columns = ['Name', 'ID', 'Team', 'Impact — what is blocked', 'Jira Status', 'Blocks', 'Next step', ''] %}
 
 {% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block. Closed ones collapse at the bottom.') %}
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>

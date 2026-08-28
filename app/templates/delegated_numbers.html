@@ -261,7 +261,8 @@
         <th>Name</th>
         <th style="width:8rem">Jira Key</th>
         <th style="width:8rem" title="responsible team">Team</th>
-        <th style="width:30%" title="what this blocker blocks — at-a-glance for management">Impact — what is blocked</th>
+        <th style="width:26%" title="what this blocker blocks — at-a-glance for management">Impact — what is blocked</th>
+        <th style="width:18%" title="the blocker's own next step">Next step</th>
         <th style="width:6rem; text-align:right">Blocks</th>
       </tr>
     </thead>
@@ -283,6 +284,7 @@
                    onblur="blkImpactSave(this)">
           {%- endif -%}
         </td>
+        <td style="white-space:pre-wrap; font-size:0.82rem">{{ b.next_step or "—" }}</td>
         <td class="num">{{ blocked_ticket_counts.get(b.blocker_id, 0) }}</td>
       </tr>
       {% endfor %}

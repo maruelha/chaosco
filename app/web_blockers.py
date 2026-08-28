@@ -41,8 +41,6 @@ def blockers_list():
     conn = _get_conn()
     try:
         rows = db_blockers.list_blockers(conn)
-        note_counts = {r["blocker_id"]: len(database.list_notes(
-            conn, "blocker", str(r["blocker_id"]))) for r in rows}
         blocked_counts = db_blockers.blocked_ticket_counts(conn)
         jira_status = _jira_status_map(conn, rows)
         team_options = db_blockers.team_options(conn)
@@ -60,7 +58,7 @@ def blockers_list():
     return render_template(
         "blockers.html", sections=sections, total=len(open_rows),
         closed_rows=closed_rows,
-        note_counts=note_counts, jira_status=jira_status,
+        jira_status=jira_status,
         blocked_counts=blocked_counts,
         type_sections=db_blockers.TYPE_SECTIONS,
         team_options=team_options,

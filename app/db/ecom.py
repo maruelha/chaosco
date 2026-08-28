@@ -180,9 +180,13 @@ def upsert_ecom_rows(conn: sqlite3.Connection, rows: list[dict], today: str) -> 
 def ecom_rows_for_jira_keys(conn: sqlite3.Connection,
                             jira_keys: list[str]) -> dict[str, dict]:
     """{jira_key: ecom row} for a batch of Jira keys — the Delegated
-    board/detail MB join (2026-08-28 [USER]). Matched via the normalized
-    match_key (1:1 — match_key is UNIQUE). Tolerant of the table not
-    existing yet (partial-init test fixtures)."""
+    board/detail MB join (2026-08-28 [USER]). First an exact match on
+    the normalized match_key (1:1 — match_key is UNIQUE); keys still
+    unmatched fall back to a TOKEN scan: the workbook's Jira-ID cell
+    sometimes carries more than the bare key (a second id, a slash, a
+    note), which makes the whole-cell key miss — added 2026-08-28 after
+    [USER: "the mb status did not update for all the tickets even though
+    they ARE in the excel"]. Tolerant of the table not existing yet."""
     if not jira_keys:
         return {}
     wanted = {_ecom_match_key(k): k for k in jira_keys}
@@ -198,6 +202,18 @@ def ecom_rows_for_jira_keys(conn: sqlite3.Connection,
     for r in cur.fetchall():
         rec = dict(zip(cols, r))
         out[wanted[rec["match_key"]]] = rec
+    missing = {mk: orig for mk, orig in wanted.items() if orig not in out}
+    if missing:
+        token_re = re.compile(r"[A-Za-z][A-Za-z0-9]*-\d+")
+        for row in conn.execute(
+                "SELECT * FROM ecom WHERE jira_id IS NOT NULL").fetchall():
+            rec = dict(zip(cols, row))
+            for token in token_re.findall(rec.get("jira_id") or ""):
+                mk = _ecom_match_key(token)
+                if mk in missing:
+                    out.setdefault(missing.pop(mk), rec)
+            if not missing:
+                break
     return out
 
 

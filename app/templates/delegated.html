@@ -81,9 +81,9 @@
   </summary>
   {% if loop.first %}
   <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
-    <strong>Why blocked</strong> and <strong>Next step</strong> are yours
-    (saved on blur, keyed by the jira ticket); ↻ archives the next step,
-    🕘 shows the history.
+    <strong>Next step</strong> is yours (saved on blur, keyed by the jira
+    ticket); ↻ archives it, 🕘 shows the history. Orders, why-blocked,
+    labels, 💬 chats and ✉️ messages live on each ticket's Details page.
   </p>
   {% endif %}
   {% if section_items %}
@@ -98,9 +98,7 @@
         <th style="width:8.5rem" title="Status from the ECOM tab of the UAT test-tracking workbook (⤒ MB tracking upload), matched by Jira ID — red when it doesn't fit this bucket's expected MB status">MB Status</th>
         {% endif %}
         <th style="width:9rem">Assignee</th>
-        <th style="width:11rem" title="from the latest comment that carries one">Orders</th>
         {% if is_blocked_section %}
-        <th style="width:13rem">Why blocked</th>
         <th style="width:11rem">Blockers</th>
         <th style="width:5.5rem" title="whether this defect counts toward the weekly goal">Goal</th>
         {% endif %}
@@ -117,10 +115,10 @@
           {% else %}{{ i.jira_key }}{% endif %}
         </td>
         <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
-        <td>
-          <a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a>
-          {% if i.labels %}<span style="white-space:nowrap">{% for l in i.labels %}<span class="chip chip--none" style="font-size:0.68rem; padding:1px 6px">{{ l }}</span>{% endfor %}</span>{% endif %}
-        </td>
+        {# labels stay OFF the board [USER 2026-08-28: "do not need to be
+           seen on this page - just in detail view"] — data-labels above
+           still feeds the Label filter #}
+        <td><a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a></td>
         <td>{{ i.jira_status or "—" }}</td>
         {% if has_mb %}
         <td style="font-size:0.8rem">
@@ -135,15 +133,9 @@
         </td>
         {% endif %}
         <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
-        <td style="font-size:0.76rem">
-          {% for line in i.orders %}<div class="mono">{{ line }}</div>{% else %}—{% endfor %}
-        </td>
+        {# Orders + Why blocked moved to the detail page [USER 2026-08-28:
+           board content was cut off — too many columns] #}
         {% if is_blocked_section %}
-        <td>
-          <input type="text" class="rt-comment dlg-br" data-key="{{ i.jira_key }}"
-                 value="{{ i.blocked_reason or '' }}"
-                 placeholder="why blocked…" onblur="dlgBrSave(this)">
-        </td>
         <td>
           <p class="blk-chips" data-key="{{ i.jira_key }}" style="margin:0 0 0.3rem; font-size:0.76rem">
             {% if i.blockers %}
@@ -181,17 +173,15 @@
           <button type="button" class="btn btn-sm js-open-orders" title="order details — the same rows appear on the Gatekeeper and ECOM boards"
                   data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
                   data-od-name="{{ i.jira_key }} — {{ i.summary or '' }}">Orders{% if i.jira_key in docs_s4_jira %}<span class="s4-tick"> ✓</span>{% endif %}</button>
-          {{ ui.chat_row_button(chats_by_entity.get(i.jira_key), 'jira', i.jira_key, i.jira_key ~ ' — ' ~ (i.summary or '')) }}
-          <button type="button" class="btn btn-sm js-open-msg" title="build a standardized issue message"
-                  data-entity-type="jira" data-entity-id="{{ i.jira_key }}"
-                  data-msg-name="{{ i.jira_key }} — {{ i.summary or '' }}">&#9993;</button>
+          {# 💬 chat + ✉️ message buttons moved to the detail page
+             [USER 2026-08-28 — board slimming] #}
           <a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}"
              class="btn btn-sm">Details{% if note_counts.get(i.jira_key) %} ({{ note_counts[i.jira_key] }}){% endif %}</a>
           <button type="button" class="rt-cbtn" title="description + comments inline" onclick="dlgJira(this)">{{ jira_comments[i.jira_key]|length }} ▸</button>
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 12 if is_blocked_section else 9 }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 11 if is_blocked_section else (9 if has_mb else 8) }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -221,8 +211,6 @@
 
 {% include '_order_details.html' %}
 {% include '_next_step_history.html' %}
-{% include '_teams_chat_links.html' %}
-{% include '_issue_message.html' %}
 {% include '_blocker_picker.html' %}
 
 <script>
@@ -256,10 +244,6 @@ function dlgFilterLabel() {
   });
   document.getElementById('dlg-label-info').textContent =
     want ? (shown + ' shown, ' + hidden + ' hidden') : '';
-}
-
-function dlgBrSave(input) {
-  dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/blocked-reason', 'blocked_reason');
 }
 
 function dlgGoalSave(checkbox) {

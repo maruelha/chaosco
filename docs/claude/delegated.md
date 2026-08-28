@@ -176,6 +176,25 @@ a delegated ticket is 1:1). New pieces:
   there"): same 🗄 button / archived expander / live-only download as
   the status report, key `delegated_numbers`.
 
+## Board slimming + MB follow-ups (2026-08-28, fourth batch [USER:
+"content is cut off - maybe too many columns"])
+
+- OFF the board, detail page only: label chips (the Label FILTER stays —
+  rows keep `data-labels`), the Orders column (latest-comment orders),
+  the Why-blocked input, the 💬 chat + ✉️ message buttons (their
+  includes/JS removed from the board template; `dlgBrSave` gone).
+  The Orders POPUP button (shared order-details) stays.
+- `MB_EXPECTED["gbs"]` also accepts **"Ready for Validation"** [USER].
+- MB join hardened: `ecom_rows_for_jira_keys` falls back to a TOKEN scan
+  (regex `[A-Za-z][A-Za-z0-9]*-\d+` over the stored Jira-ID cells) for
+  keys the exact match misses — the workbook cell sometimes carries more
+  than the bare key, which was the likely cause of [USER: "mb status did
+  not update for all the tickets"]. The ⤒ MB tracking upload result now
+  says "MB rows match X of Y board tickets" so a mismatch is visible at
+  upload time.
+- Blockers LIST: Notes column removed [USER]; Mgmt Summary blocker
+  overview gained a **Next step** column (the blocker's own next step).
+
 ## Blocker impact on the Management Summary (2026-08-28)
 
 The blocker `impact` field ("what is blocked", already on the blocker

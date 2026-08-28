@@ -105,7 +105,9 @@ def bucket_counts(issues: list[dict], me: str) -> list[tuple[str, str, int]]:
 MB_EXPECTED = {
     "blocked":    {"blocked - returned to sales", "blocked dtc"},
     "settlement": {"", "not ready"},
-    "gbs":        {"in progress", "clarification needed"},
+    "gbs":        {"in progress", "clarification needed",
+                   # [USER 2026-08-28] "Ready for Validation is perfectly ok"
+                   "ready for validation"},
     "sales":      {"passed", "conditionally passed"},
 }
 
