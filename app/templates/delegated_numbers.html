@@ -245,6 +245,7 @@
       <tr>
         <th>Name</th>
         <th style="width:8rem">Jira Key</th>
+        <th style="width:32%" title="what this blocker blocks — at-a-glance for management">Impact — what is blocked</th>
         <th style="width:6rem; text-align:right">Blocks</th>
       </tr>
     </thead>
@@ -253,6 +254,18 @@
       <tr>
         <td>{{ b.name }}</td>
         <td class="mono" style="font-size:0.78rem">{{ b.jira_key or "—" }}</td>
+        {# Impact [USER 2026-08-28]: editable here on screen (same field as
+           the blocker detail form), static text in the download #}
+        <td style="white-space:pre-wrap">
+          {%- if download -%}
+            {{ b.impact or "—" }}
+          {%- else -%}
+            <input type="text" class="blk-impact" data-id="{{ b.blocker_id }}"
+                   value="{{ b.impact or '' }}" placeholder="what is blocked…"
+                   style="width:100%; border:none; border-bottom:1px dashed #cbd5e1; font-size:0.82rem; background:transparent"
+                   onblur="blkImpactSave(this)">
+          {%- endif -%}
+        </td>
         <td class="num">{{ blocked_ticket_counts.get(b.blocker_id, 0) }}</td>
       </tr>
       {% endfor %}
@@ -274,6 +287,15 @@ function copyTable() {
     lines.push([c[0].textContent.trim(), c[1].textContent.trim()].join("\t"));
   });
   navigator.clipboard.writeText(lines.join("\n"));
+}
+
+function blkImpactSave(input) {
+  const body = new URLSearchParams({ impact: input.value });
+  fetch('/blockers/' + input.dataset.id + '/impact', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
 }
 
 function coSave(input) {

@@ -161,6 +161,20 @@ def blocker_toggle_closed(blocker_id: int):
     return jsonify({"ok": True})
 
 
+@bp.route("/<int:blocker_id>/impact", methods=["POST"])
+def blocker_impact(blocker_id: int):
+    """Inline blur-save of the Impact field — editable on the Management
+    Summary's blocker overview [USER 2026-08-28], same field as the
+    detail form's Impact textarea."""
+    conn = _get_conn()
+    try:
+        db_blockers.set_blocker_impact(
+            conn, blocker_id, request.form.get("impact", ""))
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @bp.route("/<int:blocker_id>/next-step", methods=["POST"])
 def blocker_next_step(blocker_id: int):
     """Inline blur-save of the authored next step (archive entity 'blocker')."""

@@ -51,6 +51,15 @@ CREATE TABLE IF NOT EXISTS jira_comments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_jira_comments_key ON jira_comments(jira_key);
+
+-- Jira labels (2026-08-28 [USER], delegated filtering): one row per
+-- (ticket, label), REPLACED per import like the comments.
+CREATE TABLE IF NOT EXISTS jira_labels (
+    jira_key TEXT NOT NULL,          -- FK jira_issues
+    label    TEXT NOT NULL,
+    PRIMARY KEY (jira_key, label)
+);
+CREATE INDEX IF NOT EXISTS idx_jira_labels_label ON jira_labels(label);
 """
 
 
@@ -141,6 +150,18 @@ def upsert_jira_issues(conn: sqlite3.Connection, issues: list[dict],
                     "INSERT INTO jira_comments (jira_key, created, body) VALUES (?,?,?)",
                     (iss["jira_key"], c.get("created"), c.get("body")))
                 comments += 1
+            # labels replaced per import, same rule as the comments — but
+            # only when the parsed dict CARRIES the key: older callers /
+            # tests without "labels" must not wipe stored ones
+            if "labels" in iss:
+                conn.execute("DELETE FROM jira_labels WHERE jira_key=?",
+                             (iss["jira_key"],))
+                for label in iss["labels"]:
+                    conn.execute(
+                        "INSERT INTO jira_labels (jira_key, label)"
+                        " VALUES (?, ?) ON CONFLICT (jira_key, label)"
+                        " DO NOTHING",
+                        (iss["jira_key"], label))
     return {"inserted": inserted, "updated": updated, "comments": comments}
 
 
@@ -160,6 +181,27 @@ def list_jira_issues(conn: sqlite3.Connection,
         sql += f" WHERE seen_in_{seen_in} = 1"
     sql += " ORDER BY jira_key"
     return _rows_to_dicts(conn.execute(sql))
+
+
+def labels_for_issues(conn: sqlite3.Connection,
+                      jira_keys: list[str]) -> dict[str, list[str]]:
+    """{jira_key: [label, …]} for a batch of tickets (alphabetical), one
+    query for a whole board. Tolerant of the table not existing yet
+    (partial-init test fixtures)."""
+    if not jira_keys:
+        return {}
+    out: dict[str, list[str]] = {k: [] for k in jira_keys}
+    placeholders = ",".join("?" for _ in jira_keys)
+    try:
+        rows = conn.execute(
+            f"SELECT jira_key, label FROM jira_labels"
+            f" WHERE jira_key IN ({placeholders})"
+            f" ORDER BY LOWER(label)", jira_keys).fetchall()
+    except sqlite3.OperationalError:
+        return out
+    for key, label in rows:
+        out[key].append(label)
+    return out
 
 
 def list_jira_comments(conn: sqlite3.Connection, jira_key: str) -> list[dict]:

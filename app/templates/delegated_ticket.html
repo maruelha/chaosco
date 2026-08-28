@@ -42,6 +42,7 @@
         ("Priority",      issue.priority),
         ("Epic",          issue.epic),
         ("Markets",       issue.markets),
+        ("Labels",        issue.labels|join(' · ') if issue.labels else None),
         ("Created",       issue.created),
         ("Updated",       issue.updated),
         ("Last import",   issue.last_seen),

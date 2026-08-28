@@ -102,6 +102,9 @@
     .rpt-blockers span { display: inline-block; margin: 1px 3px 1px 0; padding: 1px 7px;
                           border-radius: 10px; background: #fef3c7; color: #92400e;
                           font-size: 0.72rem; white-space: nowrap; }
+    .rpt-label { display: inline-block; margin: 1px 2px; padding: 0 6px;
+                 border-radius: 10px; background: #f1f5f9; color: #64748b;
+                 font-size: 0.68rem; white-space: nowrap; }
     .empty-state { text-align: center; padding: 2rem 1rem; color: #94a3b8; font-size: 0.9rem; }
 
     @page { size: A4 landscape; margin: 1.5cm; }
@@ -168,6 +171,11 @@
   <select id="rf-blocker" class="rf-select">
     <option value="">All</option>
     {% for b in filter_options.blockers %}<option value="{{ b.blocker_id }}">{{ b.label }}</option>{% endfor %}
+  </select>
+  <label for="rf-label">Label</label>
+  <select id="rf-label" class="rf-select">
+    <option value="">All</option>
+    {% for l in filter_options.labels %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
   </select>
   <button type="button" class="btn" id="rf-clear">Clear</button>
   <span id="rf-hint" style="color:#94a3b8"></span>
@@ -238,11 +246,14 @@
       {% for i in items %}
       <tr data-status="{{ (i.jira_status or '')|lower }}"
           data-assignee="{{ (i.jira_assignee or '')|lower }}"
-          data-blockers="{{ i.blockers | map(attribute='blocker_id') | join(',') }}">
+          data-blockers="{{ i.blockers | map(attribute='blocker_id') | join(',') }}"
+          data-labels="{{ i.labels|join(' ') }}">
         <td style="color:#94a3b8">{{ loop.index }}</td>
         <td class="mono" style="font-size:0.76rem">{{ i.jira_key }}</td>
         <td class="mono" style="font-size:0.76rem">{{ i.solman_id or "—" }}</td>
-        <td>{{ i.summary or "—" }}</td>
+        <td>{{ i.summary or "—" }}
+          {%- if i.labels %} <span style="white-space:nowrap">{% for l in i.labels %}<span class="rpt-label">{{ l }}</span>{% endfor %}</span>{% endif -%}
+        </td>
         <td>{{ i.jira_status or "—" }}</td>
         <td style="font-size:0.76rem">{{ i.jira_assignee or "—" }}</td>
         <td style="font-size:0.76rem">{{ i.markets or "—" }}</td>
@@ -319,6 +330,7 @@ function rfApply() {
     status:   document.getElementById('rf-status').value,
     assignee: document.getElementById('rf-assignee').value,
     blocker:  document.getElementById('rf-blocker').value,
+    label:    document.getElementById('rf-label').value,
   };
   let shown = 0, total = 0;
   document.querySelectorAll('.rpt-section').forEach(sec => {
@@ -327,7 +339,8 @@ function rfApply() {
       total += 1;
       const ok = (!want.status   || tr.dataset.status   === want.status)
               && (!want.assignee || tr.dataset.assignee === want.assignee)
-              && (!want.blocker  || (tr.dataset.blockers || '').split(',').includes(want.blocker));
+              && (!want.blocker  || (tr.dataset.blockers || '').split(',').includes(want.blocker))
+              && (!want.label    || (tr.dataset.labels || '').split(' ').includes(want.label));
       tr.style.display = ok ? '' : 'none';
       if (ok) { secShown += 1; shown += 1; }
     });
@@ -339,7 +352,7 @@ function rfApply() {
         : secShown + ' of ' + t + ' tickets';
     }
   });
-  const filtering = want.status || want.assignee || want.blocker;
+  const filtering = want.status || want.assignee || want.blocker || want.label;
   document.getElementById('rf-hint').textContent =
     filtering ? ('showing ' + shown + ' of ' + total) : '';
 }

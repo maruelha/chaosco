@@ -245,7 +245,7 @@
 <body>
 
 <h1>chaosco — Database Schema</h1>
-<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (72 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
+<p class="subtitle">SQLite · <code>data/test_coordination.db</code> · Updated 2026-08-28 (73 tables in the DB — this doc's table-card coverage predates several modules; see docs/marina_notes for the gap)</p>
 
 <!-- Table of Contents -->
 <div class="toc">
@@ -285,6 +285,7 @@
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
     <li><a href="#jira_comments">jira_comments</a></li>
+    <li><a href="#jira_labels">jira_labels</a></li>
 
     <li class="group-label">Shared / System</li>
     <li><a href="#notes">notes</a></li>
@@ -1863,6 +1864,22 @@
         <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → jira_issues</span></td><td></td></tr>
         <tr><td class="col-name">created</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">body</td><td class="col-type">TEXT</td><td></td><td class="note-text">HTML</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- jira_labels -->
+  <div class="table-card" id="jira_labels">
+    <div class="table-card-header">
+      <span class="tname">jira_labels</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">Jira labels per ticket (2026-08-28, delegated filtering) — replaced per import like the comments, but only when the parsed issue dict carries a labels key (older callers can't wipe stored labels). Chips + label filters on the delegated board/report, listed on the ticket detail.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-pk">PK*</span> <span class="tag tag-fk">FK → jira_issues</span></td><td class="note-text">composite PK (jira_key, label)</td></tr>
+        <tr><td class="col-name">label</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-pk">PK*</span></td><td class="note-text">indexed for filtering</td></tr>
       </tbody>
     </table>
   </div>

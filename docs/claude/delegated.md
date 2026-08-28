@@ -98,6 +98,30 @@ uploaded issues?" — yes).
   `web_next_steps.REGISTRY['delegated']`
 - Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
 
+## Jira labels (2026-08-28 [USER: "would help while filtering"])
+
+The XML export's `<labels><label>…</label></labels>` import into
+`jira_labels` (shared jira store, one row per (jira_key, label),
+**replaced per import like the comments** — but only when the parsed
+dict carries a `labels` key, so older callers can't wipe stored ones).
+`db_jira.labels_for_issues(conn, keys)` batches them;
+`web_delegated._load_issues` attaches `i["labels"]` (alphabetical).
+UI: small gray chips next to the Summary on the board and the status
+report; a "Label: all" dropdown filterbar on the board
+(`dlgFilterLabel()`, rows carry `data-labels` space-joined — Jira labels
+never contain spaces) and an rf-label select in the report's filter bar
+(AND-combines with status/assignee/blocker); the ticket detail lists
+them in the Details tab.
+
+## Blocker impact on the Management Summary (2026-08-28)
+
+The blocker `impact` field ("what is blocked", already on the blocker
+detail form) is now a column in `/delegated/numbers`' Blocker overview —
+**inline-editable** on screen (dashed-underline input, blur-saves via
+`POST /blockers/<id>/impact`, only-field `set_blocker_impact`), static
+text in the download snapshot. [USER: "so one can see at a glance what
+is blocked".]
+
 ## Blockers (planning chat + build step 2026-08-27)
 
 Own entity, own module (`app/db/blockers.py` + `app/web_blockers.py`,

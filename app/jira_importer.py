@@ -223,6 +223,13 @@ def parse_jira_xml(path: Path) -> list[dict]:
             "created": (c.get("created") or "").strip() or None,
             "body": _text(c),
         } for c in item.findall(".//comments/comment")]
+        # labels (2026-08-28 [USER], delegated filtering): RSS carries them
+        # as <labels><label>x</label>…</labels>; deduped, order kept
+        labels: list[str] = []
+        for lab in item.findall(".//labels/label"):
+            val = _text(lab)
+            if val and val not in labels:
+                labels.append(val)
         cf = _customfields(item)
         issues.append({
             "jira_key": key,
@@ -241,6 +248,7 @@ def parse_jira_xml(path: Path) -> list[dict]:
             "created": (item.findtext("created") or "").strip() or None,
             "updated": (item.findtext("updated") or "").strip() or None,
             "comments": comments,
+            "labels": labels,
         })
     return issues
 

@@ -207,6 +207,17 @@ def set_blocker_next_step(conn: sqlite3.Connection, blocker_id: int,
             (next_step or None, _now(), blocker_id))
 
 
+def set_blocker_impact(conn: sqlite3.Connection, blocker_id: int,
+                       impact: str | None) -> None:
+    """Only-this-field update — inline edit on the Management Summary's
+    blocker overview [USER 2026-08-28: "so one can see at a glance what is
+    blocked"]; same field as the detail form's Impact textarea."""
+    with conn:
+        conn.execute(
+            "UPDATE blockers SET impact=?, updated_at=? WHERE blocker_id=?",
+            ((impact or "").strip() or None, _now(), blocker_id))
+
+
 def get_blocker(conn: sqlite3.Connection, blocker_id: int) -> dict | None:
     rows = _rows_to_dicts(conn.execute(
         "SELECT * FROM blockers WHERE blocker_id=?", (blocker_id,)))

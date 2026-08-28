@@ -22,6 +22,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
     <status id="3">Blocked</status>
     <assignee username="JIRAUSER2">Tester, Tom</assignee>
     <link>https://jira.example.com/browse/S4ECOM-2001</link>
+    <labels><label>settlement</label><label>fr_scope</label></labels>
     <comments>
       <comment id="1" created="Mon, 24 Aug 2026 10:00:00 +0200">Order Number - TBY_SS_ADE0001111</comment>
       <comment id="2" created="Tue, 25 Aug 2026 10:00:00 +0200">Return Order: 6000084252</comment>
@@ -33,6 +34,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
     <type id="18">User Story</type>
     <status id="3">In Progress</status>
     <assignee username="JIRAUSER1">Haase, Marina [External]</assignee>
+    <labels><label>settlement</label></labels>
   </item>
   <item>
     <key id="3">S4ECOM-2003</key>
@@ -582,3 +584,61 @@ def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
         assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2001") is False
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Jira labels (2026-08-28) - imported, chips + filter on board/report/detail
+
+def test_labels_imported_and_shown_with_filter(client):
+    _upload(client)
+    html = client.get("/delegated/").get_data(as_text=True)
+    # chips on the row + data attribute for the client-side filter
+    assert "settlement" in html and "fr_scope" in html
+    assert 'data-labels="fr_scope settlement"' in html
+    # the filter dropdown lists the distinct labels once each
+    bar = html.split('id="dlg-label-filter"')[1].split("</select>")[0]
+    assert bar.count('value="settlement"') == 1
+    assert bar.count('value="fr_scope"') == 1
+
+
+def test_labels_replaced_on_reimport(client):
+    _upload(client)
+    _upload(client, data=XML.replace(
+        "<label>settlement</label><label>fr_scope</label>",
+        "<label>renamed_label</label>"))
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "renamed_label" in html
+    assert "fr_scope" not in html
+
+
+def test_report_and_detail_show_labels(client):
+    _upload(client)
+    report = client.get("/delegated/report").get_data(as_text=True)
+    assert 'id="rf-label"' in report
+    assert 'data-labels="fr_scope settlement"' in report
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "Labels" in detail
+    assert "fr_scope" in detail
+
+
+# ---------------------------------------------------------------------------
+# Blocker impact on the Management Summary (2026-08-28)
+
+def test_blocker_impact_editable_on_numbers_page(client):
+    _upload(client)   # auto-registers S4DEF-3001 as a defect blocker
+    conn = web_delegated._get_conn()
+    try:
+        blocker = next(b for b in db_blockers.list_blockers(conn)
+                       if b["jira_key"] == "S4DEF-3001")
+    finally:
+        conn.close()
+    resp = client.post(f"/blockers/{blocker['blocker_id']}/impact",
+                       data={"impact": "blocks FR settlement retests"})
+    assert resp.get_json()["ok"]
+
+    html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "Impact" in html
+    assert 'value="blocks FR settlement retests"' in html   # editable input
+    download = client.get("/delegated/numbers/download").get_data(as_text=True)
+    assert "blocks FR settlement retests" in download        # static text
+    assert 'class="blk-impact"' not in download

@@ -52,6 +52,17 @@
 </p>
 {% endif %}
 
+{% if all_labels %}
+<div class="ui-filterbar" style="margin-bottom:0.8rem">
+  <select id="dlg-label-filter" onchange="dlgFilterLabel()"
+          title="show only tickets carrying this Jira label">
+    <option value="">Label: all</option>
+    {% for l in all_labels %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
+  </select>
+  <span id="dlg-label-info" style="color:#888; font-size:0.82rem"></span>
+</div>
+{% endif %}
+
 {% for section_key, section_title, section_css, section_items in sections %}
 {% set is_blocked_section = section_key == 'blocked' %}
 {% if section_items or section_key not in ('done', 'unexpected', 'backlog') %}
@@ -88,13 +99,16 @@
     </thead>
     <tbody>
       {% for i in section_items %}
-      <tr>
+      <tr class="dlg-row" data-labels="{{ i.labels|join(' ') }}">
         <td class="mono" style="font-size:0.78rem">
           {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
           {% else %}{{ i.jira_key }}{% endif %}
         </td>
         <td class="mono" style="font-size:0.78rem">{{ i.solman_id or "—" }}</td>
-        <td><a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a></td>
+        <td>
+          <a href="{{ url_for('delegated.delegated_ticket_detail', jira_key=i.jira_key) }}">{{ i.summary or i.jira_key }}</a>
+          {% if i.labels %}<span style="white-space:nowrap">{% for l in i.labels %}<span class="chip chip--none" style="font-size:0.68rem; padding:1px 6px">{{ l }}</span>{% endfor %}</span>{% endif %}
+        </td>
         <td>{{ i.jira_status or "—" }}</td>
         <td style="font-size:0.8rem">{{ i.jira_assignee or "—" }}</td>
         <td style="font-size:0.76rem">
@@ -206,6 +220,18 @@ function dlgSave(input, url, field) {
 
 function dlgNsSave(input) {
   dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/next-step', 'next_step');
+}
+
+function dlgFilterLabel() {
+  const want = document.getElementById('dlg-label-filter').value;
+  let shown = 0, hidden = 0;
+  document.querySelectorAll('tr.dlg-row').forEach(tr => {
+    const ok = !want || (tr.dataset.labels || '').split(' ').includes(want);
+    tr.style.display = ok ? '' : 'none';
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('dlg-label-info').textContent =
+    want ? (shown + ' shown, ' + hidden + ' hidden') : '';
 }
 
 function dlgBrSave(input) {

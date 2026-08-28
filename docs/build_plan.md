@@ -511,6 +511,19 @@ one-at-a-time, Marina confirms each:
     DB from tests (6 stray rows created+removed the same minute).
     Tests: `tests/test_blockers.py` (+8, 26 total),
     `tests/test_delegated_web.py` (+3, 25 total). Full suite 567 green.
+15. ~~Jira labels + blocker impact on the Mgmt Summary~~ ✅ DONE
+    2026-08-28 [USER]: (a) the XML export's `<labels>` import into new
+    `jira_labels` (shared store; replaced per import like comments, but
+    ONLY when the parsed dict carries a labels key so older callers
+    can't wipe them; `labels_for_issues` batch getter) — gray chips next
+    to the Summary on board + status report, "Label" filter dropdown on
+    the board (`dlgFilterLabel`, `data-labels` space-joined) and in the
+    report's filter bar (AND-combined), Labels row in the ticket
+    detail's Details tab; (b) the blocker `impact` field ("what is
+    blocked") became an inline-editable column in the Management
+    Summary's Blocker overview (blur-save `POST /blockers/<id>/impact`,
+    only-field `set_blocker_impact`; static text in the download).
+    Tests: `tests/test_delegated_web.py` (+4, 34 total); suite 639.
 
 ### Manual Test Cases verticals (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 

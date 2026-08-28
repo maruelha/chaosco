@@ -64,9 +64,11 @@ def _load_issues(conn):
               and db_delegated.is_story_type(i.get("type"))]
     comments_map = {i["jira_key"]: db_jira.list_jira_comments(conn, i["jira_key"])
                     for i in issues}
+    labels_map = db_jira.labels_for_issues(conn, [i["jira_key"] for i in issues])
     for i in issues:
         i["orders"] = extract_latest_comment_orders(
             comments_map[i["jira_key"]])["orders"]
+        i["labels"] = labels_map.get(i["jira_key"], [])
     return issues, comments_map
 
 
@@ -116,6 +118,8 @@ def delegated_list():
         sections=bucket_issues(issues, _me()),
         board_css=BOARD_CSS,
         total=len(issues),
+        all_labels=sorted({l for i in issues for l in i.get("labels", [])},
+                          key=str.lower),
         jira_comments=comments_map,
         note_counts=note_counts,
         chats_by_entity=chats_by_entity,
@@ -228,6 +232,8 @@ def delegated_ticket_detail(jira_key: str):
             return redirect(url_for("delegated.delegated_ticket_detail",
                                     jira_key=jira_key, saved="1"))
         comments = db_jira.list_jira_comments(conn, jira_key)
+        issue["labels"] = db_jira.labels_for_issues(
+            conn, [jira_key]).get(jira_key, [])
         next_step = db_delegated.get_delegated_next_step(conn, jira_key)
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
@@ -285,6 +291,9 @@ def report_context(conn) -> dict:
         "assignees": sorted({(i.get("jira_assignee") or "").strip()
                              for i in issues if (i.get("jira_assignee") or "").strip()}),
         "blockers": blocker_options,
+        # Jira labels (2026-08-28 [USER: "would help while filtering"])
+        "labels": sorted({l for i in issues for l in i.get("labels", [])},
+                         key=str.lower),
     }
     return {
         "sections": sections, "total": len(issues),
