@@ -109,10 +109,16 @@ accumulate history. Steps one at a time, Marina confirms each:
    copy in `data/uploads/`, wired to `run_sustain_import`; registered in
    `app/web.py`. Shows a plain imported-days table until step 4.
    `tests/test_sustain_web.py` (6 tests).
-4. **Detail report** — day picker + Retail/eCom toggle; table mirroring
-   the Excel: parent task rows expandable to their detail rows (native
-   `<details>` accordion, Smoke's `scenario_group` pattern); recomputed
-   stat-card summary row on top. Verified by eye against the Excel.
+4. ~~Detail report~~ ✅ DONE 2026-08-28: `/sustain/day/<day>/<stream>`
+   (`sustain_day.html`) — day-link row + ⇄ stream toggle; real `ui.table`
+   in the Excel's column structure (NOT the smoke `<details>` accordion —
+   Marina asked for "the structure of the excel", so parent `<tr>`s
+   toggle hidden detail `<tr>`s via a small `sustainToggle` script, new
+   `.sustain-*` CSS component); result cells as pills (free text = red
+   pill with the verbatim note); stat cards from `summary_counts`. Home
+   day-table links here. Verified against the real workbook through the
+   actual route: 33 parents / 328 details / 16-1-15-0 stat cards ==
+   Excel row 4. `tests/test_sustain_web.py` (+3, now 9).
 5. **Management summary** — per day+stream headline Due/Completed/
    Pending/**Attention**; classification per due result cell: `OK` → done,
    `Pending`/blank → pending, `Not due`/`N/A` → out of scope, anything

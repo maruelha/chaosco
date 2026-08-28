@@ -45,6 +45,34 @@ def sustain_home():
     )
 
 
+@bp.route("/day/<day>/<stream>")
+def sustain_day(day, stream):
+    """One (day, stream) tab mirrored in the Excel's structure: parent
+    tasks expandable to their country/provider detail rows. All shown
+    statuses are recomputed (storage-layer classification), never the
+    workbook's cached formulas."""
+    conn = _get_conn()
+    try:
+        tasks = db_sustain.list_tasks(conn, day, stream)
+        counts = db_sustain.summary_counts(conn, day, stream)
+        tabs = db_sustain.list_tabs(conn)
+    finally:
+        conn.close()
+    for t in tasks:
+        t["cells"] = db_sustain.derive_cells(t)
+        t["overall_recomputed"] = db_sustain.derive_overall(
+            t.get("due_today"), t["cells"])
+        t["status"] = db_sustain.task_status(t)
+        for d in t["details"]:
+            d["entry"] = db_sustain.detail_result(d)
+    day_links = [t for t in tabs if t["stream"] == stream]
+    other_streams = sorted({t["stream"] for t in tabs
+                            if t["day"] == day and t["stream"] != stream})
+    return render_template(
+        "sustain_day.html", day=day, stream=stream, tasks=tasks,
+        counts=counts, day_links=day_links, other_streams=other_streams)
+
+
 @bp.route("/upload", methods=["POST"])
 def sustain_upload():
     """A dated copy is kept in data/uploads (traceability; mirrored by the

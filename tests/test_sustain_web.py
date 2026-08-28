@@ -103,6 +103,36 @@ def test_upload_dated_copy_kept_in_uploads_folder(client, tmp_path):
     assert len(saved) == 1
 
 
+# ---------------------------------------------------------------------------
+# Day report (build plan step 4)
+
+def test_day_report_mirrors_excel_with_expandable_details(client):
+    _upload(client)
+    html = client.get("/sustain/day/2026-09-01/Retail").get_data(as_text=True)
+    assert "Monitor files" in html and "Settlement" in html
+    # stat cards: due 1, completed 1, pending 0, attention 0
+    assert 'class="num">1</div>' in html
+    # detail row present but collapsed, with its country + provider
+    assert 'class="sustain-detail" data-parent=' in html and "hidden" in html
+    assert "France" in html and "Adyen for cards" in html
+    # recomputed OK renders as a green pill
+    assert 'pill pill--green">OK' in html
+    # stream toggle to the same day's eCom tab
+    assert '/sustain/day/2026-09-01/eCom' in html
+
+
+def test_day_report_empty_tab_shows_hint(client):
+    html = client.get("/sustain/day/2026-09-09/Retail").get_data(as_text=True)
+    assert "No data for Retail 2026-09-09" in html
+
+
+def test_home_links_days_to_day_report(client):
+    _upload(client)
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert 'href="/sustain/day/2026-09-01/Retail"' in html
+    assert 'href="/sustain/day/2026-09-01/eCom"' in html
+
+
 def test_upload_reports_error_when_no_day_tabs(client):
     wb = openpyxl.Workbook()
     wb.active.title = "Instructions"

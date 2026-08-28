@@ -101,10 +101,24 @@ copy in `data/uploads/`, then `run_sustain_import`. Filename guard:
 (not end with it — browser " (1)" double-download copies must still
 import; the prefix before `DTC_GBS` varies per file anyway). Import
 result via `sustain_ok`/`sustain_msg` query params in a result-box.
-Template `sustain.html`; until step 4 it shows a plain imported-days
-table (`list_tabs`).
+Template `sustain.html`; the imported-days table (`list_tabs`) links each
+(day, stream) to the day report.
 
-## Still to build (build-plan steps 4–6)
+### Day report — `/sustain/day/<day>/<stream>` (`sustain_day.html`)
+
+Mirrors the Excel tab: a real `ui.table` (# · Process/Task+taxonomy ·
+Cadence · Due · Provider · FR/IT/PT/ES · Overall), parent `<tr>`s with
+detail rows toggle them via `sustainToggle()` (hidden `<tr>`s, `.sustain-*`
+CSS component in style.css) — deliberately NOT the smoke `<details>`
+accordion, Marina asked for "the structure of the excel". Every shown
+status is recomputed in the web layer via the storage classification
+(`derive_cells`/`derive_overall`/`task_status`); result cells render as
+pills — OK green, Pending amber, Review + **free-text issue notes red
+(verbatim text)**, N/A / Not due gray, blank —. Stat cards =
+`summary_counts` (due/completed/pending/attention). Header: back link,
+⇄ toggle to the other stream of the same day, day-link row per stream.
+
+## Still to build (build-plan steps 5–6)
 4. Detail report (day picker + stream toggle, expandable parents, stat
    cards from `summary_counts`).
 5. Management summary (headline + Attention list + trend + repeat

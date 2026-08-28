@@ -32,15 +32,14 @@
   <strong>⤒ Upload &amp; import</strong>.
 </p>
 {% else %}
-{# plain imported-tabs list until the day report pages arrive (step 4) #}
 {% call ui.section('Imported days', 'slate') %}
 <table class="ui-table">
   <thead><tr><th>Day</th><th>Stream</th><th>Tasks</th></tr></thead>
   <tbody>
     {% for t in tabs %}
     <tr>
-      <td>{{ t.day }}</td>
-      <td>{{ t.stream }}</td>
+      <td><a href="{{ url_for('sustain.sustain_day', day=t.day, stream=t.stream) }}">{{ t.day }}</a></td>
+      <td><a href="{{ url_for('sustain.sustain_day', day=t.day, stream=t.stream) }}">{{ t.stream }}</a></td>
       <td>{{ t.task_count }}</td>
     </tr>
     {% endfor %}

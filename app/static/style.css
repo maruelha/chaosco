@@ -1443,6 +1443,16 @@ details.smoke-scenario[open] > summary::before, details.kpd-row[open] > summary:
 .kpd-row-relevant label { display:inline-flex; align-items:center; gap:0.35rem;
     margin-right:1.5rem; font-size:0.86rem; cursor:pointer; }
 
+/* ---- expandable table rows (Sustainphase Monitoring day report,
+   2026-08-28 — parent task rows toggle their country/provider detail
+   rows, mirroring the workbook's +/- outline) ---- */
+tr.sustain-parent--expandable { cursor:pointer; }
+tr.sustain-parent--expandable:hover td { background:#f6f6fb; }
+tr.sustain-parent .sustain-arrow { display:inline-block; width:1em;
+    color:#888; }
+tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
+    padding-top:0.3rem; padding-bottom:0.3rem; }
+
 /* ---- chips (per-country state marks) ---- */
 .chip, .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
     font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }

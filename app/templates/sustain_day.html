@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}{{ stream }} {{ day }} — Sustainphase Monitoring{% endblock %}
+
+{# One checklist day tab in the Excel's structure (build plan step 4).
+   Result cells as colored pills; a free-text entry (issue note) renders
+   as a red pill with the verbatim text — that's the discussion-point
+   signal. Parent rows with detail rows expand like the workbook's
+   +/- outline (small JS toggle below). #}
+
+{% macro rpill(value) %}
+  {%- set v = (value or '')|trim -%}
+  {%- set l = v|lower -%}
+  {%- if not v -%}
+    <span style="color:#bbb">—</span>
+  {%- elif l == 'ok' -%}
+    <span class="pill pill--green">OK</span>
+  {%- elif l == 'pending' -%}
+    <span class="pill pill--amber">Pending</span>
+  {%- elif l == 'review' -%}
+    <span class="pill pill--red">Review</span>
+  {%- elif l in ('n/a', 'not due', 'no occurrence') -%}
+    <span class="pill pill--gray">{{ v }}</span>
+  {%- else -%}
+    <span class="pill pill--red" title="issue note from the checklist">{{ v }}</span>
+  {%- endif -%}
+{% endmacro %}
+
+{% block content %}
+{% call ui.page_header(stream ~ ' — ' ~ day,
+                       'Daily GBS Operations checklist, structure as in the '
+                       ~ 'workbook. Statuses are recomputed from the raw '
+                       ~ 'cells — the Excel\'s cached summary is never used.') %}
+<a href="{{ url_for('sustain.sustain_home') }}" class="btn">← Sustainphase Monitoring</a>
+{% for s in other_streams %}
+<a href="{{ url_for('sustain.sustain_day', day=day, stream=s) }}" class="btn"
+   title="switch to the {{ s }} tab of the same day">⇄ {{ s }} {{ day }}</a>
+{% endfor %}
+{% endcall %}
+
+<div class="ui-filterbar" style="margin-bottom:0.8rem">
+  <span style="color:#888; font-size:0.85rem">{{ stream }} days:</span>
+  {% for t in day_links %}
+    {% if t.day == day %}
+    <strong style="font-size:0.85rem">{{ t.day }}</strong>
+    {% else %}
+    <a href="{{ url_for('sustain.sustain_day', day=t.day, stream=stream) }}"
+       style="font-size:0.85rem">{{ t.day }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+
+{% if not tasks %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No data for {{ stream }} {{ day }} — upload a checklist containing this
+  day on the <a href="{{ url_for('sustain.sustain_home') }}">Sustainphase
+  Monitoring card</a>.
+</p>
+{% else %}
+
+{% call ui.stat_cards() %}
+  {{ ui.stat_card(counts.due, 'due tasks', 'info') }}
+  {{ ui.stat_card(counts.completed, 'completed', 'done') }}
+  {{ ui.stat_card(counts.pending, 'pending', 'open') }}
+  {{ ui.stat_card(counts.attention, 'attention', 'alarm') }}
+{% endcall %}
+
+{% call ui.table(['#', 'Process / Task', 'Cadence', 'Due', 'Provider / Account',
+                  'France', 'Italy', 'Portugal', 'Spain', 'Overall']) %}
+  {% for t in tasks %}
+  <tr class="sustain-parent{% if t.details %} sustain-parent--expandable{% endif %}"
+      data-task="{{ t.id }}"
+      {% if t.details %}onclick="sustainToggle({{ t.id }})"{% endif %}>
+    <td class="mono">
+      {% if t.details %}<span class="sustain-arrow">▸</span>{% endif %}
+      {{ t.task_id }}
+    </td>
+    <td>
+      <strong>{{ t.process or '—' }}</strong>
+      {% if t.taxonomy %}<br><span style="color:#888; font-size:0.78rem">{{ t.taxonomy }}</span>{% endif %}
+    </td>
+    <td style="font-size:0.82rem">{{ t.cadence or '—' }}</td>
+    <td style="font-size:0.82rem">{{ t.due_today or '—' }}</td>
+    <td style="font-size:0.82rem">
+      {{ t.provider or '—' }}
+      {% if t.details %}<span style="color:#888"> ({{ t.details|length }} checks)</span>{% endif %}
+    </td>
+    {% for cell in t.cells %}<td>{{ rpill(cell) }}</td>{% endfor %}
+    <td>{{ rpill(t.overall_recomputed) }}</td>
+  </tr>
+  {% for d in t.details %}
+  <tr class="sustain-detail" data-parent="{{ t.id }}" hidden>
+    <td></td>
+    <td style="color:#666">↳ {{ d.country or 'Detail check' }}</td>
+    <td style="font-size:0.8rem">{{ d.cadence or '—' }}</td>
+    <td style="font-size:0.8rem">{{ d.due_today or '—' }}</td>
+    <td style="font-size:0.8rem">{{ d.provider or '—' }}</td>
+    <td>{{ rpill(d.result_fr) }}</td>
+    <td>{{ rpill(d.result_it) }}</td>
+    <td>{{ rpill(d.result_pt) }}</td>
+    <td>{{ rpill(d.result_es) }}</td>
+    <td></td>
+  </tr>
+  {% endfor %}
+  {% endfor %}
+{% endcall %}
+
+<script>
+function sustainToggle(id) {
+  document.querySelectorAll('tr.sustain-detail[data-parent="' + id + '"]')
+    .forEach(function (r) { r.hidden = !r.hidden; });
+  var arrow = document.querySelector(
+    'tr.sustain-parent[data-task="' + id + '"] .sustain-arrow');
+  if (arrow) arrow.textContent = arrow.textContent === '▸' ? '▾' : '▸';
+}
+</script>
+{% endif %}
+{% endblock %}
