@@ -2,6 +2,70 @@
 {% import '_macros.html' as ui %}
 {% block title %}Sustainphase Issues — Test Coordination{% endblock %}
 
+{# Build plan step 3 (2026-08-28): expandable-row list (kpd pattern — no
+   wide table to scroll), Channel/ASPEN STATUS/Country/Priority filters,
+   open vs closed split by Date Closed, red chip when the issue blocks
+   execution. Callouts + next step are Marina's authored fields
+   (sustain_issue_annotations), saved onblur. #}
+
+{% macro issue_row(i) %}
+<details class="si-row" data-key="{{ i.issue_key }}"
+         data-channel="{{ i.channel or '' }}" data-status="{{ i.aspen_status or '' }}"
+         data-country="{{ i.country or '' }}" data-priority="{{ i.priority or '' }}">
+  <summary>
+    <span class="mono" {% if i.former_placeholder %}title="formerly {{ i.former_placeholder }}"{% endif %}>{{ i.issue_key }}</span>
+    <strong>{{ i.short_description or '(no description)' }}</strong>
+    {% if i.aspen_status %}<span class="chip chip--none">{{ i.aspen_status }}</span>{% endif %}
+    {% if i.priority %}<span style="color:#666; font-size:0.8rem">{{ i.priority }}</span>{% endif %}
+    {% if (i.blocks_execution or '')|lower|trim in ('yes', 'y') %}
+    <span class="chip" style="background:#c1121f; color:#fff">blocks execution</span>
+    {% endif %}
+    {% if i.callouts %}<span title="{{ i.callouts }}">📣</span>{% endif %}
+    {% if i.next_step %}<span style="color:#2b6cb0; font-size:0.78rem" title="next step">→ {{ i.next_step }}</span>{% endif %}
+    <span style="color:#999; font-size:0.78rem; margin-left:auto">
+      {{ i.channel or '—' }} · {{ i.country or '—' }}
+      {%- if i.date_reported %} · reported {{ i.date_reported }}{% endif -%}
+      {%- if i.date_closed %} · closed {{ i.date_closed }}{% endif -%}
+    </span>
+  </summary>
+  <div class="kpd-row-body">
+    {% if i.description %}<p><strong>Description:</strong> {{ i.description }}</p>{% endif %}
+    {% if i.comment %}<p><strong>Comment (Excel):</strong> {{ i.comment }}</p>{% endif %}
+    <p style="color:#666">
+      {%- set meta = [] -%}
+      {%- if i.sales_dtc %}{% set _ = meta.append('Sales/DTC: ' ~ i.sales_dtc) %}{% endif -%}
+      {%- if i.raised_by %}{% set _ = meta.append('Raised by ' ~ i.raised_by) %}{% endif -%}
+      {%- if i.assigned_to %}{% set _ = meta.append('Assigned to ' ~ i.assigned_to) %}{% endif -%}
+      {%- if i.tech_team %}{% set _ = meta.append('Tech team ' ~ i.tech_team) %}{% endif -%}
+      {%- if i.order_number %}{% set _ = meta.append('Order ' ~ i.order_number) %}{% endif -%}
+      {%- if i.scenario %}{% set _ = meta.append('Scenario: ' ~ i.scenario) %}{% endif -%}
+      {%- if i.affected_testcases %}{% set _ = meta.append('Testcases: ' ~ i.affected_testcases) %}{% endif -%}
+      {%- if i.retest_dependency %}{% set _ = meta.append('Retest dep.: ' ~ i.retest_dependency) %}{% endif -%}
+      {%- if i.defect_reason %}{% set _ = meta.append('Reason: ' ~ i.defect_reason) %}{% endif -%}
+      {{ meta|join(' · ') if meta else '' }}
+    </p>
+    <div style="display:flex; gap:0.6rem; align-items:flex-start; flex-wrap:wrap; margin-top:0.5rem">
+      <textarea class="si-callouts" data-key="{{ i.issue_key }}" rows="2"
+                placeholder="call-outs / my comment…"
+                style="flex:1 1 18rem; font-size:0.85rem"
+                onblur="siCalloutsSave(this)">{{ i.callouts or '' }}</textarea>
+      <span style="display:flex; gap:0.3rem; align-items:center; flex:1 1 18rem">
+        <input type="text" class="rt-comment si-ns" data-key="{{ i.issue_key }}"
+               value="{{ i.next_step or '' }}" placeholder="next step…"
+               style="flex:1" onblur="siNsSave(this)">
+        <button type="button" class="btn btn-sm js-ns-archive"
+                title="archive the current next step and start fresh"
+                data-entity-type="sustain_issue" data-entity-id="{{ i.issue_key }}"
+                data-ns-target='input.si-ns[data-key="{{ i.issue_key }}"]'>↻</button>
+        <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+                data-entity-type="sustain_issue" data-entity-id="{{ i.issue_key }}"
+                data-ns-label="{{ i.issue_key }} — {{ i.short_description or '' }}">🕘</button>
+      </span>
+    </div>
+  </div>
+</details>
+{% endmacro %}
+
 {% block content %}
 {% call ui.page_header('Sustainphase Issues', 'Defects from the '
                        ~ 'DTC_Sustainphase_Tracking workbook (Defects tab) — '
@@ -34,9 +98,76 @@
   defects.)
 </p>
 {% else %}
-{# plain count line until the real list view arrives (build plan step 3) #}
-<p style="color:#666; margin:0.6rem 0 1rem">
-  {{ issues|length }} issue{{ 's' if issues|length != 1 }} tracked.
-</p>
+
+{%- set open_issues = issues|rejectattr('date_closed')|list -%}
+{%- set closed_issues = issues|selectattr('date_closed')|list -%}
+
+<div class="ui-filterbar" style="margin-bottom:0.8rem">
+  {% for field, label in [('channel', 'Channel'), ('status', 'ASPEN status'),
+                          ('country', 'Country'), ('priority', 'Priority')] %}
+  {%- set values = [] -%}
+  {%- for i in issues -%}
+    {%- set v = i.channel if field == 'channel' else (i.aspen_status if field == 'status'
+                else (i.country if field == 'country' else i.priority)) -%}
+    {%- if v and v not in values %}{% set _ = values.append(v) %}{% endif -%}
+  {%- endfor -%}
+  <select id="si-filter-{{ field }}" onchange="siApplyFilters()">
+    <option value="">{{ label }}: all</option>
+    {% for v in values|sort %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  <span id="si-filter-info" style="color:#888; font-size:0.82rem"></span>
+</div>
+
+{% call ui.section('Open issues', 'blue', badge=open_issues|length) %}
+{% for i in open_issues %}{{ issue_row(i) }}{% else %}
+<p style="color:#888; margin:0.6rem 1rem">No open issues.</p>
+{% endfor %}
+{% endcall %}
+
+{% call ui.section('Closed', 'slate', badge=closed_issues|length, open=False) %}
+{% for i in closed_issues %}{{ issue_row(i) }}{% else %}
+<p style="color:#888; margin:0.6rem 1rem">Nothing closed yet.</p>
+{% endfor %}
+{% endcall %}
+
+<script>
+function siApplyFilters() {
+  const f = {};
+  ['channel', 'status', 'country', 'priority'].forEach(k => {
+    f[k] = document.getElementById('si-filter-' + k).value;
+  });
+  const active = Object.values(f).some(v => v);
+  let shown = 0, hidden = 0;
+  document.querySelectorAll('details.si-row').forEach(d => {
+    const ok = (!f.channel || d.dataset.channel === f.channel)
+            && (!f.status || d.dataset.status === f.status)
+            && (!f.country || d.dataset.country === f.country)
+            && (!f.priority || d.dataset.priority === f.priority);
+    d.style.display = ok ? '' : 'none';
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('si-filter-info').textContent =
+    active ? (shown + ' shown, ' + hidden + ' hidden') : '';
+}
+
+function siSave(el, url, payload) {
+  fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload) })
+    .then(r => { if (!r.ok) throw new Error();
+                 el.style.borderColor = '#1a7f37';
+                 setTimeout(() => { el.style.borderColor = ''; }, 800); })
+    .catch(() => { el.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+function siCalloutsSave(el) {
+  siSave(el, '/sustain-issues/issue/' + encodeURIComponent(el.dataset.key) + '/callouts',
+         { callouts: el.value });
+}
+function siNsSave(el) {
+  siSave(el, '/sustain-issues/issue/' + encodeURIComponent(el.dataset.key) + '/next-step',
+         { next_step: el.value });
+}
+</script>
+{% include '_next_step_history.html' %}
 {% endif %}
 {% endblock %}

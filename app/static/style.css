@@ -1429,14 +1429,14 @@ tr.rt-req td:first-child { border-left:4px solid transparent; }
 /* ---- expandable row (CORE SOUTH Smoke Testing scenarios; Known
    Production Issues rows, 2026-08-27, added to solve horizontal-scroll
    friction on a wide table) ---- */
-details.smoke-scenario, details.kpd-row { margin:0.5rem 1rem; border:1px solid #e2e2ea;
+details.smoke-scenario, details.kpd-row, details.si-row { margin:0.5rem 1rem; border:1px solid #e2e2ea;
     border-radius:8px; overflow:hidden; }
-details.smoke-scenario > summary, details.kpd-row > summary { cursor:pointer; list-style:none;
+details.smoke-scenario > summary, details.kpd-row > summary, details.si-row > summary { cursor:pointer; list-style:none;
     padding:0.55rem 0.8rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
     background:#fafafd; }
-details.smoke-scenario > summary::before, details.kpd-row > summary::before {
+details.smoke-scenario > summary::before, details.kpd-row > summary::before, details.si-row > summary::before {
     content:"\25B8"; transition:transform .15s; flex:none; }
-details.smoke-scenario[open] > summary::before, details.kpd-row[open] > summary::before {
+details.smoke-scenario[open] > summary::before, details.kpd-row[open] > summary::before, details.si-row[open] > summary::before {
     transform:rotate(90deg); }
 .kpd-row-body { padding:0.6rem 1rem 0.9rem 2rem; border-top:1px solid #eee; background:#fff; }
 .kpd-row-body p { margin:0 0 0.5rem; font-size:0.86rem; }

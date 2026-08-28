@@ -92,6 +92,12 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.get_smoke_next_step(c, int(i)),
         lambda c, i: database.set_smoke_next_step(c, int(i), None),
     ),
+    # Sustainphase Issues (2026-08-28) — keyed by issue_key (ASPEN Defect
+    # ID or SUS-nnn placeholder; annotations follow a key promotion)
+    "sustain_issue": NSEntity(
+        lambda c, i: database.get_sustain_issue_next_step(c, str(i)),
+        lambda c, i: database.set_sustain_issue_next_step(c, str(i), None),
+    ),
 }
 
 

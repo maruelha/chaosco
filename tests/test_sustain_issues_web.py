@@ -41,6 +41,13 @@ def client(tmp_path, monkeypatch):
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_si._cfg, "database_path", str(db_path))
     monkeypatch.setattr(web_si, "_UPLOAD_FOLDER", tmp_path / "uploads")
+    # the generic next-step archive (entity 'sustain_issue') runs in its
+    # own module
+    import app.web_next_steps as web_next_steps
+    from app.db import next_steps as db_ns
+    db_ns.init_schema(db_path)
+    monkeypatch.setattr(web_next_steps, "_get_conn",
+                        lambda: database.get_connection(db_path))
     return app.test_client()
 
 
@@ -86,6 +93,77 @@ def test_upload_empty_defects_tab_is_ok(client):
 def test_upload_dated_copy_kept(client, tmp_path):
     _upload(client)
     assert len(list((tmp_path / "uploads").glob("sustain_issues_*.xlsx"))) == 1
+
+
+# ---------------------------------------------------------------------------
+# List view (build plan step 3)
+
+def _two_row_bytes():
+    return _xlsx_bytes(rows=[
+        ["Retail", "DTC", "Open", "ASPEN-1", "Settlement file missing",
+         None, None, "Marina", "4711088", datetime(2026, 8, 28), None,
+         "High", None, None, "France", None, None, None, "yes", "no", None],
+        ["eCom", "Sales", "Closed", "ASPEN-2", "Wrong VAT on invoice",
+         None, None, None, None, datetime(2026, 8, 20),
+         datetime(2026, 8, 27), "Medium", None, None, "Italy", None, None,
+         None, "no", "no", None],
+    ])
+
+
+def test_list_splits_open_and_closed_with_filters(client):
+    _upload(client, data=_two_row_bytes())
+    html = client.get("/sustain-issues/").get_data(as_text=True)
+    # open/closed split by Date Closed (the filterbar above the sections
+    # also contains the string "Closed", so anchor inside the sections)
+    open_block = html.split("Open issues", 1)[1].split("Closed", 1)[0]
+    assert "ASPEN-1" in open_block
+    assert "Wrong VAT on invoice" not in open_block
+    assert "ASPEN-2" in html
+    # blocks-execution red chip only on the blocking issue
+    assert html.count("blocks execution") == 1
+    # filter dropdowns carry the distinct values
+    assert 'id="si-filter-channel"' in html
+    assert '<option value="Retail">Retail</option>' in html
+    assert '<option value="Closed">Closed</option>' in html
+    # data attributes drive the client-side filter
+    assert 'data-channel="eCom" data-status="Closed"' in html
+
+
+def test_list_renders_callouts_and_next_step(client):
+    _upload(client, data=_two_row_bytes())
+    client.post("/sustain-issues/issue/ASPEN-1/callouts",
+                json={"callouts": "mgmt attention"})
+    client.post("/sustain-issues/issue/ASPEN-1/next-step",
+                json={"next_step": "retest FR"})
+    html = client.get("/sustain-issues/").get_data(as_text=True)
+    assert "mgmt attention" in html and "📣" in html
+    assert "→ retest FR" in html
+
+
+def test_placeholder_promotion_shows_former_id(client):
+    # first upload without ASPEN id -> SUS-001; second with it -> promoted
+    no_id = _xlsx_bytes(rows=[
+        ["Retail", "DTC", "Open", None, "Settlement file missing", None,
+         None, None, None, None, None, "High", None, None, "France", None,
+         None, None, "no", "no", None]])
+    _upload(client, data=no_id)
+    html = client.get("/sustain-issues/").get_data(as_text=True)
+    assert "SUS-001" in html
+    _upload(client)   # default row carries ASPEN-1, same description
+    html = client.get("/sustain-issues/").get_data(as_text=True)
+    assert 'title="formerly SUS-001"' in html
+    assert ">SUS-001<" not in html   # placeholder no longer a visible key
+
+
+def test_next_step_archive_via_generic_component(client):
+    _upload(client)
+    client.post("/sustain-issues/issue/ASPEN-1/next-step",
+                json={"next_step": "chase GBS"})
+    resp = client.post("/next-steps/sustain_issue/ASPEN-1/archive")
+    data = resp.get_json()
+    assert data["ok"] and data["archived"] == "chase GBS"
+    listing = client.get("/next-steps/sustain_issue/ASPEN-1/list.json").get_json()
+    assert [i["next_step"] for i in listing["items"]] == ["chase GBS"]
 
 
 def test_callouts_and_next_step_save(client):

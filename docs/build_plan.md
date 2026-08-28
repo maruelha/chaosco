@@ -93,9 +93,17 @@ them for now. Steps one at a time, test+commit after each:
    (`POST /sustain-issues/issue/<key>/callouts|next-step`).
    `tests/test_sustain_issues_importer.py` (4) +
    `tests/test_sustain_issues_web.py` (6); suite 628.
-3. **List view** — filters Channel / ASPEN STATUS / Country / Priority,
-   open vs closed split (Date Closed), red call-out for "Does it block
-   execution = yes"; inline call-outs + next step (↻/🕘).
+3. ~~List view~~ ✅ DONE 2026-08-28: expandable rows (kpd pattern —
+   `details.si-row` added to the shared expandable-row CSS; deliberately
+   NOT a wide table, Marina's earlier feedback on horizontal scrolling).
+   Summary: key (former placeholder as tooltip) · short description ·
+   ASPEN-status chip · priority · red "blocks execution" chip ·
+   📣 call-outs marker · → next-step preview · channel/country/dates.
+   Body: description, Excel comment, meta line, call-outs textarea +
+   next-step input with ↻/🕘 (entity `sustain_issue`, registered in the
+   REGISTRY). Filters Channel/ASPEN status/Country/Priority
+   (client-side, distinct values); Open vs Closed sections split by
+   Date Closed (Closed collapsed). Web tests now 10; suite 632.
 4. **Search source** — order number + Defect ID + former placeholder.
 5. **Dashboard card + docs sweep** (card after Smoke; sustain-issues.md,
    screens, schema, architecture, dashboard_cards, CLAUDE.md).
