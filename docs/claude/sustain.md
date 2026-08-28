@@ -77,10 +77,24 @@ Classification (pure functions, tested in
 - `list_tabs` (day picker), `list_tasks` (workbook order, details
   attached), `task_count` (dashboard badge).
 
-## Still to build (build-plan steps 2–6)
+## Importer — `app/sustain_importer.py`
 
-2. Importer `app/sustain_importer.py` (openpyxl `data_only=True`, tab
-   pattern → stream+day, parent = has Task ID / detail = outline level 1).
+`parse_sustain_workbook` loads with `data_only=True` (cached cell values;
+aggregations are recomputed in storage, never imported). Tab pattern
+`(Retail|eCom)_<ISO date>` (case-insensitive) → (stream, day); other tabs
+ignored; a matching tab whose row-6 column A isn't "Task ID" raises
+`ParseError` (structure drift must be loud). Parent = row with Task ID;
+detail = outline level ≥ 1 under the last parent; level-0 rows without a
+Task ID are dropped. Task IDs arrive as text OR numbers → normalised to
+text. `run_sustain_import` replaces each contained tab
+(`replace_day_stream`) and returns ok/error + tabs/tasks/details counts.
+
+Verified 2026-08-28 against the real `1_0109_0409` file: 8 tabs,
+236 tasks, 2,720 details; recomputed due/completed/pending matched the
+Excel's cached row 4 on all 8 tabs exactly.
+
+## Still to build (build-plan steps 3–6)
+
 3. Upload page `/sustain/` (file picker, suffix match, dated copy in
    `data/uploads/`).
 4. Detail report (day picker + stream toggle, expandable parents, stat

@@ -92,12 +92,16 @@ accumulate history. Steps one at a time, Marina confirms each:
    includes all-N/A due tasks, matching Excel's COMPLETED; attention
    counts over ALL parents like Excel's REVIEW). Registered in the
    `database.py` facade; `tests/test_sustain_storage.py` (8 tests).
-2. **Importer `app/sustain_importer.py`** — `parse_sustain_workbook`
-   (openpyxl `data_only=True`, tab-name pattern → (stream, date), rows
-   from 7, parent = has Task ID / detail = outline level 1) +
-   `run_sustain_import` (replace per tab). Verify counts against the real
-   file (Retail 09-01: 33 parents / ~360 rows; eCom 09-01: 26 / ~378).
-   `tests/test_sustain_importer.py`.
+2. ~~Importer `app/sustain_importer.py`~~ ✅ DONE 2026-08-28:
+   `parse_sustain_workbook` (openpyxl `data_only=True`, tab pattern
+   `(Retail|eCom)_<ISO date>`, parent = has Task ID / detail = outline
+   level ≥ 1 under the last parent; matching tab with wrong row-6 header
+   raises ParseError, non-matching tabs ignored) + `run_sustain_import`
+   (replace per tab, smoke-importer result shape). Verified against the
+   real file: 8 tabs, 236 tasks, 2,720 details — recomputed
+   due/completed/pending match Excel's cached row 4 EXACTLY on all 8
+   tabs (pristine file, so attention=0 everywhere, also matching).
+   `tests/test_sustain_importer.py` (5 tests).
 3. **Blueprint `app/web_sustain.py`** — `/sustain/` upload page, file
    picker (.xlsx, suffix-matched), dated copy in `data/uploads/` (Smoke
    pattern), wired to the importer; registered in `app/web.py`. Plain
