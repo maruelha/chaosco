@@ -152,4 +152,73 @@ def search_order_number(conn: sqlite3.Connection, q: str) -> list[dict]:
             "SELECT id, entity_type, entity_id, heading, note FROM notes"
             " WHERE heading LIKE ? OR note LIKE ? LIMIT 20", (like, like)))])
 
+    # -- 8. Sustainphase Issues (2026-08-28) — order number, issue key,
+    # ASPEN Defect ID AND the former SUS-nnn placeholder (a promoted
+    # issue must stay findable by its old placeholder [USER]). New SQL →
+    # portable case-insensitive LIKE.
+    try:
+        si_rows = _rows_to_dicts(conn.execute(
+            "SELECT issue_key, defect_id, former_placeholder,"
+            " short_description, order_number FROM sustain_issues"
+            " WHERE LOWER(order_number) LIKE LOWER(?)"
+            "    OR LOWER(issue_key) LIKE LOWER(?)"
+            "    OR LOWER(former_placeholder) LIKE LOWER(?) LIMIT 20",
+            (like, like, like)))
+    except sqlite3.OperationalError:
+        si_rows = []  # module not initialised in this DB
+    si_hits = []
+    for r in si_rows:
+        matched = [x for x in (r["order_number"], r["issue_key"],
+                               r["former_placeholder"])
+                   if x and q.lower() in str(x).lower()]
+        si_hits.append({
+            "type": "sustain_issue", "id": r["issue_key"],
+            "label": f"{r['issue_key']} — {r['short_description'] or ''}".rstrip(" —"),
+            "match": " · ".join(matched)})
+    _add("Sustainphase Issues", si_hits)
+
+    # -- 9. Smoke scenarios (2026-08-28 [USER]) — scenario names + step
+    # ASPEN tickets; one hit per scenario, ws picks the target page.
+    smoke_hits: dict[int, dict] = {}
+    try:
+        for r in _rows_to_dicts(conn.execute(
+                "SELECT id, ws, scenario FROM smoke_scenarios"
+                " WHERE LOWER(scenario) LIKE LOWER(?) LIMIT 20", (like,))):
+            smoke_hits[r["id"]] = {
+                "type": "smoke", "id": r["id"], "ws": r["ws"],
+                "label": r["scenario"] or "(no name)",
+                "match": _snippet(r["scenario"], q)}
+        for r in _rows_to_dicts(conn.execute(
+                "SELECT DISTINCT s.id, s.ws, s.scenario, st.aspen_ticket"
+                " FROM smoke_steps st JOIN smoke_scenarios s"
+                " ON s.id = st.scenario_id"
+                " WHERE LOWER(st.aspen_ticket) LIKE LOWER(?) LIMIT 20",
+                (like,))):
+            smoke_hits.setdefault(r["id"], {
+                "type": "smoke", "id": r["id"], "ws": r["ws"],
+                "label": r["scenario"] or "(no name)",
+                "match": f"ASPEN {r['aspen_ticket']}"})
+    except sqlite3.OperationalError:
+        pass  # module not initialised in this DB
+    _add("Smoke scenarios", list(smoke_hits.values())[:20])
+
+    # -- 10. Delegated tickets (2026-08-28 [USER]) — key + summary of the
+    # delegated-tagged tickets, linking to the DELEGATED ticket detail
+    # (until now they only surfaced via the Jira AC/comments block, which
+    # links to the gatekeeper view).
+    try:
+        del_hits = [
+            {"type": "delegated", "id": r["jira_key"],
+             "label": f"{r['jira_key']} — {r['summary'] or ''}".rstrip(" —"),
+             "match": r["jira_status"] or ""}
+            for r in _rows_to_dicts(conn.execute(
+                "SELECT jira_key, summary, jira_status FROM jira_issues"
+                " WHERE seen_in_delegated = 1"
+                " AND (LOWER(jira_key) LIKE LOWER(?)"
+                "      OR LOWER(summary) LIKE LOWER(?)) LIMIT 20",
+                (like, like)))]
+    except sqlite3.OperationalError:
+        del_hits = []  # jira schema / column not initialised in this DB
+    _add("Delegated Testing", del_hits)
+
     return groups

@@ -104,7 +104,16 @@ them for now. Steps one at a time, test+commit after each:
    REGISTRY). Filters Channel/ASPEN status/Country/Priority
    (client-side, distinct values); Open vs Closed sections split by
    Date Closed (Closed collapsed). Web tests now 10; suite 632.
-4. **Search source** — order number + Defect ID + former placeholder.
+4. ~~Search source~~ ✅ DONE 2026-08-28 together with the search
+   extensions below: "Sustainphase Issues" block (order number +
+   issue_key + former SUS-nnn placeholder — a promoted issue stays
+   findable by its old key; hits link to the card), "Smoke scenarios"
+   block (scenario name + step ASPEN tickets; ws picks /smoke/ecom vs
+   /smoke/retail) and a dedicated "Delegated Testing" group (key +
+   summary of delegated-tagged tickets → DELEGATED ticket detail, not
+   the gatekeeper view). All new SQL uses portable
+   `LOWER(col) LIKE LOWER(?)`; every block tolerates its tables missing.
+   `tests/test_search_new_sources.py` (3); suite 635.
 5. **Dashboard card + docs sweep** (card after Smoke; sustain-issues.md,
    screens, schema, architecture, dashboard_cards, CLAUDE.md).
 
@@ -112,10 +121,7 @@ them for now. Steps one at a time, test+commit after each:
 upload-and-view mini app, ANOTHER session. SMOKETEST_KT tab: ignored
 (KT tracking lives on the Smoke scenarios instead — see Smoke item 9).
 
-**Search extensions (with/after step 4):** "Smoke scenarios" source
-(scenario-name hits → eCOM/Retail page) + dedicated "Delegated" group
-(key/summary matches on delegated-tagged tickets → delegated ticket
-detail; today they only surface via the shared Jira comments/AC block).
+~~Search extensions~~ ✅ DONE 2026-08-28 — folded into step 4 above.
 
 ### Core South Sustainphase Monitoring (`/sustain/`) — PLANNED 2026-08-27
 

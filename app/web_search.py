@@ -38,6 +38,11 @@ def _url_for_hit(hit_type: str, hit_id) -> str | None:
             return url_for("retail_detail", retail_id=hit_id)
         if hit_type == "defect":
             return url_for("defect_detail", defect_id=hit_id)
+        if hit_type == "sustain_issue":
+            return url_for("sustain_issues.sustain_issues_home")
+        if hit_type == "delegated":
+            return url_for("delegated.delegated_ticket_detail",
+                           jira_key=hit_id)
     except Exception:
         return None
     return None
@@ -80,6 +85,17 @@ def orders_json():
                 if url:
                     hits.append({"label": f"{h['label']} · {where}",
                                  "match": h["match"], "url": url})
+                continue
+            if h["type"] == "smoke":
+                # ws picks the page (there is no per-scenario detail page)
+                try:
+                    url = url_for("smoke.smoke_retail") if h.get("ws") == "Retail" \
+                        else url_for("smoke.smoke_ecom")
+                except Exception:
+                    url = None
+                if url:
+                    hits.append({"label": h["label"], "match": h["match"],
+                                 "url": url})
                 continue
             url = _url_for_hit(h["type"], h["id"])
             if url:
