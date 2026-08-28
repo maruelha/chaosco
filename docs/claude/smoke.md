@@ -53,7 +53,10 @@ and an empty `Summary` sheet — both ignored).
   expected_result, comment, owner_email, owner, ws_executing,
   aspen_ticket, execution_status, progress
 - `smoke_annotations` (2026-08-28, USER-AUTHORED): row_id PK (= Excel
-  RowID, the stable business key), comment, next_step, updated_at.
+  RowID, the stable business key), comment, next_step, kt_done, kt_date
+  (KT = knowledge transfer, checkbox + date per scenario with a green
+  "KT ✓ date" summary chip — the workbook's SMOKETEST_KT tab is
+  ignored [USER]), updated_at.
   `replace_all` NEVER touches it — Marina's comment + next step survive
   re-imports. Only-field upserts (`set_smoke_comment` /
   `set_smoke_next_step`), merged onto scenarios in the web layer as

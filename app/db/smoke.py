@@ -69,6 +69,18 @@ def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # migrations (safe to re-run)
+        for ddl in (
+            # KT tracking (2026-08-28 [USER]): which smoke scenarios had
+            # their knowledge transfer — authored checkbox + date.
+            "ALTER TABLE smoke_annotations ADD COLUMN"
+            " kt_done INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE smoke_annotations ADD COLUMN kt_date TEXT",
+        ):
+            try:
+                conn.execute(ddl)
+            except sqlite3.OperationalError:
+                pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -88,9 +100,10 @@ def get_smoke_annotations(conn: sqlite3.Connection) -> dict[int, dict]:
     fields, merged onto the scenarios in the web layer. Tolerant of the
     table not existing yet (partial-init test fixtures)."""
     try:
-        return {r: {"comment": c, "next_step": ns}
-                for r, c, ns in conn.execute(
-                    "SELECT row_id, comment, next_step"
+        return {r: {"comment": c, "next_step": ns,
+                    "kt_done": bool(kt), "kt_date": kd}
+                for r, c, ns, kt, kd in conn.execute(
+                    "SELECT row_id, comment, next_step, kt_done, kt_date"
                     " FROM smoke_annotations")}
     except sqlite3.OperationalError:
         return {}
@@ -135,6 +148,21 @@ def set_smoke_next_step(conn: sqlite3.Connection, row_id: int,
                 next_step  = excluded.next_step,
                 updated_at = excluded.updated_at
         """, (row_id, next_step or None, _now()))
+
+
+def set_smoke_kt(conn: sqlite3.Connection, row_id: int, done: bool,
+                 kt_date: str | None) -> None:
+    """Only-these-fields upsert — KT (knowledge transfer) checkbox + date
+    per scenario [USER 2026-08-28]."""
+    with conn:
+        conn.execute("""
+            INSERT INTO smoke_annotations (row_id, kt_done, kt_date, updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(row_id) DO UPDATE SET
+                kt_done    = excluded.kt_done,
+                kt_date    = excluded.kt_date,
+                updated_at = excluded.updated_at
+        """, (row_id, 1 if done else 0, (kt_date or "").strip() or None, _now()))
 
 
 def scenario_count(conn: sqlite3.Connection) -> int:

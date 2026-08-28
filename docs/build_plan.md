@@ -49,6 +49,52 @@ Last updated: 2026-08-27
 
 ## Part 1 — Feature work by module
 
+### Sustainphase Issues (`/sustain-issues/`) — PLANNED 2026-08-28
+
+From the **Defects tab** of `DTC_Sustainphase_Tracking….xlsx` (planning
+chat 2026-08-28; tab is still an EMPTY template — 21 headers in row 1,
+built against headers + synthetic tests, first real upload is the true
+test). Columns: Channel · Sales or DTC · ASPEN STATUS · Defect ID ·
+Short description · more Defect description · Comment · raised by ·
+order number · Date Reported · Date Closed · Priority · Assigned to ·
+Tech Team · Country · Scenario · affected testcases · Retest Dependency ·
+Does it block execution · Exists in production (IGNORED entirely [USER])
+· Defect reason.
+
+Decisions [USER 2026-08-28]: issues can exist before their ASPEN id →
+auto-assigned placeholder key `SUS-001`-style (technical PK anyway);
+once the real Defect ID arrives the placeholder disappears from view but
+stays SEARCHABLE (kept as former id). Upload = file picker, name
+contains `DTC_Sustainphase_Tracking`. Authored per issue: call-outs/
+comment + next step (generic archive, entity `sustain_issue`).
+Dashboard card next to Sustainphase Monitoring / Smoke — NOT linked to
+them for now. Steps one at a time, test+commit after each:
+
+1. **Storage `app/db/sustain_issues.py`** — imported `sustain_issues`
+   (all columns minus Exists-in-production; technical PK; upsert by
+   defect_id, fallback match by normalized short description;
+   placeholder assignment SUS-nnn + `former_placeholder` migration when
+   the real id arrives) + authored `sustain_issue_annotations`
+   (callouts, next_step, keyed by the issue key). Tests first.
+2. **Importer + upload** — Defects tab (header row 1), name-contains
+   guard, dated copy in uploads; `/sustain-issues/` Blueprint registered
+   in web.py.
+3. **List view** — filters Channel / ASPEN STATUS / Country / Priority,
+   open vs closed split (Date Closed), red call-out for "Does it block
+   execution = yes"; inline call-outs + next step (↻/🕘).
+4. **Search source** — order number + Defect ID + former placeholder.
+5. **Dashboard card + docs sweep** (card after Smoke; sustain-issues.md,
+   screens, schema, architecture, dashboard_cards, CLAUDE.md).
+
+**Parked [USER 2026-08-28]:** SPOT_CHECKS tab → its own similar
+upload-and-view mini app, ANOTHER session. SMOKETEST_KT tab: ignored
+(KT tracking lives on the Smoke scenarios instead — see Smoke item 9).
+
+**Search extensions (with/after step 4):** "Smoke scenarios" source
+(scenario-name hits → eCOM/Retail page) + dedicated "Delegated" group
+(key/summary matches on delegated-tagged tickets → delegated ticket
+detail; today they only surface via the shared Jira comments/AC block).
+
 ### Core South Sustainphase Monitoring (`/sustain/`) — PLANNED 2026-08-27
 
 Daily GBS Operations checklist for the sustain phase (O2C DTC). Source
@@ -220,6 +266,13 @@ tests passing.
    scenarios with zero matching steps. Page JS consolidated into the
    partial's `smoke_js()` macro (was duplicated per page). Storage +3
    tests (11), web +3 & 1 rewritten (13); suite 609.
+
+9. ~~KT tracking per scenario~~ ✅ DONE 2026-08-28 [USER]: checkbox
+   "KT" + date input in each scenario's authored row (migration
+   `smoke_annotations.kt_done`/`kt_date`, only-fields upsert
+   `set_smoke_kt`, `POST /smoke/scenario/<row_id>/kt`, saved onchange);
+   green "KT ✓ <date>" chip in the scenario summary. The workbook's
+   SMOKETEST_KT tab stays ignored. Storage +1 / web +1 test; suite 611.
 
 ### Delegated Testing (`/delegated/`) — NEW 2026-08-26
 

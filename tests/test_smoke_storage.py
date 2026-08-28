@@ -157,7 +157,8 @@ def test_annotations_upsert_only_their_field(tmp_path):
         assert db_smoke.get_smoke_next_step(conn, 100) == "retest after fix"
         anns = db_smoke.get_smoke_annotations(conn)
         assert anns[100]["comment"] == "updated comment"
-        assert anns[200] == {"comment": None, "next_step": "ask owner"}
+        assert anns[200] == {"comment": None, "next_step": "ask owner",
+                             "kt_done": False, "kt_date": None}
         # blank clears
         db_smoke.set_smoke_comment(conn, 100, "")
         assert db_smoke.get_smoke_comment(conn, 100) is None
@@ -182,5 +183,23 @@ def test_annotations_tolerate_missing_table(tmp_path):
     conn = database.get_connection(db_path)
     try:
         assert db_smoke.get_smoke_annotations(conn) == {}
+    finally:
+        conn.close()
+
+
+def test_kt_upsert_and_defaults(tmp_path):
+    conn = _setup(tmp_path)
+    try:
+        db_smoke.set_smoke_comment(conn, 100, "note first")
+        db_smoke.set_smoke_kt(conn, 100, True, "2026-08-28")
+        db_smoke.set_smoke_kt(conn, 200, True, "")
+        anns = db_smoke.get_smoke_annotations(conn)
+        assert anns[100]["kt_done"] is True
+        assert anns[100]["kt_date"] == "2026-08-28"
+        assert anns[100]["comment"] == "note first"   # untouched
+        assert anns[200] == {"comment": None, "next_step": None,
+                             "kt_done": True, "kt_date": None}
+        db_smoke.set_smoke_kt(conn, 100, False, None)
+        assert db_smoke.get_smoke_annotations(conn)[100]["kt_done"] is False
     finally:
         conn.close()

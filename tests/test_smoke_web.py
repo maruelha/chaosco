@@ -236,6 +236,20 @@ def test_next_step_archive_via_generic_component(client):
     assert "ask the owner" not in html
 
 
+def test_kt_checkbox_saves_and_renders_marker(client):
+    _upload(client, data=_xlsx_bytes(_ecom_split_rows()))
+    resp = client.post("/smoke/scenario/150/kt",
+                       json={"kt_done": True, "kt_date": "2026-08-28"})
+    assert resp.get_json()["ok"]
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert "KT ✓ 2026-08-28" in html          # summary marker
+    assert re.search(r'class="smoke-kt-done" data-row="150"\s+checked', html)
+    # unticking clears the marker
+    client.post("/smoke/scenario/150/kt", json={"kt_done": False})
+    html = client.get("/smoke/ecom").get_data(as_text=True)
+    assert "KT ✓" not in html
+
+
 # ---------------------------------------------------------------------------
 # Step filters: WS Executing + Owner (2026-08-28)
 

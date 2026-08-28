@@ -53,6 +53,8 @@ def _attach_annotations(scenarios: list[dict], annotations: dict) -> None:
         ann = annotations.get(s.get("row_id")) or {}
         s["user_comment"] = ann.get("comment")
         s["next_step"] = ann.get("next_step")
+        s["kt_done"] = ann.get("kt_done") or False
+        s["kt_date"] = ann.get("kt_date")
 
 
 @bp.route("/ecom")
@@ -89,6 +91,19 @@ def smoke_comment(row_id: int):
     conn = _get_conn()
     try:
         db_smoke.set_smoke_comment(conn, row_id, value.strip() or None)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/scenario/<int:row_id>/kt", methods=["POST"])
+def smoke_kt(row_id: int):
+    """Save the scenario's KT (knowledge transfer) checkbox + date."""
+    data = request.get_json(silent=True) or {}
+    conn = _get_conn()
+    try:
+        db_smoke.set_smoke_kt(conn, row_id, bool(data.get("kt_done")),
+                              data.get("kt_date"))
     finally:
         conn.close()
     return jsonify({"ok": True})

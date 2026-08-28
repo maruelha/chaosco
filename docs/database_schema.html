@@ -744,6 +744,8 @@
         <tr><td class="col-name">row_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">= smoke_scenarios.row_id (Excel RowID)</td></tr>
         <tr><td class="col-name">comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">textarea in the expanded scenario, saved onblur; 📝 marker in the summary</td></tr>
         <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">live next step; ↻ archives into next_step_history (entity 'smoke')</td></tr>
+        <tr><td class="col-name">kt_done</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-28 — DEFAULT 0; KT (knowledge transfer) done checkbox, green "KT ✓" chip in the scenario summary</td></tr>
+        <tr><td class="col-name">kt_date</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-08-28 — KT date (date input next to the checkbox)</td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>

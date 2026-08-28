@@ -43,6 +43,7 @@
     <span style="color:#666; font-size:0.78rem">{{ s.package or '—' }}</span>
     <span class="chip {{ status_chip }}">{{ status }}</span>
     {% if s.user_comment %}<span title="{{ s.user_comment }}">📝</span>{% endif %}
+    {% if s.kt_done %}<span class="chip chip--pass" title="knowledge transfer done">KT ✓{% if s.kt_date %} {{ s.kt_date }}{% endif %}</span>{% endif %}
     {% if s.next_step %}<span style="color:#2b6cb0; font-size:0.78rem"
         title="next step">→ {{ s.next_step }}</span>{% endif %}
     <span style="color:#999; font-size:0.78rem; margin-left:0.4rem">
@@ -78,6 +79,16 @@
         <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
                 data-entity-type="smoke" data-entity-id="{{ s.row_id }}"
                 data-ns-label="{{ s.scenario or ('RowID ' ~ s.row_id) }}">🕘</button>
+      </span>
+      <span style="display:flex; gap:0.35rem; align-items:center; font-size:0.85rem; white-space:nowrap">
+        <label style="display:flex; gap:0.3rem; align-items:center; cursor:pointer"
+               title="knowledge transfer done for this scenario">
+          <input type="checkbox" class="smoke-kt-done" data-row="{{ s.row_id }}"
+                 {% if s.kt_done %}checked{% endif %} onchange="smokeKtSave(this)"> KT
+        </label>
+        <input type="date" class="smoke-kt-date" data-row="{{ s.row_id }}"
+               value="{{ s.kt_date or '' }}" title="KT date"
+               style="font-size:0.8rem" onchange="smokeKtSave(this)">
       </span>
     </div>
     {% call ui.table(['Step', 'Expected result', 'Owner', 'WS Executing',
@@ -145,6 +156,12 @@ function smokeCommentSave(el) {
 }
 function smokeNsSave(el) {
   smokeSave(el, '/smoke/scenario/' + el.dataset.row + '/next-step', { next_step: el.value });
+}
+function smokeKtSave(el) {
+  const row = el.dataset.row;
+  const done = document.querySelector('input.smoke-kt-done[data-row="' + row + '"]').checked;
+  const date = document.querySelector('input.smoke-kt-date[data-row="' + row + '"]').value;
+  smokeSave(el, '/smoke/scenario/' + row + '/kt', { kt_done: done, kt_date: date });
 }
 </script>
 {% endmacro %}
