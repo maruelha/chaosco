@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Core South Sustainphase Monitoring — Test Coordination{% endblock %}
+
+{% block content %}
+{% call ui.page_header('Core South Sustainphase Monitoring', 'Daily GBS '
+                       ~ 'Operations checklist (O2C DTC) — one tab per day '
+                       ~ 'for Retail and eCom, imported per day.') %}
+<form method="post" action="{{ url_for('sustain.sustain_upload') }}"
+      enctype="multipart/form-data" style="display:inline">
+  <input type="file" name="file" accept=".xlsx" required
+         style="font-size:0.8rem; max-width:15rem">
+  <button type="submit" class="btn btn-primary"
+          title="upload the …DTC_GBS Operations_checklist.xlsx workbook">
+    ⤒ Upload &amp; import</button>
+</form>
+{% endcall %}
+
+{% if sustain_msg %}
+<div class="result-box{% if sustain_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Import</span>
+    <span class="result-value">{{ sustain_msg }}</span>
+  </div>
+</div>
+{% endif %}
+
+{% if not tabs %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No checklist imported yet — pick the
+  <strong>…DTC_GBS Operations_checklist.xlsx</strong> workbook above and press
+  <strong>⤒ Upload &amp; import</strong>.
+</p>
+{% else %}
+{# plain imported-tabs list until the day report pages arrive (step 4) #}
+{% call ui.section('Imported days', 'slate') %}
+<table class="ui-table">
+  <thead><tr><th>Day</th><th>Stream</th><th>Tasks</th></tr></thead>
+  <tbody>
+    {% for t in tabs %}
+    <tr>
+      <td>{{ t.day }}</td>
+      <td>{{ t.stream }}</td>
+      <td>{{ t.task_count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endcall %}
+{% endif %}
+{% endblock %}

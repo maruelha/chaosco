@@ -1,0 +1,114 @@
+"""Core South Sustainphase Monitoring card (build plan step 3, 2026-08-27):
+upload page + file-picker import wiring."""
+import io
+
+import openpyxl
+import pytest
+
+from app import database
+from app.db import sustain as db_sustain
+import app.web_sustain as web_sustain
+from app.web import app
+
+HEADERS = ["Task ID", "L4 Taxonomy", "Process / Task", "Cadence",
+           "Due Today", "Country", "Provider / Partner / Financial Account",
+           "France Result", "Italy Result", "Portugal Result", "Spain Result",
+           "Task Overall (DO NOT EDIT)"]
+
+FILENAME = "1_0109_0409-O2C DTC_GBS Operations_checklist.xlsx"
+
+
+def _xlsx_bytes() -> bytes:
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    for title in ("Retail_2026-09-01", "eCom_2026-09-01"):
+        ws = wb.create_sheet(title)
+        for col, header in enumerate(HEADERS, start=1):
+            ws.cell(6, col, header)
+        ws.append([])  # row 7 filled below
+        for col, v in enumerate(["1", "Settlement", "Monitor files", "Daily",
+                                 "Yes", None, "Adyen", "OK", "N/A", "N/A",
+                                 "N/A", "OK"], start=1):
+            ws.cell(7, col, v)
+        ws.cell(8, 3, "↳ Detail check")
+        ws.cell(8, 4, "Daily")
+        ws.cell(8, 5, "Yes")
+        ws.cell(8, 6, "France")
+        ws.cell(8, 7, "Adyen for cards")
+        ws.cell(8, 8, "OK")
+        ws.row_dimensions[8].outline_level = 1
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    db_path = tmp_path / "sustain.db"
+    database.init_db(db_path).close()
+    db_sustain.init_schema(db_path)
+    monkeypatch.setattr(web_sustain, "_get_conn",
+                        lambda: database.get_connection(db_path))
+    monkeypatch.setitem(web_sustain._cfg, "database_path", str(db_path))
+    monkeypatch.setattr(web_sustain, "_UPLOAD_FOLDER", tmp_path / "uploads")
+    return app.test_client()
+
+
+def _upload(client, data=None, filename=FILENAME):
+    data = data if data is not None else _xlsx_bytes()
+    return client.post("/sustain/upload", data={
+        "file": (io.BytesIO(data), filename)})
+
+
+def test_home_shows_empty_state_before_import(client):
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert "Sustainphase Monitoring" in html
+    assert "No checklist imported yet" in html
+
+
+def test_upload_imports_and_reports_counts(client):
+    resp = _upload(client)
+    assert resp.status_code == 302 and "sustain_ok=1" in resp.headers["Location"]
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "2 day tabs" in html and "2 tasks" in html
+
+    conn = web_sustain._get_conn()
+    try:
+        assert db_sustain.task_count(conn) == 2
+    finally:
+        conn.close()
+
+
+def test_upload_rejects_wrong_files(client):
+    resp = _upload(client, filename="notes.txt")
+    assert "sustain_ok=0" in resp.headers["Location"]
+    # right extension, wrong workbook family (suffix mismatch)
+    resp = _upload(client, filename="DTC_UAT_testtracking_ROE.xlsx")
+    assert "sustain_ok=0" in resp.headers["Location"]
+    resp = client.post("/sustain/upload", data={})
+    assert "sustain_ok=0" in resp.headers["Location"]
+
+
+def test_upload_accepts_browser_duplicate_name(client):
+    """'… checklist (1).xlsx' double-download copies must still import."""
+    resp = _upload(
+        client,
+        filename="1_0109_0409-O2C DTC_GBS Operations_checklist (1).xlsx")
+    assert "sustain_ok=1" in resp.headers["Location"]
+
+
+def test_upload_dated_copy_kept_in_uploads_folder(client, tmp_path):
+    _upload(client)
+    saved = list((tmp_path / "uploads").glob("sustain_*.xlsx"))
+    assert len(saved) == 1
+
+
+def test_upload_reports_error_when_no_day_tabs(client):
+    wb = openpyxl.Workbook()
+    wb.active.title = "Instructions"
+    buf = io.BytesIO()
+    wb.save(buf)
+    resp = _upload(client, data=buf.getvalue())
+    assert "sustain_ok=0" in resp.headers["Location"]
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "day tabs" in html

@@ -153,6 +153,14 @@ from app.web_smoke import bp as _smoke_bp
 _db_smoke.init_schema(_db_path)
 app.register_blueprint(_smoke_bp)
 
+# Core South Sustainphase Monitoring (2026-08-27) — daily GBS Operations
+# checklist workbook (…DTC_GBS Operations_checklist.xlsx), uploaded on the
+# card; one tab per stream per day, replaced per tab on import.
+from app.db import sustain as _db_sustain
+from app.web_sustain import bp as _sustain_bp
+_db_sustain.init_schema(_db_path)
+app.register_blueprint(_sustain_bp)
+
 
 if __name__ == "__main__":
     import threading

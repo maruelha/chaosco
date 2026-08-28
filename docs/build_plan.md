@@ -102,10 +102,13 @@ accumulate history. Steps one at a time, Marina confirms each:
    due/completed/pending match Excel's cached row 4 EXACTLY on all 8
    tabs (pristine file, so attention=0 everywhere, also matching).
    `tests/test_sustain_importer.py` (5 tests).
-3. **Blueprint `app/web_sustain.py`** — `/sustain/` upload page, file
-   picker (.xlsx, suffix-matched), dated copy in `data/uploads/` (Smoke
-   pattern), wired to the importer; registered in `app/web.py`. Plain
-   import-count line until step 4. `tests/test_sustain_web.py`.
+3. ~~Blueprint `app/web_sustain.py`~~ ✅ DONE 2026-08-28: `/sustain/`
+   upload page, file picker (.xlsx; name must CONTAIN
+   'DTC_GBS Operations_checklist' rather than end with it, so browser
+   '(1)' double-download copies still import), dated `sustain_*.xlsx`
+   copy in `data/uploads/`, wired to `run_sustain_import`; registered in
+   `app/web.py`. Shows a plain imported-days table until step 4.
+   `tests/test_sustain_web.py` (6 tests).
 4. **Detail report** — day picker + Retail/eCom toggle; table mirroring
    the Excel: parent task rows expandable to their detail rows (native
    `<details>` accordion, Smoke's `scenario_group` pattern); recomputed

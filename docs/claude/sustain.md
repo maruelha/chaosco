@@ -93,10 +93,18 @@ Verified 2026-08-28 against the real `1_0109_0409` file: 8 tabs,
 236 tasks, 2,720 details; recomputed due/completed/pending matched the
 Excel's cached row 4 on all 8 tabs exactly.
 
-## Still to build (build-plan steps 3–6)
+## Web — `app/web_sustain.py` (Blueprint `/sustain/`)
 
-3. Upload page `/sustain/` (file picker, suffix match, dated copy in
-   `data/uploads/`).
+Upload on the card (Smoke pattern): file picker, dated `sustain_*.xlsx`
+copy in `data/uploads/`, then `run_sustain_import`. Filename guard:
+`.xlsx` AND the name must **contain** `DTC_GBS Operations_checklist`
+(not end with it — browser " (1)" double-download copies must still
+import; the prefix before `DTC_GBS` varies per file anyway). Import
+result via `sustain_ok`/`sustain_msg` query params in a result-box.
+Template `sustain.html`; until step 4 it shows a plain imported-days
+table (`list_tabs`).
+
+## Still to build (build-plan steps 4–6)
 4. Detail report (day picker + stream toggle, expandable parents, stat
    cards from `summary_counts`).
 5. Management summary (headline + Attention list + trend + repeat
