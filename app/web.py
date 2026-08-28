@@ -161,6 +161,14 @@ from app.web_sustain import bp as _sustain_bp
 _db_sustain.init_schema(_db_path)
 app.register_blueprint(_sustain_bp)
 
+# Sustainphase Issues (2026-08-28) — Defects tab of the
+# DTC_Sustainphase_Tracking workbook, uploaded on the card; upsert by
+# ASPEN Defect ID with SUS-nnn placeholders until the id arrives.
+from app.db import sustain_issues as _db_si
+from app.web_sustain_issues import bp as _si_bp
+_db_si.init_schema(_db_path)
+app.register_blueprint(_si_bp)
+
 
 if __name__ == "__main__":
     import threading

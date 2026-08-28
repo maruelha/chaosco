@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Sustainphase Issues — Test Coordination{% endblock %}
+
+{% block content %}
+{% call ui.page_header('Sustainphase Issues', 'Defects from the '
+                       ~ 'DTC_Sustainphase_Tracking workbook (Defects tab) — '
+                       ~ 'upserted per upload; issues without an ASPEN id get '
+                       ~ 'a SUS-nnn placeholder until it arrives.') %}
+<form method="post" action="{{ url_for('sustain_issues.sustain_issues_upload') }}"
+      enctype="multipart/form-data" style="display:inline">
+  <input type="file" name="file" accept=".xlsx" required
+         style="font-size:0.8rem; max-width:15rem">
+  <button type="submit" class="btn btn-primary"
+          title="upload the DTC_Sustainphase_Tracking workbook">
+    ⤒ Upload &amp; import</button>
+</form>
+{% endcall %}
+
+{% if si_msg %}
+<div class="result-box{% if si_ok != '1' %} result-box--error{% endif %}" style="margin-bottom:1rem">
+  <div class="result-row">
+    <span class="result-label">Import</span>
+    <span class="result-value">{{ si_msg }}</span>
+  </div>
+</div>
+{% endif %}
+
+{% if not issues %}
+<p style="color:#888; margin:0.6rem 0 1rem">
+  No issues yet — pick the <strong>DTC_Sustainphase_Tracking</strong>
+  workbook above and press <strong>⤒ Upload &amp; import</strong>.
+  (An empty Defects tab imports fine — the list fills as the team logs
+  defects.)
+</p>
+{% else %}
+{# plain count line until the real list view arrives (build plan step 3) #}
+<p style="color:#666; margin:0.6rem 0 1rem">
+  {{ issues|length }} issue{{ 's' if issues|length != 1 }} tracked.
+</p>
+{% endif %}
+{% endblock %}

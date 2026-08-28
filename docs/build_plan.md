@@ -80,9 +80,19 @@ them for now. Steps one at a time, test+commit after each:
    promotion). Registered in the `database.py` facade.
    `tests/test_sustain_issues_storage.py` (6 tests, incl. the
    promotion + annotation-migration path); suite 617.
-2. **Importer + upload** — Defects tab (header row 1), name-contains
-   guard, dated copy in uploads; `/sustain-issues/` Blueprint registered
-   in web.py.
+2. ~~Importer + upload~~ ✅ DONE 2026-08-28:
+   `app/sustain_issues_importer.py` — Defects tab found by name, columns
+   mapped by NORMALIZED HEADER NAME prefix (headers contain newlines;
+   position-mapping would break on inserted columns), dates → ISO,
+   Exists-in-production unmapped/dropped; ParseError on missing tab or
+   headers; empty tab imports fine (the template starts empty — verified
+   against the real file: ok, 0 rows). `app/web_sustain_issues.py`
+   Blueprint `/sustain-issues/` registered in web.py: upload
+   (name-contains guard, dated `sustain_issues_*.xlsx` copy), plain
+   count line until step 3, plus the callouts/next-step save routes
+   (`POST /sustain-issues/issue/<key>/callouts|next-step`).
+   `tests/test_sustain_issues_importer.py` (4) +
+   `tests/test_sustain_issues_web.py` (6); suite 628.
 3. **List view** — filters Channel / ASPEN STATUS / Country / Priority,
    open vs closed split (Date Closed), red call-out for "Does it block
    execution = yes"; inline call-outs + next step (↻/🕘).
