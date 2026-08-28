@@ -535,7 +535,17 @@ one-at-a-time, Marina confirms each:
     S4 sales order/billing/journal entry, reason for pass w/
     reservation, comments + link to the ECOM detail). Report/Mgmt
     Summary untouched [USER]. Buckets +1 test (15), web +3 (37);
-    suite 643. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+    suite 643.
+17. ~~Report tweaks + call-out archive~~ ✅ DONE 2026-08-28 [USER]:
+    (a) status-report blocker chips id-only (name in tooltip);
+    (b) Impact column also on the Blockers LIST page (inline save,
+    placed right after ID); (c) call-out archive on the status report —
+    `report_comments.archived_at` migration, 🗄 button per call-out
+    (screen only), collapsed "Archived call-outs" expander with
+    created→archived dates, live list + download exclude archived;
+    `list_report_comments` is live-only for ALL reports now. Note: the
+    Mgmt Summary impact column was already built in item 15's commit.
+    Web +3 tests (40); suite 646. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 

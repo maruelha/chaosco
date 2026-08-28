@@ -11,6 +11,13 @@
       <a href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}">{{ b.jira_key or b.display_id }}</a>
     {% else %}—{% endif %}
   </td>
+  {# Impact [USER 2026-08-28: "see at a glance what functionality is
+     blocked"] — same field as the detail form + the Mgmt Summary #}
+  <td>
+    <input type="text" class="rt-comment blk-impact" data-id="{{ b.blocker_id }}"
+           value="{{ b.impact or '' }}" placeholder="what is blocked…"
+           onblur="blkImpactSave(this)">
+  </td>
   <td>
     {% if b.jira_key %}
       {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
@@ -47,7 +54,7 @@
 
 {% block content %}
 {% set section_color = {'defect': 'blue', 'task': 'teal', 'clarification': 'purple'} %}
-{% set columns = ['Name', 'ID', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
+{% set columns = ['Name', 'ID', 'Impact — what is blocked', 'Jira Status', 'Blocks', 'Notes', 'Next step', ''] %}
 
 {% call ui.page_header('Blockers', subtitle='Defects, tasks and business clarifications blocking Delegated Testing tickets — a list of the BLOCKERS themselves, not the tickets they block. Closed ones collapse at the bottom.') %}
   <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
@@ -84,6 +91,14 @@
 function blkNsSave(input) {
   const body = new URLSearchParams({ next_step: input.value });
   fetch('/blockers/' + input.dataset.id + '/next-step', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderColor = '#1a7f37';
+                 setTimeout(() => { input.style.borderColor = ''; }, 800); })
+    .catch(() => { input.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
+}
+function blkImpactSave(input) {
+  const body = new URLSearchParams({ impact: input.value });
+  fetch('/blockers/' + input.dataset.id + '/impact', { method: 'POST', body })
     .then(r => { if (!r.ok) throw new Error();
                  input.style.borderColor = '#1a7f37';
                  setTimeout(() => { input.style.borderColor = ''; }, 800); })

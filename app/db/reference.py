@@ -980,10 +980,33 @@ def delete_ecom_gatekeeper_row(conn: sqlite3.Connection, row_id: int) -> None:
 # ---------------------------------------------------------------------------
 
 def list_report_comments(conn: sqlite3.Connection, report: str) -> list[dict]:
-    """Return all bullet comments for 'spillover' or 'retail', oldest-first."""
+    """LIVE bullet comments for one report, oldest-first — archived ones
+    (2026-08-28) are excluded everywhere the live list is shown."""
     return _rows_to_dicts(conn.execute(
-        "SELECT * FROM report_comments WHERE report = ? ORDER BY id", (report,)
+        "SELECT * FROM report_comments WHERE report = ?"
+        " AND archived_at IS NULL ORDER BY id", (report,)
     ))
+
+
+def list_archived_report_comments(conn: sqlite3.Connection,
+                                  report: str) -> list[dict]:
+    """Archived call-outs, newest archive first — the report page's
+    collapsed 🗄 history [USER 2026-08-28: "saved for the date"]."""
+    return _rows_to_dicts(conn.execute(
+        "SELECT * FROM report_comments WHERE report = ?"
+        " AND archived_at IS NOT NULL ORDER BY archived_at DESC, id DESC",
+        (report,)
+    ))
+
+
+def archive_report_comment(conn: sqlite3.Connection, comment_id: int) -> None:
+    """Move a call-out to the archive — kept with its dates, out of the
+    live report/download."""
+    from datetime import datetime
+    conn.execute(
+        "UPDATE report_comments SET archived_at = ? WHERE id = ?",
+        (datetime.now().isoformat(timespec="seconds"), comment_id))
+    conn.commit()
 
 
 def add_report_comment(conn: sqlite3.Connection, report: str, comment: str = "") -> int:

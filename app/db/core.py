@@ -481,6 +481,14 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    # call-out archive (2026-08-28 [USER]): archived call-outs leave the
+    # live report but keep their dates
+    for col in ("archived_at TEXT",):
+        try:
+            conn.execute(f"ALTER TABLE report_comments ADD COLUMN {col}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # column already exists
     # "With whom" / "Group" used to be free text on the follow-up board.  Seed
     # the pick lists from whatever is already in use, once, so nothing is lost
     # (duplicate spellings can then be merged by renaming an entry).

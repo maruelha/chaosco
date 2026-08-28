@@ -725,3 +725,48 @@ def test_ticket_detail_shows_mb_card(client):
     # a ticket without an ECOM row shows no MB card
     html = client.get("/delegated/ticket/S4ECOM-2002").get_data(as_text=True)
     assert "MB tracking (ECOM tab)" not in html
+
+
+# ---------------------------------------------------------------------------
+# Report tweaks + call-out archive (2026-08-28)
+
+def test_report_blocker_chips_are_id_only(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        blocker = next(b for b in db_blockers.list_blockers(conn)
+                       if b["jira_key"] == "S4DEF-3001")
+        db_blockers.link_blocker(conn, blocker["blocker_id"], "S4ECOM-2001")
+    finally:
+        conn.close()
+    html = client.get("/delegated/report").get_data(as_text=True)
+    chips = html.split('class="rpt-blockers"')[1].split("</td>")[0]
+    assert "S4DEF-3001" in chips
+    # the name lives in the tooltip only
+    assert "SM3001_Unregistered defect in the export" not in chips.replace(
+        'title="defect: SM3001_Unregistered defect in the export"', "")
+
+
+def test_callout_archive_keeps_dates_and_leaves_live_list(client):
+    _upload(client)
+    resp = client.post("/report-comments/delegated/add",
+                       data={"comment": "settlement files delayed"})
+    cid = resp.get_json()["row"]["id"]
+    resp = client.post(f"/report-comments/{cid}/archive")
+    assert resp.get_json()["ok"]
+
+    html = client.get("/delegated/report").get_data(as_text=True)
+    # out of the live editable list, present in the archive expander
+    assert 'value="settlement files delayed"' not in html
+    assert "Archived call-outs (1)" in html
+    assert "settlement files delayed" in html
+    assert "archived" in html.split("Archived call-outs")[1][:400]
+    # the download shows neither (live only, no archive section)
+    download = client.get("/delegated/report/download").get_data(as_text=True)
+    assert "settlement files delayed" not in download
+
+
+def test_blockers_list_has_editable_impact_column(client):
+    _upload(client)
+    html = client.get("/blockers/").get_data(as_text=True)
+    assert "Impact" in html and 'class="rt-comment blk-impact"' in html

@@ -361,6 +361,10 @@ def report_context(conn) -> dict:
         "sections": sections, "total": len(issues),
         "filter_options": filter_options,
         "report_comments": report_comments,
+        # call-out archive (2026-08-28 [USER]) — collapsed 🗄 history on
+        # the screen page; the download shows live call-outs only
+        "archived_callouts": database.list_archived_report_comments(
+            conn, "delegated"),
         "today": date.today().strftime("%Y-%m-%d"),
     }
 

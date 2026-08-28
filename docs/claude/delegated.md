@@ -143,6 +143,24 @@ a delegated ticket is 1:1). New pieces:
   row's ECOM detail page. Report/Management Summary deliberately
   untouched [USER].
 
+## Report tweaks + call-out archive (2026-08-28, second batch [USER])
+
+- Status report blocker chips are **id-only** (jira key → BC id → name
+  fallback, full name in the tooltip) — same rule as the board chips.
+- **Impact column on the Blockers list page** too (inline blur-save via
+  the same `POST /blockers/<id>/impact`), right after ID — "see at a
+  glance what functionality is blocked".
+- **Call-out archive** (status report): `report_comments.archived_at`
+  migration (in db/core.py); `list_report_comments` now returns LIVE
+  ones only (all reports), `archive_report_comment` +
+  `list_archived_report_comments` in db/reference.py;
+  `POST /report-comments/<id>/archive` in web_reports.py. Each call-out
+  gets a 🗄 button (screen only); archived ones show in a collapsed
+  "🗄 Archived call-outs" expander with their dates ("<created> →
+  archived <date>") — [USER: "saved for the date"]. The download shows
+  live call-outs only, no archive section. Numbers-page call-outs can
+  get the same treatment on request — not asked yet.
+
 ## Blocker impact on the Management Summary (2026-08-28)
 
 The blocker `impact` field ("what is blocked", already on the blocker

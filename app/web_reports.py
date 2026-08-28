@@ -44,6 +44,18 @@ def report_comment_update(comment_id: int):
     return jsonify({"ok": True})
 
 
+@app.route("/report-comments/<int:comment_id>/archive", methods=["POST"])
+def report_comment_archive(comment_id: int):
+    """Archive a call-out (2026-08-28 [USER]) — out of the live report,
+    kept with its dates in the report page's 🗄 history."""
+    conn = _get_conn()
+    try:
+        database.archive_report_comment(conn, comment_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @app.route("/report-comments/<int:comment_id>/delete", methods=["POST"])
 def report_comment_delete(comment_id: int):
     conn = _get_conn()
