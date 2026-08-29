@@ -598,6 +598,60 @@ def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
 
 
 # ---------------------------------------------------------------------------
+# ReqTool [USER 2026-08-29]: dashboard-only authored flag, filterable on the
+# board — deliberately absent from both reports
+
+def test_req_tool_toggle_shows_on_board_and_filters(client):
+    _upload(client)
+    resp = client.post("/delegated/ticket/S4ECOM-2003/req-tool", data={"value": "1"})
+    assert resp.get_json()["ok"]
+
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert 'class="dlg-reqtool"' in html  # the board column renders
+    assert 'data-reqtool="1"' in html  # at least one row carries the checked marker
+    assert 'ReqTool: checked' in html and 'ReqTool: unchecked' in html
+
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_req_tool(conn, "S4ECOM-2003") is True
+    finally:
+        conn.close()
+
+    client.post("/delegated/ticket/S4ECOM-2003/req-tool", data={"value": "0"})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_req_tool(conn, "S4ECOM-2003") is False
+    finally:
+        conn.close()
+
+
+def test_req_tool_detail_form_roundtrip(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2001/req-tool", data={"value": "1"})
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert 'name="req_tool" value="1" checked' in detail
+
+    # unticking via the detail form's missing checkbox clears it
+    client.post("/delegated/ticket/S4ECOM-2001", data={
+        "next_step": "", "blocked_reason": "", "counts_toward_goal": "0",
+        "backlog": "0"})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_req_tool(conn, "S4ECOM-2001") is False
+    finally:
+        conn.close()
+
+
+def test_req_tool_absent_from_both_reports(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2003/req-tool", data={"value": "1"})
+    report_html = client.get("/delegated/report").get_data(as_text=True)
+    numbers_html = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "ReqTool" not in report_html
+    assert "ReqTool" not in numbers_html
+
+
+# ---------------------------------------------------------------------------
 # Jira labels (2026-08-28) - imported, chips + filter on board/report/detail
 
 def test_labels_imported_and_shown_with_filter(client):

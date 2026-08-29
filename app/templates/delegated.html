@@ -61,16 +61,22 @@
 </p>
 {% endif %}
 
-{% if all_labels %}
 <div class="ui-filterbar" style="margin-bottom:0.8rem">
-  <select id="dlg-label-filter" onchange="dlgFilterLabel()"
+  {% if all_labels %}
+  <select id="dlg-label-filter" onchange="dlgFilterBoard()"
           title="show only tickets carrying this Jira label">
     <option value="">Label: all</option>
     {% for l in all_labels %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
   </select>
+  {% endif %}
+  <select id="dlg-reqtool-filter" onchange="dlgFilterBoard()"
+          title="filter by the ReqTool checkbox">
+    <option value="">ReqTool: all</option>
+    <option value="1">ReqTool: checked</option>
+    <option value="0">ReqTool: unchecked</option>
+  </select>
   <span id="dlg-label-info" style="color:#888; font-size:0.82rem"></span>
 </div>
-{% endif %}
 
 {% for section_key, section_title, section_css, section_items in sections %}
 {% set is_blocked_section = section_key == 'blocked' %}
@@ -110,12 +116,13 @@
         <th style="width:13rem">Next step</th>
         {% endif %}
         <th style="width:4.5rem" title="park the ticket in the 📦 Backlog section — excluded from the Management Summary">Backlog</th>
+        <th style="width:4.5rem" title="dashboard-only flag, filterable — not shown on any report">ReqTool</th>
         <th style="width:12rem"></th>
       </tr>
     </thead>
     <tbody>
       {% for i in section_items %}
-      <tr class="dlg-row" data-labels="{{ i.labels|join(' ') }}">
+      <tr class="dlg-row" data-labels="{{ i.labels|join(' ') }}" data-reqtool="{{ '1' if i.req_tool else '0' }}">
         <td class="mono" style="font-size:0.78rem">
           {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
           {% else %}{{ i.jira_key }}{% endif %}
@@ -174,6 +181,12 @@
                  onchange="dlgBacklogSave(this)"
                  title="park in 📦 Backlog — excluded from the Management Summary">
         </td>
+        <td style="text-align:center">
+          <input type="checkbox" class="dlg-reqtool" data-key="{{ i.jira_key }}"
+                 {% if i.req_tool %}checked{% endif %}
+                 onchange="dlgReqToolSave(this)"
+                 title="dashboard-only flag — not shown on any report">
+        </td>
         <td style="white-space:nowrap; text-align:right">
           {% if not is_blocked_section %}
           <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
@@ -192,7 +205,7 @@
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 11 if is_blocked_section else (10 if has_mb else 9) }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 12 if is_blocked_section else (11 if has_mb else 10) }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -244,16 +257,21 @@ function dlgNsSave(input) {
   dlgSave(input, '/delegated/ticket/' + encodeURIComponent(input.dataset.key) + '/next-step', 'next_step');
 }
 
-function dlgFilterLabel() {
-  const want = document.getElementById('dlg-label-filter').value;
+function dlgFilterBoard() {
+  const labelSel = document.getElementById('dlg-label-filter');
+  const reqSel = document.getElementById('dlg-reqtool-filter');
+  const wantLabel = labelSel ? labelSel.value : '';
+  const wantReq = reqSel ? reqSel.value : '';
   let shown = 0, hidden = 0;
   document.querySelectorAll('tr.dlg-row').forEach(tr => {
-    const ok = !want || (tr.dataset.labels || '').split(' ').includes(want);
+    const labelOk = !wantLabel || (tr.dataset.labels || '').split(' ').includes(wantLabel);
+    const reqOk = !wantReq || tr.dataset.reqtool === wantReq;
+    const ok = labelOk && reqOk;
     tr.style.display = ok ? '' : 'none';
     ok ? shown++ : hidden++;
   });
   document.getElementById('dlg-label-info').textContent =
-    want ? (shown + ' shown, ' + hidden + ' hidden') : '';
+    (wantLabel || wantReq) ? (shown + ' shown, ' + hidden + ' hidden') : '';
 }
 
 function dlgGoalSave(checkbox) {
@@ -269,6 +287,15 @@ function dlgBacklogSave(checkbox) {
         { method: 'POST', body })
     .then(r => { if (!r.ok) throw new Error();
                  window.location.reload(); })  // the row moves to/from 📦 Backlog
+    .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
+}
+
+function dlgReqToolSave(checkbox) {
+  const body = new URLSearchParams({ value: checkbox.checked ? '1' : '0' });
+  fetch('/delegated/ticket/' + encodeURIComponent(checkbox.dataset.key) + '/req-tool',
+        { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 checkbox.closest('tr').dataset.reqtool = checkbox.checked ? '1' : '0'; })
     .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
 }
 </script>

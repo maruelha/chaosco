@@ -372,6 +372,18 @@ blocks one or more delegated tickets. Design decisions:
 All four build-plan steps for Blockers + Management Summary (7–10) are
 now done.
 
+## ReqTool checkbox (2026-08-29 [USER])
+
+Dashboard-only authored flag, own column `delegated_annotations.req_tool`
+(same only-this-field upsert pattern as `backlog`/`counts_toward_goal`,
+`app/db/delegated.py`). Checkbox on every board row + the ticket detail
+form (`POST /delegated/ticket/<key>/req-tool`); a "ReqTool: all / checked /
+unchecked" dropdown in the board filter bar (`data-reqtool` per row,
+combined client-side with the Label filter in one `dlgFilterBoard()`).
+**Deliberately excluded from `report_context`/`numbers_context`** — [USER:
+"no report - it is ONLY on the dashboard"], so neither the status report
+nor the Management Summary reads it.
+
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 
 1. **Excel/ECOM info join**: the `ecom` table rows (filled by the ROE

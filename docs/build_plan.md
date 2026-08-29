@@ -570,7 +570,17 @@ one-at-a-time, Marina confirms each:
     loses labels entirely + section head now spans the wide BLOCKED
     table (`width:fit-content`); Mgmt Summary widened 820→1150px,
     blocker overview reordered (Impact 2nd, ID falls back to the BC
-    id). Suite 652. (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
+    id). Suite 652.
+21. ~~ReqTool checkbox~~ ✅ DONE 2026-08-29 [USER]: dashboard-only authored
+    flag, `delegated_annotations.req_tool` (migration) + only-this-field
+    upsert, same pattern as `backlog`/`counts_toward_goal`. Checkbox on
+    every board row + the detail form (`POST
+    /delegated/ticket/<key>/req-tool`); a "ReqTool: all/checked/unchecked"
+    filter dropdown sits next to the Label filter (combined client-side in
+    one `dlgFilterBoard()`). Deliberately excluded from `report_context`/
+    `numbers_context` [USER: "no report - it is ONLY on the dashboard"].
+    Tests: `tests/test_delegated_web.py` (+3). Suite 655. (`/manual/retail`
+    · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 

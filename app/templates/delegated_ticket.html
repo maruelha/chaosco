@@ -122,6 +122,11 @@
         <input type="checkbox" name="backlog" value="1" {% if backlog %}checked{% endif %}>
         📦 Backlog (parked — not in the Management Summary)
       </label>
+      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.2rem 0 0.2rem"
+             title="dashboard-only flag, filterable on the board — not shown on any report">
+        <input type="checkbox" name="req_tool" value="1" {% if req_tool %}checked{% endif %}>
+        ReqTool
+      </label>
       <div class="form-field">
         <label for="f-nextstep">Next step
           <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"

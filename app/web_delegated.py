@@ -114,6 +114,7 @@ def delegated_list():
         i["blocked_reason"] = ann.get("blocked_reason")
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
         i["backlog"] = ann.get("backlog", False)
+        i["req_tool"] = ann.get("req_tool", False)
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
         mb_row = mb_rows.get(i["jira_key"])
         i["mb_status"] = (mb_row or {}).get("status")
@@ -210,6 +211,19 @@ def delegated_backlog(jira_key: str):
     return jsonify({"ok": True})
 
 
+@bp.route("/ticket/<jira_key>/req-tool", methods=["POST"])
+def delegated_req_tool(jira_key: str):
+    """Inline checkbox toggle — dashboard-only flag [USER 2026-08-29], never
+    shown on either report."""
+    conn = _get_conn()
+    try:
+        db_delegated.set_delegated_req_tool(
+            conn, jira_key, request.form.get("value") == "1")
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @bp.route("/upload-tracking", methods=["POST"])
 def delegated_upload_tracking():
     """Upload the DTC_UAT_testtracking_ROE workbook and import ONLY its
@@ -286,6 +300,8 @@ def delegated_ticket_detail(jira_key: str):
                 conn, jira_key, request.form.get("counts_toward_goal") == "1")
             db_delegated.set_delegated_backlog(
                 conn, jira_key, request.form.get("backlog") == "1")
+            db_delegated.set_delegated_req_tool(
+                conn, jira_key, request.form.get("req_tool") == "1")
             conn.close()
             return redirect(url_for("delegated.delegated_ticket_detail",
                                     jira_key=jira_key, saved="1"))
@@ -298,6 +314,7 @@ def delegated_ticket_detail(jira_key: str):
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
         backlog = db_delegated.get_delegated_backlog(conn, jira_key)
+        req_tool = db_delegated.get_delegated_req_tool(conn, jira_key)
         blockers = db_blockers.list_blockers_for_ticket(conn, jira_key)
         notes = database.list_notes(conn, "delegated", jira_key)
         attachments_by_note = database.get_attachments_for_notes(
@@ -310,7 +327,8 @@ def delegated_ticket_detail(jira_key: str):
         orders=extract_latest_comment_orders(comments),
         is_blocked=(issue.get("jira_status") or "").strip().lower() == "blocked",
         next_step=next_step, blocked_reason=blocked_reason,
-        counts_toward_goal=counts_toward_goal, backlog=backlog, blockers=blockers,
+        counts_toward_goal=counts_toward_goal, backlog=backlog, req_tool=req_tool,
+        blockers=blockers,
         mb_row=mb_row,
         notes=notes, attachments_by_note=attachments_by_note,
         saved=request.args.get("saved") == "1",
