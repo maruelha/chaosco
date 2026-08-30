@@ -12,18 +12,20 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 
 | Topic | File |
 |---|---|
-| **Catalogue of ALL mini apps** (URL, storage, where the detail is) + the import verticals (Defects / Spillover / Retail / ECOM), reports, PPT | `docs/claude/verticals.md` |
-| Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
-| CORE SOUTH Smoke Testing (workbook import, eCOM/Retail reports) | `docs/claude/smoke.md` |
-| Core South Sustainphase Monitoring (GBS Ops checklist, day reports, mgmt summary) | `docs/claude/sustain.md` |
-| Sustainphase Issues (Defects tab, SUS-nnn placeholder keys, call-outs) | `docs/claude/sustain-issues.md` |
-| Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
-| Missing Test Cases (one list, seeds Retail report + board) | `docs/claude/missing-tests.md` |
-| Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
+| **START HERE — the map: one line per mini app + per component, and how they connect** | `docs/claude/mini-apps.md` |
+| One file per mini app | `docs/claude/<app>.md` (skeleton: `_template.md`) |
+| One file per shared component (notes, next steps, order details, …) | `docs/claude/components/<component>.md` |
+| Import verticals (Defects / Spillover / Retail / ECOM / Gatekeeper), the Jira store, reports, PPT | `docs/claude/verticals.md` (being split per vertical — step 2) |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
 | Screen-by-screen reference | `docs/screens.html` — the ONE screen doc |
+| Readable architecture (layers, data flow) | `docs/architecture.html` |
 | How we work together | `docs/ways_of_working.md` |
 | Finished plans/reviews/session write-ups (NOT maintained, never a source of truth) | `docs/archive/` (+ its README) |
+
+**Doc rule [USER 2026-08-30]:** every mini app has its OWN file and every
+component has its own file — never a combined doc again (`coordination.md` had
+grown to 502 lines for 20 apps). Adding a mini app = its file + a row in
+`mini-apps.md` + a card row in `docs/dashboard_cards.html`.
 
 ## Architecture — non-negotiable rules
 

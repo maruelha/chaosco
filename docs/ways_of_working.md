@@ -32,7 +32,7 @@ After every feature or refactor, update the relevant docs before moving on.
 
 **Archived 2026-08-30:** `docs/screens_visual.html` and its screenshots moved to `docs/archive/` — they are not maintained by anyone, and `docs/screens.html` is the single screen reference.
 
-**Also consider:** `docs/dashboard_cards.html` (a card added/renamed/removed), `docs/database_schema.html` (a table or column changed), `docs/claude/<module>.md` (the module's deep dive), `docs/claude/verticals.md` (the overview of ALL mini apps).
+**Also consider:** `docs/dashboard_cards.html` (a card added/renamed/removed), `docs/database_schema.html` (a table or column changed), and the module's own file — since 2026-08-30 **every mini app has one file** in `docs/claude/` and **every shared component one file** in `docs/claude/components/`, indexed by `docs/claude/mini-apps.md` (the map, which also records how the apps connect). A new mini app = its own file (skeleton `_template.md`) + a row in the map + a card row in dashboard_cards.html. Never a combined doc again.
 
 ---
 

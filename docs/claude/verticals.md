@@ -1,142 +1,8 @@
-# Mini apps — the complete catalogue, then the import verticals
+# Import verticals — Defects, Core South Spillover, Retail, ECOM
 
-Part 1 lists **every mini app** in chaosco (2026-08-30) — what it is, its URL,
-where its data lives, and which doc has the detail. Part 2 (from "Import
-verticals" onwards) is the deep dive for the Excel import verticals, the Jira
-store and report history, which have no separate file.
-
-Keep Part 1 in sync when a mini app is added, renamed or removed — together
-with `docs/dashboard_cards.html` (the visual version of the same list).
-
----
-
-## Part 1 — Every mini app at a glance
-
-Deep-dive column: `V` = Part 2 of this file · `C` = `coordination.md` ·
-`T` = `tracker.md` · `D` = `delegated.md` · `S` = `smoke.md` ·
-`SU` = `sustain.md` · `SI` = `sustain-issues.md` · `M` = `missing-tests.md` ·
-`—` = no deep dive, see the short entries below.
-
-### Test execution & status (the imported data)
-
-| Mini app | URL | Storage | Deep dive |
-|---|---|---|---|
-| Import DTC ROE Tracking | `POST /import` | `importer.py` orchestrates all tabs; `archiver.py` archives the file | V |
-| MB ROE Defects | `/defects` | `db/defects.py` → `defects`, `defect_annotations` | V |
-| Core South Spillover | `/spillover` | `db/spillover.py` → `spillover`, `spillover_annotations` | V |
-| Retail | `/retail` | `db/retail.py` → `retail`, `retail_annotations` | V |
-| ECOM | `/ecom/` | `db/ecom.py` → `ecom`, `ecom_annotations` (+ the shared Jira store) | V |
-| ECOM Gatekeeper | `/ecom-gatekeeper` | `db/gatekeeper.py` → `gatekeeper_annotations`; rows from `db/jira.py` + `ecom_gatekeeper` | V |
-| Manual Test Cases Retail / ECOM | `/manual/retail`, `/manual/ecom` (+ `/report`) | `db/manual_tests.py` → `manual_retail`, `manual_ecom` | V |
-| Report history | `/report-history/` | `db/report_history.py` → `report_history` | V |
-
-### Coordination of other people's testing
-
-| Mini app | URL | Storage | Deep dive |
-|---|---|---|---|
-| Delegated Testing | `/delegated/` (+ `/report`, `/numbers`) | `db/delegated.py` → `delegated_annotations`, `delegated_goal`; tickets from the shared Jira store; buckets in `delegated_buckets.py` | D |
-| Blockers | `/blockers/` | `db/blockers.py` → `blockers`, `blocker_links` | D |
-| CORE SOUTH Smoke Testing | `/smoke/`, `/smoke/ecom`, `/smoke/retail` | `db/smoke.py` → `smoke_scenarios`, `smoke_steps`, `smoke_annotations`; `smoke_importer.py` | S |
-| Core South Sustainphase Monitoring | `/sustain/`, `/sustain/day/<day>/<stream>`, `/sustain/summary` | `db/sustain.py` → `sustain_tasks`, `sustain_task_details`; `sustain_importer.py` | SU |
-| Sustainphase Issues | `/sustain-issues/` | `db/sustain_issues.py` → `sustain_issues`, `sustain_issue_annotations`; `sustain_issues_importer.py` | SI |
-
-### Retail requirements & gaps
-
-| Mini app | URL | Storage | Deep dive |
-|---|---|---|---|
-| Retail Requirements Tracker | `/retail-tracker/board`, `/payment-methods`, `/` (import & admin) | `db_retail_tracker.py` → `retail_requirements`, `tracker_countries`, `country_payment_methods`, `cpm_checks`, `tracker_tab4_tests`, `tracker_clarify`, `tracker_parked_tests`, `requirement_country_targets`, `tested_overrides` | T |
-| Missing Test Cases | `/missing-tests/` (+ `/report`) | `db/missing_tests.py` → `missing_test_cases`, `missing_test_meta` | M |
-| Retrofits | `/retrofits/` | `db/retrofits.py` → `retrofits` (incl. `test_coverage_note`) | — |
-| Known Production Issues | `/prod_defects` (+ `/archive`, `/report`) | `db/core.py` → `known_prod_defects`, `prod_defect_review_comments` | — |
-
-### Working day / coordination
-
-| Mini app | URL | Storage | Deep dive |
-|---|---|---|---|
-| Inbox | `/inbox` | `db/notes.py` → `notes` rows with `entity_type='input'`, `entity_id='inbox'`; auto-file rules in `db/inbox_autofile.py` | C |
-| Deadlines & Burning | `/urgent/` | `db/urgent.py` → `urgent_items` | — |
-| Topics | `/topics/` | `db/topics.py` → `topics`, `topic_steps` | C |
-| Shelf | `/shelf` | `db/core.py` → `shelf` | C |
-| To-Do | `/todos` | `db/core.py` → `todos` | C |
-| Meeting Prep | `/meeting-prep` (+ agenda / worksheet) | `db/core.py` → `meeting_prep`; meeting list in `db/planning.py` → `meeting_types` | C |
-| Follow-ups | `/followups` | `db/core.py` → `followups`, `followup_options` | C |
-| CS Follow-Up Tracker | `/cs_followups` | `db/core.py` → `cs_followups` | C |
-| Encouragements | `/encouragements` | `db/core.py` → `encouragements`, `encouragement_people` | C |
-| Enhancements (about chaosco itself) | `/enhancements/page` + the floating panel | `db/core.py` → `enhancements` | — |
-| Links | `/links` | `db/core.py` → `links` | C |
-| Contacts | `/contacts` | `db/core.py` → `contacts` | C |
-| Test Learnings / Test Limitations | `/test_learnings`, `/test_limitations` | `db/core.py` → `test_learnings`, `test_limitations` | C |
-| Teams Chats & channels | `/teams-chats/` + the floating 💬 widget | `db/teams_chats.py` → `teams_chats`, `teams_chat_refs` | C |
-| Message Types | `/message-types` | `db/message_types.py` → `message_types` | C |
-| Email Reports | `/email-report/` | `db/email.py` → `report_recipients`, `email_lists`, `email_list_members`; sending in `emailer.py` | C |
-| Export & Backup | `POST /export-reports`, `POST /backup` | no tables — `report_exporter.py`, `backup.py` | C |
-
-### Cross-cutting components (no card of their own)
-
-| Component | URL | Storage | Deep dive |
-|---|---|---|---|
-| Notes (one system, every entity) | `/n/<entity_type>/<entity_id>/…` | `db/core.py` → `notes`, `attachments` | C |
-| Next-step archive | `/next-steps/…` | `db/next_steps.py` → `next_step_history` | C |
-| Entity connections | `/connections/…` | `db/entity_connections.py` → `entity_connections` | C |
-| Entity links | `/elinks/…` | `db/entity_links.py` → `entity_links` | C |
-| Order details | `/order-details/…` | `db/core.py` → `order_details`; history `db/order_archive.py` → `order_details_history` | C |
-| Issue-message builder (✉️) | `/issue-msg/…` | fixed texts in `issue_messages.py` + `message_types` | C |
-| Teams ping | `/teams-ping/…` | link building in `teams_link.py` | C |
-| Global search (🔍) | `/search/orders.json` (the widget in `base.html` calls it) | no tables — source registry in `db/search.py` (order numbers today) | — |
-| Row validations (⚠) | — (button on the boards) | pure logic in `row_validations.py` | V |
-| Report comments / call-outs | inline on the reports | `db/core.py` → `report_comments` | V |
-
-## Short entries — the apps with no deep-dive file
-
-**Retrofits (`/retrofits/`, 2026-08-10).** Hand-maintained list of system
-changes still coming per channel, so a sign-off reader never assumes the
-tested scope is final. Channel `ECOM`, `Retail` or `ECOM & Retail` (the last
-one renders on BOTH channel reports); status `Confirmed` (it is coming) or
-`Potential` (might still come); optional Confluence link, "Expected" free
-text, optional Topic link, and since 2026-08-30 the **test coverage note**
-("is there a test case for it?" — authored here, displayed on
-`/missing-tests/`, the Retail Requirements board and the Missing Test Cases
-report; `update_retrofit` never writes that column, so the Edit row cannot
-wipe it). Rendered at the bottom of the ECOM and Retail status reports —
-Status + Title only — and the section renders even when EMPTY, because its
-standing caveat ("further retrofits may still be announced") is the point.
-
-**Known Production Issues (`/prod_defects`, reworked 2026-08-27).** Manually
-curated register of defects, limitations, risks and accepted defects that
-exist in production — it outlives the spillover work. Expandable rows,
-`ECOM-`/`RETAIL-` ids, limitations and risks in their own lists, sorted by
-scenario. `✓ Mark Fixed` moves a row to the 🗄 archive (kept, never deleted;
-`↺ Reopen` brings it back) and the dashboard badge counts only active rows.
-Three separate email/download artefacts: the list snapshot, the interactive
-**review copy** (its comment dialogs are the point, so it is NOT run through
-`standalone_html`), and the **management report** for ECOM Core South
-management + GBS Ops. Feeds the ECOM Spillover Report's known-issues section.
-
-**Deadlines & Burning (`/urgent/`, 2026-08-11).** The short nag list, red card
-first in the dashboard grid. Three categories, because they nag differently:
-`deadline` (before a date), `burning` (urgent, date or not), `uncomfortable`
-(promises you'd be ashamed not to keep); second axis `area` (Sales ECOM / MB /
-none, empty allowed on purpose). Drives the **once-a-day popup** on the first
-app open (`_urgent_popup.html`, dismissal remembered per day in localStorage);
-items can be ticked done straight from the popup. "Overdue" is decided in
-Python, never in SQL, so no date functions are needed. Anything that does not
-deserve being pushed in your face belongs in To-Do or Topics instead.
-
-**Enhancements (`/enhancements/page` + the floating panel).** Ideas for
-chaosco itself, capturable from any page through the floating widget (area,
-priority, status). The page is the full list with filters; closed items are
-hidden by default. Storage `db/core.py` → `enhancements`.
-
-**Global search (`/search/orders.json`, 2026-07-10).** The floating 🔍 widget lives in
-`base.html`, so it hovers over every page, board included. v1 searches **order
-numbers** across the sources registered in `db/search.py`; a hit shows a
-snippet and links to its entity. Adding a source = one block there + one URL
-mapping in `web_search.py`. Topics via SQLite FTS5 is the planned next source
-— deliberately NOT embeddings until FTS proves insufficient [2026-07-10].
-
----
-
-## Part 2 — Import verticals: Defects, Core South Spillover, Retail
+**Type:** pattern + the verticals that share it
+**Map:** the index of every mini app and component is `mini-apps.md` — this
+file is only the import side (step 2 splits it into one file per vertical).
 
 Read when working on the Excel importers, their tables, screens, or reports.
 
@@ -166,7 +32,7 @@ and a field already claimed by an earlier header makes later aliases count as
 unmapped — otherwise a workbook carrying BOTH spellings renames two columns
 to the same name and the row loop reads a pandas Series instead of a value.
 Symptom of a silently dropped name column: every Retail Requirements Board
-row shows the amber "⏳ expected" pill (see `docs/claude/tracker.md`).
+row shows the amber "⏳ expected" pill (see `docs/claude/retail-tracker.md`).
 
 ## Row validations (app/row_validations.py) [USER 2026-07-18]
 
@@ -232,12 +98,13 @@ card — triggered where configured). Config keys: `solman_export_folder`,
   order-details component) + detail (Excel fields read-only · Jira card
   read-only from the shared store or "no data yet" hint · annotations ·
   Orders — since 2026-07-16 addressed `('jira', jira_key)`, the SAME rows
-  as the Gatekeeper Check (see coordination.md "Shared jira address"); the
+  as the Gatekeeper Check (see components/order-details.md, "Shared jira
+  address"); the
   former "Take over orders from Gatekeeper" button is retired
   (`relink_gatekeeper_orders` + `/ecom/<id>/pull-orders` kept as inert
   legacy) · Teams chats + ✉️ issue-message builder via the shared
   registry components, also at ('jira', key) (2026-07-16, see
-  coordination.md) · notes via registry
+  components/notes.md) · notes via registry
   entry `ecom`). "↻ Update from Jira" = `run_jira_import(cfg, 'ecom')`.
   Dashboard card. Tests: `tests/test_ecom_pages.py`. List rows with Jira
   data also carry a "Jira N ▸" expander [USER 2026-07-12]: Jira comments +
