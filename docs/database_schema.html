@@ -342,7 +342,6 @@
     <li><a href="#prod_defect_review_comments">prod_defect_review_comments</a></li>
     <li><a href="#retrofits">retrofits</a></li>
     <li><a href="#missing_test_cases">missing_test_cases</a></li>
-    <li><a href="#missing_test_retrofit_notes">missing_test_retrofit_notes</a></li>
     <li><a href="#missing_test_meta">missing_test_meta</a></li>
     <li><a href="#encouragement_people">encouragement_people</a></li>
     <li><a href="#encouragements">encouragements</a></li>
@@ -1431,6 +1430,7 @@
         <tr><td class="col-name">description</td><td class="col-type">TEXT</td><td></td><td class="note-text">Confluence link (UI label since 2026-08-14; column name unchanged). Rendered as a link on /retrofits when it starts with http; not on the reports.</td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Confirmed (default — it is coming) | Potential (might still come). Confirmed sorts first in list + report.</td></tr>
         <tr><td class="col-name">expected</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text, e.g. "CW34", "after go-live"</td></tr>
+        <tr><td class="col-name">test_coverage_note</td><td class="col-type">TEXT</td><td></td><td class="note-text">Added 2026-08-30. "Is there a test case for this retrofit?" — e.g. "no test case yet" / "covered by TC-123". Authored HERE (add form + blur-save <code>POST /retrofits/&lt;id&gt;/note</code>); displayed read-only on /missing-tests and on the Retail Requirements board. <code>update_retrofit</code> deliberately does NOT write this column, so the Edit row can never wipe it. Migrated from the short-lived <code>missing_test_retrofit_notes</code> table, which <code>init_schema</code> drops.</td></tr>
         <tr><td class="col-name">topic_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Optional link to <code>topics</code> for the background. Resolved in a SEPARATE query, never a JOIN — a retrofit stays readable where the topics table doesn't exist, and the link is simply not shown.</td></tr>
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>
@@ -1456,25 +1456,6 @@
       </tbody>
     </table>
     <div class="relations"><strong>Legacy:</strong> <code>tracker_missing_tests</code> is read ONCE by the seed and never written again.</div>
-  </div>
-
-  <!-- missing_test_retrofit_notes -->
-  <div class="table-card" id="missing_test_retrofit_notes">
-    <div class="table-card-header">
-      <span class="tname">missing_test_retrofit_notes</span>
-      <span class="badge badge-planning">Planning</span>
-      <span class="tdesc">Test-coverage note per retrofit [USER 2026-08-30]. The Retrofits module has no note field, so the note lives with the Missing Test Cases page that shows it. Blur-saved via <code>POST /missing-tests/retrofit/&lt;id&gt;/note</code>.</span>
-    </div>
-    <table>
-      <thead>
-        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
-      </thead>
-      <tbody>
-        <tr><td class="col-name">retrofit_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">FK <code>retrofits(id)</code> by convention — no DB constraint, so a missing retrofits table only means an empty mirror</td></tr>
-        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">e.g. "no test case yet" / "covered by TC-123". An emptied note DELETES the row instead of storing ''.</td></tr>
-        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
-      </tbody>
-    </table>
   </div>
 
   <!-- missing_test_meta -->

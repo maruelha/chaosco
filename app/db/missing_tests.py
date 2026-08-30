@@ -11,10 +11,11 @@ renders it. An entry is a short title (what is missing) plus an optional
 detail note (why it matters / what would have to be tested).
 
 Second section: the RETROFITS (owned by app/db/retrofits.py — coming system
-changes per channel). They are mirrored read-only, because a retrofit is the
-usual reason a test case is missing. What belongs to us is the coverage note
-per retrofit ("no test case yet", "covered by TC-123") — the retrofit module
-itself has no note field, so it is stored here, keyed by retrofit id.
+changes per channel). They are mirrored READ-ONLY, because a retrofit is the
+usual reason a test case is missing. Their test coverage note
+("no test case yet", "covered by TC-123") is authored on the RETROFITS page
+[USER 2026-08-30] and lives on the retrofit row — this module, the Retail
+Requirements board and the reports only display it.
 
 SQL kept Postgres-portable (CLAUDE.md rule 7).
 """
@@ -40,11 +41,6 @@ CREATE TABLE IF NOT EXISTS missing_test_cases (
     updated_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS missing_test_retrofit_notes (
-    retrofit_id INTEGER PRIMARY KEY,       -- FK retrofits(id), no constraint
-    note        TEXT,
-    updated_at  TEXT NOT NULL
-);
 
 -- One-time flags (e.g. 'seeded'). Without it an emptied list would be
 -- re-seeded from the legacy sources on the next restart.
@@ -132,45 +128,20 @@ def list_for_report(conn: sqlite3.Connection) -> list[dict]:
 # Retrofits (read-only mirror) + our coverage note
 # ---------------------------------------------------------------------------
 
-def get_retrofit_notes(conn: sqlite3.Connection) -> dict[int, str]:
-    try:
-        return {rid: note for rid, note in conn.execute(
-            "SELECT retrofit_id, note FROM missing_test_retrofit_notes"
-            " WHERE note IS NOT NULL")}
-    except sqlite3.OperationalError:
-        return {}
-
-
-def set_retrofit_note(conn: sqlite3.Connection, retrofit_id: int,
-                      note: str | None) -> None:
-    """Upsert; an emptied note is deleted so the row never lingers as ''."""
-    clean = (note or "").strip()
-    with conn:
-        if not clean:
-            conn.execute("DELETE FROM missing_test_retrofit_notes"
-                         " WHERE retrofit_id = ?", (retrofit_id,))
-            return
-        conn.execute(
-            "INSERT INTO missing_test_retrofit_notes (retrofit_id, note, updated_at)"
-            " VALUES (?, ?, ?)"
-            " ON CONFLICT(retrofit_id) DO UPDATE SET note=excluded.note,"
-            " updated_at=excluded.updated_at",
-            (retrofit_id, clean, _now()))
-
-
 def list_retrofits_with_notes(conn: sqlite3.Connection,
                               channel: str = RETROFIT_CHANNEL) -> list[dict]:
-    """The retrofit mirror: rows straight from the retrofits module plus our
-    `coverage_note`. A missing retrofits table simply means an empty list —
-    this page must not depend on another feature being initialised."""
+    """The retrofit mirror for this page, the report, the email text and the
+    Requirements board: rows straight from the retrofits module, with
+    `coverage_note` filled from the retrofit's own `test_coverage_note`
+    (authored on /retrofits). A missing retrofits table simply means an empty
+    list — no page may depend on another feature being initialised."""
     from app.db import retrofits as db_retrofits
     try:
         items = db_retrofits.list_retrofits(conn, channel=channel or None)
     except sqlite3.OperationalError:
         return []
-    notes = get_retrofit_notes(conn)
     for r in items:
-        r["coverage_note"] = notes.get(r["id"])
+        r["coverage_note"] = r.get("test_coverage_note")
     return items
 
 

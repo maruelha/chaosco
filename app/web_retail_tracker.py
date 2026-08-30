@@ -226,6 +226,10 @@ def tracker_board():
         # Missing Test Cases mini app is the single source, so the board and
         # the Retail status report can no longer drift apart
         missing_tests = db_missing.list_for_report(conn)
+        # the Retail retrofits belong next to the gaps [USER 2026-08-30] — a
+        # retrofit is the usual reason a test case is still missing. Read-only
+        # here; retrofit + coverage note are edited on /retrofits
+        retrofits = db_missing.list_retrofits_with_notes(conn)
         clarify_items = db.list_clarify(conn)
         parked_tests = db.list_parked_tests(conn)
         # ids the dashboard carries — drives the ⏳ expected pill (names may be
@@ -289,7 +293,7 @@ def tracker_board():
         req_summary=result["requirements"]["summary"],
         cpm_items=cpm_items, cpm_summary=result["cpm"]["summary"],
         cpm_countries=sorted({r["country"] for r in cpm_items}),
-        missing_tests=missing_tests,
+        missing_tests=missing_tests, retrofits=retrofits,
         clarify_items=clarify_items, parked_tests=parked_tests,
         as_of=datetime.now().strftime("%Y-%m-%d %H:%M"),
         today=datetime.now().strftime("%Y-%m-%d"),

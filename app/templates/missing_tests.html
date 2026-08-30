@@ -112,10 +112,10 @@
 {% call ui.section('Retrofits — Retail', 'teal', badge=retrofits | length) %}
 <p class="mtc-intro">
   Coming system changes for Retail (incl. <em>ECOM &amp; Retail</em>), mirrored
-  from the <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}">Retrofits</a>
+  read-only from the <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}">Retrofits</a>
   mini app — a retrofit is the usual reason a test case is still missing.
-  Edit a retrofit over there; the <strong>test coverage note</strong> belongs to
-  this page and saves on leaving the field.
+  Everything here, the <strong>test coverage note</strong> included, is written
+  on the Retrofits page [USER 2026-08-30].
 </p>
 
 {% if retrofits %}
@@ -149,15 +149,13 @@
         {% endif %}
       </td>
       <td style="font-size:0.85rem">{{ r.expected or '—' }}</td>
-      <td>
-        <input type="text" class="mtc-note-input js-mtc-note" data-id="{{ r.id }}"
-               value="{{ r.coverage_note or '' }}"
-               placeholder="e.g. no test case yet / covered by TC-123">
-      </td>
-      <td style="font-size:0.82rem">
+      <td class="mtc-details">{{ r.coverage_note or '—' }}</td>
+      <td style="font-size:0.82rem; white-space:nowrap">
         {% if r.description and r.description.startswith('http') %}
-        <a href="{{ r.description }}" target="_blank" rel="noopener">Confluence ↗</a>
-        {% else %}<span style="color:#bbb">—</span>{% endif %}
+        <a href="{{ r.description }}" target="_blank" rel="noopener">Confluence ↗</a><br>
+        {% endif %}
+        <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}"
+           title="the retrofit and its coverage note are edited there">edit ↗</a>
       </td>
     </tr>
   {% endfor %}
@@ -223,20 +221,6 @@ function mtcCopy() {
         if (editRow && editRow.classList.contains('mtc-edit-row')) editRow.remove();
         row.remove();
       }
-    });
-  });
-  // coverage note: blur-save, like every other inline field in the app
-  document.querySelectorAll('.js-mtc-note').forEach(function (input) {
-    var last = input.value;
-    input.addEventListener('blur', async function () {
-      if (input.value === last) return;
-      last = input.value;
-      var body = new FormData();
-      body.append('note', input.value);
-      await fetch('/missing-tests/retrofit/' + input.dataset.id + '/note',
-                  { method: 'POST', body: body });
-      input.classList.add('mtc-note-saved');
-      setTimeout(function () { input.classList.remove('mtc-note-saved'); }, 1200);
     });
   });
 }());

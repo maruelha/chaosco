@@ -517,11 +517,20 @@ as they come up (convention in CLAUDE.md).</p>
       file on purpose so the other computer seeds the same three entries on its first start.
       <span class="where">&#8594; /missing-tests/</span></span></label>
     <label class="task"><input type="checkbox" data-k="mtc-retrofit-note">
-      <span><strong>The retrofit "test coverage" note lives in the new mini app</strong>,
-      not in the Retrofits app — Retrofits has no note field (only Title, Status,
-      Expected, Confluence link, Topic). If you'd rather have the note ON the Retrofits
-      page too, that's a small addition.
-      <span class="where">&#8594; /missing-tests/</span></span></label>
+      <span><strong>DONE the same day:</strong> the retrofit "test coverage" note is now
+      written on the <strong>Retrofits page</strong> (new column there, plus a field in its
+      add form). Missing Test Cases, the Retail Requirements board and the reports only
+      display it. The board also shows the Retail retrofit list read-only now.
+      <span class="where">&#8594; /retrofits/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mtc-other-machine-yaml">
+      <span><strong>Other machine: leave <code>retail_missing_categories</code> in
+      settings.yaml until the app has started there once</strong> — the seed runs per
+      machine (the DB is not synced, only the code). Start chaosco once on that computer,
+      then the three entries are in ITS list and the YAML key is dead there too and can go.
+      Remove it BEFORE the first start and that machine simply starts without those three.
+      Note either way: the two machines keep <em>separate</em> lists — what you add here is
+      not on the other computer.
+      <span class="where">&#8594; config/settings.yaml</span></span></label>
   </div>
 </div>
 

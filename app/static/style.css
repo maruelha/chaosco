@@ -1540,3 +1540,8 @@ tr.rt-countries td { background:#fafafd; padding:8px 12px 10px; }
 .mtc-dialog-actions { display:flex; align-items:center; gap:0.5rem; margin-top:0.8rem;
     justify-content:flex-end; }
 .mtc-flash { font-size:0.82rem; color:#1a7f37; font-weight:600; margin-right:auto; }
+
+/* board: read-only retrofit mirror under the missing-tests alarm box (2026-08-30) */
+.rt-retrofits { border:1px solid #b7dfe6; border-radius:10px; background:#f4fbfc;
+    padding:1rem 1.2rem; margin:1.6rem 0; }
+.rt-retrofits h2 { color:#0e7490; margin:0 0 0.4rem; }

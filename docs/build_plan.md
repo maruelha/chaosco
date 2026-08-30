@@ -60,9 +60,14 @@ report choice "Missing Test Cases (Retail)", copy & paste email text.
 Seeded ONCE from both old places (`missing_test_meta.seeded`). Deep dive:
 `docs/claude/missing-tests.md`.
 
+Corrections the same day [USER 2026-08-30]:
+- the **test coverage note moved to the Retrofits page** (column
+  `retrofits.test_coverage_note`); Missing Test Cases, the board and the
+  reports only display it
+- the **Requirements board also shows the retrofit list** (read-only, under
+  the ⚠ Tests missing box)
+
 Open/possible next steps:
-- coverage note also visible ON the Retrofits page (today it only lives on
-  /missing-tests) — waiting on Marina, see MarinaCheckSoon 2026-08-30
 - report heading wording on the Retail status report ("Missing test cases
   (on top of total test cases)") — to confirm
 - ECOM has no equivalent list yet; the module is Retail-only on purpose

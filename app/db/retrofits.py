@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS retrofits (
     status      TEXT NOT NULL DEFAULT 'Confirmed',-- Confirmed | Potential
     expected    TEXT,                             -- free text: when it lands
     topic_id    INTEGER,                          -- FK topics (optional)
+    test_coverage_note TEXT,                      -- "no test case yet" / "covered by TC-123"
     created_at  TEXT NOT NULL,
     updated_at  TEXT NOT NULL
 );
@@ -48,9 +49,34 @@ def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # additive migration for DBs created before 2026-08-30
+        try:
+            conn.execute("ALTER TABLE retrofits ADD COLUMN test_coverage_note TEXT")
+        except sqlite3.OperationalError:
+            pass                                  # already there
+        _migrate_coverage_notes(conn)
         conn.commit()
     finally:
         conn.close()
+
+
+def _migrate_coverage_notes(conn: sqlite3.Connection) -> None:
+    """The coverage note started life in the Missing Test Cases module
+    (2026-08-30, table missing_test_retrofit_notes). It is authored on the
+    RETROFIT page now [USER 2026-08-30], so it belongs to the retrofit row —
+    take any note written in the meantime along and drop the side table."""
+    try:
+        rows = list(conn.execute(
+            "SELECT retrofit_id, note FROM missing_test_retrofit_notes"))
+    except sqlite3.OperationalError:
+        return                                    # never existed here
+    for retrofit_id, note in rows:
+        conn.execute(
+            "UPDATE retrofits SET test_coverage_note = ?"
+            " WHERE id = ? AND (test_coverage_note IS NULL"
+            "                   OR test_coverage_note = '')",
+            (note, retrofit_id))
+    conn.execute("DROP TABLE missing_test_retrofit_notes")
 
 
 def _now() -> str:
@@ -136,22 +162,26 @@ def get_retrofit(conn: sqlite3.Connection, retrofit_id: int) -> dict | None:
 def create_retrofit(conn: sqlite3.Connection, channel: str, title: str,
                     description: str | None = None, status: str = "Confirmed",
                     expected: str | None = None,
-                    topic_id: int | None = None) -> int:
+                    topic_id: int | None = None,
+                    test_coverage_note: str | None = None) -> int:
     now = _now()
     with conn:
         cur = conn.execute(
             "INSERT INTO retrofits (channel, title, description, status,"
-            " expected, topic_id, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            " expected, topic_id, test_coverage_note, created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (_clean_channel(channel), title.strip(),
              (description or "").strip() or None, _clean_status(status),
-             (expected or "").strip() or None, topic_id, now, now))
+             (expected or "").strip() or None, topic_id,
+             (test_coverage_note or "").strip() or None, now, now))
     return cur.lastrowid
 
 
 def update_retrofit(conn: sqlite3.Connection, retrofit_id: int, channel: str,
                     title: str, description: str | None, status: str,
                     expected: str | None, topic_id: int | None) -> None:
+    """Deliberately does NOT touch test_coverage_note — that field has its own
+    blur-save (set_coverage_note), so opening the Edit row can never wipe it."""
     with conn:
         conn.execute(
             "UPDATE retrofits SET channel=?, title=?, description=?, status=?,"
@@ -159,6 +189,17 @@ def update_retrofit(conn: sqlite3.Connection, retrofit_id: int, channel: str,
             (_clean_channel(channel), title.strip(),
              (description or "").strip() or None, _clean_status(status),
              (expected or "").strip() or None, topic_id, _now(), retrofit_id))
+
+
+def set_coverage_note(conn: sqlite3.Connection, retrofit_id: int,
+                      note: str | None) -> None:
+    """Blur-save of the test coverage note on the /retrofits page — the
+    Missing Test Cases page and the Requirements board only DISPLAY it
+    [USER 2026-08-30]."""
+    with conn:
+        conn.execute(
+            "UPDATE retrofits SET test_coverage_note=?, updated_at=? WHERE id=?",
+            ((note or "").strip() or None, _now(), retrofit_id))
 
 
 def delete_retrofit(conn: sqlite3.Connection, retrofit_id: int) -> None:

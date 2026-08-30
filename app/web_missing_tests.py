@@ -2,8 +2,9 @@
 
 The single source for "this test case does not exist yet". The Retail status
 report and the Retail Requirements board both render THIS list; the page also
-mirrors the Retail retrofits (read-only, with our own coverage note) because a
-retrofit is the usual reason a test case is still missing.
+mirrors the Retail retrofits read-only (their test coverage note is authored on
+the Retrofits page [USER 2026-08-30]) because a retrofit is the usual reason a
+test case is still missing.
 
 Deliverables besides the page: a downloadable HTML report (also selectable in
 the email mini app) and a copy & paste email text. No SQL here — storage in
@@ -85,17 +86,6 @@ def missing_test_delete(item_id: int):
     conn = _get_conn()
     try:
         db_missing.delete_missing_test(conn, item_id)
-    finally:
-        conn.close()
-    return jsonify({"ok": True})
-
-
-@bp.route("/retrofit/<int:retrofit_id>/note", methods=["POST"])
-def retrofit_note_save(retrofit_id: int):
-    """Blur-save of the coverage note next to a mirrored retrofit."""
-    conn = _get_conn()
-    try:
-        db_missing.set_retrofit_note(conn, retrofit_id, request.form.get("note"))
     finally:
         conn.close()
     return jsonify({"ok": True})

@@ -7,8 +7,9 @@ What must hold:
   tracker_missing_tests table
 - the one-time seed picks up both old places (the config bullet list and the
   board's table) and never runs twice — an emptied list stays empty
-- retrofits are mirrored read-only, with our own coverage note per retrofit;
-  the note is stored here because the retrofit module has no note field
+- retrofits are mirrored read-only on the Missing Test Cases page AND on the
+  Requirements board [USER 2026-08-30]; the coverage note is authored on the
+  RETROFITS page (column retrofits.test_coverage_note) and only displayed here
 - status travels with a retrofit everywhere it is shown [USER 2026-08-30]:
   Confirmed vs Potential ("not confirmed yet")
 - the report downloads as standalone HTML and is selectable in the email app
@@ -107,7 +108,7 @@ def test_retrofit_mirror_carries_status_and_note(db_path):
     db_retrofits.create_retrofit(conn, "ECOM & Retail", "Payment provider swap")
     db_retrofits.create_retrofit(conn, "ECOM", "ECOM only change")
 
-    db_missing.set_retrofit_note(conn, keep, "  no test case yet  ")
+    db_retrofits.set_coverage_note(conn, keep, "  no test case yet  ")
     mirrored = db_missing.list_retrofits_with_notes(conn)
     titles = [r["title"] for r in mirrored]
     assert "ECOM only change" not in titles          # Retail (+ shared) only
@@ -117,9 +118,15 @@ def test_retrofit_mirror_carries_status_and_note(db_path):
     assert by_title["New return flow"]["coverage_note"] == "no test case yet"
     assert by_title["Payment provider swap"]["coverage_note"] is None
 
-    # emptying the note deletes the row instead of storing ''
-    db_missing.set_retrofit_note(conn, keep, "   ")
-    assert db_missing.get_retrofit_notes(conn) == {}
+    # an emptied note is stored as NULL, never as ''
+    db_retrofits.set_coverage_note(conn, keep, "   ")
+    assert db_retrofits.get_retrofit(conn, keep)["test_coverage_note"] is None
+
+    # editing the retrofit itself must never wipe the note
+    db_retrofits.set_coverage_note(conn, keep, "no test case yet")
+    db_retrofits.update_retrofit(conn, keep, "Retail", "New return flow",
+                                 None, "Confirmed", "CW41", None)
+    assert db_retrofits.get_retrofit(conn, keep)["test_coverage_note"] ==         "no test case yet"
     conn.close()
 
 
@@ -128,7 +135,7 @@ def test_email_text_has_details_and_retrofit_status(db_path):
     db_missing.create_missing_test(conn, "Event store", "Sales must confirm")
     rid = db_retrofits.create_retrofit(conn, "Retail", "New return flow",
                                        status="Potential", expected="CW40")
-    db_missing.set_retrofit_note(conn, rid, "no test case yet")
+    db_retrofits.set_coverage_note(conn, rid, "no test case yet")
     text = db_missing.email_text(db_missing.list_missing_tests(conn),
                                  db_missing.list_retrofits_with_notes(conn),
                                  day="2026-08-30")
@@ -165,7 +172,8 @@ def test_page_add_update_delete_and_note(client):
 
     client.post(f"/missing-tests/{item_id}/update",
                 data={"title": "Event store", "details": "Sales must confirm"})
-    client.post(f"/missing-tests/retrofit/{rid}/note", data={"note": "no test case"})
+    # the coverage note is written on the RETROFITS page [USER 2026-08-30]
+    client.post(f"/retrofits/{rid}/note", data={"note": "no test case"})
     page = client.get("/missing-tests/").get_data(as_text=True)
     assert "Sales must confirm" in page
     assert "no test case" in page
@@ -182,7 +190,7 @@ def test_report_and_download(client):
     db_missing.create_missing_test(conn, "Event store", "Sales must confirm")
     rid = db_retrofits.create_retrofit(conn, "Retail", "New return flow",
                                        status="Potential")
-    db_missing.set_retrofit_note(conn, rid, "no test case yet")
+    db_retrofits.set_coverage_note(conn, rid, "no test case yet")
     conn.close()
 
     report = client.get("/missing-tests/report").get_data(as_text=True)
@@ -201,6 +209,23 @@ def test_report_and_download(client):
 
 def test_it_is_an_email_report_choice():
     assert ("missing_tests", "Missing Test Cases (Retail)") in emailer.REPORT_CHOICES
+
+
+def test_board_shows_the_retrofit_list_read_only(client):
+    conn = _conn(client.db_path)
+    rid = db_retrofits.create_retrofit(conn, "Retail", "New return flow",
+                                       status="Potential", expected="CW40")
+    db_retrofits.set_coverage_note(conn, rid, "no test case yet")
+    db_retrofits.create_retrofit(conn, "ECOM", "ECOM only change")
+    conn.close()
+
+    board = client.get("/retail-tracker/board").get_data(as_text=True)
+    assert "Retrofits — Retail" in board
+    assert "New return flow" in board
+    assert "not confirmed yet" in board
+    assert "no test case yet" in board
+    assert "ECOM only change" not in board          # Retail (+ shared) only
+    assert "js-rf-note" not in board                # read-only here
 
 
 def test_board_quick_add_writes_to_the_shared_list(client):

@@ -22,10 +22,16 @@ Retail status report and the Requirements Board.
    channel `Retail` (which includes `ECOM & Retail` rows — see
    `db/retrofits.list_retrofits`). A retrofit is the usual reason a test case
    is missing. Status is always shown: **Confirmed**, or **Potential** with
-   "not confirmed yet" underneath [USER 2026-08-30]. The **test coverage
-   note** per retrofit belongs to THIS module (`missing_test_retrofit_notes`)
-   because Retrofits has no note field — it blur-saves like every other
-   inline field in the app.
+   "not confirmed yet" underneath [USER 2026-08-30].
+
+The **test coverage note** per retrofit is authored on the **Retrofits page**
+[USER 2026-08-30] — column `retrofits.test_coverage_note`, blur-saved via
+`POST /retrofits/<id>/note`, plus a field in that page's add form. It is
+displayed read-only here and on the Requirements board. `update_retrofit`
+deliberately does not touch the column, so opening the Edit row on /retrofits
+can never wipe a note. (It briefly lived in a `missing_test_retrofit_notes`
+table on 2026-08-30; `retrofits.init_schema` migrates any value across and
+drops that table.)
 
 ## Outputs
 
@@ -47,7 +53,8 @@ Retail status report and the Requirements Board.
 |---|---|
 | `/retail/report` + `/retail/report/download` | titles only, "Missing test cases (on top of total test cases)"; details are a `title=` tooltip on the page. Rendered when the list is non-empty (used to depend on `not_tracked > 0`). |
 | `/retail/report/ppt` | titles only — `build_retail_ppt(missing_categories=[…titles])`, unchanged signature |
-| `/retail-tracker/board` | title + details in the ⚠ box; the board's quick-add and ✕ now write to **this** module |
+| `/retail-tracker/board` | title + details in the ⚠ box; the board's quick-add and ✕ now write to **this** module. Directly under it the **Retrofits — Retail** mirror (status, title, expected, coverage note), read-only [USER 2026-08-30] |
+| `/retrofits/` | owns the coverage note column shown by all of the above |
 
 ## The one-time seed
 
@@ -66,7 +73,8 @@ editing it there has no effect afterwards.
 ## Files
 
 ```
-app/db/missing_tests.py        schema, CRUD, retrofit mirror + notes, seed, email text
+app/db/missing_tests.py        schema, CRUD, retrofit mirror, seed, email text
+app/db/retrofits.py            + test_coverage_note column, set_coverage_note
 app/web_missing_tests.py       Blueprint /missing-tests/…
 app/templates/missing_tests.html          the page
 app/templates/missing_tests_report.html   report + download (download=True)

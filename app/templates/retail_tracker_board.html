@@ -55,6 +55,49 @@
   </form>
 </div>
 
+{# ---- retrofits (read-only mirror, same source as Missing Test Cases) ---- #}
+<div class="rt-retrofits" id="retrofits">
+  <h2>Retrofits — Retail</h2>
+  <p style="color:#555; font-size:0.85rem; margin:0 0 0.6rem">
+    System changes still coming for Retail (incl. <em>ECOM &amp; Retail</em>) — a
+    retrofit is the usual reason a test case is still missing. Written and kept
+    up to date in the <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}">Retrofits</a>
+    mini app, including the test coverage note; here it is read-only.
+  </p>
+  {% if retrofits %}
+  <table class="ui-table">
+    <thead>
+      <tr>
+        <th style="width:6.5rem">Status</th>
+        <th>Retrofit</th>
+        <th style="width:7rem">Expected</th>
+        <th style="width:24rem">Test coverage</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in retrofits %}
+      <tr>
+        <td>
+          {% if r.status == 'Potential' %}
+          {{ ui.pill('Potential', 'amber') }}
+          <div class="mtc-status-hint">not confirmed yet</div>
+          {% else %}{{ ui.pill('Confirmed', 'green') }}{% endif %}
+        </td>
+        <td>
+          <span style="font-weight:500">{{ r.title }}</span>
+          {% if r.channel == 'ECOM & Retail' %}<span class="mtc-chan">ECOM &amp; Retail</span>{% endif %}
+        </td>
+        <td style="font-size:0.85rem">{{ r.expected or '—' }}</td>
+        <td class="mtc-details">{{ r.coverage_note or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="list-empty">No Retail retrofits recorded.</p>
+  {% endif %}
+</div>
+
 {% set colors = {"sales": "rt-sales", "return": "rt-return"} %}
 {% for a in areas %}
 <details class="rt-section {{ colors[a.area] }}" data-area="{{ a.area }}" open>

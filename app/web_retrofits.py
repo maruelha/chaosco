@@ -64,6 +64,7 @@ def retrofit_add():
             status=request.form.get("status", "Confirmed"),
             expected=request.form.get("expected"),
             topic_id=_topic_id(request.form.get("topic_id")),
+            test_coverage_note=request.form.get("test_coverage_note"),
         )
     finally:
         conn.close()
@@ -92,6 +93,18 @@ def retrofit_update(retrofit_id: int):
         conn.close()
     return redirect(url_for("retrofits.retrofits_list",
                             channel=request.form.get("channel_filter", "")))
+
+
+@bp.route("/<int:retrofit_id>/note", methods=["POST"])
+def retrofit_note_save(retrofit_id: int):
+    """Test coverage note — authored HERE [USER 2026-08-30]; the Missing Test
+    Cases page and the Retail Requirements board only display it."""
+    conn = _get_conn()
+    try:
+        db_retrofits.set_coverage_note(conn, retrofit_id, request.form.get("note"))
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/<int:retrofit_id>/delete", methods=["POST"])

@@ -7,7 +7,7 @@
   <div class="page-header-row">
     <div>
       <h1>Retrofits</h1>
-      <p class="page-subtitle">Coming system changes per channel — rendered at the bottom of the ECOM and Retail status reports</p>
+      <p class="page-subtitle">Coming system changes per channel — rendered at the bottom of the ECOM and Retail status reports; the test coverage note is written here and shown on Missing Test Cases + the Requirements board</p>
     </div>
     <div class="page-header-actions">
       <a href="{{ url_for('retail_status_report') }}" class="btn">Retail Report</a>
@@ -63,6 +63,12 @@
         {% endfor %}
       </select>
     </label>
+  </div>
+  <div class="rf-form-row">
+    <label class="rf-field rf-field--wide">
+      <span>Test coverage <span class="field-hint">is there a test case for it? — shown on Missing Test Cases + the Requirements board</span></span>
+      <input type="text" name="test_coverage_note" placeholder="e.g. no test case yet / covered by TC-123">
+    </label>
     <div class="rf-field rf-field--submit">
       <button type="submit" class="btn btn-primary">Add</button>
     </div>
@@ -99,6 +105,7 @@
       <th style="width:6rem">Channel</th>
       <th style="width:7rem">Status</th>
       <th>Title</th>
+      <th style="width:18rem">Test coverage</th>
       <th>Confluence link</th>
       <th style="width:8rem">Expected</th>
       <th style="width:11rem">Topic</th>
@@ -117,6 +124,12 @@
         {% endif %}
       </td>
       <td style="font-weight:500">{{ r.title }}</td>
+      <td>
+        <input type="text" class="mtc-note-input js-rf-note" data-id="{{ r.id }}"
+               value="{{ r.test_coverage_note or '' }}"
+               placeholder="e.g. no test case yet"
+               title="shown on Missing Test Cases and the Retail Requirements board">
+      </td>
       <td style="font-size:0.85rem;color:#555">
         {% if r.description and r.description.startswith('http') %}
         <a href="{{ r.description }}" target="_blank" rel="noopener">Confluence ↗</a>
@@ -134,7 +147,7 @@
       </td>
     </tr>
     <tr class="rf-edit-row" data-id="{{ r.id }}" style="display:none">
-      <td colspan="7">
+      <td colspan="8">
         <form method="post" action="{{ url_for('retrofits.retrofit_update', retrofit_id=r.id) }}" class="rf-form">
           <input type="hidden" name="channel_filter" value="{{ sel_channel }}">
           <div class="rf-form-row">
@@ -209,6 +222,20 @@
       editRow.style.display = 'none';
       var mainRow = editRow.previousElementSibling;
       mainRow.querySelector('.js-rf-edit').textContent = 'Edit';
+    });
+  });
+  // test coverage note: blur-save (the Edit row deliberately does not carry
+  // this field, so opening Edit can never wipe a note)
+  document.querySelectorAll('.js-rf-note').forEach(function (input) {
+    var last = input.value;
+    input.addEventListener('blur', async function () {
+      if (input.value === last) return;
+      last = input.value;
+      var body = new FormData();
+      body.append('note', input.value);
+      await fetch('/retrofits/' + input.dataset.id + '/note', { method: 'POST', body: body });
+      input.classList.add('mtc-note-saved');
+      setTimeout(function () { input.classList.remove('mtc-note-saved'); }, 1200);
     });
   });
   document.querySelectorAll('.js-rf-delete').forEach(function (btn) {
