@@ -47,7 +47,7 @@ a dangling `[[link]]` fails the test suite.
 | Mini app | URL | Storage | File |
 |---|---|---|---|
 | Retail Requirements Tracker | `/retail-tracker/board`, `/payment-methods` | `db_retail_tracker.py` → 9 tracker tables | `retail-tracker.md` |
-| Missing Test Cases | `/missing-tests/` | `db/missing_tests.py` → `missing_test_cases`, `missing_test_meta` | `missing-tests.md` |
+| Missing Test Cases — **Retail only** | `/missing-tests/` | `db/missing_tests.py` → `missing_test_cases`, `missing_test_meta` | `missing-tests.md` |
 | Retrofits | `/retrofits/` | `db/retrofits.py` → `retrofits` | `retrofits.md` |
 | Known Production Issues | `/prod_defects` (+ `/archive`, `/report`) | `db/core.py` → `known_prod_defects`, `prod_defect_review_comments` | `known-production-issues.md` |
 | Test Learnings | `/test_learnings` | `db/core.py` → `test_learnings` | `test-learnings.md` |
@@ -117,6 +117,9 @@ module: someone else is probably reading its data.**
   the Retail status report (page, HTML download, PPT) and the Retail
   Requirements board both render its list; the board's quick-add writes into
   it. The old `tracker_missing_tests` table was copied over once and dropped.
+- **Missing Test Cases is Retail-only** [USER 2026-08-30] — the title says so
+  everywhere (page, report, card, email text, download filename). ECOM gets its
+  own list or is integrated later.
 - **Retrofits owns `test_coverage_note`**; Missing Test Cases and the Retail
   Requirements board display it read-only. Retrofit sections render at the
   bottom of the ECOM and Retail status reports.

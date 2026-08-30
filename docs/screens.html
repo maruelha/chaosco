@@ -1737,16 +1737,16 @@
   <!-- Missing Test Cases -->
   <div class="screen-card" id="missing-tests">
     <div class="screen-card-header">
-      <span class="screen-title">Missing Test Cases</span>
+      <span class="screen-title">Missing Test Cases — Retail</span>
       <span class="screen-url">GET /missing-tests/</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Added 2026-08-30. The <strong>single source</strong> for "this test case does not exist yet". The same gap used to be written down twice (the config list on the Retail status report and the board's <code>tracker_missing_tests</code> table) and drifted apart — both are now seeded from here. Reachable from Retail, the Retail status report and the Retail Requirements Board.</p>
+      <p class="screen-desc">Added 2026-08-30. <strong>Retail only</strong> [USER 2026-08-30] — ECOM is deliberately out of scope for now (its own list or an integration comes later), and the scope is stated in the page title, report title, dashboard card, email text and the download filename <code>missing_test_cases_retail_&lt;date&gt;.html</code>. The <strong>single source</strong> for "this test case does not exist yet". The same gap used to be written down twice (the config list on the Retail status report and the board's <code>tracker_missing_tests</code> table) and drifted apart — both are now seeded from here. Reachable from Retail, the Retail status report and the Retail Requirements Board.</p>
       <div class="features">
         <span class="feat-label">Section 1 — Missing test cases</span>
         <span class="feat-value">Authored list: <strong>Title</strong> (the one-liner both reports show) + <strong>Details</strong> (longer note; travels with this page, its report and the email text only). <span class="pill pill-action">Add</span> · <span class="pill pill-action">Edit</span> (inline row form) · <span class="pill pill-ajax">✕ Delete</span> (confirm → <code>POST /missing-tests/&lt;id&gt;/delete</code>)</span>
         <span class="feat-label">Section 2 — Retrofits (Retail)</span>
-        <span class="feat-value">Read-only mirror of the Retrofits mini app for channel Retail (incl. "ECOM &amp; Retail"): <strong>Status</strong> (Confirmed / Potential — shown with "not confirmed yet"), Title, Expected, Topic link, Confluence link, <strong>Test coverage note</strong>. Everything here — the coverage note included — is written on the <a href="#retrofits">Retrofits</a> page [USER 2026-08-30]; each row carries an "edit ↗" link there. The same mirror is rendered on the Retail Requirements Board.</span>
+        <span class="feat-value">Read-only mirror of the Retrofits mini app for channel Retail (incl. "ECOM &amp; Retail"): <strong>Status</strong> (Confirmed / Potential — shown with "not confirmed yet"), Title, Expected, Topic link, Confluence link, <strong>Test coverage note</strong>. Everything here — the coverage note included — is written on the <a href="#retrofits">Retrofits</a> page [USER 2026-08-30]; each row carries an "edit ↗" link there. Above the list stands the note <strong>"Test cases are needed for these as well"</strong> — the same sentence as on the Retail status report and the Requirements board. The same mirror is rendered on the Retail Requirements Board.</span>
         <span class="feat-label">Email text</span>
         <span class="feat-value">✉ button → dialog with plain text ready to paste into Outlook (missing test cases with their details, then every retrofit with confirmed / not confirmed + expected + coverage note) and a Copy-to-clipboard button. Editing in the dialog is not saved.</span>
         <span class="feat-label">Report</span>

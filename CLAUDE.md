@@ -90,7 +90,8 @@ app/
   web_search.py     global 🔍 widget Blueprint (/search; source registry in
                     db/search.py — order numbers now, topics via FTS later)
   web_missing_tests.py  Missing Test Cases Blueprint (/missing-tests/ — the
-                    ONE list of test cases that do not exist yet; seeds the
+                    ONE list of RETAIL test cases that do not exist yet
+                    (ECOM out of scope for now [USER 2026-08-30]); seeds the
                     Retail status report AND the Requirements board ⚠ list,
                     mirrors the Retail retrofits read-only with a coverage
                     note; HTML report + email attachment + copy&paste email

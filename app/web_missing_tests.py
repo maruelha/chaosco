@@ -114,5 +114,5 @@ def missing_tests_report_download():
     return html, 200, {
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition":
-            f'attachment; filename="missing_test_cases_{ctx["today"]}.html"',
+            f'attachment; filename="missing_test_cases_retail_{ctx["today"]}.html"',
     }

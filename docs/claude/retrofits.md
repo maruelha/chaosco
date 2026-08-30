@@ -49,6 +49,13 @@ The "Retrofits — ECOM/Retail" section at the bottom of the ECOM and Retail
 status reports (page, HTML download and email attachment), plus the read-only
 mirror on `[[missing-tests]]` and the Retail Requirements board.
 
+**"Test cases are needed for these as well"** [USER 2026-08-30] is rendered
+over the retrofit list on the RETAIL report (macro parameter
+`test_case_note=True`, plus the inline copy in `retail_report_download.html`),
+the Retail Requirements board, the Missing Test Cases page and its report, and
+in the copy & paste email text. It is deliberately NOT on the ECOM report —
+the missing-test-case list it points at is Retail-only for now.
+
 ## Related
 
 `[[missing-tests]]` · `[[retail-tracker]]` · `[[topics]]` · `[[retail]]` · `[[ecom]]`

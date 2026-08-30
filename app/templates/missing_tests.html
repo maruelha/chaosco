@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% import '_macros.html' as ui %}
-{% block title %}Missing Test Cases — Test Coordination{% endblock %}
+{% block title %}Missing Test Cases (Retail) — Test Coordination{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div class="page-header-row">
     <div>
-      <h1>Missing Test Cases</h1>
-      <p class="page-subtitle">The one list of test cases that do not exist yet — the Retail status report and the Retail Requirements board are seeded from here</p>
+      <h1>Missing Test Cases — Retail</h1>
+      <p class="page-subtitle">The one list of Retail test cases that do not exist yet — the Retail status report and the Retail Requirements board are seeded from here. ECOM is not covered yet [USER 2026-08-30]: it gets its own list or joins this one later.</p>
     </div>
     <div class="page-header-actions">
       <button type="button" class="btn btn-primary" onclick="mtcMailText()">&#9993; Email text</button>
@@ -116,6 +116,9 @@
   mini app — a retrofit is the usual reason a test case is still missing.
   Everything here, the <strong>test coverage note</strong> included, is written
   on the Retrofits page [USER 2026-08-30].
+</p>
+<p class="mtc-intro" style="color:#a10d19">
+  &#9888; <strong>Test cases are needed for these as well</strong> — a retrofit that lands without a test case cannot be verified.
 </p>
 
 {% if retrofits %}

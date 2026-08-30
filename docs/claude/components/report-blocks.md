@@ -37,6 +37,11 @@ once.
   the scripts and opens collapsed sections, so a page rendered through the app
   can be attached to an email or saved to disk.
 
+The `retrofits(items, channel_label, retrofits_url=None, test_case_note=False)`
+macro renders a channel's retrofit section. `test_case_note=True` adds the
+"Test cases are needed for these as well" line — opt-in, so it appears on the
+RETAIL report only [USER 2026-08-30].
+
 ## Rules & gotchas
 
 - A report that needs its own look gets its own template — but the COUNTING

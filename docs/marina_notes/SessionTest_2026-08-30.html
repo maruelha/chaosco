@@ -49,9 +49,17 @@ one and drops <code>tracker_missing_tests</code>. Nothing to upload, no config t
   <div class="box-head">1 · Missing Test Cases — the list itself</div>
   <div class="box-body">
     <label class="task"><input type="checkbox" data-k="a1">
-      <span>Dashboard → the new <strong>Missing Test Cases</strong> card (next to Retrofits) → open it.
+      <span>Dashboard → the new <strong>Missing Test Cases — Retail</strong> card (next to Retrofits) → open it.
       <span class="expect">Badge shows the count; page opens at <span class="where">/missing-tests/</span>
-      with three stat cards and two sections.</span></span></label>
+      with three stat cards and two sections. Title and subtitle say <strong>Retail</strong> —
+      ECOM is deliberately out of scope for now.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="a5">
+      <span>Check the new standing note over the retrofit list — on
+      <span class="where">/missing-tests/</span>, its Report, <span class="where">/retail/report</span>
+      and <span class="where">/retail-tracker/board</span>.
+      <span class="expect">"⚠ Test cases are needed for these as well — a retrofit that lands without
+      a test case cannot be verified." It must NOT appear on
+      <span class="where">/ecom/report</span> (that list is Retail-only).</span></span></label>
     <label class="task"><input type="checkbox" data-k="a2">
       <span>Check the list content after the one-time seed.
       <span class="expect">The three old report bullets are there — Manual test cases,
@@ -138,7 +146,7 @@ one and drops <code>tracker_missing_tests</code>. Nothing to upload, no config t
       then the Retail retrofits with status + expected + coverage note.</span></span></label>
     <label class="task"><input type="checkbox" data-k="d2">
       <span><strong>⬇ Download HTML</strong> → open the saved file.
-      <span class="expect">File named <code>missing_test_cases_2026-08-30.html</code>, opens
+      <span class="expect">File named <code>missing_test_cases_retail_2026-08-30.html</code>, opens
       standalone (no toolbar, no buttons) and looks like the report.</span></span></label>
     <label class="task"><input type="checkbox" data-k="d3">
       <span><span class="where">/email-report/</span> → the report list.

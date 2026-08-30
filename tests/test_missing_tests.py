@@ -145,7 +145,7 @@ def test_email_text_has_details_and_retrofit_status(db_path):
                                  db_missing.list_retrofits_with_notes(conn),
                                  day="2026-08-30")
     conn.close()
-    assert "Missing test cases (as of 2026-08-30)" in text
+    assert "Missing test cases — Retail (as of 2026-08-30)" in text
     assert "1. Event store" in text
     assert "Sales must confirm" in text
     assert "New return flow (not confirmed, expected CW40)" in text
@@ -224,7 +224,7 @@ def test_report_and_download(client):
     assert "no test case yet" in report
 
     resp = client.get("/missing-tests/report/download")
-    assert "attachment; filename=\"missing_test_cases_" in \
+    assert "attachment; filename=\"missing_test_cases_retail_" in \
         resp.headers["Content-Disposition"]
     html = resp.get_data(as_text=True)
     assert html.lstrip().startswith("<!DOCTYPE html>")

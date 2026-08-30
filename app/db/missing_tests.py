@@ -222,7 +222,7 @@ def email_text(items: list[dict], retrofits: list[dict] | None = None,
     detail note, and — when there are any — the retrofits with a coverage note
     underneath. Deliberately plain (no markdown), it is pasted as-is."""
     day = day or datetime.now().date().isoformat()
-    lines = [f"Missing test cases (as of {day})", ""]
+    lines = [f"Missing test cases — Retail (as of {day})", ""]
     if items:
         for i, item in enumerate(items, start=1):
             lines.append(f"{i}. {item['title']}")
@@ -234,7 +234,8 @@ def email_text(items: list[dict], retrofits: list[dict] | None = None,
     else:
         lines += ["No missing test cases recorded.", ""]
     if retrofits:
-        lines += ["Retrofits (Retail) and their test coverage:", ""]
+        lines += ["Retrofits (Retail) and their test coverage:",
+                  "We need test cases for these as well.", ""]
         for r in retrofits:
             # the status is part of the message [USER 2026-08-30]: 'Potential'
             # means the change is NOT confirmed yet

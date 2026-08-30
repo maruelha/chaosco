@@ -1,4 +1,4 @@
-# Missing Test Cases (`/missing-tests/`) — deep dive
+# Missing Test Cases — Retail (`/missing-tests/`)
 
 **Type:** mini app
 **URL:** `/missing-tests/` (+ `/report`, `/report/download`, `/add`, `/<id>/update|delete`)
@@ -8,6 +8,12 @@
 **Tests:** `tests/test_missing_tests.py`
 
 ## Purpose
+
+**Scope: RETAIL only** [USER 2026-08-30] — ECOM is deliberately not covered;
+it will either get its own list or be integrated here later. The scope is in
+the page title, the report title, the dashboard card, the email text and the
+download filename (`missing_test_cases_retail_<date>.html`), so nobody reads
+an ECOM gap into it.
 
 Built 2026-08-30. **Why it exists:** the same gap was written down in two
 places and drifted apart —
@@ -32,6 +38,10 @@ Retail status report and the Requirements Board.
    `db/retrofits.list_retrofits`). A retrofit is the usual reason a test case
    is missing. Status is always shown: **Confirmed**, or **Potential** with
    "not confirmed yet" underneath [USER 2026-08-30].
+
+Both the page and the report carry the line **"Test cases are needed for these
+as well"** over the retrofit list [USER 2026-08-30] — the same sentence appears
+on the Retail status report and the Requirements board, and in the email text.
 
 The **test coverage note** per retrofit is authored on the **Retrofits page**
 [USER 2026-08-30] — column `retrofits.test_coverage_note`, blur-saved via

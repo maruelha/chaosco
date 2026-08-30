@@ -190,7 +190,10 @@
    Confirmed first, then "potentially still coming" — the point of the section
    is that the reader must not assume the list is final. Rendered even when
    empty so the standing caveat is always visible. #}
-{% macro retrofits(items, channel_label, retrofits_url=None) %}
+{# test_case_note=true adds the "we need test cases for these too" line
+   [USER 2026-08-30] — opt-in, because the Missing Test Cases list it refers
+   to is Retail-only for now. #}
+{% macro retrofits(items, channel_label, retrofits_url=None, test_case_note=False) %}
 {% set confirmed = items | selectattr('status', 'equalto', 'Confirmed') | list %}
 {% set potential = items | selectattr('status', 'equalto', 'Potential') | list %}
 <h2 class="rr-section-title" style="margin-top:2rem">Retrofits — {{ channel_label }}</h2>
@@ -199,6 +202,11 @@
   what is known today</strong> — further retrofits may still be announced, and
   anything already tested may need a re-test once they land.
 </p>
+{% if test_case_note %}
+<p style="font-size:.82rem;color:#a10d19;margin:-.5rem 0 .75rem">
+  &#9888; <strong>Test cases are needed for these as well</strong> — a retrofit that lands without a test case cannot be verified.
+</p>
+{% endif %}
 
 {% if confirmed or potential %}
 {# Deliberately just status + title [USER 2026-08-14] — the report audience
