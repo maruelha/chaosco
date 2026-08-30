@@ -15,7 +15,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | **START HERE — the map: one line per mini app + per component, and how they connect** | `docs/claude/mini-apps.md` |
 | One file per mini app | `docs/claude/<app>.md` (skeleton: `_template.md`) |
 | One file per shared component (notes, next steps, order details, …) | `docs/claude/components/<component>.md` |
-| Import verticals (Defects / Spillover / Retail / ECOM / Gatekeeper), the Jira store, reports, PPT | `docs/claude/verticals.md` (being split per vertical — step 2) |
+| The shared Excel-import pattern (one tab = one importer + one table) | `docs/claude/import-pattern.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
 | Screen-by-screen reference | `docs/screens.html` — the ONE screen doc |
 | Readable architecture (layers, data flow) | `docs/architecture.html` |

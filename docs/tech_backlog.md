@@ -59,7 +59,7 @@ When ECOM/Omni are added, CLAUDE.md will become genuinely bloated. At that point
 - `docs/claude/retail.md` — retail importer, tables, screens, retail report
 - `docs/claude/ecom.md` — ECOM vertical
 - `docs/claude/omni.md` — Omni vertical
-- `docs/claude/coordination.md` — todos, followups, meeting prep, links, test learnings, etc.
+- `docs/claude/mini-apps.md` — the map; one file per mini app next to it (todo.md, follow-ups.md, meeting-prep.md, links.md, test-learnings.md, …)
 
 At session start, read only the vertical file(s) relevant to the task.
 

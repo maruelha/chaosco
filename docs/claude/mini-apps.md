@@ -8,9 +8,9 @@ system-level wiring that no single app file can own. Skeleton for new files:
 Rule: when a mini app or component is added, renamed or removed, update its
 file, this map, and `docs/dashboard_cards.html` (the visual card list).
 
-> Split into one-file-per-app on 2026-08-30 [USER]. `coordination.md` (502
-> lines, 20 apps in one file) is gone; step 2 will do the same to
-> `verticals.md` — the rows marked **(V)** below still live in it for now.
+> Split into one-file-per-app on 2026-08-30 [USER]: `coordination.md` (502
+> lines / 20 apps) and `verticals.md` (413 lines / 8 apps + 3 components) are
+> gone. Every app and every component now has exactly one file.
 
 ---
 
@@ -20,14 +20,14 @@ file, this map, and `docs/dashboard_cards.html` (the visual card list).
 
 | Mini app | URL | Storage | File |
 |---|---|---|---|
-| Import DTC ROE Tracking | `POST /import` | `importer.py` + `archiver.py` | `verticals.md` **(V)** |
-| MB ROE Defects | `/defects` | `db/defects.py` → `defects`, `defect_annotations` | `verticals.md` **(V)** |
-| Core South Spillover | `/spillover` | `db/spillover.py` → `spillover`, `spillover_annotations` | `verticals.md` **(V)** |
-| Retail | `/retail` | `db/retail.py` → `retail`, `retail_annotations` | `verticals.md` **(V)** |
-| ECOM | `/ecom/` | `db/ecom.py` → `ecom`, `ecom_annotations` | `verticals.md` **(V)** |
-| ECOM Gatekeeper | `/ecom-gatekeeper` | `db/gatekeeper.py` → `gatekeeper_annotations` (+ the Jira store) | `verticals.md` **(V)** |
-| Manual Test Cases Retail / ECOM | `/manual/retail`, `/manual/ecom` | `db/manual_tests.py` → `manual_retail`, `manual_ecom` | `verticals.md` **(V)** |
-| Report history | `/report-history/` | `db/report_history.py` → `report_history` | `verticals.md` **(V)** |
+| Import DTC ROE Tracking | `POST /import` | `importer.py` + `archiver.py` | `import-pattern.md` |
+| MB ROE Defects | `/defects` | `db/defects.py` → `defects`, `defect_annotations` | `defects.md` |
+| Core South Spillover | `/spillover` | `db/spillover.py` → `spillover`, `spillover_annotations` | `spillover.md` |
+| Retail | `/retail` | `db/retail.py` → `retail`, `retail_annotations` | `retail.md` |
+| ECOM | `/ecom/` | `db/ecom.py` → `ecom`, `ecom_annotations` | `ecom.md` |
+| ECOM Gatekeeper | `/ecom-gatekeeper` | `db/gatekeeper.py` → `gatekeeper_annotations` (+ the Jira store) | `gatekeeper.md` |
+| Manual Test Cases Retail / ECOM | `/manual/retail`, `/manual/ecom` | `db/manual_tests.py` → `manual_retail`, `manual_ecom` | `manual-tests.md` |
+| Report history | `/report-history/` | `db/report_history.py` → `report_history` | `report-history.md` |
 
 ### Coordination of other people's testing
 
@@ -85,13 +85,15 @@ Shared machinery used by many apps — a change here hits every including page.
 | Issue-message builder (✉️) | `/issue-msg/…` | `issue_messages.py` + `message_types` | `components/issue-message.md` |
 | Teams ping + channel picker | `/teams-ping/…` | none (contacts + `teams_chats`) | `components/teams-ping.md` |
 | Global search (🔍) | `/search/orders.json` | none — registry in `db/search.py` | `components/search.md` |
-| Row validations (⚠) | button on the boards | none — `row_validations.py` | `verticals.md` **(V)** |
+| Shared Jira store | no page — read by 3 apps | `db/jira.py` → `jira_issues`, `jira_comments`, `jira_labels` | `components/jira-store.md` |
+| Shared report blocks (macros, Excel log, 📣 call-outs) | inline on the reports | `db/core.py` → `report_comments` | `components/report-blocks.md` |
+| Row validations (⚠) | button on the boards | none — `row_validations.py` | `components/row-validations.md` |
 
 ## Patterns
 
 | Pattern | What it covers | File |
 |---|---|---|
-| Import verticals | header maps, idempotent upsert, archiver + SHA-256 dedup, skip-log, the shared Jira store, report comments | `verticals.md` |
+| The import pattern | one tab = one importer + one table, idempotent upsert, header maps and aliases, archiver + SHA-256 dedup, skip-log, the import-time data checks | `import-pattern.md` |
 
 ---
 

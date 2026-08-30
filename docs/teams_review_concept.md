@@ -49,4 +49,4 @@ run through the relevant chats without hunting for them in Teams.
    chosen placement; add form identical to today's (name + teams.microsoft.com
    URL), relabelled "chat or channel link".
 4. Tests: flag toggle + filter in the JSON route; route smoke for the page.
-5. Docs: screens.html (dashboard/inbox section), coordination.md, build_plan.
+5. Docs: screens.html (dashboard/inbox section), docs/claude/inbox.md, build_plan.

@@ -845,7 +845,7 @@ Session doc: `docs/archive/session_2026-08-05_manual_test_cases.md`.
    relevant for filters and columns to the list"]. `list_known_prod_defects`
    gained `relevant_core_south`/`relevant_gbs_ops` params — same tri-state
    `'yes'|'no'|None` convention as the defects board's dtco2c/daily
-   filters (`docs/claude/verticals.md` precedent). Two new dropdowns in
+   filters (`docs/claude/gatekeeper.md` precedent). Two new dropdowns in
    the filter bar (All/Relevant/Not relevant), applied on both
    `/prod_defects` and `/prod_defects/archive`. Two new inline-editable
    checkbox columns on BOTH the main table and the Risks table (shared
@@ -1030,7 +1030,7 @@ Session doc: `docs/archive/session_2026-08-05_manual_test_cases.md`.
 1. ~~Next-step archive~~ ✅ DONE 2026-07-10: "↻ New next step" archives +
    clears, History dialog; component `_next_step_history.html` +
    `/next-steps/...` registry Blueprint; on Spillover popup, Retail, ECOM,
-   Defect detail (see `docs/claude/coordination.md`).
+   Defect detail (see `docs/claude/components/notes.md`).
 2. ~~Email mailing lists~~ ✅ DONE 2026-07-09: named recipient selections +
    All/None quick select on /email-report.
 3. ~~Order-number search~~ ✅ DONE 2026-07-10: global floating 🔍 widget

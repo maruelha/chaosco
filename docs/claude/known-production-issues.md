@@ -35,9 +35,17 @@ section of the ECOM Spillover Report.
 - **Audience flags**: `relevant_core_south` / `relevant_gbs_ops` — checkboxes
   on the form and the expanded row, tri-state filters on the list.
 - **Expandable rows** replaced the wide table (kpd-row accordion, shares the
-  smoke-scenario CSS). Channel and Type are no longer columns (Channel = the id
-  prefix and still filterable; Type = which list you are in). Lists are
-  presorted by Scenario (portable `LOWER()` sort, blanks last).
+  smoke-scenario CSS). Channel and Type are no longer columns of the main
+  table (Channel = the id prefix and still filterable; Type = which list you
+  are in). Lists are presorted by Scenario (portable `LOWER()` sort, blanks
+  last).
+- **Type filter/column** [USER 2026-08-24]: `type` (fixed list
+  `_PROD_DEFECT_TYPES`) is a dropdown filter AND a visible column on BOTH
+  `/prod_defects` and the standalone review download (client-side `data-type`
+  show/hide there). Business Impact / How to handle are no longer truncated to
+  200px with an ellipsis (`.kpd-truncate` removed) — the full text wraps. The
+  scenario list gained "Marketplace" (`prod_defect_scenarios` in
+  settings.yaml).
 - **Detail page** carries the shared notes section (since 2026-07-13); registry
   key `prod_defect`, also an inbox filing target since 2026-08-06. The list
   shows the note count on Edit and a Confluence link at the top
@@ -57,10 +65,33 @@ section of the ECOM Spillover Report.
 Three separate artefacts, all three selectable in `[[email-reports]]`:
 
 1. **List snapshot** — `⬇ Download HTML` of the page.
-2. **Review copy** — `/prod_defects/download-review`, interactive; reviewers'
-   comments come back as JSON and are imported into
-   `prod_defect_review_comments` (`POST /prod_defects/review-comments/upload`,
-   upsert `ON CONFLICT(comment_id) DO NOTHING`).
+2. **Review copy** — `/prod_defects/download-review` [USER 2026-08-24], a
+   SECOND, additive button ("📝 Download for review") next to the plain
+   snapshot. A standalone, fully self-contained HTML file with its OWN inline
+   CSS/JS (unlike the plain download, which runs through
+   `emailer.standalone_html` and strips every `<script>`). The list is
+   read-only — a Detail button opens an in-page `<dialog>` per row with all
+   fields, no Edit/Delete. A client-side "add feedback" widget sits on every
+   row AND inside the Detail dialog: comments live only in the browser's
+   `localStorage` (`kpd_review_comments_v1`), each with a client-generated
+   UUID, the reviewer's name (asked once via `prompt()`, remembered under
+   `kpd_review_author`), the text and a timestamp; a "Your comments so far"
+   section lists them with per-comment remove. "⬇ Download my comments (JSON)"
+   exports `{export_id, exported_at, report_date, author, comments: [...]}`
+   for the reviewer to send back. Template `prod_defects_review.html`
+   (standalone, no base.html — same convention as
+   `retail_report_download.html`).
+
+   **Reading them back**: `/prod_defects/review-comments`
+   [USER 2026-08-24, "upload the comments to my page"] — a plain multipart
+   upload form parses the file and upserts each comment into
+   `prod_defect_review_comments` keyed by its client-generated id
+   (`database.import_review_comments`, `ON CONFLICT(comment_id) DO NOTHING`,
+   so re-uploading the same file is a no-op), reporting
+   imported / duplicate / malformed counts. Below the form: every uploaded
+   comment with the defect it is about (linked, or flagged "no longer in the
+   list" if deleted), text, author, timestamp and Delete. The list-page toolbar
+   carries a "📥 Reviewer feedback (N)" badge.
 3. **Management report** — `/prod_defects/report` (+ `/download`): ECOM only;
    Defects and Limitations need BOTH audience flags, Risks = all ECOM;
    per-section and per-scenario counts; columns ID · Sub-case · Short
