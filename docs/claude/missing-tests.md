@@ -66,7 +66,11 @@ table empty" — an emptied list must stay empty across a restart. On the
 second computer the same seed runs on first start, so both machines end up
 with the same starting entries (git carries the code, not the DB).
 
-`tracker_missing_tests` is legacy from then on: read once, never written.
+`tracker_missing_tests` is **dropped** right after the copy
+(`_drop_legacy_table`) — and also on a DB that seeded before the cleanup
+existed, where the `seeded` flag proves the rows are already across. The drop
+never runs before the copy, which matters because the prod machine seeds days
+after the dev one.
 `retail_missing_categories` stays in `settings.yaml` as the seed only —
 editing it there has no effect afterwards.
 

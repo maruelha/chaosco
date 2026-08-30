@@ -310,7 +310,6 @@
     <li><a href="#cpm_checks">cpm_checks</a></li>
     <li><a href="#tracker_tab4_tests">tracker_tab4_tests</a></li>
     <li><a href="#tested_overrides">tested_overrides</a></li>
-    <li><a href="#tracker_missing_tests">tracker_missing_tests</a></li>
     <li><a href="#tracker_clarify">tracker_clarify</a></li>
     <li><a href="#tracker_parked_tests">tracker_parked_tests</a></li>
 
@@ -1455,7 +1454,7 @@
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">created_at also orders the list (oldest first)</td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>Legacy:</strong> <code>tracker_missing_tests</code> is read ONCE by the seed and never written again.</div>
+    <div class="relations"><strong>Predecessor:</strong> <code>tracker_missing_tests</code> (the board's old ⚠ list) is read ONCE by the seed and then <strong>DROPped</strong> (<code>db/missing_tests._drop_legacy_table</code>) — the drop only ever runs after its rows are copied, so the second machine, which seeds later, loses nothing.</div>
   </div>
 
   <!-- missing_test_meta -->
@@ -2128,22 +2127,6 @@
         <tr><td class="col-name">test_kind</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">country</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
         <tr><td class="col-name">reason</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
-        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="table-card" id="tracker_missing_tests">
-    <div class="table-card-header">
-      <span class="tname">tracker_missing_tests</span>
-      <span class="badge badge-authored">Authored</span>
-      <span class="tdesc">Free-text "⚠ Tests missing" list — requirements with NO test case at all; red alarm section at the TOP of the board.</span>
-    </div>
-    <table>
-      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">text</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>
     </table>

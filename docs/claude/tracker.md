@@ -53,13 +53,18 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
   importer never prunes; if the Excel later grows the same country +
   method, the import takes it over — origin flips to 'excel', source and
   tender_type_code survive); `tracker_tab4_tests` — the four fixed tests;
-  `cpm_checks` — manual per-method confirmations; `tracker_missing_tests`
-  — red alarm list
+  `cpm_checks` — manual per-method confirmations. The board's red alarm list
+  is NOT a tracker table any more [USER 2026-08-30]: it comes from the
+  Missing Test Cases module (`missing_test_cases`, see
+  `docs/claude/missing-tests.md`); the old `tracker_missing_tests` table was
+  copied over once and dropped
 
 ## Screens
 
 - Board `/retail-tracker/board` — red Tests-missing gap list AT THE TOP
-  [USER 2026-07-06], then Excel-order sections with per-section scenario
+  [USER 2026-07-06] (shared with the Retail status report since 2026-08-30 —
+  maintained in `/missing-tests/`), followed by the read-only Retail retrofit
+  mirror [USER 2026-08-30], then Excel-order sections with per-section scenario
   GROUP filters [USER 2026-07-09: Till transactions · Different articles
   (first batch) · Discounts · General payment methods · B2B · PROMAT/FOC ·
   Other — substring mapping in settings.yaml `tracker_scenario_groups`,

@@ -61,11 +61,9 @@ CREATE TABLE IF NOT EXISTS country_payment_methods (
     UNIQUE(country, method_name)
 );
 
-CREATE TABLE IF NOT EXISTS tracker_missing_tests (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    text       TEXT NOT NULL,                -- user-authored: a test that SHOULD exist
-    created_at TEXT NOT NULL
-);
+-- tracker_missing_tests lived here until 2026-08-30. The list moved to
+-- the Missing Test Cases module (app/db/missing_tests.py), which copies
+-- the old rows over once and then DROPs the table.
 
 CREATE TABLE IF NOT EXISTS requirement_country_targets (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -591,28 +589,6 @@ def upsert_tab4_tests(conn: sqlite3.Connection, tests: list[dict]) -> None:
 def list_tab4_tests(conn: sqlite3.Connection) -> list[dict]:
     return _rows_to_dicts(conn.execute(
         "SELECT * FROM tracker_tab4_tests ORDER BY test_kind"))
-
-
-# ---------------------------------------------------------------------------
-# Missing tests (user-authored alarm list on the board)
-# ---------------------------------------------------------------------------
-
-def add_missing_test(conn: sqlite3.Connection, text: str) -> int:
-    with conn:
-        cur = conn.execute(
-            "INSERT INTO tracker_missing_tests (text, created_at) VALUES (?,?)",
-            (text, _now()))
-    return cur.lastrowid
-
-
-def list_missing_tests(conn: sqlite3.Connection) -> list[dict]:
-    return _rows_to_dicts(conn.execute(
-        "SELECT * FROM tracker_missing_tests ORDER BY created_at, id"))
-
-
-def delete_missing_test(conn: sqlite3.Connection, item_id: int) -> None:
-    with conn:
-        conn.execute("DELETE FROM tracker_missing_tests WHERE id=?", (item_id,))
 
 
 # ---------------------------------------------------------------------------

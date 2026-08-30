@@ -149,6 +149,15 @@ def list_retrofits_with_notes(conn: sqlite3.Connection,
 # One-time seed from the two legacy sources
 # ---------------------------------------------------------------------------
 
+def _drop_legacy_table(conn: sqlite3.Connection) -> None:
+    """Remove `tracker_missing_tests` — the board's old list. Only ever called
+    AFTER its rows were copied into missing_test_cases (or after an earlier
+    start set the 'seeded' flag, which by construction means the same), so no
+    entry can be lost. Kept as its own step because the second computer runs
+    the copy later than this one [USER 2026-08-30]."""
+    conn.execute("DROP TABLE IF EXISTS tracker_missing_tests")
+
+
 def seed_once(db_path: Path, config_categories: list[str] | None = None) -> int:
     """Fill the new list ONCE from where the two old lists lived:
 
@@ -163,6 +172,8 @@ def seed_once(db_path: Path, config_categories: list[str] | None = None) -> int:
         done = conn.execute(
             "SELECT value FROM missing_test_meta WHERE key = 'seeded'").fetchone()
         if done:
+            _drop_legacy_table(conn)   # already copied on an earlier start
+            conn.commit()
             return 0
         now = _now()
         seen: set[str] = set()
@@ -194,6 +205,7 @@ def seed_once(db_path: Path, config_categories: list[str] | None = None) -> int:
             written += 1
         conn.execute("INSERT INTO missing_test_meta (key, value) VALUES ('seeded', ?)",
                      (now,))
+        _drop_legacy_table(conn)
         conn.commit()
         return written
     finally:

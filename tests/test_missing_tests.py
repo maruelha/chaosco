@@ -6,7 +6,9 @@ What must hold:
 - the board's quick-add and its ✕ write to THIS module, not to the old
   tracker_missing_tests table
 - the one-time seed picks up both old places (the config bullet list and the
-  board's table) and never runs twice — an emptied list stays empty
+  board's table) and never runs twice — an emptied list stays empty; the old
+  tracker_missing_tests table is DROPPED, but only after its rows were copied
+  (the prod machine seeds later than the dev one) [USER 2026-08-30]
 - retrofits are mirrored read-only on the Missing Test Cases page AND on the
   Requirements board [USER 2026-08-30]; the coverage note is authored on the
   RETROFITS page (column retrofits.test_coverage_note) and only displayed here
@@ -87,6 +89,9 @@ def test_seed_runs_once_and_takes_both_old_lists(db_path):
     conn = _conn(db_path)
     titles = [i["title"] for i in db_missing.list_missing_tests(conn)]
     assert titles == ["Manual test cases", "Event store", "Exchange Even Plus 1"]
+    # the old table is gone once its rows are safely across
+    assert conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE name ="
+                        " 'tracker_missing_tests'").fetchone()[0] == 0
     conn.close()
 
     # second run does nothing, and an emptied list stays empty
@@ -145,6 +150,25 @@ def test_email_text_has_details_and_retrofit_status(db_path):
     assert "Sales must confirm" in text
     assert "New return flow (not confirmed, expected CW40)" in text
     assert "no test case yet" in text
+
+
+def test_legacy_table_is_dropped_on_a_db_that_seeded_earlier(db_path):
+    """A DB seeded before the cleanup existed still gets rid of the old table —
+    the 'seeded' flag proves the rows were copied."""
+    db_missing.seed_once(db_path, ["Event store"])
+    conn = _conn(db_path)
+    conn.executescript(
+        "CREATE TABLE IF NOT EXISTS tracker_missing_tests ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, created_at TEXT);")
+    conn.commit()
+    conn.close()
+
+    assert db_missing.seed_once(db_path, ["Event store"]) == 0
+    conn = _conn(db_path)
+    assert conn.execute("SELECT COUNT(*) FROM sqlite_master WHERE name ="
+                        " 'tracker_missing_tests'").fetchone()[0] == 0
+    assert [i["title"] for i in db_missing.list_missing_tests(conn)] == ["Event store"]
+    conn.close()
 
 
 def test_list_for_report_survives_a_db_without_the_table(tmp_path):
