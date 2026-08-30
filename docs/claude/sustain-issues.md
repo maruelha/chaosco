@@ -1,5 +1,14 @@
 # Sustainphase Issues (`/sustain-issues/`)
 
+**Type:** mini app
+**URL:** `/sustain-issues/`
+**Storage:** `app/db/sustain_issues.py` → `sustain_issues`, `sustain_issue_annotations`
+**Routes:** `app/web_sustain_issues.py`; importer `app/sustain_issues_importer.py`
+**Templates:** `sustain_issues.html`
+**Tests:** `tests/test_sustain_issues_importer.py`, `tests/test_sustain_issues_storage.py`, `tests/test_sustain_issues_web.py`
+
+## Purpose
+
 Defect list for the sustain phase, imported from the **Defects tab** of
 `DTC_Sustainphase_Tracking….xlsx` (planning chat 2026-08-28; built the
 same day). Sits next to Sustainphase Monitoring and Smoke Testing on the
@@ -86,3 +95,7 @@ group (delegated-tagged tickets → delegated ticket detail).
   `test_search_new_sources.py`
 
 Build steps: `docs/build_plan.md` → "Sustainphase Issues".
+
+## Related
+
+`[[sustain]]` · `[[smoke]]` · `[[defects]]` · `[[notes]]` · `[[next-steps]]`

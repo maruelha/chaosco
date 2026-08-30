@@ -7,6 +7,9 @@ system-level wiring that no single app file can own. Skeleton for new files:
 
 Rule: when a mini app or component is added, renamed or removed, update its
 file, this map, and `docs/dashboard_cards.html` (the visual card list).
+**`tests/test_docs_structure.py` enforces it** — a new file that is missing
+from this map, a header block naming a table or module that does not exist, or
+a dangling `[[link]]` fails the test suite.
 
 > Split into one-file-per-app on 2026-08-30 [USER]: `coordination.md` (502
 > lines / 20 apps) and `verticals.md` (413 lines / 8 apps + 3 components) are

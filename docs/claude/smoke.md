@@ -1,5 +1,14 @@
 # CORE SOUTH Smoke Testing (`/smoke/`) — planned 2026-08-27
 
+**Type:** mini app
+**URL:** `/smoke/` · `/smoke/ecom` · `/smoke/retail`
+**Storage:** `app/db/smoke.py` → `smoke_scenarios`, `smoke_steps`, `smoke_annotations`
+**Routes:** `app/web_smoke.py`; importer `app/smoke_importer.py`
+**Templates:** `smoke.html` · `smoke_ecom.html` · `smoke_retail.html` · `_smoke_scenarios.html`
+**Tests:** `tests/test_smoke_importer.py`, `tests/test_smoke_storage.py`, `tests/test_smoke_web.py`
+
+## Purpose
+
 Mini app for the EU Core South smoke test execution: import the shared
 tracking workbook (`EU CS Smoke Test execution.xlsx`), show the eCOM and
 Retail scenarios with their steps, plus a status overview.
@@ -105,3 +114,7 @@ and an empty `Summary` sheet — both ignored).
   auto-covers new GET routes.
 
 Build steps: `docs/build_plan.md` → "CORE SOUTH Smoke Testing".
+
+## Related
+
+`[[sustain]]` · `[[sustain-issues]]` · `[[notes]]` · `[[next-steps]]`

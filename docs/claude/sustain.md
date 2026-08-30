@@ -1,5 +1,14 @@
 # Core South Sustainphase Monitoring (`/sustain/`)
 
+**Type:** mini app
+**URL:** `/sustain/` · `/sustain/day/<day>/<stream>` · `/sustain/summary` (+ `/summary/<day>`)
+**Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`
+**Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`
+**Templates:** `sustain.html` · `sustain_day.html` · `sustain_summary.html`
+**Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`, `tests/test_sustain_web.py`
+
+## Purpose
+
 Daily GBS Operations checklist for the sustain phase (O2C DTC), one
 workbook per date window. Built step-by-step per the build-plan section
 "Core South Sustainphase Monitoring" (planning chat 2026-08-27, executed
@@ -147,3 +156,7 @@ All 6 build-plan steps done 2026-08-28 (steps 2–6 executed autonomously —
 Marina's click-through checklist: `docs/marina_notes/SessionTest_2026-08-28.html`;
 open review points in `MarinaCheckSoon.html`: the free-text-attention
 deviation and the summary v1 layout).
+
+## Related
+
+`[[sustain-issues]]` · `[[smoke]]` · `[[report-blocks]]`

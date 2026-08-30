@@ -25,7 +25,9 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 **Doc rule [USER 2026-08-30]:** every mini app has its OWN file and every
 component has its own file — never a combined doc again (`coordination.md` had
 grown to 502 lines for 20 apps). Adding a mini app = its file + a row in
-`mini-apps.md` + a card row in `docs/dashboard_cards.html`.
+`mini-apps.md` + a card row in `docs/dashboard_cards.html`. Enforced by
+`tests/test_docs_structure.py` (template headings, the header block's tables
+and files must exist, map ↔ folder parity, no dangling `[[links]]`).
 
 ## Architecture — non-negotiable rules
 

@@ -1,5 +1,14 @@
 # Retail Requirements Tracker
 
+**Type:** mini app
+**URL:** `/retail-tracker/board` · `/retail-tracker/payment-methods` · `/retail-tracker/` (import & admin)
+**Storage:** `app/db_retail_tracker.py` → `retail_requirements`, `tracker_countries`, `country_payment_methods`, `cpm_checks`, `tracker_tab4_tests`, `tracker_clarify`, `tracker_parked_tests`, `requirement_country_targets`, `tested_overrides`
+**Routes:** `app/web_retail_tracker.py`; counting in `app/retail_tracker_counting.py` (pure functions); importer `app/retail_tracker_importer.py`
+**Templates:** `retail_tracker.html` · `retail_tracker_board.html` · `retail_tracker_payment.html`
+**Tests:** `tests/test_retail_tracker_*.py` (counting, importer, assign, expected, kickout, manage)
+
+## Purpose
+
 Read when working on `/retail-tracker/*`. Full spec + decision log:
 `retail-tracker-handoff.md` (repo root) — that file is authoritative for the
 counting semantics and every user decision.
@@ -130,3 +139,8 @@ pending, build plan item 1) and `cpm_checks` (tab-4 per-method check-off).
 The tracking Excel is RETIRED — the board is the single source of truth
 (import button = re-import tool only). Yes-marks comparison dropped.
 Override button is backlog-only (table + counting support already exist).
+
+## Related
+
+`[[retail]]` · `[[missing-tests]]` · `[[retrofits]]` · `[[import-pattern]]` ·
+`[[defects]]`

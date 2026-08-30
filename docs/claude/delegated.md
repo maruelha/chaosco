@@ -1,5 +1,14 @@
 # Delegated Testing (2026-08-26)
 
+**Type:** mini app
+**URL:** `/delegated/` · `/delegated/report` · `/delegated/numbers` · `/delegated/ticket/<jira_key>` · `/blockers/`
+**Storage:** `app/db/delegated.py` → `delegated_annotations`, `delegated_goal` · `app/db/blockers.py` → `blockers`, `blocker_links`; tickets from the shared Jira store
+**Routes:** `app/web_delegated.py` · `app/web_blockers.py`; bucket rules in `app/delegated_buckets.py`
+**Templates:** `delegated.html` · `delegated_report.html` · `delegated_numbers.html` · `delegated_ticket.html` · `blockers.html` · `blocker_detail.html` · `_blocker_picker.html`
+**Tests:** `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`, `tests/test_blockers.py`
+
+## Purpose
+
 The card for testing work DELEGATED to the team. Its own Jira XML export,
 uploaded as a file on the card; tickets bucketed by status/assignee from
 🔴 BLOCKED down to "Ready for Sales validations".
@@ -402,3 +411,8 @@ nor the Management Summary reads it.
    counts, goal actual — `numbers_context` filters them before
    `staged_counts`). Toggle `POST /delegated/ticket/<key>/backlog`
    (board checkbox reloads the page so the row visibly moves).
+
+## Related
+
+`[[jira-store]]` · `[[gatekeeper]]` · `[[ecom]]` · `[[email-reports]]` ·
+`[[report-blocks]]` · `[[notes]]` · `[[next-steps]]` · `[[teams-chats]]`

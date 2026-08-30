@@ -1,5 +1,14 @@
 # Missing Test Cases (`/missing-tests/`) — deep dive
 
+**Type:** mini app
+**URL:** `/missing-tests/` (+ `/report`, `/report/download`, `/add`, `/<id>/update|delete`)
+**Storage:** `app/db/missing_tests.py` → `missing_test_cases`, `missing_test_meta`
+**Routes:** `app/web_missing_tests.py`
+**Templates:** `missing_tests.html` · `missing_tests_report.html`
+**Tests:** `tests/test_missing_tests.py`
+
+## Purpose
+
 Built 2026-08-30. **Why it exists:** the same gap was written down in two
 places and drifted apart —
 
@@ -86,3 +95,8 @@ tests/test_missing_tests.py    storage, seed-once, mirror, email text, routes
 ```
 
 Style: `.mtc-*` classes at the bottom of `static/style.css`.
+
+## Related
+
+`[[retail]]` · `[[retail-tracker]]` · `[[retrofits]]` · `[[email-reports]]` ·
+`[[test-limitations]]`
