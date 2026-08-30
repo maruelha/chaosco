@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-header">
   <h1>Retail Requirements Board</h1>
+  <a href="{{ url_for('missing_tests.missing_tests_page') }}" class="btn">Missing Test Cases</a>
   <a href="{{ url_for('retail_tracker.tracker_payment_methods') }}" class="btn">Payment methods</a>
   <a href="{{ url_for('retail_tracker.tracker_home') }}" class="btn">Import &amp; admin</a>
 </div>
@@ -29,13 +30,19 @@
   <p style="color:#a10d19; font-size:0.85rem; margin-top:0">
     Requirements or scenarios with <strong>no test case in the Retail module at all</strong> —
     they can never turn green until a test exists. Anything on this list is a gap.
+    The list is shared with the Retail status report — it is maintained in the
+    <a href="{{ url_for('missing_tests.missing_tests_page') }}">Missing Test Cases</a>
+    mini app, where each entry can carry a detail note.
   </p>
   {% if missing_tests %}
   <ul style="list-style:none; padding:0; margin:0.4rem 0 0.8rem">
     {% for m in missing_tests %}
-    <li>{{ m.text }}
+    <li>
+      <span>{{ m.title }}{% if m.details %}
+        <span style="display:block; font-weight:400; color:#7a1620; font-size:0.82rem">{{ m.details }}</span>
+      {% endif %}</span>
       <form method="post" action="{{ url_for('retail_tracker.missing_delete', item_id=m.id) }}" style="margin-left:auto">
-        <button type="submit" class="btn btn-sm" title="remove">✕</button>
+        <button type="submit" class="btn btn-sm" title="remove — also removes it from the Retail report">✕</button>
       </form>
     </li>
     {% endfor %}

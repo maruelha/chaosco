@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Missing Test Cases — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 1000px; margin: 0 auto;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #b91c1c; line-height: 1; text-align: right; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+
+    .intro { font-size: 0.85rem; color: #475569; margin-bottom: 1.5rem; }
+
+    .rpt-section { margin-bottom: 1.9rem; page-break-inside: avoid; break-inside: avoid; }
+    .rpt-section-head {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      background: #7f1d1d; color: #fef2f2; border-radius: 6px 6px 0 0;
+      padding: 0.45rem 0.9rem;
+    }
+    .rpt-section-head.sec-retrofits { background: #0e7490; color: #ecfeff; }
+    .rpt-section-title { font-size: 0.86rem; font-weight: 700; letter-spacing: 0.02em; }
+    .rpt-section-count { font-size: 0.75rem; opacity: 0.85; }
+    .rpt-section-body { border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: #64748b; background: #f8fafc;
+      padding: 0.45rem 0.9rem; border-bottom: 1px solid #e2e8f0;
+    }
+    td { padding: 0.5rem 0.9rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .mt-title { font-weight: 600; color: #0f172a; }
+    .mt-details { font-size: 0.85rem; color: #475569; white-space: pre-wrap; }
+    .muted { color: #94a3b8; }
+
+    .pill { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 999px;
+            font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+    .pill--green { background: #dcfce7; color: #166534; }
+    .pill--amber { background: #fef3c7; color: #92400e; }
+    .status-hint { font-size: 0.68rem; color: #b45309; margin-top: 0.15rem; }
+
+    .empty { padding: 0.9rem; color: #64748b; font-size: 0.85rem; }
+    .footnote { font-size: 0.75rem; color: #94a3b8; border-top: 1px solid #e2e8f0;
+                padding-top: 0.8rem; margin-top: 2rem; }
+    @media print { .toolbar { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">Missing Test Cases — {{ today }}</span>
+  <a href="{{ url_for('missing_tests.missing_tests_report_download') }}" class="btn">&#11015; Download HTML</a>
+  <a href="{{ url_for('email_report.email_page', reports='missing_tests') }}" class="btn">&#9993; Send via email</a>
+  <a href="{{ url_for('missing_tests.missing_tests_page') }}" class="btn">← Back to the list</a>
+</div>
+{% endif %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">Retail — UAT</div>
+    <div class="rh-title">Missing Test Cases</div>
+    <div class="rh-date">Status as of {{ today }}</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ items | length }}</div>
+    <div class="rh-stat-lbl">test cases missing</div>
+  </div>
+</div>
+
+<p class="intro">
+  Requirements, scenarios or categories with <strong>no test case in the Retail
+  module at all</strong> — they cannot be executed, and cannot turn green,
+  until a test case exists. The retrofits below are the coming system changes
+  for Retail; each one is either <strong>confirmed</strong> or
+  <strong>not confirmed yet</strong>, and may bring further test cases with it.
+</p>
+
+<div class="rpt-section">
+  <div class="rpt-section-head">
+    <span class="rpt-section-title">Missing test cases</span>
+    <span class="rpt-section-count">{{ items | length }}</span>
+  </div>
+  <div class="rpt-section-body">
+    {% if items %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width:35%">Missing test case</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for m in items %}
+        <tr>
+          <td class="mt-title">{{ m.title }}</td>
+          <td class="mt-details">{% if m.details %}{{ m.details }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No missing test cases recorded.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="rpt-section">
+  <div class="rpt-section-head sec-retrofits">
+    <span class="rpt-section-title">Retrofits — Retail</span>
+    <span class="rpt-section-count">{{ retrofits | length }}</span>
+  </div>
+  <div class="rpt-section-body">
+    {% if retrofits %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width:8rem">Status</th>
+          <th style="width:32%">Retrofit</th>
+          <th style="width:7rem">Expected</th>
+          <th>Test coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in retrofits %}
+        <tr>
+          <td>
+            {% if r.status == 'Potential' %}
+            <span class="pill pill--amber">Potential</span>
+            <div class="status-hint">not confirmed yet</div>
+            {% else %}
+            <span class="pill pill--green">Confirmed</span>
+            {% endif %}
+          </td>
+          <td class="mt-title">{{ r.title }}{% if r.channel == 'ECOM & Retail' %}
+            <div class="status-hint" style="color:#0e7490">ECOM &amp; Retail</div>{% endif %}</td>
+          <td>{% if r.expected %}{{ r.expected }}{% else %}<span class="muted">—</span>{% endif %}</td>
+          <td class="mt-details">{% if r.coverage_note %}{{ r.coverage_note }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No Retail retrofits recorded.</p>
+    {% endif %}
+  </div>
+</div>
+
+<p class="footnote">
+  Missing Test Cases — maintained in the coordination tool; the same list is
+  shown on the Retail status report and the Retail Requirements board.
+  Further retrofits may still be announced.
+</p>
+
+</body>
+</html>

@@ -279,7 +279,7 @@
           <td>Write SQL directly · import pandas</td>
         </tr>
         <tr>
-          <td>Blueprints: web_notes · web_retail_tracker · web_topics · web_email · web_teams(_chats) · web_ecom · web_next_steps · web_entity_links · web_connections · web_issue_msg · web_search · web_retrofits · web_urgent · web_delegated · web_blockers · web_smoke · web_sustain · web_sustain_issues</td>
+          <td>Blueprints: web_notes · web_retail_tracker · web_topics · web_email · web_teams(_chats) · web_ecom · web_next_steps · web_entity_links · web_connections · web_issue_msg · web_search · web_retrofits · web_missing_tests · web_urgent · web_delegated · web_blockers · web_smoke · web_sustain · web_sustain_issues</td>
           <td>The pattern for NEW modules — own url_prefix, own storage module, registered in web.py. web_notes / web_next_steps / web_search are REGISTRY-driven generics.</td>
           <td>Write SQL directly</td>
         </tr>
@@ -290,7 +290,7 @@
         </tr>
         <tr>
           <td>app/db/ package</td>
-          <td>ALL SQL, one module per area: core (schema+migrations) · defects · spillover · retail · notes · ecom · jira · gatekeeper · delegated · blockers · urgent · retrofits · smoke · sustain · sustain_issues · topics · entity_links · entity_connections · next_steps · order_archive · inbox_autofile · teams_chats · message_types · email · search · planning · reference — plus <code>db_retail_tracker.py</code></td>
+          <td>ALL SQL, one module per area: core (schema+migrations) · defects · spillover · retail · notes · ecom · jira · gatekeeper · delegated · blockers · urgent · retrofits · missing_tests · smoke · sustain · sustain_issues · topics · entity_links · entity_connections · next_steps · order_archive · inbox_autofile · teams_chats · message_types · email · search · planning · reference — plus <code>db_retail_tracker.py</code></td>
           <td>Import Flask · render templates</td>
         </tr>
         <tr>
@@ -569,7 +569,7 @@
       <tbody>
         <tr><td>app/web.py</td><td>Assembler — imports route modules, initialises schemas, registers Blueprints; entry point</td></tr>
         <tr><td>app/web_core.py</td><td>Shared Flask app object + web plumbing (no routes)</td></tr>
-        <tr><td>app/web_*.py</td><td>Feature route modules + Blueprints (home/defects/spillover/retail/reports/planning/reference · notes/tracker/topics/email/teams/ecom/manual-tests/next-steps/entity-links/connections/issue-msg/search/retrofits)</td></tr>
+        <tr><td>app/web_*.py</td><td>Feature route modules + Blueprints (home/defects/spillover/retail/reports/planning/reference · notes/tracker/topics/email/teams/ecom/manual-tests/next-steps/entity-links/connections/issue-msg/search/retrofits/missing-tests)</td></tr>
         <tr><td>app/database.py + app/db/</td><td>Facade + the storage package — ALL SQL, one module per area</td></tr>
         <tr><td>app/importer.py + *_importer.py + read_defects.py</td><td>Excel import pipeline (Defects · Spillover · Retail · ECOM · tracker seed); jira_importer.py = Jira XML → shared store; solman_sync.py; archiver.py</td></tr>
         <tr><td>app/reporter.py</td><td>Bucket counting (all bucket status reports) from status_mappings.yaml</td></tr>

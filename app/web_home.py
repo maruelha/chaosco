@@ -35,6 +35,8 @@ def dashboard():
         prod_defect_count = len(database.list_known_prod_defects(conn))
         from app.db import retrofits as db_retrofits
         retrofit_count    = db_retrofits.retrofit_counts(conn)["total"]
+        from app.db import missing_tests as db_missing
+        missing_test_count = db_missing.missing_test_count(conn)
         # Deadlines & Burning: card counts + the once-a-day popup [USER 2026-08-11]
         from app.db import urgent as db_urgent
         urgent_counts      = db_urgent.urgent_counts(conn)
@@ -61,6 +63,7 @@ def dashboard():
                            active_topics=active_topics,
                            prod_defect_count=prod_defect_count,
                            retrofit_count=retrofit_count,
+                           missing_test_count=missing_test_count,
                            delegated_counts=delegated_counts,
                            smoke_count=smoke_count,
                            sustain_count=sustain_count,

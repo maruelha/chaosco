@@ -4,7 +4,7 @@ Assembles the app: feature route modules (shared `app` from web_core, flat
 endpoint names) + the Blueprint verticals (tracker, notes). The old
 3,000-line monolith now lives in app/web_*.py, one module per area.
 """
-from app.web_core import app, _db_path  # noqa: F401
+from app.web_core import app, _cfg, _db_path  # noqa: F401
 
 # Feature route modules — importing them registers their routes.
 from app import web_home       # noqa: F401,E402  dashboard, import, uploads
@@ -116,6 +116,17 @@ from app.db import retrofits as _db_retrofits
 from app.web_retrofits import bp as _retrofits_bp
 _db_retrofits.init_schema(_db_path)
 app.register_blueprint(_retrofits_bp)
+
+# Missing Test Cases (2026-08-30) — the ONE list of test cases that do not
+# exist yet; the Retail status report and the Retail Requirements board are
+# both seeded from it. Seeded once from the two old places (the
+# retail_missing_categories config list + tracker_missing_tests).
+from app.db import missing_tests as _db_missing
+from app.web_missing_tests import bp as _missing_bp
+_db_missing.init_schema(_db_path)
+_db_missing.seed_once(_db_path,
+                      _cfg.get("retail_missing_categories", []))
+app.register_blueprint(_missing_bp)
 
 # Meeting types (2026-08-11) — the meeting dropdown is user-editable, so the
 # list lives in its own table (seeded once from planning.MEETING_OPTIONS).

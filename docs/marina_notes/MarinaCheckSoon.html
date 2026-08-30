@@ -495,6 +495,36 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<!-- ================= 2026-08-30 ================= -->
+<h2 class="date">Added 2026-08-30</h2>
+
+<div class="box b-amber">
+  <div class="box-head">Missing Test Cases mini app — two decisions to confirm</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="mtc-report-heading">
+      <span><strong>The Retail status report heading changed</strong> — it used to say
+      "Additional test cases on top of total test cases:" over the three config bullets
+      (Manual test cases / 100&#37; voucher cases / Event store). Now that the board's
+      ⚠ gaps and those bullets are ONE list, it reads
+      "<strong>Missing test cases (on top of total test cases):</strong>". Say the word
+      if you want different wording — or two separate blocks again.
+      <span class="where">&#8594; /retail/report</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mtc-config-key-dead">
+      <span><strong><code>retail_missing_categories</code> in settings.yaml is now only a
+      seed</strong> — it was read ONCE (into the new list, marked in
+      <code>missing_test_meta</code>) and is never read again. Editing it in the YAML has
+      no effect any more; edit the list at /missing-tests/ instead. The key is left in the
+      file on purpose so the other computer seeds the same three entries on its first start.
+      <span class="where">&#8594; /missing-tests/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mtc-retrofit-note">
+      <span><strong>The retrofit "test coverage" note lives in the new mini app</strong>,
+      not in the Retrofits app — Retrofits has no note field (only Title, Status,
+      Expected, Confluence link, Topic). If you'd rather have the note ON the Retrofits
+      page too, that's a small addition.
+      <span class="where">&#8594; /missing-tests/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

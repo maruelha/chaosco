@@ -18,6 +18,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Core South Sustainphase Monitoring (GBS Ops checklist, day reports, mgmt summary) | `docs/claude/sustain.md` |
 | Sustainphase Issues (Defects tab, SUS-nnn placeholder keys, call-outs) | `docs/claude/sustain-issues.md` |
 | Retail Requirements Tracker | `docs/claude/tracker.md` (+ spec `retail-tracker-handoff.md`) |
+| Missing Test Cases (one list, seeds Retail report + board) | `docs/claude/missing-tests.md` |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
 | Screen-by-screen reference | `docs/screens.html` (update this; NEVER `docs/screens_visual.html`) |
@@ -75,6 +76,12 @@ app/
                     storage db/next_steps.py; include _next_step_history.html)
   web_search.py     global 🔍 widget Blueprint (/search; source registry in
                     db/search.py — order numbers now, topics via FTS later)
+  web_missing_tests.py  Missing Test Cases Blueprint (/missing-tests/ — the
+                    ONE list of test cases that do not exist yet; seeds the
+                    Retail status report AND the Requirements board ⚠ list,
+                    mirrors the Retail retrofits read-only with a coverage
+                    note; HTML report + email attachment + copy&paste email
+                    text; storage db/missing_tests.py)
   web_retrofits.py  retrofits Blueprint (/retrofits/ — coming system changes
                     per channel; storage db/retrofits.py; rendered at the
                     bottom of the ECOM + Retail reports)
@@ -124,7 +131,7 @@ app/
                     jira gatekeeper ecom next_steps order_archive
                     inbox_autofile teams_chats message_types search
                     retrofits urgent delegated blockers smoke sustain
-                    sustain_issues
+                    sustain_issues missing_tests
   db_retail_tracker.py    tracker storage
   read_defects.py / spillover_importer.py / retail_importer.py /
   ecom_importer.py / importer.py

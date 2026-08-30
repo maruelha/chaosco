@@ -241,6 +241,7 @@
     <li><a href="#urgent">Deadlines &amp; Burning</a></li>
     <li><a href="#meeting-prep">Meeting Prep</a></li>
     <li><a href="#meeting-worksheet">Meeting Worksheet</a></li>
+    <li><a href="#missing-tests">Missing Test Cases</a></li>
     <li><a href="#retrofits">Retrofits</a></li>
     <li><a href="#dtco2c-daily">DTC O2C Daily Agenda</a></li>
     <li><a href="#todos">To-Do List</a></li>
@@ -1729,6 +1730,31 @@
         <span class="feat-value">Saves the whole page <em>including what was typed</em> (textarea values are written into the clone's text content first — a plain HTML copy would lose them). The saved copy still saves/loads JSON.</span>
         <span class="feat-label">Reached from</span>
         <span class="feat-value">Meeting Prep — the Worksheet button next to the filters; it follows the current meeting + status filter.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Missing Test Cases -->
+  <div class="screen-card" id="missing-tests">
+    <div class="screen-card-header">
+      <span class="screen-title">Missing Test Cases</span>
+      <span class="screen-url">GET /missing-tests/</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-08-30. The <strong>single source</strong> for "this test case does not exist yet". The same gap used to be written down twice (the config list on the Retail status report and the board's <code>tracker_missing_tests</code> table) and drifted apart — both are now seeded from here. Reachable from Retail, the Retail status report and the Retail Requirements Board.</p>
+      <div class="features">
+        <span class="feat-label">Section 1 — Missing test cases</span>
+        <span class="feat-value">Authored list: <strong>Title</strong> (the one-liner both reports show) + <strong>Details</strong> (longer note; travels with this page, its report and the email text only). <span class="pill pill-action">Add</span> · <span class="pill pill-action">Edit</span> (inline row form) · <span class="pill pill-ajax">✕ Delete</span> (confirm → <code>POST /missing-tests/&lt;id&gt;/delete</code>)</span>
+        <span class="feat-label">Section 2 — Retrofits (Retail)</span>
+        <span class="feat-value">Read-only mirror of the Retrofits mini app for channel Retail (incl. "ECOM &amp; Retail"): <strong>Status</strong> (Confirmed / Potential — shown with "not confirmed yet"), Title, Expected, Topic link, Confluence link. The <strong>test coverage note</strong> per retrofit belongs to THIS module (the retrofit module has no note field) and blur-saves via <code>POST /missing-tests/retrofit/&lt;id&gt;/note</code>.</span>
+        <span class="feat-label">Email text</span>
+        <span class="feat-value">✉ button → dialog with plain text ready to paste into Outlook (missing test cases with their details, then every retrofit with confirmed / not confirmed + expected + coverage note) and a Copy-to-clipboard button. Editing in the dialog is not saved.</span>
+        <span class="feat-label">Report</span>
+        <span class="feat-value"><code>GET /missing-tests/report</code> (own inline CSS) · <code>GET /missing-tests/report/download</code> dated standalone HTML · selectable in the email mini app as "Missing Test Cases (Retail)"</span>
+        <span class="feat-label">Seeded into</span>
+        <span class="feat-value">Retail status report + its HTML download + the PPT ("Missing test cases (on top of total test cases)", titles only, details as a tooltip on the page) · Retail Requirements Board ⚠ list (title + details; the board's quick-add and ✕ write here now)</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>missing_test_cases</code> · <code>missing_test_retrofit_notes</code> · <code>missing_test_meta</code> (one-time seed flag); <code>tracker_missing_tests</code> is legacy, read once by the seed and no longer written</span>
       </div>
     </div>
   </div>

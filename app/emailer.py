@@ -39,6 +39,7 @@ REPORT_CHOICES = [
     ("known_prod_defects", "Known Production Issues"),
     ("known_prod_defects_review", "Known Production Issues — Review Copy"),
     ("known_prod_defects_report", "Known Production Issues — Management Report"),
+    ("missing_tests", "Missing Test Cases (Retail)"),
     ("delegated", "Delegated Testing Report"),
     ("delegated_numbers", "Delegated Testing — Management Summary"),
 ]
@@ -170,6 +171,10 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         resp = flask_app.test_client().get("/prod_defects/report/download")
         out.append((f"known_prod_defects_report_{day}.html",
                     resp.get_data(as_text=True)))
+    if "missing_tests" in reports:
+        # the download route already returns clean standalone HTML
+        resp = flask_app.test_client().get("/missing-tests/report/download")
+        out.append((f"missing_test_cases_{day}.html", resp.get_data(as_text=True)))
     # the delegated download routes already return clean standalone HTML
     # (toolbar/scripts stripped, call-outs static) — no standalone_html needed
     if "delegated" in reports:

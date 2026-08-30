@@ -341,6 +341,9 @@
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
     <li><a href="#prod_defect_review_comments">prod_defect_review_comments</a></li>
     <li><a href="#retrofits">retrofits</a></li>
+    <li><a href="#missing_test_cases">missing_test_cases</a></li>
+    <li><a href="#missing_test_retrofit_notes">missing_test_retrofit_notes</a></li>
+    <li><a href="#missing_test_meta">missing_test_meta</a></li>
     <li><a href="#encouragement_people">encouragement_people</a></li>
     <li><a href="#encouragements">encouragements</a></li>
     <li><a href="#links">links</a></li>
@@ -1430,6 +1433,64 @@
         <tr><td class="col-name">expected</td><td class="col-type">TEXT</td><td></td><td class="note-text">Free text, e.g. "CW34", "after go-live"</td></tr>
         <tr><td class="col-name">topic_id</td><td class="col-type">INTEGER</td><td></td><td class="note-text">Optional link to <code>topics</code> for the background. Resolved in a SEPARATE query, never a JOIN — a retrofit stays readable where the topics table doesn't exist, and the link is simply not shown.</td></tr>
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- missing_test_cases -->
+  <div class="table-card" id="missing_test_cases">
+    <div class="table-card-header">
+      <span class="tname">missing_test_cases</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">The ONE list of test cases that do not exist yet [USER 2026-08-30]. Replaces two lists that drifted apart: the config <code>retail_missing_categories</code> bullets on the Retail status report and the board's <code>tracker_missing_tests</code>. Both are now rendered from here (Retail report page + HTML download + PPT, and the Requirements Board ⚠ list). Storage <code>app/db/missing_tests.py</code>, routes <code>app/web_missing_tests.py</code>.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">title</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">The one-liner both reports show</td></tr>
+        <tr><td class="col-name">details</td><td class="col-type">TEXT</td><td></td><td class="note-text">Longer note — shown on /missing-tests, its report, the board list and the email text; only a tooltip on the Retail status report</td></tr>
+        <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">created_at also orders the list (oldest first)</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>Legacy:</strong> <code>tracker_missing_tests</code> is read ONCE by the seed and never written again.</div>
+  </div>
+
+  <!-- missing_test_retrofit_notes -->
+  <div class="table-card" id="missing_test_retrofit_notes">
+    <div class="table-card-header">
+      <span class="tname">missing_test_retrofit_notes</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Test-coverage note per retrofit [USER 2026-08-30]. The Retrofits module has no note field, so the note lives with the Missing Test Cases page that shows it. Blur-saved via <code>POST /missing-tests/retrofit/&lt;id&gt;/note</code>.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">retrofit_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">FK <code>retrofits(id)</code> by convention — no DB constraint, so a missing retrofits table only means an empty mirror</td></tr>
+        <tr><td class="col-name">note</td><td class="col-type">TEXT</td><td></td><td class="note-text">e.g. "no test case yet" / "covered by TC-123". An emptied note DELETES the row instead of storing ''.</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- missing_test_meta -->
+  <div class="table-card" id="missing_test_meta">
+    <div class="table-card-header">
+      <span class="tname">missing_test_meta</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">One-time flags for the Missing Test Cases module — currently only <code>seeded</code>. The seed is guarded by this flag rather than by "is the table empty", so deleting every entry stays deleted across a restart.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">'seeded'</td></tr>
+        <tr><td class="col-name">value</td><td class="col-type">TEXT</td><td></td><td class="note-text">Timestamp of the one-time seed</td></tr>
       </tbody>
     </table>
   </div>

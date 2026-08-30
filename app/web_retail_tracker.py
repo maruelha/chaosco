@@ -14,6 +14,7 @@ from flask import Blueprint, jsonify, redirect, render_template, request, url_fo
 
 from app import database
 from app import db_retail_tracker as db
+from app.db import missing_tests as db_missing
 from app.config_loader import load_config
 from app.retail_tracker_counting import compute_from_db
 from app.retail_tracker_importer import run_tracker_import
@@ -221,7 +222,10 @@ def tracker_board():
         countries = db.list_countries(conn, active_only=True)
         status_map = {(t, c.strip().casefold()): s
                       for t, c, s in db.get_passed_status_rows(conn)}
-        missing_tests = db.list_missing_tests(conn)
+        # the ⚠ list is NOT owned here any more [USER 2026-08-30]: the
+        # Missing Test Cases mini app is the single source, so the board and
+        # the Retail status report can no longer drift apart
+        missing_tests = db_missing.list_for_report(conn)
         clarify_items = db.list_clarify(conn)
         parked_tests = db.list_parked_tests(conn)
         # ids the dashboard carries — drives the ⏳ expected pill (names may be
@@ -294,11 +298,13 @@ def tracker_board():
 
 @bp.route("/missing/add", methods=["POST"])
 def missing_add():
+    """Quick-add from the board — writes into the Missing Test Cases mini app
+    (details are added over there), NOT into the board's old table."""
     text = request.form.get("text", "").strip()
     if text:
         conn = _get_conn()
         try:
-            db.add_missing_test(conn, text)
+            db_missing.create_missing_test(conn, text)
         finally:
             conn.close()
     return redirect(url_for("retail_tracker.tracker_board") + "#missing-tests")
@@ -308,7 +314,7 @@ def missing_add():
 def missing_delete(item_id: int):
     conn = _get_conn()
     try:
-        db.delete_missing_test(conn, item_id)
+        db_missing.delete_missing_test(conn, item_id)
     finally:
         conn.close()
     return redirect(url_for("retail_tracker.tracker_board") + "#missing-tests")

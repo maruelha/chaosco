@@ -8,6 +8,7 @@
     <h1>Retail Status Report</h1>
     <div class="page-header-actions">
       <a href="{{ url_for('retail_list') }}" class="btn">← Retail</a>
+      <a href="{{ url_for('missing_tests.missing_tests_page') }}" class="btn">Missing Test Cases</a>
       <a href="{{ url_for('report_history.history_page', report='retail') }}" class="btn">History</a>
       <a href="{{ url_for('retail_report_diagnostics') }}" class="btn">Diagnostics</a>
       <button type="button" class="btn" id="btn-copy">Copy to clipboard</button>
@@ -37,13 +38,19 @@
     <span class="rr-universe-num">{{ pct_passed }}%</span>
     <span class="rr-universe-lbl">Passed of total</span>
   </div>
-  {% if not_tracked > 0 %}
+  {# the list is NOT authored here [USER 2026-08-30] — it comes from the
+     Missing Test Cases mini app, the same source the Requirements board uses #}
+  {% if missing_tests %}
   <div class="rr-universe-divider"></div>
   <div class="rr-universe-note">
-    <strong>Additional test cases on top of total test cases:</strong>
+    <strong>Missing test cases (on top of total test cases):</strong>
     <ul>
-      {% for cat in missing_categories %}<li>{{ cat }}</li>{% endfor %}
+      {% for m in missing_tests %}
+      <li{% if m.details %} title="{{ m.details }}"{% endif %}>{{ m.title }}</li>
+      {% endfor %}
     </ul>
+    <a href="{{ url_for('missing_tests.missing_tests_page') }}"
+       style="font-size:.75rem">maintain the list ↗</a>
   </div>
   {% endif %}
 </div>

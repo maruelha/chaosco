@@ -90,12 +90,13 @@
     <div style="font-size:1.8rem;font-weight:700;line-height:1;color:#248a3d">{{ pct_passed }}%</div>
     <div style="font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73;margin-top:.2rem">Passed of total</div>
   </div>
-  {% if not_tracked > 0 %}
+  {# same source as the live report: the Missing Test Cases mini app #}
+  {% if missing_tests %}
   <div style="width:1px;align-self:stretch;min-height:2rem;background:#d2d2d7"></div>
   <div style="font-size:.78rem;color:#6e6e73">
-    <strong style="color:#3a3a3c;display:block;margin-bottom:.2rem">Additional test cases on top of total test cases:</strong>
+    <strong style="color:#3a3a3c;display:block;margin-bottom:.2rem">Missing test cases (on top of total test cases):</strong>
     <ul style="margin:0;padding-left:1rem">
-      {% for cat in missing_categories %}<li style="line-height:1.65">{{ cat }}</li>{% endfor %}
+      {% for m in missing_tests %}<li style="line-height:1.65">{{ m.title }}</li>{% endfor %}
     </ul>
   </div>
   {% endif %}

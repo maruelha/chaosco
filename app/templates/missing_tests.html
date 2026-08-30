@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Missing Test Cases — Test Coordination{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1>Missing Test Cases</h1>
+      <p class="page-subtitle">The one list of test cases that do not exist yet — the Retail status report and the Retail Requirements board are seeded from here</p>
+    </div>
+    <div class="page-header-actions">
+      <button type="button" class="btn btn-primary" onclick="mtcMailText()">&#9993; Email text</button>
+      <a href="{{ url_for('missing_tests.missing_tests_report') }}" class="btn">Report</a>
+      <a href="{{ url_for('missing_tests.missing_tests_report_download') }}" class="btn">&#11015; Download HTML</a>
+      <a href="{{ url_for('retail_status_report') }}" class="btn">Retail Report</a>
+      <a href="{{ url_for('retail_tracker.tracker_board') }}" class="btn">Requirements Board</a>
+      <a href="{{ url_for('dashboard') }}" class="btn">← Dashboard</a>
+    </div>
+  </div>
+</div>
+
+{% if msg %}<div class="saved-banner">&#10003;&nbsp; {{ msg }}</div>{% endif %}
+
+{% call ui.stat_cards() %}
+  {{ ui.stat_card(items | length, 'test cases missing', 'alarm' if items else 'done') }}
+  {{ ui.stat_card(retrofits | length, 'retail retrofits', 'info') }}
+  {{ ui.stat_card(retrofits | selectattr('coverage_note') | list | length, 'retrofits with a coverage note', 'open') }}
+{% endcall %}
+
+{# ---- 1. Missing test cases (the authored list both reports render) ---- #}
+{% call ui.section('Missing test cases', 'slate', badge=items | length) %}
+<p class="mtc-intro">
+  Requirements, scenarios or categories with <strong>no test case in the Retail
+  module at all</strong> — they can never turn green until a test exists.
+  Everything here shows up on the Retail status report <em>and</em> on the
+  Retail Requirements board; the detail note only travels with the report and
+  the email text.
+</p>
+
+<form method="post" action="{{ url_for('missing_tests.missing_test_add') }}" class="mtc-form">
+  <div class="mtc-form-row">
+    <label class="mtc-field mtc-field--wide">
+      <span>Missing test case</span>
+      <input type="text" name="title" required
+             placeholder="e.g. Exchange Even Plus 1 — no test case exists yet">
+    </label>
+    <div class="mtc-field mtc-field--submit">
+      <button type="submit" class="btn btn-danger">Add</button>
+    </div>
+  </div>
+  <div class="mtc-form-row">
+    <label class="mtc-field mtc-field--wide">
+      <span>Details <span class="field-hint">optional — why it matters, what would have to be tested</span></span>
+      <textarea name="details" rows="2" placeholder="More detail for the report and the email text…"></textarea>
+    </label>
+  </div>
+</form>
+
+{% if items %}
+<table class="ui-table mtc-table">
+  <thead>
+    <tr>
+      <th>Missing test case</th>
+      <th>Details</th>
+      <th style="width:8rem">Added</th>
+      <th style="width:8rem"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for m in items %}
+    <tr data-id="{{ m.id }}">
+      <td style="font-weight:500">{{ m.title }}</td>
+      <td class="mtc-details">{{ m.details or '—' }}</td>
+      <td style="font-size:0.82rem;color:#666">{{ m.created_at[:10] }}</td>
+      <td style="white-space:nowrap">
+        <button type="button" class="btn btn-sm js-mtc-edit">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger js-mtc-delete">✕</button>
+      </td>
+    </tr>
+    <tr class="mtc-edit-row" data-id="{{ m.id }}" style="display:none">
+      <td colspan="4">
+        <form method="post" action="{{ url_for('missing_tests.missing_test_update', item_id=m.id) }}" class="mtc-form">
+          <div class="mtc-form-row">
+            <label class="mtc-field mtc-field--wide">
+              <span>Missing test case</span>
+              <input type="text" name="title" value="{{ m.title }}" required>
+            </label>
+          </div>
+          <div class="mtc-form-row">
+            <label class="mtc-field mtc-field--wide">
+              <span>Details</span>
+              <textarea name="details" rows="3">{{ m.details or '' }}</textarea>
+            </label>
+            <div class="mtc-field mtc-field--submit">
+              <button type="submit" class="btn btn-primary">Save</button>
+              <button type="button" class="btn js-mtc-cancel">Cancel</button>
+            </div>
+          </div>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="list-empty">No missing test cases recorded — both reports show nothing.</p>
+{% endif %}
+{% endcall %}
+
+{# ---- 2. Retrofits (read-only mirror of the Retrofits mini app) ---- #}
+{% call ui.section('Retrofits — Retail', 'teal', badge=retrofits | length) %}
+<p class="mtc-intro">
+  Coming system changes for Retail (incl. <em>ECOM &amp; Retail</em>), mirrored
+  from the <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}">Retrofits</a>
+  mini app — a retrofit is the usual reason a test case is still missing.
+  Edit a retrofit over there; the <strong>test coverage note</strong> belongs to
+  this page and saves on leaving the field.
+</p>
+
+{% if retrofits %}
+<table class="ui-table mtc-table">
+  <thead>
+    <tr>
+      <th style="width:6.5rem">Status</th>
+      <th>Retrofit</th>
+      <th style="width:7rem">Expected</th>
+      <th style="width:26rem">Test coverage note</th>
+      <th style="width:6rem"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in retrofits %}
+    <tr>
+      <td>
+        {% if r.status == 'Potential' %}
+        {{ ui.pill('Potential', 'amber') }}
+        <div class="mtc-status-hint">not confirmed yet</div>
+        {% else %}{{ ui.pill('Confirmed', 'green') }}{% endif %}
+      </td>
+      <td>
+        <span style="font-weight:500">{{ r.title }}</span>
+        {% if r.channel == 'ECOM & Retail' %}
+        <span class="mtc-chan">ECOM &amp; Retail</span>{% endif %}
+        {% if r.topic_id and r.topic_title %}
+        <div style="font-size:0.8rem">
+          <a href="{{ url_for('topics.topic_detail', topic_id=r.topic_id) }}">{{ r.topic_title }}</a>
+        </div>
+        {% endif %}
+      </td>
+      <td style="font-size:0.85rem">{{ r.expected or '—' }}</td>
+      <td>
+        <input type="text" class="mtc-note-input js-mtc-note" data-id="{{ r.id }}"
+               value="{{ r.coverage_note or '' }}"
+               placeholder="e.g. no test case yet / covered by TC-123">
+      </td>
+      <td style="font-size:0.82rem">
+        {% if r.description and r.description.startswith('http') %}
+        <a href="{{ r.description }}" target="_blank" rel="noopener">Confluence ↗</a>
+        {% else %}<span style="color:#bbb">—</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="list-empty">No Retail retrofits yet —
+  <a href="{{ url_for('retrofits.retrofits_list', channel='Retail') }}">add them in the Retrofits mini app</a>.</p>
+{% endif %}
+{% endcall %}
+
+{# ---- copy & paste email text ---- #}
+<dialog id="mtc-mail-dialog" class="mtc-dialog">
+  <h3 style="margin:0 0 0.4rem">Email text — missing test cases</h3>
+  <p style="font-size:0.82rem;color:#666;margin:0 0 0.6rem">
+    Plain text, ready to paste into Outlook. Edit it here first if you like —
+    changes are not saved.
+  </p>
+  <textarea id="mtc-mail-text" rows="18">{{ email_text }}</textarea>
+  <div class="mtc-dialog-actions">
+    <span id="mtc-mail-flash" class="mtc-flash"></span>
+    <button type="button" class="btn btn-primary" onclick="mtcCopy()">Copy to clipboard</button>
+    <button type="button" class="btn" onclick="document.getElementById('mtc-mail-dialog').close()">Close</button>
+  </div>
+</dialog>
+
+<script>
+function mtcMailText() {
+  document.getElementById('mtc-mail-dialog').showModal();
+  document.getElementById('mtc-mail-text').focus();
+}
+function mtcCopy() {
+  var ta = document.getElementById('mtc-mail-text');
+  navigator.clipboard.writeText(ta.value).then(function () {
+    var flash = document.getElementById('mtc-mail-flash');
+    flash.textContent = '✓ Copied.';
+    setTimeout(function () { flash.textContent = ''; }, 2500);
+  });
+}
+(function () {
+  document.querySelectorAll('.js-mtc-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var editRow = btn.closest('tr').nextElementSibling;
+      var open = editRow.style.display !== 'none';
+      editRow.style.display = open ? 'none' : '';
+      btn.textContent = open ? 'Edit' : 'Close';
+    });
+  });
+  document.querySelectorAll('.js-mtc-cancel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var editRow = btn.closest('tr');
+      editRow.style.display = 'none';
+      editRow.previousElementSibling.querySelector('.js-mtc-edit').textContent = 'Edit';
+    });
+  });
+  document.querySelectorAll('.js-mtc-delete').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      if (!confirm('Delete this missing test case? It disappears from the Retail report and the board too.')) return;
+      var row = btn.closest('tr');
+      var resp = await fetch('/missing-tests/' + row.dataset.id + '/delete', { method: 'POST' });
+      if ((await resp.json()).ok) {
+        var editRow = row.nextElementSibling;
+        if (editRow && editRow.classList.contains('mtc-edit-row')) editRow.remove();
+        row.remove();
+      }
+    });
+  });
+  // coverage note: blur-save, like every other inline field in the app
+  document.querySelectorAll('.js-mtc-note').forEach(function (input) {
+    var last = input.value;
+    input.addEventListener('blur', async function () {
+      if (input.value === last) return;
+      last = input.value;
+      var body = new FormData();
+      body.append('note', input.value);
+      await fetch('/missing-tests/retrofit/' + input.dataset.id + '/note',
+                  { method: 'POST', body: body });
+      input.classList.add('mtc-note-saved');
+      setTimeout(function () { input.classList.remove('mtc-note-saved'); }, 1200);
+    });
+  });
+}());
+</script>
+{% endblock %}

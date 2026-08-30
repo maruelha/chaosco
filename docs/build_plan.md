@@ -8,7 +8,7 @@ Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-08-27
+Last updated: 2026-08-30
 
 > Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
 
@@ -48,6 +48,25 @@ Last updated: 2026-08-27
 ---
 
 ## Part 1 — Feature work by module
+
+### Missing Test Cases (`/missing-tests/`) — ✅ BUILT 2026-08-30
+
+One list instead of two that drifted apart (config `retail_missing_categories`
+on the Retail status report vs `tracker_missing_tests` on the Requirements
+board). Entry = title + detail note; second section mirrors the Retail
+retrofits read-only with a per-retrofit test-coverage note and their status
+(Confirmed / Potential = "not confirmed yet"). HTML report + download, email
+report choice "Missing Test Cases (Retail)", copy & paste email text.
+Seeded ONCE from both old places (`missing_test_meta.seeded`). Deep dive:
+`docs/claude/missing-tests.md`.
+
+Open/possible next steps:
+- coverage note also visible ON the Retrofits page (today it only lives on
+  /missing-tests) — waiting on Marina, see MarinaCheckSoon 2026-08-30
+- report heading wording on the Retail status report ("Missing test cases
+  (on top of total test cases)") — to confirm
+- ECOM has no equivalent list yet; the module is Retail-only on purpose
+
 
 ### Sustainphase Issues (`/sustain-issues/`) — PLANNED 2026-08-28
 

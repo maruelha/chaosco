@@ -11,6 +11,7 @@ from flask import jsonify, redirect, render_template, request, send_from_directo
 from werkzeug.utils import secure_filename
 
 from app import database
+from app.db import missing_tests as db_missing
 from app.web_core import (app, _cfg, _get_conn, _not_found,
                           _UPLOAD_FOLDER, _IMAGE_EXTS, _ALLOWED_EXTS)
 
@@ -129,6 +130,7 @@ def retail_status_report():
         impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
         retrofits = db_retrofits.list_retrofits(conn, channel="Retail")
+        missing_tests = db_missing.list_for_report(conn)
     finally:
         conn.close()
     return render_template(
@@ -142,7 +144,7 @@ def retail_status_report():
         report_comments=report_comments,
         retrofits=retrofits,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
-        missing_categories=_cfg.get("retail_missing_categories", []),
+        missing_tests=missing_tests,
     )
 
 
@@ -167,6 +169,7 @@ def retail_report_download():
         impacted_defects, totals = _get_impacted_defects(conn)
         report_comments = database.list_report_comments(conn, "retail")
         retrofits = db_retrofits.list_retrofits(conn, channel="Retail")
+        missing_tests = db_missing.list_for_report(conn)
     finally:
         conn.close()
     html = render_template(
@@ -178,7 +181,7 @@ def retail_report_download():
         report_comments=report_comments,
         retrofits=retrofits,
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
-        missing_categories=_cfg.get("retail_missing_categories", []),
+        missing_tests=missing_tests,
     )
     return html, 200, {
         "Content-Type": "text/html; charset=utf-8",
@@ -251,6 +254,7 @@ def retail_report_ppt():
     conn   = _get_conn()
     try:
         impacted_defects, totals = _get_impacted_defects(conn)
+        missing_tests = db_missing.list_for_report(conn)
     finally:
         conn.close()
     pptx_bytes = build_retail_ppt(
@@ -261,7 +265,7 @@ def retail_report_ppt():
         impacted_total=totals["total"],
         total_test_cases=_cfg.get("retail_total_test_cases", 646),
         today=today,
-        missing_categories=_cfg.get("retail_missing_categories", []),
+        missing_categories=[m["title"] for m in missing_tests],
     )
     return pptx_bytes, 200, {
         "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
