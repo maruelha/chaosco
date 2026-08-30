@@ -30,6 +30,21 @@ After every feature or refactor, update the relevant docs before moving on.
 
 **Rule of thumb:** Ask "which documents would you touch?" before starting the doc update. Claude will list the files — confirm or adjust, then say go ahead.
 
-**Never touch:** `docs/screens_visual.html` (contains real screenshots, manually maintained).
+**Archived 2026-08-30:** `docs/screens_visual.html` and its screenshots moved to `docs/archive/` — they are not maintained by anyone, and `docs/screens.html` is the single screen reference.
+
+**Also consider:** `docs/dashboard_cards.html` (a card added/renamed/removed), `docs/database_schema.html` (a table or column changed), `docs/claude/<module>.md` (the module's deep dive), `docs/claude/verticals.md` (the overview of ALL mini apps).
+
+---
+
+## Finished docs go to docs/archive/ (2026-08-30)
+
+A day plan that is executed, a review that is worked off, a session write-up, a
+concept that is now built — those move to `docs/archive/`. Nothing there is
+maintained and nothing there may be quoted as current; `docs/archive/README.md`
+lists what is in it and what was deliberately left out.
+
+**Why:** the docs folder was mixing living reference with three-month-old
+plans, and the pairs that existed twice (`v2_blueprint.md` + `.html`) had
+silently drifted apart.
 
 ---

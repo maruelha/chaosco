@@ -1,6 +1,6 @@
 """Retail Requirements Tracker — schema + all SQL for the tracker vertical.
 
-Own module by design (see docs/project_review_2026-07-04.md): new verticals get
+Own module by design (see docs/archive/project_review_2026-07-04.md): new verticals get
 their own DB module instead of growing database.py. Same rule as everywhere else:
 the web layer never writes SQL — it calls functions here.
 

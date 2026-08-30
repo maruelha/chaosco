@@ -1,7 +1,7 @@
 """Retail Requirements Tracker — routes (Flask Blueprint).
 
 Own file by design: new verticals get their own Blueprint instead of growing
-web.py (see docs/project_review_2026-07-04.md). No SQL here — everything goes
+web.py (see docs/archive/project_review_2026-07-04.md). No SQL here — everything goes
 through db_retail_tracker.
 """
 from __future__ import annotations

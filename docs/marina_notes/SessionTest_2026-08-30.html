@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-30</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-30</h1>
+<p class="hint">Today: the new <strong>Missing Test Cases</strong> mini app (one list
+feeding the Retail status report and the Requirements board), the
+<strong>test coverage note</strong> that now lives on the Retrofits page, the
+retrofit list on the Requirements board, and the <strong>documentation
+restructure</strong> (docs/archive, the all-mini-apps catalogue).
+Links assume <a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) — on start
+it creates <code>missing_test_cases</code> / <code>missing_test_meta</code>, adds
+<code>test_coverage_note</code> to <code>retrofits</code>, copies the old lists into the new
+one and drops <code>tracker_missing_tests</code>. Nothing to upload, no config to change.</div>
+
+<!-- 1 -->
+<div class="box b-red">
+  <div class="box-head">1 · Missing Test Cases — the list itself</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="a1">
+      <span>Dashboard → the new <strong>Missing Test Cases</strong> card (next to Retrofits) → open it.
+      <span class="expect">Badge shows the count; page opens at <span class="where">/missing-tests/</span>
+      with three stat cards and two sections.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="a2">
+      <span>Check the list content after the one-time seed.
+      <span class="expect">The three old report bullets are there — Manual test cases,
+      100% voucher cases, Event store — each with the note "From the Retail status report list.",
+      plus anything you had in the board's ⚠ list on THIS machine (it was empty here).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="a3">
+      <span>Add one: title + a Details text → <strong>Add</strong>.
+      <span class="expect">Green "Added." banner, row appears with the details in its own column
+      and today's date under "Added".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="a4">
+      <span><strong>Edit</strong> that row → change the details → Save. Then <strong>✕</strong> on a
+      throw-away entry.
+      <span class="expect">Edit opens an inline row form (button turns into "Close"); ✕ asks first
+      and warns that it disappears from the report and the board too.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-teal">
+  <div class="box-head">2 · The coverage note is written on the Retrofits page</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b1">
+      <span>Open <span class="where">/retrofits/</span> — new <strong>Test coverage</strong> column
+      in the table and a <strong>Test coverage</strong> field in the Add form.
+      <span class="expect">Add form row 3: the field plus the Add button.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b2">
+      <span>If you have no Retail retrofit yet, add one (channel <strong>Retail</strong>, status
+      <strong>Potential</strong>, Expected "CW40", coverage note "no test case yet").
+      <span class="expect">Row appears with an amber "Potential" pill and your note in the new
+      column.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b3">
+      <span>Type into the coverage note field of an existing row, then click elsewhere.
+      <span class="expect">Field border + background flash green (blur-save); reload → the note is
+      still there.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b4">
+      <span><strong>The important one:</strong> click <strong>Edit</strong> on that same retrofit,
+      change nothing, press <strong>Save</strong>.
+      <span class="expect">The coverage note is UNTOUCHED — the Edit row deliberately does not carry
+      the field, so saving an edit can never wipe it.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-slate">
+  <div class="box-head">3 · The same list in both old places</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="c1">
+      <span><span class="where">/retail/report</span> → look at the header block on the right.
+      <span class="expect">"Missing test cases (on top of total test cases):" with your entries
+      (the old wording was "Additional test cases…"); hovering an entry shows its details as a
+      tooltip; a small "maintain the list ↗" link goes to the new app. New
+      <strong>Missing Test Cases</strong> button in the page header.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="c2">
+      <span><span class="where">/retail-tracker/board</span> → the red <strong>⚠ Tests missing</strong>
+      box at the top.
+      <span class="expect">Same entries as the new app, each with its detail note underneath, plus a
+      sentence saying the list is maintained in Missing Test Cases.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="c3">
+      <span>Use the board's quick-add box ("Add missing test") with a throw-away entry, then check
+      <span class="where">/missing-tests/</span> and <span class="where">/retail/report</span>.
+      <span class="expect">It shows up in BOTH — that is the whole point of today. Delete it again
+      with the ✕ on the board and it disappears everywhere.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="c4">
+      <span>Scroll a little further down the board: the teal <strong>Retrofits — Retail</strong>
+      section.
+      <span class="expect">Status (Confirmed / "not confirmed yet"), Retrofit, Expected, Test
+      coverage — read-only, with a link to the Retrofits app. "ECOM only" retrofits must NOT
+      appear; "ECOM &amp; Retail" ones must.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="c5">
+      <span><span class="where">/retail</span> → new <strong>Missing Test Cases</strong> button in the
+      page header. Also check the buttons on the new page itself (Retail Report / Requirements
+      Board / Dashboard).
+      <span class="expect">Every route is reachable from every other in one click.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-green">
+  <div class="box-head">4 · Report, download, email</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="d1">
+      <span>On <span class="where">/missing-tests/</span> click <strong>Report</strong>.
+      <span class="expect">Clean report: count top right, the missing test cases with their details,
+      then the Retail retrofits with status + expected + coverage note.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d2">
+      <span><strong>⬇ Download HTML</strong> → open the saved file.
+      <span class="expect">File named <code>missing_test_cases_2026-08-30.html</code>, opens
+      standalone (no toolbar, no buttons) and looks like the report.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d3">
+      <span><span class="where">/email-report/</span> → the report list.
+      <span class="expect">New tick box <strong>"Missing Test Cases (Retail)"</strong>. Tick only that
+      one plus a recipient (yourself) and send if you want the full check — the attachment is the same
+      standalone HTML.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d4">
+      <span>Back on the page: <strong>✉ Email text</strong> → read the text → <strong>Copy to
+      clipboard</strong> → paste into Outlook.
+      <span class="expect">Numbered missing test cases with their details, then every retrofit as
+      "– Title (confirmed / not confirmed, expected CW40)" with the coverage note underneath.
+      "✓ Copied." appears next to the button. Editing in the dialog is NOT saved — that is on
+      purpose.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d5">
+      <span><span class="where">/retail/report</span> → <strong>Download PPT</strong>.
+      <span class="expect">The deck's missing-test bullets are the same entries (titles only) —
+      it reads the new list too.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-amber">
+  <div class="box-head">5 · Documentation restructure (just a look, nothing to click)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="e1">
+      <span>Open <code>docs/claude/verticals.md</code>.
+      <span class="expect">Part 1 is now a catalogue of <strong>every</strong> mini app — URL, where its
+      data lives, which doc has the detail — followed by short entries for the ones with no deep dive
+      (Retrofits, Known Production Issues, Deadlines &amp; Burning, Enhancements, Global search).
+      Part 2 is the old import-vertical content, unchanged.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="e2">
+      <span>Open <code>docs/archive/README.md</code> and the new <code>docs/archive/</code> folder.
+      <span class="expect">Finished plans, reviews, session write-ups, the June blueprint, the old
+      prompt files — and <code>screens_visual.html</code> with its screenshots, as you asked. The
+      README says what is in there and what was deliberately left out (tech_backlog,
+      teams_review_concept, windows_terminal_tabs, retail-tracker-handoff).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="e3">
+      <span>Skim <code>docs/dashboard_cards.html</code> and <code>docs/architecture.html</code>.
+      <span class="expect">31 cards = the 31 on your dashboard (a stale "Known Prod Defects"
+      duplicate is gone); architecture now names all 22 Blueprints and every db module.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="e4">
+      <span>Decide: do you want a separate <code>docs/architecture.md</code>?
+      <span class="expect">My recommendation is no — CLAUDE.md already carries the text version I read,
+      and the one pair we had in two formats (<code>v2_blueprint.md</code> + <code>.html</code>)
+      drifted apart and froze. Say the word if you want it anyway.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-purple">
+  <div class="box-head">6 · On the other machine (prod), after <code>git pull</code></div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="f1">
+      <span>Start the app once, then open <span class="where">/missing-tests/</span>.
+      <span class="expect">That machine's list = its own three config entries + whatever ⚠ entries the
+      board had THERE. The two machines keep separate lists — by design.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f2">
+      <span>Only after that first start: remove <code>retail_missing_categories</code> from
+      <code>config/settings.yaml</code> if you want it gone.
+      <span class="expect">It is only read once, at the very first start; afterwards it changes
+      nothing.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f3">
+      <span>Check the board's ⚠ list there.
+      <span class="expect">Your old entries are still listed (copied over), and the old table is gone
+      — the copy always runs before the drop.</span></span></label>
+  </div>
+</div>
+
+<script>
+// remember ticks in this browser
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0830-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

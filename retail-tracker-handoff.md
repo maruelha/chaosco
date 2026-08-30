@@ -210,7 +210,7 @@ then move on. "Go for it" applies WITHIN a step; the steps are the checkpoints.
 - NO notes module on this vertical for now (avoids an 11th copy of the note routes;
   overrides carry their own mandatory reason).
 - This step plan creates the project's first `tests/` + pytest setup — deliberate:
-  it doubles as step 2 of the cleanup plan (`docs/project_review_2026-07-04.md`).
+  it doubles as step 2 of the cleanup plan (`docs/archive/project_review_2026-07-04.md`).
 
 **Testing scope (decided with user 2026-07-04):** test the counting service and the
 importer's name resolution — the pure logic where bugs would be silent. Do NOT write

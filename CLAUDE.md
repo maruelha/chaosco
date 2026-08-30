@@ -12,7 +12,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 
 | Topic | File |
 |---|---|
-| Import verticals (Defects / Spillover / Retail), reports, PPT | `docs/claude/verticals.md` |
+| **Catalogue of ALL mini apps** (URL, storage, where the detail is) + the import verticals (Defects / Spillover / Retail / ECOM), reports, PPT | `docs/claude/verticals.md` |
 | Delegated Testing card (buckets, upload import, parked items) | `docs/claude/delegated.md` |
 | CORE SOUTH Smoke Testing (workbook import, eCOM/Retail reports) | `docs/claude/smoke.md` |
 | Core South Sustainphase Monitoring (GBS Ops checklist, day reports, mgmt summary) | `docs/claude/sustain.md` |
@@ -21,8 +21,9 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Missing Test Cases (one list, seeds Retail report + board) | `docs/claude/missing-tests.md` |
 | Planning/reference modules, notes module, inbox, shelf | `docs/claude/coordination.md` |
 | To-do list (features per module + refactoring steps) | `docs/build_plan.md` |
-| Screen-by-screen reference | `docs/screens.html` (update this; NEVER `docs/screens_visual.html`) |
+| Screen-by-screen reference | `docs/screens.html` — the ONE screen doc |
 | How we work together | `docs/ways_of_working.md` |
+| Finished plans/reviews/session write-ups (NOT maintained, never a source of truth) | `docs/archive/` (+ its README) |
 
 ## Architecture — non-negotiable rules
 
@@ -188,5 +189,11 @@ Print → Save as PDF is the manual fallback.
   `docs/dashboard_cards.html` (mini dashboard overview) whenever a
   dashboard card is added/removed/renamed.
 - Work in verifiable steps; the user confirms each before the next.
+- **`docs/archive/`** holds finished material (day plans, reviews, session
+  write-ups, the old blueprint). Never update a file there and never quote it
+  as current; when a plan is executed or a concept is built, MOVE it there.
+  `docs/screens_visual.html` + the `ss_*.png` screenshots were archived on
+  2026-08-30 [USER]: nobody maintains them, `docs/screens.html` is the one
+  screen reference.
 - DB migrations: additive `ALTER TABLE` guarded by try/except in
   `app/db/core.py` (and each vertical's `init_schema`), safe to re-run.

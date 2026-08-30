@@ -4,13 +4,13 @@ The single to-do document. Two halves: **feature work by module** (the dashboard
 cards) and **refactoring steps** (numbered — "do refactoring step 1" means exactly
 what is written under that number).
 
-Sources consolidated here: `docs/project_review_2026-07-04.md` (cleanup plan),
+Sources consolidated here: `docs/archive/project_review_2026-07-04.md` (cleanup plan),
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
 Last updated: 2026-08-30
 
-> Day plan for 2026-07-05: `docs/build_plan_2026-07-05.md`
+> Day plan for 2026-07-05: `docs/archive/build_plan_2026-07-05.md`
 
 ## Open decisions & tasks waiting on Marina (parked 2026-07-09)
 
@@ -606,7 +606,7 @@ one-at-a-time, Marina confirms each:
     Tests: `tests/test_delegated_web.py` (+3). Suite 655. (`/manual/retail`
     · `/manual/ecom`) — NEW 2026-08-05
 
-Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
+Session doc: `docs/archive/session_2026-08-05_manual_test_cases.md`.
 
 1. ~~Shared report component~~ ✅ DONE 2026-08-05: `_report_blocks.html`
    macros + `app/report_log.py` (one report-log writer, sheet per report);
@@ -755,7 +755,7 @@ Session doc: `docs/session_2026-08-05_manual_test_cases.md`.
 1. ~~Rename + rebuild~~ ✅ DONE 2026-08-06 [USER]: renamed from "Known
    Production Defects" (UI text only, same precedent as MB ROE Defects —
    URLs/table/columns unchanged). Session doc:
-   `docs/session_2026-08-06_known_prod_issues.md`. New fields: `channel`
+   `docs/archive/session_2026-08-06_known_prod_issues.md`. New fields: `channel`
    (ECOM/Retail), `type` (Defect/Limitation/Risk/Accepted Defect),
    `sub_case`, `how_to_detect`, `how_to_handle`; `scenario` became a fixed
    dropdown (`prod_defect_scenarios` config, legacy values preserved as
@@ -1191,7 +1191,7 @@ round-trip → reports) as a later phase.
    comments — pinned in `tests/test_form_state_fixes.py` /
    `tests/test_followup_options.py`).
 
-### Jira card — concept REFINED 2026-07-05, see docs/build_plan_2026-07-05.md items 2-6 (do not build until templates provided)
+### Jira card — concept REFINED 2026-07-05, see docs/archive/build_plan_2026-07-05.md items 2-6 (do not build until templates provided)
 
 Parked 2026-07-04 after a feasibility chat. Known so far:
 - Source: Jira **XML export** (issue search → Export → XML) — unlike CSV it
@@ -1219,7 +1219,7 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
 
 ## Part 2 — Refactoring steps (do in order; each is one instruction)
 
-> From `docs/project_review_2026-07-04.md`. Each step is shippable on its own;
+> From `docs/archive/project_review_2026-07-04.md`. Each step is shippable on its own;
 > the app keeps running throughout. "Do refactoring step N" = do exactly the
 > bullet list under N, nothing more.
 
@@ -1232,7 +1232,7 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
   `config/settings.local.yaml`
 - Extend `.gitignore`: `archive_db/`, `archive/*.db`, `data/**/*.db`,
   `~$*`, `config/settings.local.yaml`, `report_export/` (verify present)
-- Move the nine `claude_code_prompt_*.md` root files to `docs/history/`
+- Move the nine `claude_code_prompt_*.md` root files to `docs/archive/history/`
 - Delete dead PDF code: `app/pdf_utils.py`, the `/spillover/report/pdf` route
   in `web.py` + its `render_pdf` import; either fix `report_exporter.py`
   (HTML-only for now) or disable the dashboard Export Reports button with a
@@ -1292,7 +1292,7 @@ Parked 2026-07-04 after a feasibility chat. Known so far:
   screens tables), add `main.py`/`archiver.py` to key files
 - Rewrite `README.md` for what the app is today (web UI first, correct
   install incl. flask + python-pptx)
-- Mark `docs/code-review-findings.md` findings as resolved / archive it
+- Mark `docs/archive/code-review-findings.md` findings as resolved / archive it
 - **Done when:** CLAUDE.md under ~150 lines; README matches reality.
 
 ### Refactoring step 6 — UI component library ✅ DONE 2026-07-04
