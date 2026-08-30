@@ -24,7 +24,7 @@ After every feature or refactor, update the relevant docs before moving on.
 
 **Files to consider each time:**
 - `CLAUDE.md` — key files table, screens table, output/reports section
-- `docs/architecture.html` — module descriptions, key files, any architecture sections affected
+- `docs/architecture.html` — module descriptions, key files, any architecture sections affected. This is the architecture doc YOU read; the same facts exist as a terse map in `CLAUDE.md` (loaded into Claude's context every session). Both get updated together — deliberately no `architecture.md` as a third copy.
 - `docs/screens.html` — screen cards for any new or changed screens/buttons
 - `docs/tech_backlog.md` — mark completed items as done, add new known gaps
 

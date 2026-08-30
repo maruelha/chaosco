@@ -66,6 +66,14 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 
 ## Code layout (post-refactor 2026-07-04)
 
+The **terse file map** lives here on purpose [USER 2026-08-30]: this file is
+loaded into every session, so the map costs nothing to have at hand. Its pair
+is `docs/architecture.html` — Marina's readable version (layers, data flow,
+"what may this layer do / not do"). **Do not write the same content twice:**
+one line per module here, the explaining prose there; update BOTH when a
+module, layer or pattern changes. There is deliberately no `architecture.md`
+— a third copy in a third place is what makes docs drift.
+
 ```
 app/
   web.py            assembler: imports route modules, registers blueprints
