@@ -20,6 +20,7 @@ ECOM, Omni. **Start:** `run_web.bat` (creates/uses the project venv
 | Screen-by-screen reference | `docs/screens.html` — the ONE screen doc |
 | Readable architecture (layers, data flow) | `docs/architecture.html` |
 | How we work together | `docs/ways_of_working.md` |
+| Dev tools in `tools/` — helpers for working ON chaosco, NOT part of the app (e.g. getting a screenshot into the chat) | `docs/dev_tools.md` |
 | Finished plans/reviews/session write-ups (NOT maintained, never a source of truth) | `docs/archive/` (+ its README) |
 
 **Doc rule [USER 2026-08-30]:** every mini app has its OWN file and every

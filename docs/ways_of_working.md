@@ -50,3 +50,25 @@ plans, and the pairs that existed twice (`v2_blueprint.md` + `.html`) had
 silently drifted apart.
 
 ---
+
+## Getting a screenshot into the chat (2026-08-31)
+
+`Ctrl+V` does not paste images into the Claude Code prompt on this machine
+(tried 2026-08-31 — nothing arrives). Three ways that DO work:
+
+1. **Clipboard → Claude.** Take the shot with `Win+Shift+S`, then say
+   *"grab the clipboard"*. Claude runs `tools/clip_image.ps1`, which saves
+   whatever image is in the Windows clipboard to
+   `%TEMP%\claude_clip\clip_<timestamp>.png` and prints the path — Claude
+   reads that file. Images only: copied text or a file copied in Explorer
+   are not clipboard images and the script says so.
+2. **Screenshots folder.** `Win+PrtScn` (or the Snipping Tool's auto-save)
+   writes to `Pictures\Screenshots\` — name the file in the chat and
+   Claude opens it.
+3. **Any file at all** — just give the path, or drag the file onto the
+   terminal. No clipboard involved; Claude reads files directly.
+
+Details, limits and the by-hand command: **`docs/dev_tools.md`** (the
+`tools/` folder is workflow helpers only — never part of the app).
+
+---
