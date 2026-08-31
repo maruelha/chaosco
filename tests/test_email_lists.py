@@ -78,7 +78,7 @@ def test_routes_roundtrip(db_path, monkeypatch):
     # refuse empty name / empty selection
     r = client.post("/email-report/lists/save",
                     data={"list_name": "", "recipients": [str(ids["a@x.com"])]})
-    assert "Give+the+mailing+list+a+name" in r.headers["Location"].replace("%20", "+")
+    assert "Give+the+group+a+name" in r.headers["Location"].replace("%20", "+")
     r = client.post("/email-report/lists/save", data={"list_name": "Empty"})
     assert "at+least+one+recipient" in r.headers["Location"].replace("%20", "+")
 
@@ -88,7 +88,7 @@ def test_routes_roundtrip(db_path, monkeypatch):
                       "recipients": [str(ids["a@x.com"]), str(ids["c@x.com"])]})
     html = client.get("/email-report/").get_data(as_text=True)
     assert "Duo (2)" in html
-    assert "Save current selection as list" in html
+    assert "Save current send as group" in html
 
     # delete
     conn = db_core.get_connection(db_path)

@@ -389,9 +389,10 @@ def test_email_pretick_query_param(client):
     html = client.get("/email-report/?reports=known_prod_defects").get_data(as_text=True)
     assert 'value="known_prod_defects" checked' in html
     assert 'value="retail" checked' not in html
-    # no query param at all -> default behaviour unchanged (everything ticked)
+    # no query param at all -> NOTHING ticked since 2026-08-31 [USER]; the
+    # page's All / None buttons are the way to a full selection
     html = client.get("/email-report/").get_data(as_text=True)
-    assert 'value="retail" checked' in html
+    assert 'checked' not in html.split('name="reports"')[1][:80]
 
 
 def test_gather_attachments_includes_known_prod_defects(client):

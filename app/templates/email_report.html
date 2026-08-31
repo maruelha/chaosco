@@ -30,6 +30,13 @@ email_password: 'your-app-password'
 {# ---- what to send ---- #}
 {% call ui.section('Reports to attach', 'teal') %}
 <div style="padding:0.8rem 1rem">
+  {# nothing is ticked on open [USER 2026-08-31] — pick a group or tick here #}
+  <div style="display:flex; gap:0.4rem; align-items:center; margin-bottom:0.6rem">
+    <span style="color:#888; font-size:0.82rem">Quick select:</span>
+    <button type="button" class="btn btn-sm" onclick="reportsSelect('all')">All</button>
+    <button type="button" class="btn btn-sm" onclick="reportsSelect('none')">None</button>
+    <span id="reports-count" style="color:#888; font-size:0.82rem"></span>
+  </div>
   {% for key, label in report_choices %}
   <label style="display:block; padding:4px 0; cursor:pointer">
     <input type="checkbox" name="reports" value="{{ key }}" {% if key in checked_reports %}checked{% endif %}> {{ label }}
@@ -51,7 +58,12 @@ email_password: 'your-app-password'
     <input id="f-subject" type="text" name="subject" value="{{ subject }}" style="width:100%">
   </div>
   <div class="form-field">
-    <label for="f-body">Text</label>
+    <label for="f-body">Text
+      <button type="button" class="btn btn-sm" style="margin-left:0.5rem"
+              onclick="regenerateText(true)"
+              title="rebuild subject and text from the ticked reports and the date">&#8635; Regenerate text</button>
+      <span id="text-followed" style="color:#888; font-size:0.78rem; margin-left:0.4rem"></span>
+    </label>
     <textarea id="f-body" name="body" rows="9" style="width:100%">{{ body }}</textarea>
   </div>
   <p style="color:#888; font-size:0.8rem; margin:0">
@@ -69,21 +81,23 @@ email_password: 'your-app-password'
     <button type="button" class="btn btn-sm" onclick="emailSelect('all')">All</button>
     <button type="button" class="btn btn-sm" onclick="emailSelect('none')">None</button>
     {% if mailing_lists %}
-    <span style="color:#888; font-size:0.82rem; margin-left:0.6rem">Mailing lists:</span>
+    <span style="color:#888; font-size:0.82rem; margin-left:0.6rem">Groups:</span>
     {% for l in mailing_lists %}
     <span style="display:inline-flex; align-items:center; border:1px solid #c9c9d4; border-radius:14px; overflow:hidden">
-      <button type="button" class="btn btn-sm" style="border:none; border-radius:0"
-              title="select exactly these {{ l.member_ids|length }} recipient(s)"
-              onclick='emailSelect({{ l.member_ids | tojson }})'>&#128231; {{ l.name }} ({{ l.member_ids|length }})</button>
-      <button type="submit" class="btn btn-sm" style="border:none; border-radius:0; color:#c00"
-              formaction="{{ url_for('email_report.list_delete', list_id=l.id) }}" formnovalidate
-              onclick="return confirm('Delete mailing list &quot;{{ l.name }}&quot;? (Recipients themselves stay.)')"
-              title="delete this list">✕</button>
+      <button type="button" class="btn btn-sm js-group" style="border:none; border-radius:0"
+              data-group='{{ {"members": l.member_ids, "reports": l.report_keys,
+                              "subject": l.subject, "body": l.body, "name": l.name} | tojson }}'
+              title="{{ l.member_ids|length }} recipient(s){% if l.report_keys %}, {{ l.report_keys|length }} report(s){% endif %}{% if l.subject or l.body %}, own text{% endif %}"
+              >&#128231; {{ l.name }} ({{ l.member_ids|length }}{% if l.report_keys %} · {{ l.report_keys|length }} rep{% endif %})</button>
+      <button type="button" class="btn btn-sm js-group-delete" style="border:none; border-radius:0; color:#c00"
+              data-id="{{ l.id }}" data-name="{{ l.name }}"
+              title="delete this group (the recipients themselves stay)">✕</button>
     </span>
     {% endfor %}
     {% endif %}
   </div>
-  <table class="ui-table" style="margin-bottom:0.8rem">
+  <div id="mail-flash" class="saved-banner" style="display:none"></div>
+  <table class="ui-table" id="recipient-table" style="margin-bottom:0.8rem">
     <thead><tr><th style="width:2.5rem">Send</th><th>Email</th><th>Name</th><th style="width:9rem"></th></tr></thead>
     <tbody>
       {% for r in recipients %}
@@ -94,13 +108,10 @@ email_password: 'your-app-password'
         <td class="mono" style="font-size:0.85rem">{{ r.email }}</td>
         <td>{{ r.name or "" }}</td>
         <td style="text-align:right; white-space:nowrap">
-          <button type="submit" class="btn btn-sm"
-                  formaction="{{ url_for('email_report.recipient_toggle', rid=r.id) }}"
-                  formnovalidate title="active recipients are pre-ticked next time">
+          <button type="button" class="btn btn-sm js-rcp-toggle" data-id="{{ r.id }}"
+                  title="active recipients are pre-ticked next time">
             {{ 'set inactive' if r.active else 'set active' }}</button>
-          <button type="submit" class="btn btn-sm btn-danger"
-                  formaction="{{ url_for('email_report.recipient_delete', rid=r.id) }}"
-                  formnovalidate onclick="return confirm('Remove this recipient?')">✕</button>
+          <button type="button" class="btn btn-sm btn-danger js-rcp-delete" data-id="{{ r.id }}">✕</button>
         </td>
       </tr>
       {% endfor %}
@@ -111,22 +122,20 @@ email_password: 'your-app-password'
   {% endif %}
 
   <div style="display:flex; gap:0.6rem; flex-wrap:wrap">
-    <input type="email" name="email" placeholder="email@example.com"
+    <input type="email" id="f-new-email" name="email" placeholder="email@example.com"
            style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
-    <input type="text" name="name" placeholder="name (optional)"
+    <input type="text" id="f-new-name" name="name" placeholder="name (optional)"
            style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px">
-    <button type="submit" class="btn"
-            formaction="{{ url_for('email_report.recipient_add') }}">+ Add recipient</button>
+    <button type="button" class="btn" onclick="addRecipient()">+ Add recipient</button>
   </div>
 
   {% if recipients %}
   <div style="display:flex; gap:0.6rem; flex-wrap:wrap; margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #eee">
-    <input type="text" name="list_name" placeholder="list name (e.g. Key users ROE)"
+    <input type="text" name="list_name" placeholder="group name (e.g. Key users ROE)"
            style="padding:6px 10px; border:1px solid #c9c9d4; border-radius:6px; min-width:16rem">
-    <button type="submit" class="btn"
-            formaction="{{ url_for('email_report.list_save') }}" formnovalidate
-            title="saves whoever is TICKED above as a mailing list — same name updates the list">
-      &#128190; Save current selection as list</button>
+    <button type="button" class="btn" onclick="saveGroup()"
+            title="saves the WHOLE send: ticked recipients + ticked reports + the subject and text above — same name updates the group">
+      &#128190; Save current send as group</button>
   </div>
   {% endif %}
 </div>
@@ -139,6 +148,8 @@ email_password: 'your-app-password'
 </form>
 
 <script>
+const MAIL_LABELS = {{ report_labels | tojson }};
+
 function emailSelect(which) {
   // 'all' | 'none' | [recipient ids] — sets the Send checkboxes to exactly that
   document.querySelectorAll('input[name="recipients"]').forEach(cb => {
@@ -148,14 +159,162 @@ function emailSelect(which) {
   });
 }
 
-function emailSyncDate(day) {
-  // keep subject/body in sync when the date changes and the user has not
-  // customised the texts (simple heuristic: replace the old date string)
-  const subj = document.getElementById('f-subject');
-  const body = document.getElementById('f-body');
-  const re = /\d{4}-\d{2}-\d{2}/;
-  if (re.test(subj.value)) subj.value = subj.value.replace(re, day);
-  body.value = body.value.replace(re, day);
+/* ---- reports ---------------------------------------------------------- */
+function reportBoxes() { return [...document.querySelectorAll('input[name="reports"]')]; }
+function pickedReports() { return reportBoxes().filter(cb => cb.checked).map(cb => cb.value); }
+
+function reportsSelect(which, keys) {
+  reportBoxes().forEach(cb => {
+    if (which === 'all') cb.checked = true;
+    else if (which === 'none') cb.checked = false;
+    else cb.checked = (keys || []).includes(cb.value);
+  });
+  reportsChanged();
 }
+
+function reportsChanged() {
+  const n = pickedReports().length;
+  document.getElementById('reports-count').textContent =
+    n ? `${n} of ${reportBoxes().length} selected` : 'nothing selected yet';
+  if (!textEdited) regenerateText(false);      // follow the ticks until she types
+}
+
+/* ---- subject + text ---------------------------------------------------- */
+let textEdited = false;                        // set once she types in the fields
+
+function markEdited() {
+  textEdited = true;
+  document.getElementById('text-followed').textContent = 'edited by hand — use ↻ to rebuild';
+}
+
+async function regenerateText(force) {
+  if (force && textEdited &&
+      !confirm('Rebuild subject and text from the ticked reports? Your edits are lost.')) return;
+  const body = new FormData();
+  body.append('date', document.getElementById('f-date').value);
+  pickedReports().forEach(k => body.append('reports', k));
+  const resp = await fetch('/email-report/text',
+                           {method: 'POST', body, headers: {'X-Requested-With': 'fetch'}});
+  const d = await resp.json();
+  if (!d.ok) return;
+  document.getElementById('f-subject').value = d.subject;
+  document.getElementById('f-body').value = d.body;
+  textEdited = false;
+  document.getElementById('text-followed').textContent = 'follows the ticked reports';
+}
+
+function emailSyncDate(day) {
+  if (textEdited) {                            // keep her wording, just fix the date
+    const subj = document.getElementById('f-subject');
+    const body = document.getElementById('f-body');
+    const re = /\d{4}-\d{2}-\d{2}/;
+    if (re.test(subj.value)) subj.value = subj.value.replace(re, day);
+    body.value = body.value.replace(re, day);
+  } else {
+    regenerateText(false);
+  }
+}
+
+/* ---- groups: recipients + reports + wording in one click --------------- */
+function applyGroup(g) {
+  emailSelect(g.members || []);
+  reportsSelect('keys', g.reports || []);
+  if (g.subject || g.body) {
+    if (g.subject) document.getElementById('f-subject').value = g.subject;
+    if (g.body) document.getElementById('f-body').value = g.body;
+    textEdited = true;                         // the group's wording is deliberate
+    document.getElementById('text-followed').textContent =
+      `text from group "${g.name}" — use ↻ to rebuild`;
+  }
+}
+
+async function post(url, body) {
+  const resp = await fetch(url, {method: 'POST', body,
+                                 headers: {'X-Requested-With': 'fetch'}});
+  const data = await resp.json().catch(() => ({ok: false, error: 'unexpected reply'}));
+  if (!data.ok) alert(data.error || 'Something went wrong.');
+  return data;
+}
+
+function flash(msg) {
+  const el = document.getElementById('mail-flash');
+  el.textContent = msg;
+  el.style.display = '';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+/* Everything below talks to the server WITHOUT reloading the page — a reload
+   used to throw away the typed text and the ticked reports [USER 2026-08-31]. */
+async function addRecipient() {
+  const email = document.getElementById('f-new-email');
+  const name = document.getElementById('f-new-name');
+  const body = new FormData();
+  body.append('email', email.value);
+  body.append('name', name.value);
+  const d = await post('/email-report/recipients/add', body);
+  if (!d.ok || !d.recipient) return;
+  const tbody = document.querySelector('#recipient-table tbody');
+  const r = d.recipient;
+  if (tbody && !tbody.querySelector(`input[value="${r.id}"]`)) {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td style="text-align:center"><input type="checkbox" name="recipients" value="${r.id}" checked></td>` +
+      `<td class="mono" style="font-size:0.85rem">${r.email}</td><td>${r.name || ''}</td>` +
+      `<td style="text-align:right; white-space:nowrap">` +
+      `<button type="button" class="btn btn-sm js-rcp-toggle" data-id="${r.id}">set inactive</button> ` +
+      `<button type="button" class="btn btn-sm btn-danger js-rcp-delete" data-id="${r.id}">✕</button></td>`;
+    tbody.appendChild(tr);
+  }
+  email.value = ''; name.value = '';
+  flash(`${r.email} added — your selection and text are untouched.`);
+}
+
+async function saveGroup() {
+  const name = document.querySelector('input[name="list_name"]');
+  const body = new FormData();
+  body.append('list_name', name.value);
+  document.querySelectorAll('input[name="recipients"]:checked')
+          .forEach(cb => body.append('recipients', cb.value));
+  pickedReports().forEach(k => body.append('reports', k));
+  body.append('subject', document.getElementById('f-subject').value);
+  body.append('body', document.getElementById('f-body').value);
+  const d = await post('/email-report/lists/save', body);
+  if (!d.ok) return;
+  flash(d.result + ' Reload to see it in the group bar.');
+  name.value = '';
+}
+
+document.addEventListener('click', async (ev) => {
+  const group = ev.target.closest('.js-group');
+  if (group) { applyGroup(JSON.parse(group.dataset.group)); return; }
+
+  const del = ev.target.closest('.js-group-delete');
+  if (del) {
+    if (!confirm(`Delete group "${del.dataset.name}"? (Recipients themselves stay.)`)) return;
+    const d = await post(`/email-report/lists/${del.dataset.id}/delete`, new FormData());
+    if (d.ok) del.closest('span').remove();
+    return;
+  }
+
+  const toggle = ev.target.closest('.js-rcp-toggle');
+  if (toggle) {
+    const d = await post(`/email-report/recipients/${toggle.dataset.id}/toggle`, new FormData());
+    if (d.ok) toggle.textContent = d.active ? 'set inactive' : 'set active';
+    return;
+  }
+
+  const rdel = ev.target.closest('.js-rcp-delete');
+  if (rdel) {
+    if (!confirm('Remove this recipient?')) return;
+    const d = await post(`/email-report/recipients/${rdel.dataset.id}/delete`, new FormData());
+    if (d.ok) rdel.closest('tr').remove();
+  }
+});
+
+document.querySelectorAll('input[name="reports"]').forEach(
+  cb => cb.addEventListener('change', reportsChanged));
+['f-subject', 'f-body'].forEach(
+  id => document.getElementById(id).addEventListener('input', markEdited));
+reportsChanged();
 </script>
 {% endblock %}

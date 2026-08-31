@@ -14,6 +14,29 @@ daily/weekly mail is one click instead of a manual export-and-attach round.
 
 ## Architecture
 
+**The page opens with NOTHING ticked** [USER 2026-08-31] — all-ticked meant
+unticking eleven boxes for a two-report mail. **All / None** buttons sit above
+the list, `?reports=<key>` still pre-ticks one, and a **group** ticks its own
+set in one click.
+
+**Groups** (table `email_lists` + `email_list_reports`) are a whole saved send:
+recipients **+ reports + the group's own subject and text**. "💾 Save current
+send as group" stores all of it under a name (same name = replace); clicking
+the group's chip applies all of it. A recipient-only save never drops a group's
+report set (`save_email_list` only replaces what it is passed).
+
+**The report list in the mail follows the ticks**: `POST /email-report/text`
+rebuilds subject + body via `emailer.default_texts` — automatically while the
+text has not been hand-edited, and on demand via **↻ Regenerate text** (which
+asks first if you edited it). Typing in subject/body stops the automatic
+follow; applying a group with its own wording does too.
+
+**Nothing reloads the page**: add / activate / delete a recipient and save or
+delete a group all go through `fetch` and answer with JSON
+(`_wants_json` → `X-Requested-With: fetch`), because a reload used to throw
+away the typed text and the ticked reports. Without the header the same routes
+still redirect, so the page keeps working with JavaScript off.
+
 Checkbox per report (`emailer.REPORT_CHOICES`): Spillover · Retail ·
 Requirements Board · ECOM · Manual Retail + ECOM · Known Production Issues
 (+ since 2026-08-27 its **Review Copy** — attached AS-IS, scripts kept on

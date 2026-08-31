@@ -49,24 +49,23 @@ Last updated: 2026-08-31
 
 ## Part 1 — Feature work by module
 
-### Email Reports (`/email-report/`) — IN PROGRESS 2026-08-31
+### Email Reports (`/email-report/`) — ✅ BUILT 2026-08-31/09-01
 
 Four changes requested [USER 2026-08-31]:
 
-1. ~~Report checkboxes all pre-ticked~~ → open with NOTHING ticked, plus
-   All / None buttons. **Storage/route part pending.**
+1. ✅ Opens with NOTHING ticked, plus All / None buttons and a live
+   "n of 13 selected" hint.
 2. **Groups** = a whole saved send: recipients + reports + own subject/text.
-   ✅ storage done (`email_list_reports` table, `email_lists.subject/body`,
-   `save_email_list` extended, `list_email_lists` returns everything a click
-   must apply). UI pending.
+   ✅ done — `email_list_reports` table, `email_lists.subject/body`, the chip
+   applies members + reports + wording in one click.
 3. **"↻ Regenerate text"** so the report list in the mail matches the ticks;
-   auto-follows while the text has not been hand-edited. ✅ `default_texts`
-   now distinguishes "not asked" (list everything) from "nothing ticked".
-   Route + button pending.
+   auto-follows while the text has not been hand-edited. ✅ done —
+   `POST /email-report/text` + the ↻ button; `default_texts` distinguishes
+   "not asked" from "nothing ticked".
 4. **Adding a recipient must not wipe** the typed text or the ticked reports —
-   the buttons on that page are form POSTs that redirect. Planned: answer them
-   as JSON when called with `fetch` (no reload), keep the redirect as the
-   no-JavaScript fallback. Pending.
+   ✅ done — those endpoints answer `fetch` with JSON and the page updates in
+   place; the redirect stays as the no-JavaScript fallback.
+   Tests: `tests/test_email_page_features.py` (12).
 
 Done the same day: the Retail report's three copies (page download, email
 attachment, export snapshot) now go through ONE renderer — see
