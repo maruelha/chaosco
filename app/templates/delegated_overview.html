@@ -266,9 +266,11 @@
   <div><b>{{ blocked_unassigned }}</b> blocked ticket{{ 's' if blocked_unassigned != 1 else '' }}
     could not be staged — the blocker carries no responsible team yet.</div>
   {% endif %}
+  {# name the statuses [USER 2026-09-01: "so one does not need to research"] #}
   {% if unexpected %}
   <div><b>{{ unexpected }}</b> ticket{{ 's' if unexpected != 1 else '' }}
-    with an unexpected Jira status — outside every stage.</div>
+    with an unexpected Jira status — outside every stage:
+    {% for status, n in unexpected_statuses %}<b>{{ status }}</b> ×{{ n }}{{ ", " if not loop.last }}{% endfor %}.</div>
   {% endif %}
 </div>
 {% endif %}

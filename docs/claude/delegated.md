@@ -54,14 +54,15 @@ see below).
 | Bucket | Rule |
 |---|---|
 | 🔴 Blocker (top, wins) | status Blocked |
-| Not started yet | status Open |
+| Not started yet | status Open **or Reopened** (2026-09-01 [USER]) |
 | Testing team creating order | status Accepted |
 | Marina gatekeeper check | status In Progress |
 | Settlement file to be created | In Verification |
 | With GBS key users | In Validation |
 | ECOM BPO test | In Review |
 | Test case completed | Resolved / Closed / Done |
-| Unexpected status | anything else (never silently dropped) |
+| Unexpected status | anything else (never silently dropped — and since
+2026-09-01 the reports NAME the status, see below) |
 
 Case-insensitive, whitespace-tolerant. Board hides Resolved+Unexpected
 sections while empty; the report shows only non-empty sections.
@@ -170,6 +171,22 @@ Email Reports choice `delegated_overview`, same as the other two.
 
 Pure logic in `app/delegated_buckets.py`: `OVERVIEW_STAGES`,
 `overview_team_stage`, `blocked_stage`, `BAR_GROUPS`, `overview_counts`.
+
+## Odd statuses are NAMED, not just counted (2026-09-01 [USER])
+
+[USER: "when there is an unexpected Jira status mention what the status is
+so one does not need to research"]. `delegated_buckets.unexpected_statuses`
+(pure, tested) returns `[(status, count), …]` for everything in the
+Unexpected bucket, most frequent first; a missing/blank status is reported
+as `(no status)` rather than as an empty label. Both aggregate reports use
+it — the Management Summary appends "— Ready for Verification ×2" to its
+Unexpected row, the Overview names them in its amber note line. The board
+and the status report already showed each ticket's Status in a column, so
+they were not the gap.
+
+Adding a status to the workflow is therefore a two-line change in
+`delegated_buckets` (the `bucket_key` branch + the docs) — and until it is
+made, the reports say out loud what they could not place.
 
 ## Jira labels (2026-08-28 [USER: "would help while filtering"])
 

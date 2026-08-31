@@ -1064,3 +1064,39 @@ def test_overview_download_is_a_standalone_attachment(client):
     # toolbar + scripts stripped, call-outs static
     assert "coSave(" not in html
     assert "Download HTML" not in html
+
+
+def test_reports_name_the_unexpected_status(client):
+    """[USER 2026-09-01] the fixture's S4ECOM-2004 sits on "Ready for
+    Verification"; both aggregate reports must SAY so, not just count it."""
+    _upload(client)
+    numbers = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "Unexpected status" in numbers
+    assert "Ready for Verification ×1" in numbers
+
+    overview = client.get("/delegated/overview").get_data(as_text=True)
+    assert "unexpected Jira status" in overview
+    assert "Ready for Verification" in overview
+
+    # and in the downloads, which is where management actually reads them
+    dl = client.get("/delegated/overview/download").get_data(as_text=True)
+    assert "Ready for Verification" in dl
+
+
+def test_reopened_is_bucketed_like_open(client):
+    """[USER 2026-09-01: "I have the status Reopened - which is to be
+    treated exactly the same as opened"]."""
+    _upload(client, XML.replace(">Ready for Verification<", ">Reopened<"),
+            "delegated_reopened.xml")
+    conn = web_delegated._get_conn()
+    try:
+        ctx = web_delegated.overview_context(conn)
+    finally:
+        conn.close()
+    assert ctx["unexpected"] == 0            # no longer an odd status
+    assert ctx["unexpected_statuses"] == []
+    stages = {s["key"]: s for s in ctx["stages"]}
+    assert stages["tech"]["in_progress"] == 2   # Accepted + the Reopened one
+    html = client.get("/delegated/").get_data(as_text=True)
+    not_started = html.split("Not started yet")[1].split("<summary>")[0]
+    assert 'data-key="S4ECOM-2004"' in not_started

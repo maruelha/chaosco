@@ -24,7 +24,8 @@ from app.db import ecom as db_ecom
 from app.db import jira as db_jira
 from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, bucket_counts,
                                    bucket_issues, bucket_key, mb_status_state,
-                                   overview_counts, staged_counts)
+                                   overview_counts, staged_counts,
+                                   unexpected_statuses)
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -426,6 +427,8 @@ def numbers_context(conn) -> dict:
                         for key, label in db_blockers.TYPE_SECTIONS]
     return {
         "stages": stages, "unexpected": unexpected,
+        # name the odd statuses so nobody has to look them up [USER 2026-09-01]
+        "unexpected_statuses": unexpected_statuses(issues),
         "total": len(issues),
         "goal": db_delegated.get_delegated_goal(conn),
         "actual": post_gatekeeper_total + blocked_counting,

@@ -677,6 +677,22 @@ one-at-a-time, Marina confirms each:
     `web_reports`), Export Reports writes a 7th file, and the report is an
     Email Reports choice. Tests: `tests/test_delegated_buckets.py` (+6),
     `tests/test_delegated_web.py` (+5), exporter test updated to 7 files.
+23. ~~Reopened + name the odd statuses~~ ✅ DONE 2026-09-01 [USER], two
+    small gaps found by using the new report:
+    (a) **`Reopened`** is "to be treated exactly the same as opened" — it
+    was landing in Unexpected status. `_OPEN_STATUSES = {"open",
+    "reopened"}` in `bucket_key`, so it flows through every view at once:
+    "Not started yet" on the board and the status report, Until Gatekeeper
+    Check on the Management Summary, the TECH TEST EXECUTION card and the
+    "Not Started" bar group on the Overview.
+    (b) **Odd statuses are named, not just counted** [USER: "mention what
+    the status is so one does not need to research"]: new pure
+    `delegated_buckets.unexpected_statuses` → `[(status, count), …]`, most
+    frequent first, `(no status)` for a blank one. The Management Summary
+    appends them to its Unexpected row, the Overview names them in its
+    amber note. The board and status report already showed the Status per
+    row, so they needed nothing. Tests: `tests/test_delegated_buckets.py`
+    (+6), `tests/test_delegated_web.py` (+2).
 
 ### Manual Test Cases (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 

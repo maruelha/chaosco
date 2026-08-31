@@ -2,7 +2,7 @@
 from app.delegated_buckets import (SECTIONS, STAGES, blocked_stage,
                                    bucket_counts, bucket_issues, bucket_key,
                                    overview_counts, overview_team_stage,
-                                   staged_counts)
+                                   staged_counts, unexpected_statuses)
 from app.jira_importer import extract_latest_comment_orders
 
 ME = "haase"
@@ -15,6 +15,9 @@ def _issue(status, assignee="Tester, Tom"):
 def test_status_mapping():
     assert bucket_key(_issue("Blocked")) == "blocked"
     assert bucket_key(_issue("Open")) == "open"
+    # Reopened is not started again — same bucket as Open [USER 2026-09-01]
+    assert bucket_key(_issue("Reopened")) == "open"
+    assert bucket_key(_issue("  REOPENED ")) == "open"
     assert bucket_key(_issue("Accepted")) == "accepted"
     assert bucket_key(_issue("In Progress")) == "marina"
     assert bucket_key(_issue("In Verification")) == "settlement"
@@ -255,3 +258,42 @@ def test_overview_excludes_backlog_from_everything():
     ctx = overview_counts([_issue("Open"), parked])
     assert ctx["total"] == 1
     assert sum(b["count"] for b in ctx["bar"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# Naming the odd statuses (2026-09-01 [USER]) — a report must say WHICH
+# status it could not place, so nobody has to go and look it up.
+
+def test_unexpected_statuses_names_and_counts_them():
+    issues = [_issue("Open"), _issue("Ready for Verification"),
+              _issue("Ready for Verification"), _issue("Waiting on vendor"),
+              _issue("Resolved")]
+    assert unexpected_statuses(issues) == [("Ready for Verification", 2),
+                                           ("Waiting on vendor", 1)]
+
+
+def test_unexpected_statuses_labels_a_missing_status():
+    assert unexpected_statuses([_issue(None), _issue("")]) == [("(no status)", 2)]
+
+
+def test_unexpected_statuses_empty_when_every_status_is_known():
+    assert unexpected_statuses([_issue("Reopened"), _issue("In Review")]) == []
+
+
+def test_unexpected_statuses_ignores_backlog_tickets():
+    parked = {**_issue("Ready for Verification"), "backlog": True}
+    assert unexpected_statuses([parked]) == []
+
+
+def test_overview_counts_carries_the_unexpected_status_names():
+    ctx = overview_counts([_issue("Open"), _issue("Ready for Verification")])
+    assert ctx["unexpected"] == 1
+    assert ctx["unexpected_statuses"] == [("Ready for Verification", 1)]
+
+
+def test_reopened_lands_on_the_tech_card_and_not_started_bar():
+    ctx = overview_counts([_issue("Reopened"), _issue("Open")])
+    stages = {s["key"]: s for s in ctx["stages"]}
+    assert stages["tech"]["in_progress"] == 2
+    bar = {b["key"]: b["count"] for b in ctx["bar"]}
+    assert bar["not_started"] == 2 and bar["in_progress"] == 0

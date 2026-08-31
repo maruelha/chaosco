@@ -241,8 +241,13 @@
       <td class="num">{{ stotal }}</td>
     </tr>
     {% endfor %}
+    {# the odd statuses are NAMED here [USER 2026-09-01: "mention what the
+       status is so one does not need to research"] #}
     <tr class="unexpected-row{% if not unexpected[2] %} is-zero{% endif %}">
-      <td>{{ unexpected[1] }}</td>
+      <td>{{ unexpected[1] }}{% if unexpected_statuses %}
+        <span style="color:#94a3b8; font-size:0.82rem">—
+          {% for status, n in unexpected_statuses %}{{ status }} ×{{ n }}{{ ", " if not loop.last }}{% endfor %}
+        </span>{% endif %}</td>
       <td class="num">{{ unexpected[2] }}</td>
     </tr>
     <tr class="total-row">

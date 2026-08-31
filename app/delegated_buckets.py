@@ -6,7 +6,8 @@ of the web layer so the rules are testable and the later backlog items
 
 Bucket rules — the workflow wording agreed [USER 2026-08-31]:
 - Blocked         -> "Blocker" (top; shown ONLY there, wins over everything)
-- Open            -> "Not started yet"
+- Open, Reopened  -> "Not started yet" (Reopened added 2026-09-01 [USER]:
+                     "to be treated exactly the same as opened")
 - Accepted        -> "Testing team creating order"
 - In Progress     -> "Marina gatekeeper check"
 - In Verification -> "Settlement file to be created"
@@ -40,6 +41,8 @@ SECTIONS = [
 ]
 
 _DONE_STATUSES = {"resolved", "closed", "done"}
+# "Reopened" is not started again, exactly like Open [USER 2026-09-01]
+_OPEN_STATUSES = {"open", "reopened"}
 
 # board section colors — style.css ui-section modifiers (a bare rt-section
 # summary is WHITE text without one, i.e. invisible on the white box)
@@ -66,7 +69,7 @@ def bucket_key(issue: dict) -> str:
     status = (issue.get("jira_status") or "").strip().lower()
     if status == "blocked":
         return "blocked"
-    if status == "open":
+    if status in _OPEN_STATUSES:
         return "open"
     if status == "accepted":
         return "accepted"
@@ -90,6 +93,20 @@ def bucket_issues(issues: list[dict]) -> list[tuple[str, str, str, list]]:
     for issue in issues:
         by_key[bucket_key(issue)].append(issue)
     return [(key, title, css, by_key[key]) for key, title, css in SECTIONS]
+
+
+def unexpected_statuses(issues: list[dict]) -> list[tuple[str, int]]:
+    """[(status, count), …] of everything in the "Unexpected status" bucket,
+    most frequent first — so a report can NAME what it could not place
+    [USER 2026-09-01: "when there is an unexpected Jira status mention what
+    the status is so one does not need to research"]. A missing/blank status
+    is reported as "(no status)" rather than as an empty label."""
+    counts: dict[str, int] = {}
+    for issue in issues:
+        if bucket_key(issue) == "unexpected":
+            key = (issue.get("jira_status") or "").strip() or "(no status)"
+            counts[key] = counts.get(key, 0) + 1
+    return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower()))
 
 
 def bucket_counts(issues: list[dict]) -> list[tuple[str, str, int]]:
@@ -257,4 +274,7 @@ def overview_counts(issues: list[dict]) -> dict:
 
     total = sum(len(items) for key, items in by_key.items() if key != "backlog")
     return {"stages": stages, "blocked_unassigned": blocked_unassigned,
-            "unexpected": unexpected, "bar": bar, "total": total}
+            "unexpected": unexpected,
+            # name them, so nobody has to go and look them up [USER 2026-09-01]
+            "unexpected_statuses": unexpected_statuses(issues),
+            "bar": bar, "total": total}
