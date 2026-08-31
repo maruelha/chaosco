@@ -32,9 +32,6 @@
                   letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
     .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
     .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
-    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #b91c1c; line-height: 1; text-align: right; }
-    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
-                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
 
     .intro { font-size: 0.85rem; color: #475569; margin-bottom: 1.5rem; }
 
@@ -84,15 +81,13 @@
 </div>
 {% endif %}
 
+{# No count on top [USER 2026-08-31]: how many test cases each entry needs is
+   not defined, so a number here would claim something we do not know. #}
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">Retail — UAT</div>
     <div class="rh-title">Missing Test Cases — Retail</div>
     <div class="rh-date">Status as of {{ today }}</div>
-  </div>
-  <div>
-    <div class="rh-stat-val">{{ items | length }}</div>
-    <div class="rh-stat-lbl">test cases missing</div>
   </div>
 </div>
 
@@ -100,7 +95,8 @@
   Requirements, scenarios or categories with <strong>no test case in the Retail
   module at all</strong> — they cannot be executed, and cannot turn green,
   until a test case exists. <strong>Retail only</strong>: ECOM is not covered by
-  this list. The retrofits below are the coming system changes
+  this list. Each entry may need <strong>one or several</strong> test cases —
+  how many is not defined yet, so this report deliberately shows no total. The retrofits below are the coming system changes
   for Retail; each one is either <strong>confirmed</strong> or
   <strong>not confirmed yet</strong>, and may bring further test cases with it.
 </p>
@@ -108,7 +104,7 @@
 <div class="rpt-section">
   <div class="rpt-section-head">
     <span class="rpt-section-title">Missing test cases</span>
-    <span class="rpt-section-count">{{ items | length }}</span>
+    <span class="rpt-section-count">{{ items | length }} entr{{ 'y' if items | length == 1 else 'ies' }}</span>
   </div>
   <div class="rpt-section-body">
     {% if items %}
