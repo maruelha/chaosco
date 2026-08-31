@@ -39,7 +39,7 @@ XML = """<?xml version="1.0" encoding="UTF-8"?>
   <item>
     <key id="3">S4ECOM-2003</key>
     <summary>SM2003_Team case</summary>
-    <status id="3">In Progress</status>
+    <status id="3">Accepted</status>
     <assignee username="JIRAUSER2">Tester, Tom</assignee>
   </item>
   <item>
@@ -99,15 +99,15 @@ def test_upload_imports_and_page_shows_buckets(client):
 
     html = client.get("/delegated/?jira_ok=1&jira_msg=x").get_data(as_text=True)
     assert "S4ECOM-2001" in html                       # blocked ticket present
-    assert "BLOCKED" in html
-    assert "Gatekeeper check Marina" in html
-    assert "In progress with testing team" in html
+    assert "\U0001f534 Issue" in html
+    assert "With Marina for first check" in html
+    assert "Testing team creating order" in html
     assert "Unexpected status" in html                 # odd status is visible
     assert "Return Order: 6000084252" in html          # LATEST comment's order
     # every section carries a ui-section color modifier — a bare rt-section
     # summary renders WHITE on white (invisible title) [USER 2026-08-26]
     assert 'class="rt-section "' not in html
-    assert "ui-section--red" in html                   # BLOCKED section color
+    assert "ui-section--red" in html                   # Issue section color
 
 
 def test_only_user_stories_on_board_report_and_numbers(client):
@@ -300,8 +300,8 @@ def test_status_report_renders_buckets(client):
                 data={"blocked_reason": "no settlement file yet"})
     html = client.get("/delegated/report").get_data(as_text=True)
     assert "Delegated Testing Report" in html
-    assert "BLOCKED" in html
-    assert "Gatekeeper check Marina" in html
+    assert "\U0001f534 Issue" in html
+    assert "With Marina for first check" in html
     assert "no settlement file yet" in html            # why-blocked column
     assert "Return Order: 6000084252" in html          # LATEST comment's order
     # the report renders no comment bodies, so the OLDER comment's order
@@ -313,12 +313,12 @@ def test_numbers_report_counts(client):
     _upload(client)
     html = client.get("/delegated/numbers").get_data(as_text=True)
     assert "Management Summary Status Report" in html
-    # blocked 1 · marina 1 · team 1 · unexpected 1 — all sections listed,
+    # blocked 1 · marina 1 · accepted 1 · unexpected 1 — all sections listed,
     # grouped under the 3 review stages [USER 2026-08-27]
     assert "Until Gatekeeper Check" in html
     assert "Past Gatekeeper Check" in html
-    assert "Waiting for Settlementfile creation" in html
-    assert "Resolved / Closed" in html
+    assert "Settlement file to be created" in html
+    assert "Test case completed" in html
     assert "Unexpected status" in html
     assert "Blocker overview" in html
     # goal box present and editable on the screen page
@@ -397,7 +397,7 @@ def test_numbers_download_is_standalone_attachment(client):
     assert 'attachment; filename="delegated_numbers_' in resp.headers["Content-Disposition"]
     html = resp.get_data(as_text=True)
     assert "Management Summary Status Report" in html
-    assert "Waiting for Settlementfile creation" in html
+    assert "Settlement file to be created" in html
     # goal renders as static text, not an editable input, in the download
     assert 'id="goal-input"' not in html
     # toolbar (app-local links) and the copy script are stripped
@@ -479,7 +479,7 @@ def test_reimport_refreshes_status(client):
     updated = XML.replace(">Blocked<", ">In Review<")
     _upload(client, updated, "delegated_v2.xml")
     html = client.get("/delegated/").get_data(as_text=True)
-    assert "Ready for Sales validations" in html
+    assert "With Flora" in html
     conn = web_delegated._get_conn()
     try:
         row = conn.execute("SELECT jira_status FROM jira_issues"
@@ -550,8 +550,8 @@ def test_backlog_ticket_moves_to_own_section_on_board_and_report(client):
     assert "<summary>📦 Backlog" in html  # the section header, not a tooltip
     backlog_part = html.split("<summary>📦 Backlog")[1]
     assert "S4ECOM-2003" in backlog_part
-    # gone from its old bucket (In progress with testing team)
-    team_part = html.split("In progress with testing team")[1].split("<summary>📦 Backlog")[0]
+    # gone from its old bucket (Testing team creating order)
+    team_part = html.split("Testing team creating order")[1].split("<summary>📦 Backlog")[0]
     assert 'data-key="S4ECOM-2003"' not in team_part
 
     report_html = client.get("/delegated/report").get_data(as_text=True)
@@ -578,10 +578,10 @@ def test_backlog_excluded_from_management_summary(client):
 
 def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
     _upload(client)
-    # S4ECOM-2001 is Blocked — parking it moves it OUT of BLOCKED
+    # S4ECOM-2001 is Blocked — parking it moves it OUT of the Issue section
     client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "1"})
     html = client.get("/delegated/").get_data(as_text=True)
-    blocked_part = html.split("<summary>🔴 BLOCKED")[1].split("<summary>")[0]
+    blocked_part = html.split("<summary>🔴 Issue")[1].split("<summary>")[0]
     assert "S4ECOM-2001" not in blocked_part
     assert "S4ECOM-2001" in html.split("<summary>📦 Backlog")[1]
 
@@ -766,7 +766,7 @@ def test_board_mb_status_column_with_mismatch_color(client):
     # neutral dash with explanatory title
     html = client.get("/delegated/").get_data(as_text=True)
     assert "no ECOM-tab row for this Jira ID yet" in html
-    # S4ECOM-2001 is in the BLOCKED bucket; "Not Ready" is NOT an expected
+    # S4ECOM-2001 is in the Issue bucket; "Not Ready" is NOT an expected
     # blocked MB status -> red mismatch chip
     _upload_tracking(client)
     html = client.get("/delegated/").get_data(as_text=True)

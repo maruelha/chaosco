@@ -1,32 +1,37 @@
 """Delegated Testing — bucket logic (2026-08-26).
 
-Pure functions: Jira status + assignee -> the card/report sections. Kept out
+Pure functions: Jira status -> the card/report sections. Kept out
 of the web layer so the rules are testable and the later backlog items
 (counted, not listed) can join the counting without touching routes.
 
-Bucket rules [USER 2026-08-26]:
-- Blocked         -> BLOCKED (top; shown ONLY there, wins over everything)
-- Open            -> Open
-- In Progress     -> "In progress with testing team", unless assigned to
-                     Marina -> "Gatekeeper check Marina"
-- In Verification -> "Waiting for Settlementfile creation"
-- In Validation   -> "In validation with GBS key users"
-- In Review       -> "Ready for Sales validations"
-- Resolved/Closed/Done -> "Resolved / Closed"
+Bucket rules — the workflow wording agreed [USER 2026-08-31]:
+- Blocked         -> "Issue" (top; shown ONLY there, wins over everything)
+- Open            -> "Not started yet"
+- Accepted        -> "Testing team creating order"
+- In Progress     -> "With Marina for first check"
+- In Verification -> "Settlement file to be created"
+- In Validation   -> "With GBS key users"
+- In Review       -> "With Flora"
+- Resolved/Closed/Done -> "Test case completed"
 - anything else   -> "Unexpected status" (nothing silently disappears)
+
+The assignee no longer decides anything [USER 2026-08-31]: until today
+"In Progress" split into testing team / Marina by assignee; the team's
+work now carries its own status "Accepted", so In Progress always means
+"with Marina for first check" and the old `team` bucket is gone.
 """
 from __future__ import annotations
 
 # (key, title, css class on the report section head)
 SECTIONS = [
-    ("blocked",    "🔴 BLOCKED",                          "sec-blocked"),
-    ("open",       "Open",                                "sec-open"),
-    ("team",       "In progress with testing team",       "sec-team"),
-    ("marina",     "Gatekeeper check Marina",             "sec-marina"),
-    ("settlement", "Waiting for Settlementfile creation", "sec-settle"),
-    ("gbs",        "In validation with GBS key users",    "sec-gbs"),
-    ("sales",      "Ready for Sales validations",         "sec-sales"),
-    ("done",       "Resolved / Closed",                   "sec-done"),
+    ("blocked",    "🔴 Issue",                            "sec-blocked"),
+    ("open",       "Not started yet",                     "sec-open"),
+    ("accepted",   "Testing team creating order",         "sec-accepted"),
+    ("marina",     "With Marina for first check",         "sec-marina"),
+    ("settlement", "Settlement file to be created",       "sec-settle"),
+    ("gbs",        "With GBS key users",                  "sec-gbs"),
+    ("sales",      "With Flora",                          "sec-sales"),
+    ("done",       "Test case completed",                 "sec-done"),
     ("unexpected", "Unexpected status",                   "sec-unexpected"),
     # per-ticket authored flag [USER 2026-08-27]: parked work — own section
     # at the bottom, EXCLUDED from the Management Summary (numbers_context
@@ -41,7 +46,7 @@ _DONE_STATUSES = {"resolved", "closed", "done"}
 BOARD_CSS = {
     "blocked":    "ui-section--red",
     "open":       "ui-section--slate",
-    "team":       "ui-section--teal",
+    "accepted":   "ui-section--teal",
     "marina":     "ui-section--amber",
     "settlement": "ui-section--purple",
     "gbs":        "ui-section--blue",
@@ -52,22 +57,21 @@ BOARD_CSS = {
 }
 
 
-def bucket_key(issue: dict, me: str) -> str:
-    """Section key for one issue. `me` = jira_gatekeeper_assignee (lowered);
-    substring match on the assignee, same rule as the gatekeeper card.
+def bucket_key(issue: dict) -> str:
+    """Section key for one issue — purely by Jira status since 2026-08-31.
     The authored backlog flag wins over EVERYTHING (even Blocked) — a
     parked ticket is out of the active workflow [USER 2026-08-27]."""
     if issue.get("backlog"):
         return "backlog"
     status = (issue.get("jira_status") or "").strip().lower()
-    assignee = (issue.get("jira_assignee") or "").lower()
-    mine = bool(me) and me in assignee
     if status == "blocked":
         return "blocked"
     if status == "open":
         return "open"
+    if status == "accepted":
+        return "accepted"
     if status == "in progress":
-        return "marina" if mine else "team"
+        return "marina"
     if status == "in verification":
         return "settlement"
     if status == "in validation":
@@ -79,20 +83,20 @@ def bucket_key(issue: dict, me: str) -> str:
     return "unexpected"
 
 
-def bucket_issues(issues: list[dict], me: str) -> list[tuple[str, str, str, list]]:
+def bucket_issues(issues: list[dict]) -> list[tuple[str, str, str, list]]:
     """All issues grouped into the ordered sections:
     [(key, title, css, items), ...] — every section present, empty or not."""
     by_key: dict[str, list] = {key: [] for key, _, _ in SECTIONS}
     for issue in issues:
-        by_key[bucket_key(issue, me)].append(issue)
+        by_key[bucket_key(issue)].append(issue)
     return [(key, title, css, by_key[key]) for key, title, css in SECTIONS]
 
 
-def bucket_counts(issues: list[dict], me: str) -> list[tuple[str, str, int]]:
+def bucket_counts(issues: list[dict]) -> list[tuple[str, str, int]]:
     """[(key, title, count), ...] for the numbers report — same rules, the
     future backlog items will be added onto these counts here."""
     return [(key, title, len(items))
-            for key, title, _, items in bucket_issues(issues, me)]
+            for key, title, _, items in bucket_issues(issues)]
 
 
 # MB Status expectations per bucket [USER 2026-08-28] — the ECOM tab's
@@ -137,16 +141,16 @@ def mb_status_state(bucket: str, ecom_row: dict | None) -> str:
 # disappears (same rule as the buckets themselves).
 STAGES = [
     ("blocked",        "Blocked",                   ("blocked",)),
-    ("pre_gatekeeper",  "Until Gatekeeper Check",    ("open", "team", "marina")),
+    ("pre_gatekeeper",  "Until Gatekeeper Check",    ("open", "accepted", "marina")),
     ("post_gatekeeper", "Past Gatekeeper Check",     ("settlement", "gbs", "sales", "done")),
 ]
 
 
-def staged_counts(issues: list[dict], me: str):
+def staged_counts(issues: list[dict]):
     """(stages, unexpected) — stages: [(key, label, stage_total,
     [(bucket_key, bucket_title, count), ...]), ...]; unexpected:
     (bucket_key, bucket_title, count)."""
-    counts = {key: count for key, _title, count in bucket_counts(issues, me)}
+    counts = {key: count for key, _title, count in bucket_counts(issues)}
     titles = {key: title for key, title, _css in SECTIONS}
     stages = []
     for skey, slabel, bucket_keys in STAGES:
@@ -154,3 +158,103 @@ def staged_counts(issues: list[dict], me: str):
         stages.append((skey, slabel, sum(c for _k, _t, c in rows), rows))
     unexpected = ("unexpected", titles["unexpected"], counts["unexpected"])
     return stages, unexpected
+
+
+# ---------------------------------------------------------------------------
+# Delegated Testing Overview (2026-08-31) — the management report.
+#
+# A SECOND grouping of the same buckets, on top of STAGES: four pipeline
+# stages named for who holds the ball, each shown with two lines —
+# "In progress" (by Jira status) and "Blocked" (by the responsible TEAM of
+# the ticket's blocker, because a blocked ticket's status says nothing
+# about who has to move) [USER 2026-08-31].
+
+# (key, card label, owner shown under it, bucket keys on the In-progress line)
+OVERVIEW_STAGES = [
+    ("tech",     "TECH TEST EXECUTION",         "Sales Tech", ("open", "accepted")),
+    ("mb",       "MB EXECUTION & VERIFICATION", "MB",         ("marina", "settlement", "gbs")),
+    ("bpo",      "ECOM BPO VERIFICATION",       "ECOM BPO",   ("sales",)),
+    ("complete", "COMPLETE",                    None,         ("done",)),
+]
+
+# blocker team -> stage [USER 2026-08-31]. Everything starting with "Sales"
+# plus PDM/Omni is Tech; DTC O2C and MB BIZ are MB; Kibana and ECOM BPO are
+# the BPO stage. A blocked ticket whose blockers carry no mapped team is
+# reported on its own line rather than silently dropped.
+_TEAM_STAGES = {"pdm": "tech", "omni": "tech",
+                "dtc o2c": "mb", "mb biz": "mb",
+                "kibana": "bpo", "ecom bpo": "bpo"}
+
+# the stacked status bar [USER 2026-08-31] — the four groups management asked
+# for; "Unexpected status" joins as a fifth segment only when non-empty, so
+# the bar always adds up to the report total.
+BAR_GROUPS = [
+    ("passed",      "Passed",      ("done",)),
+    ("in_progress", "In Progress", ("accepted", "marina", "settlement", "gbs", "sales")),
+    ("blocked",     "Blocked",     ("blocked",)),
+    ("not_started", "Not Started", ("open",)),
+]
+
+
+def overview_team_stage(team) -> str | None:
+    """Pipeline stage for a blocker's responsible team, None if unmapped."""
+    import re
+    t = re.sub(r"\s+", " ", str(team or "")).strip().casefold()
+    if not t:
+        return None
+    if t.startswith("sales"):
+        return "tech"
+    return _TEAM_STAGES.get(t)
+
+
+def blocked_stage(issue: dict) -> str | None:
+    """Stage of a BLOCKED ticket = the EARLIEST stage among the teams of its
+    blockers [USER 2026-08-31] — a ticket blocked by two teams must still be
+    counted exactly once or the pipeline stops adding up to the total."""
+    stages = {overview_team_stage(b.get("team"))
+              for b in (issue.get("blockers") or [])}
+    for key, _label, _owner, _buckets in OVERVIEW_STAGES:
+        if key in stages:
+            return key
+    return None
+
+
+def overview_counts(issues: list[dict]) -> dict:
+    """Everything the Overview report shows. Issues must carry `blockers`
+    (list of blocker dicts with a `team`); backlog issues are expected to be
+    filtered out by the caller, and are excluded from the total regardless.
+
+    stages[] + blocked_unassigned + unexpected == total == sum(bar counts).
+    """
+    by_key: dict[str, list] = {key: [] for key, _t, _c in SECTIONS}
+    for issue in issues:
+        by_key[bucket_key(issue)].append(issue)
+
+    blocked_by_stage = {key: 0 for key, _l, _o, _b in OVERVIEW_STAGES}
+    blocked_unassigned = 0
+    for issue in by_key["blocked"]:
+        key = blocked_stage(issue)
+        if key:
+            blocked_by_stage[key] += 1
+        else:
+            blocked_unassigned += 1
+
+    stages = []
+    for key, label, owner, bucket_keys in OVERVIEW_STAGES:
+        in_progress = sum(len(by_key[b]) for b in bucket_keys)
+        blocked = blocked_by_stage[key]
+        stages.append({"key": key, "label": label, "owner": owner,
+                       "in_progress": in_progress, "blocked": blocked,
+                       "total": in_progress + blocked})
+
+    bar = [{"key": key, "label": label,
+            "count": sum(len(by_key[b]) for b in bucket_keys)}
+           for key, label, bucket_keys in BAR_GROUPS]
+    unexpected = len(by_key["unexpected"])
+    if unexpected:
+        bar.append({"key": "unexpected", "label": "Unexpected status",
+                    "count": unexpected})
+
+    total = sum(len(items) for key, items in by_key.items() if key != "backlog")
+    return {"stages": stages, "blocked_unassigned": blocked_unassigned,
+            "unexpected": unexpected, "bar": bar, "total": total}

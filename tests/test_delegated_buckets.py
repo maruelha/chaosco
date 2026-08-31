@@ -1,6 +1,8 @@
 """Delegated Testing — bucket rules + latest-comment order extraction."""
-from app.delegated_buckets import (SECTIONS, STAGES, bucket_counts,
-                                   bucket_issues, bucket_key, staged_counts)
+from app.delegated_buckets import (SECTIONS, STAGES, blocked_stage,
+                                   bucket_counts, bucket_issues, bucket_key,
+                                   overview_counts, overview_team_stage,
+                                   staged_counts)
 from app.jira_importer import extract_latest_comment_orders
 
 ME = "haase"
@@ -11,74 +13,82 @@ def _issue(status, assignee="Tester, Tom"):
 
 
 def test_status_mapping():
-    assert bucket_key(_issue("Blocked"), ME) == "blocked"
-    assert bucket_key(_issue("Open"), ME) == "open"
-    assert bucket_key(_issue("In Progress"), ME) == "team"
-    assert bucket_key(_issue("In Progress", "Haase, Marina [External]"), ME) == "marina"
-    assert bucket_key(_issue("In Verification"), ME) == "settlement"
-    assert bucket_key(_issue("In Validation"), ME) == "gbs"
-    assert bucket_key(_issue("In Review"), ME) == "sales"
-    assert bucket_key(_issue("Resolved"), ME) == "done"
-    assert bucket_key(_issue("Closed"), ME) == "done"
-    assert bucket_key(_issue("Done"), ME) == "done"
+    assert bucket_key(_issue("Blocked")) == "blocked"
+    assert bucket_key(_issue("Open")) == "open"
+    assert bucket_key(_issue("Accepted")) == "accepted"
+    assert bucket_key(_issue("In Progress")) == "marina"
+    assert bucket_key(_issue("In Verification")) == "settlement"
+    assert bucket_key(_issue("In Validation")) == "gbs"
+    assert bucket_key(_issue("In Review")) == "sales"
+    assert bucket_key(_issue("Resolved")) == "done"
+    assert bucket_key(_issue("Closed")) == "done"
+    assert bucket_key(_issue("Done")) == "done"
 
 
 def test_matching_is_case_insensitive_and_tolerates_whitespace():
-    assert bucket_key(_issue("  in verification  "), ME) == "settlement"
-    assert bucket_key(_issue("BLOCKED"), ME) == "blocked"
+    assert bucket_key(_issue("  in verification  ")) == "settlement"
+    assert bucket_key(_issue("BLOCKED")) == "blocked"
 
 
 def test_blocked_wins_even_when_assigned_to_marina():
-    assert bucket_key(_issue("Blocked", "Haase, Marina"), ME) == "blocked"
+    assert bucket_key(_issue("Blocked", "Haase, Marina")) == "blocked"
 
 
 def test_unknown_or_missing_status_lands_in_unexpected():
-    assert bucket_key(_issue("Ready for Verification"), ME) == "unexpected"
-    assert bucket_key(_issue(None), ME) == "unexpected"
-    assert bucket_key(_issue(""), ME) == "unexpected"
+    assert bucket_key(_issue("Ready for Verification")) == "unexpected"
+    assert bucket_key(_issue(None)) == "unexpected"
+    assert bucket_key(_issue("")) == "unexpected"
 
 
-def test_no_assignee_config_never_buckets_to_marina():
-    assert bucket_key(_issue("In Progress", "Haase, Marina"), "") == "team"
+def test_assignee_no_longer_decides_a_bucket():
+    """[USER 2026-08-31] the testing team's own work carries its own status
+    'Accepted' now, so 'In Progress' always means the first check with
+    Marina — the sections stay, they are fed by different statuses."""
+    assert bucket_key(_issue("In Progress", "Tester, Tom")) == "marina"
+    assert bucket_key(_issue("In Progress", "Haase, Marina [External]")) == "marina"
+    assert bucket_key(_issue("Accepted", "Haase, Marina")) == "accepted"
 
 
 def test_bucket_issues_keeps_order_and_covers_all_sections():
     issues = [_issue("Open"), _issue("Blocked"), _issue("In Review")]
-    sections = bucket_issues(issues, ME)
+    sections = bucket_issues(issues)
     assert [key for key, _, _, _ in sections] == [key for key, _, _ in SECTIONS]
     assert sections[0][0] == "blocked" and len(sections[0][3]) == 1
-    counts = dict((k, n) for k, _, n in bucket_counts(issues, ME))
-    assert counts == {"blocked": 1, "open": 1, "sales": 1, "team": 0,
+    counts = dict((k, n) for k, _, n in bucket_counts(issues))
+    assert counts == {"blocked": 1, "open": 1, "sales": 1, "accepted": 0,
                       "marina": 0, "settlement": 0, "gbs": 0, "done": 0,
                       "unexpected": 0, "backlog": 0}
 
 
 def test_backlog_flag_wins_over_every_status():
     parked = {**_issue("Blocked"), "backlog": True}
-    assert bucket_key(parked, ME) == "backlog"
-    assert bucket_key({**_issue("In Review"), "backlog": True}, ME) == "backlog"
-    assert bucket_key(_issue("Blocked"), ME) == "blocked"  # unflagged unchanged
+    assert bucket_key(parked) == "backlog"
+    assert bucket_key({**_issue("In Review"), "backlog": True}) == "backlog"
+    assert bucket_key(_issue("Blocked")) == "blocked"  # unflagged unchanged
 
 
 # ---- Management Summary staging (build plan step 10) ----------------------
 
 def test_staged_counts_groups_buckets_into_three_stages():
-    issues = [_issue("Blocked"), _issue("Open"), _issue("In Progress"),
+    issues = [_issue("Blocked"), _issue("Open"), _issue("Accepted"),
+             _issue("In Progress"),
              _issue("In Verification"), _issue("In Validation"),
              _issue("In Review"), _issue("Resolved"), _issue("Ready for Verification")]
-    stages, unexpected = staged_counts(issues, ME)
+    stages, unexpected = staged_counts(issues)
     assert [key for key, _l, _t, _r in stages] == [key for key, _l, _b in STAGES]
-    blocked_stage = stages[0]
-    assert blocked_stage[0] == "blocked" and blocked_stage[2] == 1
+    blocked = stages[0]
+    assert blocked[0] == "blocked" and blocked[2] == 1
     pre = stages[1]
-    assert pre[0] == "pre_gatekeeper" and pre[2] == 2   # open + team
+    # open + accepted + marina — Accepted sits BEFORE the gatekeeper check and
+    # so does not count toward the weekly goal [USER 2026-08-31]
+    assert pre[0] == "pre_gatekeeper" and pre[2] == 3
     post = stages[2]
     assert post[0] == "post_gatekeeper" and post[2] == 4  # settle+gbs+sales+done
     assert unexpected == ("unexpected", "Unexpected status", 1)
 
 
 def test_staged_counts_all_zero_when_no_issues():
-    stages, unexpected = staged_counts([], ME)
+    stages, unexpected = staged_counts([])
     assert all(total == 0 for _k, _l, total, _rows in stages)
     assert unexpected[2] == 0
 
@@ -145,7 +155,7 @@ def test_mb_status_state_per_bucket():
     row = lambda s: {"status": s}
     # only the four buckets carry the column
     assert mb_status_state("open", row("Passed")) == ""
-    assert mb_status_state("team", None) == ""
+    assert mb_status_state("accepted", None) == ""
     # no ECOM row -> neutral
     assert mb_status_state("gbs", None) == "none"
     # settlement: empty or Not Ready expected
@@ -167,3 +177,81 @@ def test_mb_status_state_per_bucket():
     assert mb_status_state("blocked", row("Blocked DTC")) == "ok"
     assert mb_status_state("blocked", row("")) == "mismatch"
     assert mb_status_state("blocked", row("Passed")) == "mismatch"
+
+
+# ---------------------------------------------------------------------------
+# Delegated Testing Overview (2026-08-31) — pipeline stages + status bar
+
+def _blocked(*teams):
+    return {"jira_status": "Blocked",
+            "blockers": [{"team": t} for t in teams]}
+
+
+def test_overview_team_stage_rules():
+    assert overview_team_stage("Sales BIZ") == "tech"
+    assert overview_team_stage("sales tech") == "tech"      # any "Sales*"
+    assert overview_team_stage("PDM") == "tech"
+    assert overview_team_stage("omni") == "tech"
+    assert overview_team_stage("DTC O2C") == "mb"
+    assert overview_team_stage("MB BIZ") == "mb"
+    assert overview_team_stage("Kibana") == "bpo"
+    assert overview_team_stage("ECOM  BPO") == "bpo"        # whitespace tolerant
+    assert overview_team_stage("") is None
+    assert overview_team_stage(None) is None
+    assert overview_team_stage("Some new team") is None
+
+
+def test_blocked_ticket_takes_the_earliest_stage_of_its_blocker_teams():
+    assert blocked_stage(_blocked("Kibana")) == "bpo"
+    assert blocked_stage(_blocked("Kibana", "PDM")) == "tech"
+    assert blocked_stage(_blocked("Kibana", "DTC O2C")) == "mb"
+    assert blocked_stage(_blocked("Some new team")) is None
+    assert blocked_stage({"jira_status": "Blocked"}) is None   # no blockers
+
+
+def test_overview_counts_pipeline_and_bar_add_up_to_the_total():
+    issues = [_issue("Open"), _issue("Open"), _issue("Accepted"),
+              _issue("In Progress"), _issue("In Verification"),
+              _issue("In Validation"), _issue("In Review"),
+              _issue("Resolved"), _issue("Closed"),
+              _blocked("Sales BIZ"), _blocked("DTC O2C"), _blocked("Kibana")]
+    ctx = overview_counts(issues)
+    stages = {s["key"]: s for s in ctx["stages"]}
+    assert stages["tech"] == {"key": "tech", "label": "TECH TEST EXECUTION",
+                              "owner": "Sales Tech", "in_progress": 3,
+                              "blocked": 1, "total": 4}   # 2 open + accepted
+    assert stages["mb"]["in_progress"] == 3 and stages["mb"]["blocked"] == 1
+    assert stages["bpo"]["in_progress"] == 1 and stages["bpo"]["blocked"] == 1
+    assert stages["complete"] == {"key": "complete", "label": "COMPLETE",
+                                  "owner": None, "in_progress": 2,
+                                  "blocked": 0, "total": 2}
+    assert ctx["total"] == 12
+    assert (sum(s["total"] for s in ctx["stages"]) + ctx["blocked_unassigned"]
+            + ctx["unexpected"]) == ctx["total"]
+    bar = {b["key"]: b["count"] for b in ctx["bar"]}
+    assert bar == {"passed": 2, "in_progress": 5, "blocked": 3, "not_started": 2}
+    assert sum(bar.values()) == ctx["total"]
+
+
+def test_overview_blocked_without_a_mapped_team_is_reported_not_dropped():
+    ctx = overview_counts([_blocked("Some new team"), _blocked()])
+    assert ctx["blocked_unassigned"] == 2
+    assert all(s["blocked"] == 0 for s in ctx["stages"])
+    assert ctx["total"] == 2
+
+
+def test_overview_unexpected_status_joins_the_bar_only_when_present():
+    ctx = overview_counts([_issue("Open")])
+    assert [b["key"] for b in ctx["bar"]][-1] == "not_started"
+    ctx = overview_counts([_issue("Open"), _issue("Ready for Verification")])
+    assert ctx["unexpected"] == 1
+    assert ctx["bar"][-1] == {"key": "unexpected", "label": "Unexpected status",
+                              "count": 1}
+    assert sum(b["count"] for b in ctx["bar"]) == ctx["total"] == 2
+
+
+def test_overview_excludes_backlog_from_everything():
+    parked = {**_issue("Open"), "backlog": True}
+    ctx = overview_counts([_issue("Open"), parked])
+    assert ctx["total"] == 1
+    assert sum(b["count"] for b in ctx["bar"]) == 1

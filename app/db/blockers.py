@@ -22,7 +22,10 @@ TYPES = ("defect", "task", "clarification")
 
 # responsible team [USER 2026-08-28] — the fixed combobox picks; "Other"
 # adds a free-text value which then joins the combobox (team_options)
-FIXED_TEAMS = ["Sales BIZ", "Omni", "DTC O2C", "PDM", "MB BIZ"]
+FIXED_TEAMS = ["Sales BIZ", "Omni", "DTC O2C", "PDM", "MB BIZ",
+               # [USER 2026-08-31] both map to the BPO stage of the
+               # Delegated Testing Overview (delegated_buckets._TEAM_STAGES)
+               "Kibana", "ECOM BPO"]
 
 # (type key, section label) — fixed display order everywhere: defects first,
 # then tasks, then clarifications [USER 2026-08-27]

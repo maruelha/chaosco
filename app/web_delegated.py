@@ -38,10 +38,6 @@ def _get_conn():
     return database.get_connection(_db_path)
 
 
-def _me() -> str:
-    return (_cfg.get("jira_gatekeeper_assignee") or "").strip().lower()
-
-
 def _load_issues(conn):
     """Delegated issues + their comments + latest-comment orders.
 
@@ -118,10 +114,10 @@ def delegated_list():
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
         mb_row = mb_rows.get(i["jira_key"])
         i["mb_status"] = (mb_row or {}).get("status")
-        i["mb_state"] = mb_status_state(bucket_key(i, _me()), mb_row)
+        i["mb_state"] = mb_status_state(bucket_key(i), mb_row)
     return render_template(
         "delegated.html",
-        sections=bucket_issues(issues, _me()),
+        sections=bucket_issues(issues),
         board_css=BOARD_CSS,
         total=len(issues),
         all_labels=sorted({l for i in issues for l in i.get("labels", [])},
@@ -353,7 +349,7 @@ def report_context(conn) -> dict:
         i["backlog"] = ann.get("backlog", False)
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     sections = [(title, css, items)
-                for _key, title, css, items in bucket_issues(issues, _me())]
+                for _key, title, css, items in bucket_issues(issues)]
     # blocker filter (step 9) — only blockers actually attached to a ticket
     # in THIS report, same defect/task/clarification order as everywhere else
     type_order = {key: idx for idx, (key, _) in enumerate(db_blockers.TYPE_SECTIONS)}
@@ -393,7 +389,6 @@ def numbers_context(conn) -> dict:
     (counts_toward_goal, independent of status)."""
     issues, _comments = _load_issues(conn)
     annotations = db_delegated.get_delegated_annotations(conn)
-    me = _me()
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
@@ -401,11 +396,11 @@ def numbers_context(conn) -> dict:
     # backlog tickets are parked — OUT of the Management Summary entirely
     # (total, stages, goal actual) [USER 2026-08-27]
     issues = [i for i in issues if not i["backlog"]]
-    stages, unexpected = staged_counts(issues, me)
+    stages, unexpected = staged_counts(issues)
     post_gatekeeper_total = next(t for k, _l, t, _r in stages if k == "post_gatekeeper")
     blocked_counting = sum(
         1 for i in issues
-        if bucket_key(i, me) == "blocked" and i["counts_toward_goal"])
+        if bucket_key(i) == "blocked" and i["counts_toward_goal"])
     blockers = db_blockers.list_blockers(conn)
     # only OPEN blockers on the Management Summary [USER 2026-08-27:
     # "blockers should only show up if they are not closed"] — closed =
