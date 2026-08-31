@@ -11,7 +11,8 @@
 
 The card for testing work DELEGATED to the team. Its own Jira XML export,
 uploaded as a file on the card; tickets bucketed by status/assignee from
-🔴 BLOCKED down to "Ready for Sales validations".
+🔴 Blocker down to "Test case completed" (wording rewritten 2026-08-31,
+see below).
 
 ## Design decisions (planning chat 2026-08-26)
 

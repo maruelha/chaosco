@@ -334,7 +334,7 @@ Both are updated together whenever a module, layer or pattern changes; there is 
         </tr>
         <tr>
           <td>app/report_exporter.py</td>
-          <td>Renders dated <strong>HTML + PowerPoint</strong> snapshots of the Retail + Spillover reports, plus <strong>HTML-only</strong> snapshots of the Delegated status report + numbers (2026-08-26, download-mode renders), to <code>report_export/</code>. Called from <code>POST /export-reports</code> (Export &amp; Backup dashboard card) — works. PDF is fully retired (pdf_utils.py deleted); browser Print → Save as PDF is the manual fallback.</td>
+          <td>Renders dated <strong>HTML + PowerPoint</strong> snapshots of the Retail + Spillover reports, plus <strong>HTML-only</strong> snapshots of the three Delegated reports — status report + Management Summary (2026-08-26) and the Delegated Testing Overview (2026-08-31) — all download-mode renders, to <code>report_export/</code>. Called from <code>POST /export-reports</code> (Export &amp; Backup dashboard card) — works. PDF is fully retired (pdf_utils.py deleted); browser Print → Save as PDF is the manual fallback.</td>
           <td>Write SQL directly · define Flask routes</td>
         </tr>
         <tr>

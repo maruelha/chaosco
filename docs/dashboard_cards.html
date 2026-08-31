@@ -73,8 +73,8 @@ big picture: <code>docs/architecture.html</code>. Updated 2026-08-26.</p>
 
   <div class="card">
     <h2>Delegated Testing <span class="badge">total · blocked</span></h2>
-    <p>Testing delegated to the team — own uploaded Jira XML export (tagged in the shared store), bucketed from 🔴 BLOCKED to ready for Sales validations. Why-blocked + next steps per ticket; 📄 status report + 📊 Management Summary (goal vs actual, staged bucket counts, blocker overview). Added 2026-08-26. 🚧 Blockers (2026-08-27): defects/tasks/clarifications blocking tickets get their own page + an attach picker on blocked rows — registered blocker keys are hidden from this board.</p>
-    <span class="url">/delegated/ · /delegated/report · /delegated/numbers · /blockers/</span>
+    <p>Testing delegated to the team — own uploaded Jira XML export (tagged in the shared store), bucketed from 🔴 Blocker to test case completed (status wording rewritten 2026-08-31 — the testing team's own work is <code>Accepted</code>, so <code>In Progress</code> means the gatekeeper check with Marina). Why-blocked + next steps per ticket; three reports: 📄 status report + 📊 Management Summary (goal vs actual, staged bucket counts, blocker overview) + 📈 Delegated Testing Overview (2026-08-31 — pipeline by stage with In progress/Blocked lines, the execution-status bar, blockers by team). Added 2026-08-26. 🚧 Blockers (2026-08-27): defects/tasks/clarifications blocking tickets get their own page + an attach picker on blocked rows — registered blocker keys are hidden from this board.</p>
+    <span class="url">/delegated/ · /delegated/report · /delegated/numbers · /delegated/overview · /blockers/</span>
   </div>
 
   <div class="card">
@@ -121,7 +121,7 @@ big picture: <code>docs/architecture.html</code>. Updated 2026-08-26.</p>
 
   <div class="card a-teal">
     <h2>Export &amp; Backup</h2>
-    <p>Two jobs: dated snapshots to <code>report_export/</code> — HTML + PowerPoint for Retail/Spillover, HTML for the Delegated report &amp; numbers (+ 📧 Email Reports) — and the 💾 DB backup — database + screenshots to the external drive, with a last-backup reminder.</p>
+    <p>Two jobs: dated snapshots to <code>report_export/</code> — HTML + PowerPoint for Retail/Spillover, HTML for the three Delegated reports — status report, Management Summary and Overview (+ 📧 Email Reports) — and the 💾 DB backup — database + screenshots to the external drive, with a last-backup reminder.</p>
     <span class="url">POST /export-reports · POST /backup</span>
   </div>
 

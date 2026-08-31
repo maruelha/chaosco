@@ -36,7 +36,7 @@ a dangling `[[link]]` fails the test suite.
 
 | Mini app | URL | Storage | File |
 |---|---|---|---|
-| Delegated Testing | `/delegated/` (+ `/report`, `/numbers`) | `db/delegated.py` → `delegated_annotations`, `delegated_goal` | `delegated.md` |
+| Delegated Testing | `/delegated/` (+ `/report`, `/numbers`, `/overview`) | `db/delegated.py` → `delegated_annotations`, `delegated_goal` | `delegated.md` |
 | Blockers | `/blockers/` | `db/blockers.py` → `blockers`, `blocker_links` | `delegated.md` |
 | CORE SOUTH Smoke Testing | `/smoke/`, `/smoke/ecom`, `/smoke/retail` | `db/smoke.py` → `smoke_scenarios`, `smoke_steps`, `smoke_annotations` | `smoke.md` |
 | Core South Sustainphase Monitoring | `/sustain/`, `/sustain/summary` | `db/sustain.py` → `sustain_tasks`, `sustain_task_details` | `sustain.md` |
