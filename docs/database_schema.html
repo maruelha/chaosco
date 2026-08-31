@@ -772,7 +772,7 @@
     <div class="table-card-header">
       <span class="tname">sustain_tasks</span>
       <span class="badge badge-imported">Imported</span>
-      <span class="tdesc">Parent tasks of the daily GBS Operations checklist (…DTC_GBS Operations_checklist.xlsx), one row per Task-ID row of a Retail_/eCom_ day tab. Replaced per (day, stream) on each upload — consecutive files with different date windows accumulate history. All aggregation (overall status, summary counts) is RECOMPUTED from the raw cells in app/db/sustain.py; the workbook's cached formula values are never trusted.</span>
+      <span class="tdesc">Parent tasks of the daily GBS Operations checklist (…DTC_GBS Operations_checklist.xlsx), one row per Task-ID row of a Retail_/eCom_ day tab. Replaced per (day, stream) on each upload — consecutive files with different date windows accumulate history. All aggregation (overall status, summary counts) is RECOMPUTED from the raw cells in app/db/sustain.py; the workbook's cached formula values are never trusted. Updated 2026-08-31 for the new file version (header row 5 instead of 6, new column M).</span>
     </div>
     <table>
       <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
@@ -780,7 +780,7 @@
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
         <tr><td class="col-name">day</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO date from the tab name (Retail_2026-09-01); indexed with stream</td></tr>
         <tr><td class="col-name">stream</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">'Retail' or 'eCom' — canonicalised on import</td></tr>
-        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">source row (data starts at 7) — preserves workbook order</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">source row — preserves workbook order. The header row is <em>located</em>, not hardcoded: data starts at row 6 since the 2026-08-31 file version (was 7), so both layouts import.</td></tr>
         <tr><td class="col-name">task_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Task ID" — arrives as text or number, normalised to text</td></tr>
         <tr><td class="col-name">taxonomy</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "L4 Taxonomy"</td></tr>
         <tr><td class="col-name">process</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Process / Task"</td></tr>
@@ -790,6 +790,7 @@
         <tr><td class="col-name">provider</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Provider / Partner / Financial Account"</td></tr>
         <tr><td class="col-name">result_fr / result_it / result_pt / result_es</td><td class="col-type">TEXT</td><td></td><td class="note-text">France/Italy/Portugal/Spain result cells (H–K) — OK / Pending / Not due / N/A / Review / free-text issue note; rollup formulas on parents with details (cached — recomputed instead)</td></tr>
         <tr><td class="col-name">overall</td><td class="col-type">TEXT</td><td></td><td class="note-text">Excel "Task Overall" cached value — stored for reference, NEVER shown (derive_overall recomputes it)</td></tr>
+        <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td></td><td class="note-text"><strong>Added 2026-08-31</strong> — Excel column M "Comments/Observations", free text. Informational only: shown in the day report and the management summary, but never part of any status (the workbook's own Task Overall ignores column M too). Absent in pre-2026-08-31 files → NULL.</td></tr>
       </tbody>
     </table>
     <div class="relations"><strong>Card/day report/summary:</strong> <code>GET /sustain/</code> · <code>GET /sustain/day/&lt;day&gt;/&lt;stream&gt;</code> · <code>GET /sustain/summary[/&lt;day&gt;]</code> &nbsp;·&nbsp; <strong>Upload:</strong> <code>POST /sustain/upload</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain.py</code> &nbsp;·&nbsp; <strong>Importer:</strong> <code>app/sustain_importer.py</code></div>
@@ -814,6 +815,7 @@
         <tr><td class="col-name">provider</td><td class="col-type">TEXT</td><td></td><td class="note-text">provider / account / store of this check</td></tr>
         <tr><td class="col-name">result_fr / result_it / result_pt / result_es</td><td class="col-type">TEXT</td><td></td><td class="note-text">detail_result() picks the row's own-country column</td></tr>
         <tr><td class="col-name">overall</td><td class="col-type">TEXT</td><td></td><td class="note-text">blank in the workbook for detail rows — kept for fidelity</td></tr>
+        <tr><td class="col-name">comments</td><td class="col-type">TEXT</td><td></td><td class="note-text"><strong>Added 2026-08-31</strong> — Excel column M "Comments/Observations" of the detail row; informational only, see sustain_tasks.comments</td></tr>
       </tbody>
     </table>
   </div>

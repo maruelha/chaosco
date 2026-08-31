@@ -1,10 +1,10 @@
 # Delegated Testing (2026-08-26)
 
 **Type:** mini app
-**URL:** `/delegated/` · `/delegated/report` · `/delegated/numbers` · `/delegated/ticket/<jira_key>` · `/blockers/`
+**URL:** `/delegated/` · `/delegated/report` · `/delegated/numbers` · `/delegated/overview` · `/delegated/ticket/<jira_key>` · `/blockers/`
 **Storage:** `app/db/delegated.py` → `delegated_annotations`, `delegated_goal` · `app/db/blockers.py` → `blockers`, `blocker_links`; tickets from the shared Jira store
 **Routes:** `app/web_delegated.py` · `app/web_blockers.py`; bucket rules in `app/delegated_buckets.py`
-**Templates:** `delegated.html` · `delegated_report.html` · `delegated_numbers.html` · `delegated_ticket.html` · `blockers.html` · `blocker_detail.html` · `_blocker_picker.html`
+**Templates:** `delegated.html` · `delegated_report.html` · `delegated_numbers.html` · `delegated_overview.html` · `delegated_ticket.html` · `blockers.html` · `blocker_detail.html` · `_blocker_picker.html`
 **Tests:** `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`, `tests/test_blockers.py`
 
 ## Purpose
@@ -52,18 +52,31 @@ uploaded as a file on the card; tickets bucketed by status/assignee from
 
 | Bucket | Rule |
 |---|---|
-| 🔴 BLOCKED (top, wins) | status Blocked |
-| Open | status Open |
-| In progress with testing team | In Progress, not Marina |
-| Gatekeeper check Marina | In Progress + `jira_gatekeeper_assignee` substring |
-| Waiting for Settlementfile creation | In Verification |
-| In validation with GBS key users | In Validation |
-| Ready for Sales validations | In Review |
-| Resolved / Closed | Resolved / Closed / Done |
+| 🔴 Blocker (top, wins) | status Blocked |
+| Not started yet | status Open |
+| Testing team creating order | status Accepted |
+| Marina gatekeeper check | status In Progress |
+| Settlement file to be created | In Verification |
+| With GBS key users | In Validation |
+| ECOM BPO test | In Review |
+| Test case completed | Resolved / Closed / Done |
 | Unexpected status | anything else (never silently dropped) |
 
 Case-insensitive, whitespace-tolerant. Board hides Resolved+Unexpected
 sections while empty; the report shows only non-empty sections.
+
+**Status workflow + wording rewritten 2026-08-31 [USER]** — the workflow
+the team agreed that day: `Accepted` = the testing team is creating the
+order, `In Progress` = with Marina for the first check. The **assignee no
+longer decides a bucket**: `bucket_key`/`bucket_issues`/`bucket_counts`/
+`staged_counts` lost their `me` argument and `web_delegated._me()` is
+gone. Both sections stay [USER: "the sections still stay"] — they are just
+fed by different statuses. The wording above is Marina's own (she corrected
+a first draft: "Issue" → **Blocker**, "With Marina for first check" →
+**Marina gatekeeper check**, "With Flora" → **ECOM BPO test**). `Accepted`
+joins the **Until Gatekeeper Check** stage of the Management Summary, so it
+does NOT count toward the weekly goal — to be re-confirmed [USER: "need to
+confirm that - but for now.."].
 
 **Only user stories (2026-08-27)** [USER: "the main page should only have
 jira user stories"]: the export deliberately also carries the blocker
@@ -106,6 +119,56 @@ uploaded issues?" — yes).
 - Registries: `web_notes.REGISTRY['delegated']`,
   `web_next_steps.REGISTRY['delegated']`
 - Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
+
+## Delegated Testing Overview (2026-08-31 [USER]) — the management report
+
+Third report, `/delegated/overview` + `/delegated/overview/download`,
+template `delegated_overview.html`, context `overview_context` (shared with
+`report_exporter`). ADDED next to the status report and the Management
+Summary — the three are expected to stay separate. Built to Marina's own
+mockup (designed in a Claude chat, brought in as a screenshot).
+
+**Pipeline by stage** — four cards, each with a big stage total, an owner
+line, and TWO lines underneath:
+
+| Card | Owner | In progress (Jira status) | Blocked (blocker's team) |
+|---|---|---|---|
+| TECH TEST EXECUTION | Sales Tech | Open · Accepted | `Sales*` · PDM · Omni |
+| MB EXECUTION & VERIFICATION | MB | In Progress · In Verification · In Validation | DTC O2C · MB BIZ |
+| ECOM BPO VERIFICATION | ECOM BPO | In Review | Kibana · ECOM BPO |
+| COMPLETE | — | Resolved · Closed | — |
+
+A BLOCKED ticket's status says nothing about who has to move, so it is
+staged by the **responsible team of its blocker** instead [USER]. Several
+blocker teams on one ticket → the EARLIEST stage wins, so a ticket is
+counted exactly once and the pipeline keeps adding up. `Kibana` and
+`ECOM BPO` joined `db_blockers.FIXED_TEAMS` for this.
+
+**Execution status** — the mockup's four-group stacked bar [USER: "I want
+to keep the mockups stages as that is what the manager wants"]: Passed
+(done) · In Progress (accepted/marina/settlement/gbs/sales) · Blocked ·
+Not Started (open). Marina listed `Open` under both In Progress and Not
+Started; resolved as Not Started, since "Open → not started yet" is fixed.
+
+**Blockers by team** — the open blockers (`_open_blockers`, shared with the
+Management Summary so the two can never disagree), grouped by team instead
+of by type: fixed teams in combobox order, then custom ones, "No team
+assigned" last. Empty teams are left out entirely.
+
+**Invariant, held by the tests:** stages + `blocked_unassigned` +
+`unexpected` == `total` == the sum of the bar. Tickets that belong to no
+stage ("team not assigned", "unexpected status") get their own amber line —
+rendered ONLY when non-zero [USER: "if it is empty dont show as
+placeholder"], so a clean report shows nothing there at all.
+
+Backlog tickets are excluded, like on the Management Summary. **No goal
+box** for now [USER: "I dont know what management wants there"] — revisit.
+Editable 📣 call-outs on their own key `delegated_overview` (allowlisted in
+`web_reports.report_comment_add`). Download + Export Reports (7th file) +
+Email Reports choice `delegated_overview`, same as the other two.
+
+Pure logic in `app/delegated_buckets.py`: `OVERVIEW_STAGES`,
+`overview_team_stage`, `blocked_stage`, `BAR_GROUPS`, `overview_counts`.
 
 ## Jira labels (2026-08-28 [USER: "would help while filtering"])
 

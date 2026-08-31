@@ -7,7 +7,15 @@ see docs/claude/sustain.md). sustain_tasks / sustain_task_details is a
 consecutive files with different date windows accumulate history.
 Never holds user-authored data.
 
-The workbook's summary row 4 and the parent rollup cells are cached
+Workbook layout changed 2026-08-31: the header row moved 6 -> 5 and a
+free-text column M "Comments/Observations" was added (stored in
+`comments`, shown in the day report and the summary, but deliberately NOT
+part of any status — the workbook's own Task Overall ignores it too).
+The summary row also changed its definitions and `summary_counts` follows
+it: DUE = OK + Pending + Review (a due task whose Overall is N/A is no
+longer part of the due population), COMPLETED = OK only.
+
+The workbook's summary row and the parent rollup cells are cached
 formula values that are only right after a save ("Save file to check"),
 so ALL aggregation is recomputed here from the raw cells:
 `derive_country_cell` mirrors the parent H–K rollup formula,
@@ -57,7 +65,8 @@ CREATE TABLE IF NOT EXISTS sustain_tasks (
     result_it TEXT,
     result_pt TEXT,
     result_es TEXT,
-    overall   TEXT
+    overall   TEXT,
+    comments  TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_sustain_tasks_tab ON sustain_tasks(day, stream);
 
@@ -73,17 +82,30 @@ CREATE TABLE IF NOT EXISTS sustain_task_details (
     result_it TEXT,
     result_pt TEXT,
     result_es TEXT,
-    overall   TEXT
+    overall   TEXT,
+    comments  TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_sustain_details_task
     ON sustain_task_details(task_pk);
 """
 
 
+# additive migrations, safe to re-run (see CLAUDE.md)
+_MIGRATIONS = [
+    "ALTER TABLE sustain_tasks ADD COLUMN comments TEXT",
+    "ALTER TABLE sustain_task_details ADD COLUMN comments TEXT",
+]
+
+
 def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        for statement in _MIGRATIONS:
+            try:
+                conn.execute(statement)
+            except sqlite3.OperationalError:
+                pass          # column already there
         conn.commit()
     finally:
         conn.close()
@@ -222,13 +244,14 @@ def replace_day_stream(conn: sqlite3.Connection, day: str, stream: str,
                 "INSERT INTO sustain_tasks"
                 " (day, stream, excel_row, task_id, taxonomy, process,"
                 "  cadence, due_today, country, provider,"
-                "  result_fr, result_it, result_pt, result_es, overall)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "  result_fr, result_it, result_pt, result_es, overall,"
+                "  comments)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (day, stream, t.get("excel_row"), t.get("task_id"),
                  t.get("taxonomy"), t.get("process"), t.get("cadence"),
                  t.get("due_today"), t.get("country"), t.get("provider"),
                  t.get("result_fr"), t.get("result_it"), t.get("result_pt"),
-                 t.get("result_es"), t.get("overall")))
+                 t.get("result_es"), t.get("overall"), t.get("comments")))
             task_pk = cur.lastrowid
             n_tasks += 1
             for d in t.get("details", []):
@@ -236,12 +259,13 @@ def replace_day_stream(conn: sqlite3.Connection, day: str, stream: str,
                     "INSERT INTO sustain_task_details"
                     " (task_pk, excel_row, cadence, due_today, country,"
                     "  provider, result_fr, result_it, result_pt, result_es,"
-                    "  overall)"
-                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "  overall, comments)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (task_pk, d.get("excel_row"), d.get("cadence"),
                      d.get("due_today"), d.get("country"), d.get("provider"),
                      d.get("result_fr"), d.get("result_it"),
-                     d.get("result_pt"), d.get("result_es"), d.get("overall")))
+                     d.get("result_pt"), d.get("result_es"), d.get("overall"),
+                     d.get("comments")))
                 n_details += 1
     return {"tasks": n_tasks, "details": n_details}
 
@@ -352,20 +376,60 @@ def repeat_offenders(conn: sqlite3.Connection) -> list[dict]:
     return offenders
 
 
+# Overall values that make a due task part of the workbook's DUE
+# population (its summary row computes DUE as OK + Pending + Review, so a
+# due task whose Overall is N/A drops out entirely) [2026-08-31].
+_DUE_OVERALLS = ("ok", "pending", "review")
+
+
 def summary_counts(conn: sqlite3.Connection, day: str, stream: str) -> dict:
     """Recomputed due/completed/pending/attention for one tab (never the
-    workbook's cached row 4). completed + pending partition the due tasks
-    that need no attention; attention counts over ALL parents — like the
-    Excel REVIEW count, an on-occurrence issue must surface too."""
+    workbook's cached summary row).
+
+    Mirrors the workbook's own definitions as of the 2026-08-31 file:
+    DUE = due tasks whose Overall is OK/Pending/Review (N/A drops out),
+    COMPLETED = Overall OK, PENDING = Overall Pending. The one deliberate
+    deviation stands: a task flagged "attention" (literal Review or a
+    free-text issue note) is counted in neither completed nor pending, and
+    attention counts over ALL parents — an on-occurrence issue must
+    surface too, even though the workbook now restricts its REVIEW count
+    to due tasks."""
     counts = {"due": 0, "completed": 0, "pending": 0, "attention": 0}
     for task in list_tasks(conn, day, stream):
         status = task_status(task)
-        if _norm(task.get("due_today")) == "yes":
+        overall = _norm(derive_overall(task.get("due_today"),
+                                       derive_cells(task)))
+        if _norm(task.get("due_today")) == "yes" and overall in _DUE_OVERALLS:
             counts["due"] += 1
-            if status == "done":
+            if status == "attention":
+                pass                       # neither completed nor pending
+            elif overall == "ok":
                 counts["completed"] += 1
-            elif status == "pending":
+            elif overall == "pending":
                 counts["pending"] += 1
         if status == "attention":
             counts["attention"] += 1
     return counts
+
+
+def comment_items(conn: sqlite3.Connection, day: str,
+                  stream: str) -> list[dict]:
+    """Every non-blank Comments/Observations entry (column M, new in the
+    2026-08-31 workbook) of one tab, parent rows and detail rows alike.
+    Purely informational — comments never change a status, exactly as the
+    workbook's Task Overall ignores column M."""
+    items: list[dict] = []
+    for task in list_tasks(conn, day, stream):
+        base = {"task_id": task.get("task_id"),
+                "process": task.get("process"),
+                "taxonomy": task.get("taxonomy")}
+        if task.get("comments"):
+            items.append({**base, "country": task.get("country"),
+                          "provider": task.get("provider"),
+                          "text": str(task["comments"]).strip()})
+        for d in task.get("details") or []:
+            if d.get("comments"):
+                items.append({**base, "country": d.get("country"),
+                              "provider": d.get("provider"),
+                              "text": str(d["comments"]).strip()})
+    return items

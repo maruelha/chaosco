@@ -19,7 +19,8 @@ Requirements Board · ECOM · Manual Retail + ECOM · Known Production Issues
 (+ since 2026-08-27 its **Review Copy** — attached AS-IS, scripts kept on
 purpose — and its **Management Report**, both separate choices) · Delegated
 Testing Report + Management Summary (since 2026-08-26, the pair attaches the
-clean `/delegated/*/download` renders) · Missing Test Cases (Retail) (since
+clean `/delegated/*/download` renders; Delegated Testing Overview joined
+2026-08-31) · Missing Test Cases (Retail) (since
 2026-08-30).
 
 A date field (default today) drives subject and body text (both editable).

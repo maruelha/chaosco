@@ -6,7 +6,9 @@
    Result cells as colored pills; a free-text entry (issue note) renders
    as a red pill with the verbatim text — that's the discussion-point
    signal. Parent rows with detail rows expand like the workbook's
-   +/- outline (small JS toggle below). #}
+   +/- outline (small JS toggle below). The last column mirrors the
+   workbook's column M "Comments/Observations" (new 2026-08-31) — free
+   text that is informational only and never changes a status. #}
 
 {% macro rpill(value) %}
   {%- set v = (value or '')|trim -%}
@@ -66,7 +68,8 @@
 {% endcall %}
 
 {% call ui.table(['#', 'Process / Task', 'Cadence', 'Due', 'Provider / Account',
-                  'France', 'Italy', 'Portugal', 'Spain', 'Overall']) %}
+                  'France', 'Italy', 'Portugal', 'Spain', 'Overall',
+                  'Comments / Observations']) %}
   {% for t in tasks %}
   <tr class="sustain-parent{% if t.details %} sustain-parent--expandable{% endif %}"
       data-task="{{ t.id }}"
@@ -87,6 +90,7 @@
     </td>
     {% for cell in t.cells %}<td>{{ rpill(cell) }}</td>{% endfor %}
     <td>{{ rpill(t.overall_recomputed) }}</td>
+    <td style="font-size:0.8rem; color:#555">{{ t.comments or '' }}</td>
   </tr>
   {% for d in t.details %}
   <tr class="sustain-detail" data-parent="{{ t.id }}" hidden>
@@ -100,6 +104,7 @@
     <td>{{ rpill(d.result_pt) }}</td>
     <td>{{ rpill(d.result_es) }}</td>
     <td></td>
+    <td style="font-size:0.78rem; color:#555">{{ d.comments or '' }}</td>
   </tr>
   {% endfor %}
   {% endfor %}

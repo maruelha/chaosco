@@ -12,7 +12,8 @@
 {% call ui.page_header('Sustainphase Management Summary',
                        'Due vs completed vs pending per stream, plus the '
                        ~ 'discussion points: every checklist entry that is '
-                       ~ 'neither OK nor pending, with the verbatim note.') %}
+                       ~ 'neither OK nor pending, with the verbatim note, '
+                       ~ 'plus the comments/observations column.') %}
 <a href="{{ url_for('sustain.sustain_home') }}" class="btn">← Sustainphase Monitoring</a>
 {% endcall %}
 
@@ -64,6 +65,29 @@
 <p style="color:#1a7f37; margin:0.4rem 1rem 0.8rem">
   ✓ Nothing needs attention — every due entry is OK or still pending.
 </p>
+{% endif %}
+
+{# Column M of the workbook (new 2026-08-31): informational free text,
+   listed separately because it never changes a status. #}
+{% if s.comments %}
+<p style="color:#888; font-size:0.85rem; margin:1rem 1rem 0.3rem">
+  Comments / observations noted in the checklist ({{ s.comments|length }}):
+</p>
+{% call ui.table(['Task', 'Process', 'Country', 'Provider / Account',
+                  'Comment']) %}
+  {% for c in s.comments %}
+  <tr>
+    <td class="mono">{{ c.task_id }}</td>
+    <td>
+      {{ c.process or '—' }}
+      {% if c.taxonomy %}<br><span style="color:#888; font-size:0.78rem">{{ c.taxonomy }}</span>{% endif %}
+    </td>
+    <td>{{ c.country or '—' }}</td>
+    <td style="font-size:0.82rem">{{ c.provider or '—' }}</td>
+    <td style="font-size:0.85rem">{{ c.text }}</td>
+  </tr>
+  {% endfor %}
+{% endcall %}
 {% endif %}
 {% endcall %}
 {% endfor %}

@@ -23,8 +23,8 @@ from app.db import delegated as db_delegated
 from app.db import ecom as db_ecom
 from app.db import jira as db_jira
 from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, bucket_counts,
-                                   bucket_issues, bucket_key,
-                                   mb_status_state, staged_counts)
+                                   bucket_issues, bucket_key, mb_status_state,
+                                   overview_counts, staged_counts)
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -32,6 +32,9 @@ bp = Blueprint("delegated", __name__, url_prefix="/delegated")
 _cfg = load_config()
 _db_path = Path(_cfg["database_path"])
 _UPLOAD_FOLDER = Path(__file__).parent.parent / "data" / "uploads"
+# bucket for blockers nobody put a team on — last group of the Overview's
+# blocker table, so an unassigned blocker stays visible [USER 2026-08-31]
+_NO_TEAM = "No team assigned"
 
 
 def _get_conn():
@@ -381,6 +384,22 @@ def report_context(conn) -> dict:
     }
 
 
+def _open_blockers(conn) -> list[dict]:
+    """Blockers that are still open [USER 2026-08-27: "blockers should only
+    show up if they are not closed"] — closed = manually closed or the jira
+    ticket reached the done family. Shared by the Management Summary and the
+    Overview so both reports can never disagree about what is open."""
+    open_blockers = []
+    for b in db_blockers.list_blockers(conn):
+        jira_status = None
+        if b["jira_key"]:
+            issue = db_jira.get_jira_issue(conn, b["jira_key"])
+            jira_status = issue["jira_status"] if issue else None
+        if not db_blockers.is_closed(b, jira_status):
+            open_blockers.append(b)
+    return open_blockers
+
+
 def numbers_context(conn) -> dict:
     """Template context for the Management Summary — shared like
     report_context. Goal actual [USER 2026-08-27] = tickets past the
@@ -401,18 +420,7 @@ def numbers_context(conn) -> dict:
     blocked_counting = sum(
         1 for i in issues
         if bucket_key(i) == "blocked" and i["counts_toward_goal"])
-    blockers = db_blockers.list_blockers(conn)
-    # only OPEN blockers on the Management Summary [USER 2026-08-27:
-    # "blockers should only show up if they are not closed"] — closed =
-    # manually closed or the jira ticket reached the done family
-    open_blockers = []
-    for b in blockers:
-        jira_status = None
-        if b["jira_key"]:
-            issue = db_jira.get_jira_issue(conn, b["jira_key"])
-            jira_status = issue["jira_status"] if issue else None
-        if not db_blockers.is_closed(b, jira_status):
-            open_blockers.append(b)
+    open_blockers = _open_blockers(conn)
     blocked_ticket_counts = db_blockers.blocked_ticket_counts(conn)
     blocker_sections = [(key, label, [b for b in open_blockers if b["type"] == key])
                         for key, label in db_blockers.TYPE_SECTIONS]
@@ -460,6 +468,80 @@ def delegated_report_download():
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition":
             f'attachment; filename="delegated_report_{ctx["today"]}.html"',
+    }
+
+
+def overview_context(conn) -> dict:
+    """Template context for the Delegated Testing Overview [USER 2026-08-31]
+    — the management report: four pipeline stages (each with an In progress
+    and a Blocked line), the execution-status bar, and the open blockers
+    grouped by responsible TEAM instead of by type. Backlog tickets are out,
+    same as on the Management Summary."""
+    issues, _comments = _load_issues(conn)
+    annotations = db_delegated.get_delegated_annotations(conn)
+    blockers_by_key = db_blockers.blockers_for_tickets(
+        conn, [i["jira_key"] for i in issues])
+    for i in issues:
+        ann = annotations.get(i["jira_key"]) or {}
+        i["backlog"] = ann.get("backlog", False)
+        # the Blocked line stages a ticket by its blocker's team
+        i["blockers"] = blockers_by_key.get(i["jira_key"], [])
+    issues = [i for i in issues if not i["backlog"]]
+    ctx = overview_counts(issues)
+
+    # blocker overview grouped by team [USER 2026-08-31] — fixed teams in
+    # their combobox order first, then custom ones, "No team" last; empty
+    # teams are left out entirely (no placeholder rows on a management page)
+    by_team: dict[str, list] = {}
+    for b in _open_blockers(conn):
+        by_team.setdefault((b["team"] or "").strip() or _NO_TEAM, []).append(b)
+    order = [t for t in db_blockers.FIXED_TEAMS if t in by_team]
+    order += sorted((t for t in by_team
+                     if t not in db_blockers.FIXED_TEAMS and t != _NO_TEAM),
+                    key=str.lower)
+    if _NO_TEAM in by_team:
+        order.append(_NO_TEAM)
+
+    ctx.update({
+        "blocker_teams": [(t, by_team[t]) for t in order],
+        "blocked_ticket_counts": db_blockers.blocked_ticket_counts(conn),
+        "report_comments": database.list_report_comments(
+            conn, "delegated_overview"),
+        "archived_callouts": database.list_archived_report_comments(
+            conn, "delegated_overview"),
+        "today": date.today().strftime("%Y-%m-%d"),
+    })
+    return ctx
+
+
+@bp.route("/overview")
+def delegated_overview():
+    """Delegated Testing Overview — the management report [USER 2026-08-31]:
+    the pipeline by stage + the execution status, in the layout management
+    asked for. Third report next to the status report and the Management
+    Summary; the three deliberately stay separate."""
+    conn = _get_conn()
+    try:
+        ctx = overview_context(conn)
+    finally:
+        conn.close()
+    return render_template("delegated_overview.html", **ctx)
+
+
+@bp.route("/overview/download")
+def delegated_overview_download():
+    """Dated standalone snapshot — download=True drops toolbar + scripts and
+    renders the call-outs as static text, like the other two reports."""
+    conn = _get_conn()
+    try:
+        ctx = overview_context(conn)
+    finally:
+        conn.close()
+    html = render_template("delegated_overview.html", **ctx, download=True)
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition":
+            f'attachment; filename="delegated_overview_{ctx["today"]}.html"',
     }
 
 

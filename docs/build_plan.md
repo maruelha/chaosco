@@ -185,7 +185,18 @@ changes per file (it encodes the date window, e.g. `1_0109_0409-O2C`), so
 the upload matches on the **filename suffix**. Deep-dive doc
 `docs/claude/sustain.md` gets written in step 1 and grows with each step.
 
-**Workbook structure (verified against the real 2026-08-27 file):**
+**Workbook structure.** ⚠ **Updated 2026-08-31 — a NEW version of the
+same file arrived; the app follows it now** (details and the decoded
+formulas: `docs/claude/sustain.md`, section "Change log"): headers moved
+to row **5** (data from row 6) because the instruction line was dropped,
+a free-text column **M "Comments/Observations"** was added, and the
+workbook's own summary definitions changed (DUE excludes N/A, COMPLETED =
+OK only). The importer now **locates** the header row instead of
+hardcoding it, so both file versions import; `summary_counts` follows the
+new definitions [USER 2026-08-31]; comments are imported and shown but
+never affect a status. The description below is the ORIGINAL 2026-08-27
+structure, kept for context:
+
 one tab per stream per day, named `Retail_<ISO date>` / `eCom_<ISO date>`
 (8 tabs = Retail+eCom × Sep 1–4). Headers on row 6, data from row 7.
 Columns: A Task ID · B L4 Taxonomy · C Process/Task · D Cadence ·
@@ -626,8 +637,48 @@ one-at-a-time, Marina confirms each:
     filter dropdown sits next to the Label filter (combined client-side in
     one `dlgFilterBoard()`). Deliberately excluded from `report_context`/
     `numbers_context` [USER: "no report - it is ONLY on the dashboard"].
-    Tests: `tests/test_delegated_web.py` (+3). Suite 655. (`/manual/retail`
-    · `/manual/ecom`) — NEW 2026-08-05
+    Tests: `tests/test_delegated_web.py` (+3). Suite 655.
+22. ~~New status workflow + Delegated Testing Overview~~ ✅ DONE 2026-08-31
+    [USER]. Two parts.
+    **(a) The workflow the team agreed that day**: the testing team's own
+    work now carries the Jira status `Accepted`, so `In Progress` always
+    means the first check with Marina — the assignee no longer decides a
+    bucket and `bucket_key`/`bucket_issues`/`bucket_counts`/`staged_counts`
+    lost their `me` argument (`_me()` gone from `web_delegated`). Both
+    sections stay [USER: "the sections still stay"], they are fed by
+    different statuses; the section wording is Marina's:
+    🔴 Blocker · Not started yet · Testing team creating order · Marina
+    gatekeeper check · Settlement file to be created · With GBS key users ·
+    ECOM BPO test · Test case completed. `Accepted` joins the
+    **Until Gatekeeper Check** stage, so it does NOT count toward the
+    weekly goal (to be re-confirmed [USER: "need to confirm that - but for
+    now.."]).
+    **(b) The third report** `/delegated/overview` + `/overview/download`
+    ("Delegated Testing Overview"), built to Marina's mockup and ADDED next
+    to the status report and the Management Summary — the three stay
+    separate. Four pipeline cards, each with an *In progress* and a
+    *Blocked* line: TECH TEST EXECUTION (Sales Tech — Open/Accepted) · MB
+    EXECUTION & VERIFICATION (MB — In Progress/In Verification/In
+    Validation) · ECOM BPO VERIFICATION (ECOM BPO — In Review) · COMPLETE
+    (Resolved/Closed). The *Blocked* line stages a ticket by its blocker's
+    responsible TEAM (Sales*/PDM/Omni → Tech, DTC O2C/MB BIZ → MB,
+    Kibana/ECOM BPO → BPO; `Kibana` + `ECOM BPO` joined `FIXED_TEAMS`);
+    several teams on one ticket → the EARLIEST stage, so every ticket
+    counts exactly once. Then the four-group execution-status bar (Passed /
+    In Progress / Blocked / Not Started), and the open blockers grouped by
+    team instead of by type. Backlog excluded; no goal box for now [USER:
+    "I dont know what management wants there"]. Invariant held by the
+    tests: stages + unstaged-blocked + unexpected == total == the bar;
+    "team not assigned" / "unexpected status" render ONLY when non-zero.
+    New pure API in `delegated_buckets` (`OVERVIEW_STAGES`,
+    `overview_team_stage`, `blocked_stage`, `BAR_GROUPS`,
+    `overview_counts`), `overview_context` in `web_delegated` (shared with
+    `report_exporter`), call-out key `delegated_overview` (allowlisted in
+    `web_reports`), Export Reports writes a 7th file, and the report is an
+    Email Reports choice. Tests: `tests/test_delegated_buckets.py` (+6),
+    `tests/test_delegated_web.py` (+5), exporter test updated to 7 files.
+
+### Manual Test Cases (`/manual/retail` · `/manual/ecom`) — NEW 2026-08-05
 
 Session doc: `docs/archive/session_2026-08-05_manual_test_cases.md`.
 

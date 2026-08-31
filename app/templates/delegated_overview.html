@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delegated Testing Overview — {{ today }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 13px; color: #1e293b; background: #fff;
+      padding: 2rem 2.5rem; line-height: 1.5; max-width: 1280px; margin: 0 auto;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+    }
+    .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+    .btn {
+      display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+      border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+      font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+    }
+    .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+    .report-header {
+      border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.75rem;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+    }
+    .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                  letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+    .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+    .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+    .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+    .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                   color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+
+    /* call-outs (editable, storage report_comments key 'delegated_overview') */
+    .callout-section {
+      border: 1px solid #fcd34d; background: #fffbeb; border-radius: 7px;
+      padding: 0.75rem 1rem; margin-bottom: 1.75rem;
+      page-break-inside: avoid; break-inside: avoid;
+    }
+    .callout-title { font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+                     letter-spacing: 0.09em; color: #92400e; margin-bottom: 0.5rem; }
+    .callout-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .callout-list li { display: flex; align-items: center; gap: 0.4rem; }
+    .callout-list li::before { content: "•"; color: #b45309; font-weight: 700; }
+    .co-input { flex: 1; border: none; background: transparent; font: inherit;
+                font-size: 0.85rem; color: #334155; padding: 0.15rem 0.3rem;
+                border-bottom: 1px dashed transparent; }
+    .co-input:hover, .co-input:focus { border-bottom-color: #d6a256; outline: none; }
+    .co-x { padding: 0 0.4rem; font-size: 0.72rem; color: #b91c1c; }
+
+    /* ---- section label with the rule line, as in the mockup ---- */
+    .sec-label {
+      display: flex; align-items: center; gap: 1rem;
+      margin: 0 0 1rem; page-break-after: avoid; break-after: avoid;
+    }
+    .sec-label span {
+      font-size: 0.74rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.18em; color: #475569; white-space: nowrap;
+    }
+    .sec-label::after { content: ""; flex: 1; border-top: 1px solid #e2e8f0; }
+
+    /* ---- pipeline by stage ---- */
+    .stage-row {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      margin-bottom: 1.25rem; page-break-inside: avoid; break-inside: avoid;
+    }
+    .stage-card {
+      border: 1px solid #e2e8f0; border-left-width: 0; padding: 1.1rem 1.15rem 0.9rem;
+      display: flex; flex-direction: column; min-width: 0;
+    }
+    .stage-card:first-child { border-left-width: 1px; }
+    .stage-accent { height: 4px; }
+    .stage-accent.tech     { background: #0e7490; }
+    .stage-accent.mb       { background: #2563eb; }
+    .stage-accent.bpo      { background: #7c3aed; }
+    .stage-accent.complete { background: #16a34a; }
+    .stage-total { font-size: 2.3rem; font-weight: 800; color: #0f172a; line-height: 1; }
+    .stage-name {
+      font-size: 0.73rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #334155; margin-top: 0.55rem;
+    }
+    .stage-owner { font-size: 0.72rem; color: #94a3b8; margin-top: 0.15rem; }
+    .stage-lines {
+      margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid #f1f5f9;
+      display: flex; flex-direction: column; gap: 0.18rem;
+    }
+    .stage-line { display: flex; justify-content: space-between; align-items: baseline;
+                  font-size: 0.78rem; color: #64748b; gap: 0.5rem; }
+    .stage-line b { font-size: 0.9rem; font-weight: 700; color: #334155; }
+    .stage-line.blocked b { color: #b91c1c; }
+    .stage-line.blocked.zero b { color: #cbd5e1; }
+    .stage-line.zero { color: #cbd5e1; }
+    .stage-line.zero b { color: #cbd5e1; }
+
+    /* tickets that belong to no stage — rendered only when non-zero, so a
+       clean report shows nothing at all here [USER 2026-08-31] */
+    .stage-notes { font-size: 0.78rem; color: #92400e; background: #fffbeb;
+                   border: 1px solid #fde68a; border-radius: 6px;
+                   padding: 0.45rem 0.75rem; margin-bottom: 1.75rem; }
+    .stage-notes b { font-weight: 700; }
+
+    /* ---- execution status bar ---- */
+    .bar {
+      display: flex; width: 100%; height: 2.6rem; border: 2px solid #0f172a;
+      border-radius: 3px; overflow: hidden; margin-bottom: 0.7rem;
+    }
+    .bar-seg {
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 0.85rem; font-weight: 700; min-width: 2.2rem;
+    }
+    .seg-passed      { background: #16a34a; }
+    .seg-in_progress { background: #2563eb; }
+    .seg-blocked     { background: #dc2626; }
+    .seg-not_started { background: #94a3b8; }
+    .seg-unexpected  { background: #cbd5e1; color: #334155; }
+    .bar-empty {
+      display: flex; align-items: center; justify-content: center; width: 100%;
+      color: #94a3b8; font-size: 0.82rem;
+    }
+    .legend { display: flex; flex-wrap: wrap; gap: 1.4rem; margin-bottom: 2rem; }
+    .legend-item { display: flex; align-items: center; gap: 0.45rem;
+                   font-size: 0.82rem; color: #475569; }
+    .legend-swatch { width: 0.8rem; height: 0.8rem; border-radius: 2px; flex: none; }
+    .legend-item b { color: #0f172a; }
+
+    /* ---- blockers by team ---- */
+    .team-block { margin-bottom: 1.25rem; page-break-inside: avoid; break-inside: avoid; }
+    .team-title { font-size: 0.78rem; font-weight: 800; color: #0f172a;
+                  margin-bottom: 0.4rem; }
+    .team-title small { font-weight: 600; color: #94a3b8; }
+    .blk-table { width: 100%; border-collapse: collapse; font-size: 0.82rem;
+                 border: 1px solid #e2e8f0; }
+    .blk-table th { background: #f8fafc; text-align: left; font-weight: 700;
+                    color: #475569; font-size: 0.72rem; text-transform: uppercase;
+                    letter-spacing: 0.05em; padding: 0.4rem 0.6rem;
+                    border-bottom: 1px solid #e2e8f0; }
+    .blk-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid #f1f5f9;
+                    vertical-align: top; }
+    .blk-table tr:last-child td { border-bottom: none; }
+    .blk-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .blk-type { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+                color: #94a3b8; }
+    .blk-empty { color: #94a3b8; font-size: 0.82rem; }
+
+    @page { size: A4 portrait; margin: 1.5cm; }
+    @media print {
+      body { padding: 0; max-width: none; }
+      .toolbar { display: none !important; }
+      .stage-accent, .bar-seg, .legend-swatch, .blk-table th, .stage-notes,
+      .callout-section {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      .co-x, #co-add { display: none !important; }
+      .co-empty { display: none !important; }
+      .co-input { border: none; }
+    }
+    @media (max-width: 780px) {
+      .stage-row { grid-template-columns: repeat(2, 1fr); }
+      .stage-card { border-left-width: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">Delegated Testing Overview</span>
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('delegated.delegated_report') }}" class="btn">📄 Status report</a>
+  <a href="{{ url_for('delegated.delegated_numbers') }}" class="btn">📊 Management Summary</a>
+  <a href="{{ url_for('delegated.delegated_overview_download') }}" class="btn">⬇ Download HTML</a>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+{% endif %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
+    <div class="rh-title">Delegated Testing Overview</div>
+    <div class="rh-date">{{ today }} · pipeline and execution status, from the delegated Jira export</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ total }}</div>
+    <div class="rh-stat-lbl">Tickets</div>
+  </div>
+</div>
+
+{# ---- Call-outs (editable on screen; static text in the download) ---- #}
+{% if download %}
+{% set filled_callouts = report_comments | selectattr('comment') | list %}
+{% if filled_callouts %}
+<div class="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list">
+    {% for c in filled_callouts %}
+    <li><span style="font-size:0.85rem;color:#334155;padding:0.15rem 0.3rem">{{ c.comment }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% else %}
+<div class="callout-section{% if not (report_comments | selectattr('comment') | list) %} co-empty{% endif %}"
+     id="callout-section">
+  <div class="callout-title">📣 Call-outs</div>
+  <ul class="callout-list" id="callout-list">
+    {% for c in report_comments %}
+    <li data-id="{{ c.id }}">
+      <input type="text" class="co-input" value="{{ c.comment or '' }}"
+             placeholder="call-out…" onblur="coSave(this)">
+      <button type="button" class="btn co-x" onclick="coArchive(this)"
+              title="archive — off the live report, kept with its dates below">🗄</button>
+      <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+  <button type="button" class="btn" id="co-add" onclick="coAdd()">+ Add call-out</button>
+</div>
+{% if archived_callouts %}
+<details style="margin:-1rem 0 1.5rem; font-size:0.82rem; color:#64748b">
+  <summary style="cursor:pointer">🗄 Archived call-outs ({{ archived_callouts|length }})</summary>
+  <ul style="margin:0.4rem 0 0; padding-left:1.2rem">
+    {% for c in archived_callouts %}
+    <li style="padding:0.15rem 0">
+      <span style="color:#94a3b8; white-space:nowrap">{{ (c.created_at or '')[:10] }} → archived {{ (c.archived_at or '')[:10] }}:</span>
+      {{ c.comment }}
+    </li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+{% endif %}
+
+{# ---- Pipeline by stage: In progress by Jira status, Blocked by the
+       responsible team of the ticket's blocker [USER 2026-08-31] ---- #}
+<div class="sec-label"><span>Pipeline by stage</span></div>
+<div class="stage-row">
+  {% for s in stages %}
+  <div>
+    <div class="stage-accent {{ s.key }}"></div>
+    <div class="stage-card">
+      <div class="stage-total">{{ s.total }}</div>
+      <div class="stage-name">{{ s.label }}</div>
+      <div class="stage-owner">owner · {{ s.owner or '—' }}</div>
+      <div class="stage-lines">
+        <div class="stage-line{% if not s.in_progress %} zero{% endif %}">
+          <span>In progress</span><b>{{ s.in_progress }}</b>
+        </div>
+        <div class="stage-line blocked{% if not s.blocked %} zero{% endif %}">
+          <span>Blocked</span><b>{{ s.blocked }}</b>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if blocked_unassigned or unexpected %}
+<div class="stage-notes">
+  {% if blocked_unassigned %}
+  <div><b>{{ blocked_unassigned }}</b> blocked ticket{{ 's' if blocked_unassigned != 1 else '' }}
+    could not be staged — the blocker carries no responsible team yet.</div>
+  {% endif %}
+  {% if unexpected %}
+  <div><b>{{ unexpected }}</b> ticket{{ 's' if unexpected != 1 else '' }}
+    with an unexpected Jira status — outside every stage.</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ---- Execution status: the same tickets cut by status ---- #}
+<div class="sec-label"><span>Execution status</span></div>
+<div class="bar">
+  {% if total %}
+    {% for b in bar %}{% if b.count %}
+    <div class="bar-seg seg-{{ b.key }}" style="flex:{{ b.count }} 0 0"
+         title="{{ b.label }}: {{ b.count }}">{{ b.count }}</div>
+    {% endif %}{% endfor %}
+  {% else %}
+  <div class="bar-empty">No tickets in the delegated export yet.</div>
+  {% endif %}
+</div>
+<div class="legend">
+  {% for b in bar %}
+  <div class="legend-item">
+    <span class="legend-swatch seg-{{ b.key }}"></span>{{ b.label }}: <b>{{ b.count }}</b>
+  </div>
+  {% endfor %}
+</div>
+
+{# ---- Open blockers, grouped by responsible team [USER 2026-08-31] ---- #}
+<div class="sec-label"><span>Blockers by team</span></div>
+{% for team, items in blocker_teams %}
+<div class="team-block">
+  <div class="team-title">{{ team }} <small>({{ items|length }})</small></div>
+  <table class="blk-table">
+    <thead>
+      <tr>
+        <th style="width:24%">Blocker</th>
+        <th style="width:28%">Impact — what is blocked</th>
+        <th style="width:6.5rem">ID</th>
+        <th>Next step</th>
+        <th style="width:3.5rem; text-align:right">Blocks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in items %}
+      <tr>
+        <td>{{ b.name }}<br><span class="blk-type">{{ b.type }}</span></td>
+        {# same field as the blocker detail form — editable on screen only #}
+        <td style="white-space:pre-wrap">
+          {%- if download -%}
+            {{ b.impact or "—" }}
+          {%- else -%}
+            <input type="text" class="blk-impact" data-id="{{ b.blocker_id }}"
+                   value="{{ b.impact or '' }}" placeholder="what is blocked…"
+                   style="width:100%; border:none; border-bottom:1px dashed #cbd5e1; font-size:0.82rem; background:transparent"
+                   onblur="blkImpactSave(this)">
+          {%- endif -%}
+        </td>
+        <td class="mono" style="font-size:0.78rem">{{ b.jira_key or b.display_id or "—" }}</td>
+        <td style="white-space:pre-wrap">{{ b.next_step or "—" }}</td>
+        <td class="num">{{ blocked_ticket_counts.get(b.blocker_id, 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="blk-empty">No open blockers.</p>
+{% endfor %}
+
+{% if not download %}
+<script>
+function coArchive(btn) {
+  const li = btn.closest('li');
+  fetch('/report-comments/' + li.dataset.id + '/archive', { method: 'POST' })
+    .then(r => { if (!r.ok) throw new Error(); li.remove(); })
+    .catch(() => alert('Archiving failed — try again.'));
+}
+
+function coSave(input) {
+  const li = input.closest('li');
+  const body = new URLSearchParams({ comment: input.value });
+  fetch('/report-comments/' + li.dataset.id + '/update', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 document.getElementById('callout-section').classList.remove('co-empty');
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+function coDel(btn) {
+  const li = btn.closest('li');
+  if (!confirm('Delete this call-out?')) return;
+  fetch('/report-comments/' + li.dataset.id + '/delete', { method: 'POST' })
+    .then(() => li.remove());
+}
+
+function coAdd() {
+  const body = new URLSearchParams({ comment: '' });
+  fetch('/report-comments/delegated_overview/add', { method: 'POST', body })
+    .then(r => r.json())
+    .then(d => {
+      const li = document.createElement('li');
+      li.dataset.id = d.row.id;
+      li.innerHTML = '<input type="text" class="co-input" placeholder="call-out…" onblur="coSave(this)">' +
+                     ' <button type="button" class="btn co-x" onclick="coArchive(this)" title="archive — off the live report, kept with its dates below">🗄</button>' +
+                     ' <button type="button" class="btn co-x" onclick="coDel(this)" title="delete call-out">✕</button>';
+      document.getElementById('callout-list').appendChild(li);
+      li.querySelector('input').focus();
+    });
+}
+
+function blkImpactSave(input) {
+  const body = new URLSearchParams({ impact: input.value });
+  fetch('/blockers/' + input.dataset.id + '/impact', { method: 'POST', body })
+    .then(r => { if (!r.ok) throw new Error();
+                 input.style.borderBottomColor = '#16a34a';
+                 setTimeout(() => { input.style.borderBottomColor = ''; }, 800); })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+window.addEventListener('beforeprint', () => {
+  let any = false;
+  document.querySelectorAll('#callout-list li').forEach(li => {
+    const filled = li.querySelector('.co-input').value.trim() !== '';
+    li.style.display = filled ? '' : 'none';
+    any = any || filled;
+  });
+  document.getElementById('callout-section').style.display = any ? '' : 'none';
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('#callout-list li').forEach(li => { li.style.display = ''; });
+  document.getElementById('callout-section').style.display = '';
+});
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,5 +1,8 @@
 """Core South Sustainphase Monitoring card (build plan step 3, 2026-08-27):
-upload page + file-picker import wiring."""
+upload page + file-picker import wiring.
+
+The fixture builds the CURRENT (2026-08-31) workbook layout: header row 5
+and the Comments/Observations column M."""
 import io
 
 import openpyxl
@@ -13,12 +16,15 @@ from app.web import app
 HEADERS = ["Task ID", "L4 Taxonomy", "Process / Task", "Cadence",
            "Due Today", "Country", "Provider / Partner / Financial Account",
            "France Result", "Italy Result", "Portugal Result", "Spain Result",
-           "Task Overall (DO NOT EDIT)"]
+           "Task Overall (DO NOT EDIT)", "Comments/Observations"]
+
+HEADER_ROW = 5          # was 6 before the 2026-08-31 workbook version
 
 FILENAME = "1_0109_0409-O2C DTC_GBS Operations_checklist.xlsx"
 
 
-def _xlsx_bytes(retail_fr="OK", days=("2026-09-01",)) -> bytes:
+def _xlsx_bytes(retail_fr="OK", days=("2026-09-01",), comment=None) -> bytes:
+    parent, detail = HEADER_ROW + 1, HEADER_ROW + 2
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     tabs = [f"{stream}_{day}" for day in days
@@ -26,22 +32,23 @@ def _xlsx_bytes(retail_fr="OK", days=("2026-09-01",)) -> bytes:
     for title in tabs:
         ws = wb.create_sheet(title)
         for col, header in enumerate(HEADERS, start=1):
-            ws.cell(6, col, header)
-        ws.append([])  # row 7 filled below
+            ws.cell(HEADER_ROW, col, header)
         # results live at detail level when a task has details (like the
         # real workbook); retail_fr lands in the detail row's France cell
         fr = retail_fr if title.startswith("Retail_") else "OK"
         for col, v in enumerate(["1", "Settlement", "Monitor files", "Daily",
                                  "Yes", None, "Adyen", None, None, None,
                                  None, "Pending"], start=1):
-            ws.cell(7, col, v)
-        ws.cell(8, 3, "↳ Detail check")
-        ws.cell(8, 4, "Daily")
-        ws.cell(8, 5, "Yes")
-        ws.cell(8, 6, "France")
-        ws.cell(8, 7, "Adyen for cards")
-        ws.cell(8, 8, fr)
-        ws.row_dimensions[8].outline_level = 1
+            ws.cell(parent, col, v)
+        ws.cell(detail, 3, "↳ Detail check")
+        ws.cell(detail, 4, "Daily")
+        ws.cell(detail, 5, "Yes")
+        ws.cell(detail, 6, "France")
+        ws.cell(detail, 7, "Adyen for cards")
+        ws.cell(detail, 8, fr)
+        if comment and title.startswith("Retail_"):
+            ws.cell(detail, 13, comment)      # column M
+        ws.row_dimensions[detail].outline_level = 1
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -124,6 +131,19 @@ def test_day_report_mirrors_excel_with_expandable_details(client):
     assert 'pill pill--green">OK' in html
     # stream toggle to the same day's eCom tab
     assert '/sustain/day/2026-09-01/eCom' in html
+
+
+def test_day_report_and_summary_show_the_comments_column(client):
+    """Column M (new 2026-08-31) is informational: it shows up in the day
+    report and in the summary, but leaves every status untouched."""
+    _upload(client, _xlsx_bytes(comment="cut-off moved to 16:00"))
+    html = client.get("/sustain/day/2026-09-01/Retail").get_data(as_text=True)
+    assert "Comments / Observations" in html
+    assert "cut-off moved to 16:00" in html
+    # informational only — the tab is still all clear
+    summary = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert "cut-off moved to 16:00" in summary
+    assert "Nothing needs attention" in summary
 
 
 def test_day_report_empty_tab_shows_hint(client):

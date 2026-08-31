@@ -534,6 +534,88 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-08-31</h2>
+
+<div class="box b-amber">
+  <div class="box-head">Delegated Testing — new status workflow + the Overview report</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="dlg-accepted-goal">
+      <span><strong>Does <code>Accepted</code> really not count toward the weekly
+      goal?</strong> You said "it should not count towards weekly goal (need to confirm
+      that - but for now..)". It sits in <em>Until Gatekeeper Check</em> on the Management
+      Summary, so the goal Actual ignores it. One line to move if management sees it
+      differently.
+      <span class="where">&#8594; /delegated/numbers</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dlg-inprogress-assignee">
+      <span><strong>Watch the "Marina gatekeeper check" section on real data.</strong>
+      The assignee no longer decides anything — every <code>In Progress</code> ticket
+      lands there, whoever it is assigned to. If the team leaves tickets on In Progress
+      while they work (instead of Accepted), those will look like they are with you. Say
+      so and the assignee split comes back as a second rule.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dlg-overview-goalbox">
+      <span><strong>Overview has no goal box on purpose</strong> — "I dont know what
+      management wants there". Everything else from the mockup is on it: the four stage
+      cards with In progress / Blocked lines, the status bar, blockers grouped by team.
+      Tell me what management asks for and it goes in.
+      <span class="where">&#8594; /delegated/overview</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dlg-blocker-teams">
+      <span><strong>Give every open blocker a team</strong> — the Overview stages a
+      BLOCKED ticket by its blocker's team. Blockers without one are counted on a
+      separate "could not be staged" line instead of on a card. <code>Kibana</code> and
+      <code>ECOM BPO</code> are now in the team dropdown.
+      <span class="where">&#8594; /blockers/</span></span></label>
+  </div>
+</div>
+
+<h2 class="date">Added 2026-08-31</h2>
+<div class="box b-amber">
+  <div class="box-head">Core South Sustainphase Monitoring — new workbook version</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="sus31-header-row">
+      <span><strong>The new checklist file would have broken the import — fixed.</strong>
+      Your new <code>…DTC_GBS Operations_checklist (1).xlsx</code> dropped the
+      "Duplicate this sheet…" line at the top, so every header moved up one row
+      (row 6 &#8594; row 5). The importer no longer assumes a fixed row: it
+      <em>looks for</em> the "Task ID" header. Old and new files both import, and a
+      real structure change still fails loudly instead of importing nonsense.
+      <span class="where">&#8594; /sustain/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sus31-counting">
+      <span><strong>Check the numbers on the stat cards — they changed, on purpose.</strong>
+      The new workbook changed its OWN summary formulas, and you asked me to follow them:
+      <em>DUE</em> is now OK + Pending + Review (so a due task that rolls up to
+      <em>N/A</em> no longer counts as due at all), and <em>COMPLETED</em> counts only
+      <em>OK</em> (N/A no longer counts as completed). The app now reproduces the new
+      file's summary row exactly on all 8 tabs. Two things to be aware of:
+      <br>&bull; days you imported from the <em>older</em> file are also shown with the
+      new definitions — deliberate, so the day-over-day trend is one consistent line,
+      but those numbers no longer match that old workbook's own row 4 (they are 1–3
+      tasks lower per tab).
+      <br>&bull; the <em>attention</em> count still counts over ALL parent tasks, not
+      only the due ones, even though the workbook now restricts its REVIEW count to due
+      tasks. I kept our rule so an "on occurrence" issue can't disappear. Say the word
+      if you want attention restricted to due tasks too.
+      <span class="where">&#8594; /sustain/summary</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sus31-comments-col">
+      <span><strong>New column M "Comments/Observations" — where I put it (your call).</strong>
+      The new file has a free-text comments column. It is imported and shown in two
+      places: as the last column of the day report, and as its own
+      <em>Comments / observations</em> table under each stream in the management summary.
+      I deliberately kept it <strong>out of the statuses and counts</strong> — a comment
+      is an observation, not an issue, and the workbook's own "Task Overall" ignores
+      column M as well. So a comment does NOT turn a task red and does NOT land in the
+      attention list / discussion agenda. If the team ends up writing real problems in
+      there, tell me and I'll fold it into the attention list instead.
+      <span class="where">&#8594; /sustain/day/&lt;day&gt;/&lt;stream&gt;</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sus31-empty-now">
+      <span><strong>Nothing to see yet in the comments column</strong> — in the file you
+      gave me the new column M is still empty on all 8 tabs, and every tab is "all
+      pending" (0 completed). So the new sections stay hidden until the team actually
+      fills something in. Worth a second look once a real, filled-in day arrives.
+      <span class="where">&#8594; /sustain/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

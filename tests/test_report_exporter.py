@@ -28,7 +28,7 @@ def env(tmp_path, monkeypatch):
     return db_path, cfg
 
 
-def test_export_writes_all_six_files(env):
+def test_export_writes_all_seven_files(env):
     db_path, cfg = env
     conn = database.get_connection(db_path)
     try:
@@ -37,11 +37,12 @@ def test_export_writes_all_six_files(env):
     finally:
         conn.close()
     names = sorted(p.name for p in saved)
-    assert len(saved) == 6
+    assert len(saved) == 7
     stems = [n.rsplit("_", 1)[0] for n in names]  # drop the date part
     assert "delegated_report" in stems
     assert "delegated_numbers" in stems
-    assert sum(n.endswith(".html") for n in names) == 4
+    assert "delegated_overview" in stems
+    assert sum(n.endswith(".html") for n in names) == 5
     assert sum(n.endswith(".pptx") for n in names) == 2
     for p in saved:
         assert p.exists() and p.stat().st_size > 0

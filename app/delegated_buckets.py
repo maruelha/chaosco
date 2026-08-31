@@ -5,32 +5,32 @@ of the web layer so the rules are testable and the later backlog items
 (counted, not listed) can join the counting without touching routes.
 
 Bucket rules — the workflow wording agreed [USER 2026-08-31]:
-- Blocked         -> "Issue" (top; shown ONLY there, wins over everything)
+- Blocked         -> "Blocker" (top; shown ONLY there, wins over everything)
 - Open            -> "Not started yet"
 - Accepted        -> "Testing team creating order"
-- In Progress     -> "With Marina for first check"
+- In Progress     -> "Marina gatekeeper check"
 - In Verification -> "Settlement file to be created"
 - In Validation   -> "With GBS key users"
-- In Review       -> "With Flora"
+- In Review       -> "ECOM BPO test"
 - Resolved/Closed/Done -> "Test case completed"
 - anything else   -> "Unexpected status" (nothing silently disappears)
 
 The assignee no longer decides anything [USER 2026-08-31]: until today
 "In Progress" split into testing team / Marina by assignee; the team's
 work now carries its own status "Accepted", so In Progress always means
-"with Marina for first check" and the old `team` bucket is gone.
+"Marina gatekeeper check" and the old `team` bucket is gone.
 """
 from __future__ import annotations
 
 # (key, title, css class on the report section head)
 SECTIONS = [
-    ("blocked",    "🔴 Issue",                            "sec-blocked"),
+    ("blocked",    "🔴 Blocker",                          "sec-blocked"),
     ("open",       "Not started yet",                     "sec-open"),
     ("accepted",   "Testing team creating order",         "sec-accepted"),
-    ("marina",     "With Marina for first check",         "sec-marina"),
+    ("marina",     "Marina gatekeeper check",             "sec-marina"),
     ("settlement", "Settlement file to be created",       "sec-settle"),
     ("gbs",        "With GBS key users",                  "sec-gbs"),
-    ("sales",      "With Flora",                          "sec-sales"),
+    ("sales",      "ECOM BPO test",                       "sec-sales"),
     ("done",       "Test case completed",                 "sec-done"),
     ("unexpected", "Unexpected status",                   "sec-unexpected"),
     # per-ticket authored flag [USER 2026-08-27]: parked work — own section

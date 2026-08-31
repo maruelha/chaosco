@@ -42,6 +42,7 @@ REPORT_CHOICES = [
     ("missing_tests", "Missing Test Cases (Retail)"),
     ("delegated", "Delegated Testing Report"),
     ("delegated_numbers", "Delegated Testing — Management Summary"),
+    ("delegated_overview", "Delegated Testing Overview"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -188,6 +189,10 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
     if "delegated_numbers" in reports:
         resp = flask_app.test_client().get("/delegated/numbers/download")
         out.append((f"delegated_numbers_{day}.html",
+                    resp.get_data(as_text=True)))
+    if "delegated_overview" in reports:
+        resp = flask_app.test_client().get("/delegated/overview/download")
+        out.append((f"delegated_overview_{day}.html",
                     resp.get_data(as_text=True)))
     return out
 

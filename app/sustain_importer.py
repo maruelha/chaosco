@@ -9,6 +9,12 @@ tab. Loaded with data_only=True: we import the cached cell values but
 never the workbook's aggregations — those are recomputed in
 app/db/sustain.py. Parent task = row with a Task ID; detail row = outline
 level ≥ 1 under the last parent.
+
+The header row is LOCATED, not hardcoded [2026-08-31]: the September file
+dropped the "Duplicate this sheet…" instruction line, moving the header
+from row 6 to row 5, and added column M "Comments/Observations". Both
+layouts import; the Comments column is likewise found by header name and
+is simply absent (None) in the older one.
 """
 from __future__ import annotations
 
@@ -23,8 +29,12 @@ _TAB_RE = re.compile(r"^(Retail|eCom)_(\d{4}-\d{2}-\d{2})$", re.IGNORECASE)
 _STREAM_CANON = {"retail": db_sustain.STREAM_RETAIL,
                  "ecom": db_sustain.STREAM_ECOM}
 
-_HEADER_ROW = 6
-_FIRST_DATA_ROW = 7
+# The header row moved 6 -> 5 between file versions, so scan for it
+# instead of hardcoding. Column M "Comments/Observations" is new and is
+# located by header name (absent in pre-2026-08-31 files).
+_HEADER_SEARCH_ROWS = 12
+_LAST_FIXED_COLUMN = 12          # A..L, stable across both layouts
+_COMMENTS_HEADER = "comment"     # substring match, case-insensitive
 
 
 class ParseError(Exception):
@@ -45,18 +55,40 @@ def _clean(val):
     return str(val)
 
 
+def _find_header_row(ws) -> int:
+    """Row whose column A is 'Task ID' — row 6 in the pre-2026-08-31
+    files, row 5 since the instruction line was dropped."""
+    for r in range(1, _HEADER_SEARCH_ROWS + 1):
+        if _clean(ws.cell(r, 1).value) == "Task ID":
+            return r
+    raise ParseError(
+        f"Tab '{ws.title}' looks like a checklist day tab by name but no"
+        f" 'Task ID' header was found in column A of rows"
+        f" 1-{_HEADER_SEARCH_ROWS} — structure changed?")
+
+
+def _find_comments_column(ws, header_row: int):
+    """Column index of 'Comments/Observations' (new 2026-08-31), or None
+    for the older layout that doesn't have it."""
+    for c in range(_LAST_FIXED_COLUMN + 1, ws.max_column + 1):
+        header = _clean(ws.cell(header_row, c).value)
+        if header and _COMMENTS_HEADER in header.casefold():
+            return c
+    return None
+
+
 def _parse_sheet(ws) -> list[dict]:
     """One day tab -> parent-task dicts with their 'details' attached."""
-    if _clean(ws.cell(_HEADER_ROW, 1).value) != "Task ID":
-        raise ParseError(
-            f"Tab '{ws.title}' looks like a checklist day tab by name but"
-            f" row {_HEADER_ROW} column A is not 'Task ID' — structure"
-            " changed?")
+    header_row = _find_header_row(ws)
+    comments_col = _find_comments_column(ws, header_row)
     tasks: list[dict] = []
     current: dict | None = None
-    for r in range(_FIRST_DATA_ROW, ws.max_row + 1):
-        values = [_clean(ws.cell(r, c).value) for c in range(1, 13)]
-        if not any(values):
+    for r in range(header_row + 1, ws.max_row + 1):
+        values = [_clean(ws.cell(r, c).value)
+                  for c in range(1, _LAST_FIXED_COLUMN + 1)]
+        comments = (_clean(ws.cell(r, comments_col).value)
+                    if comments_col else None)
+        if not any(values) and comments is None:
             continue
         (task_id, taxonomy, process, cadence, due_today, country, provider,
          result_fr, result_it, result_pt, result_es, overall) = values
@@ -67,7 +99,7 @@ def _parse_sheet(ws) -> list[dict]:
             "country": country, "provider": provider,
             "result_fr": result_fr, "result_it": result_it,
             "result_pt": result_pt, "result_es": result_es,
-            "overall": overall,
+            "overall": overall, "comments": comments,
         }
         if task_id is not None:
             current = {**row, "task_id": task_id, "taxonomy": taxonomy,

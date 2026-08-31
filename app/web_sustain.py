@@ -4,6 +4,10 @@ checklist workbook (`…DTC_GBS Operations_checklist.xlsx`, prefix varies —
 matched on the name containing 'DTC_GBS Operations_checklist' so browser
 '(1)' double-download copies still work); import via
 app.sustain_importer.run_sustain_import. No SQL here.
+
+The 2026-08-31 workbook version added a free-text column M
+"Comments/Observations": shown as its own column in the day report and as
+its own section in the management summary, but never part of a status.
 """
 from __future__ import annotations
 
@@ -95,6 +99,8 @@ def sustain_summary(day=None):
                     "stream": o["stream"], "counts": o["counts"],
                     "attention": db_sustain.attention_items(conn, day,
                                                             o["stream"]),
+                    "comments": db_sustain.comment_items(conn, day,
+                                                         o["stream"]),
                 })
         offenders = db_sustain.repeat_offenders(conn)
     finally:

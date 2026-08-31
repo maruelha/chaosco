@@ -99,15 +99,15 @@ def test_upload_imports_and_page_shows_buckets(client):
 
     html = client.get("/delegated/?jira_ok=1&jira_msg=x").get_data(as_text=True)
     assert "S4ECOM-2001" in html                       # blocked ticket present
-    assert "\U0001f534 Issue" in html
-    assert "With Marina for first check" in html
+    assert "\U0001f534 Blocker" in html
+    assert "Marina gatekeeper check" in html
     assert "Testing team creating order" in html
     assert "Unexpected status" in html                 # odd status is visible
     assert "Return Order: 6000084252" in html          # LATEST comment's order
     # every section carries a ui-section color modifier — a bare rt-section
     # summary renders WHITE on white (invisible title) [USER 2026-08-26]
     assert 'class="rt-section "' not in html
-    assert "ui-section--red" in html                   # Issue section color
+    assert "ui-section--red" in html                   # Blocker section color
 
 
 def test_only_user_stories_on_board_report_and_numbers(client):
@@ -300,8 +300,8 @@ def test_status_report_renders_buckets(client):
                 data={"blocked_reason": "no settlement file yet"})
     html = client.get("/delegated/report").get_data(as_text=True)
     assert "Delegated Testing Report" in html
-    assert "\U0001f534 Issue" in html
-    assert "With Marina for first check" in html
+    assert "\U0001f534 Blocker" in html
+    assert "Marina gatekeeper check" in html
     assert "no settlement file yet" in html            # why-blocked column
     assert "Return Order: 6000084252" in html          # LATEST comment's order
     # the report renders no comment bodies, so the OLDER comment's order
@@ -479,7 +479,7 @@ def test_reimport_refreshes_status(client):
     updated = XML.replace(">Blocked<", ">In Review<")
     _upload(client, updated, "delegated_v2.xml")
     html = client.get("/delegated/").get_data(as_text=True)
-    assert "With Flora" in html
+    assert "ECOM BPO test" in html
     conn = web_delegated._get_conn()
     try:
         row = conn.execute("SELECT jira_status FROM jira_issues"
@@ -578,10 +578,10 @@ def test_backlog_excluded_from_management_summary(client):
 
 def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
     _upload(client)
-    # S4ECOM-2001 is Blocked — parking it moves it OUT of the Issue section
+    # S4ECOM-2001 is Blocked — parking it moves it OUT of the Blocker section
     client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "1"})
     html = client.get("/delegated/").get_data(as_text=True)
-    blocked_part = html.split("<summary>🔴 Issue")[1].split("<summary>")[0]
+    blocked_part = html.split("<summary>🔴 Blocker")[1].split("<summary>")[0]
     assert "S4ECOM-2001" not in blocked_part
     assert "S4ECOM-2001" in html.split("<summary>📦 Backlog")[1]
 
@@ -766,7 +766,7 @@ def test_board_mb_status_column_with_mismatch_color(client):
     # neutral dash with explanatory title
     html = client.get("/delegated/").get_data(as_text=True)
     assert "no ECOM-tab row for this Jira ID yet" in html
-    # S4ECOM-2001 is in the Issue bucket; "Not Ready" is NOT an expected
+    # S4ECOM-2001 is in the Blocker bucket; "Not Ready" is NOT an expected
     # blocked MB status -> red mismatch chip
     _upload_tracking(client)
     html = client.get("/delegated/").get_data(as_text=True)
@@ -962,3 +962,105 @@ def test_numbers_blocker_overview_shows_next_step(client):
     # blockers list lost the Notes column
     blockers_html = client.get("/blockers/").get_data(as_text=True)
     assert ">Notes</th>" not in blockers_html
+
+
+# ---------------------------------------------------------------------------
+# Delegated Testing Overview — the management report (2026-08-31)
+
+def test_overview_report_renders_pipeline_bar_and_blockers_by_team(client):
+    _upload(client)
+    # register a blocker with a team, attached to the blocked ticket, so the
+    # Blocked line can be staged by the team [USER 2026-08-31]
+    conn = web_delegated._get_conn()
+    try:
+        bid = db_blockers.create_blocker(conn, "defect", "KibanaFeed", "S4XYZ-9")["blocker_id"]
+        db_blockers.set_blocker_team(conn, bid, "Kibana")
+        db_blockers.link_blocker(conn, bid, "S4ECOM-2001")
+    finally:
+        conn.close()
+
+    html = client.get("/delegated/overview").get_data(as_text=True)
+    assert "Delegated Testing Overview" in html
+    # the four stage cards, with the owner line under each
+    for label in ("TECH TEST EXECUTION", "MB EXECUTION &amp; VERIFICATION",
+                  "ECOM BPO VERIFICATION", "COMPLETE"):
+        assert label in html
+    assert "owner · Sales Tech" in html
+    # execution status bar + its legend
+    assert "Execution status" in html
+    for group in ("Passed", "In Progress", "Blocked", "Not Started"):
+        assert group in html
+    # blocker overview grouped by TEAM, not by type
+    assert "Blockers by team" in html
+    assert "Kibana" in html and "KibanaFeed" in html
+    # call-outs live on their own key
+    assert "/report-comments/delegated_overview/add" in html
+
+
+def test_overview_stages_the_blocked_ticket_by_its_blocker_team(client):
+    """The blocked ticket counts on the BPO card's Blocked line — its
+    blocker's team is Kibana [USER 2026-08-31]."""
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        bid = db_blockers.create_blocker(conn, "defect", "KibanaFeed", "S4XYZ-9")["blocker_id"]
+        db_blockers.set_blocker_team(conn, bid, "Kibana")
+        db_blockers.link_blocker(conn, bid, "S4ECOM-2001")
+    finally:
+        conn.close()
+    conn = web_delegated._get_conn()
+    try:
+        ctx = web_delegated.overview_context(conn)
+    finally:
+        conn.close()
+    stages = {s["key"]: s for s in ctx["stages"]}
+    assert stages["bpo"]["blocked"] == 1
+    assert ctx["blocked_unassigned"] == 0
+    # 2001 blocked · 2002 marina · 2003 accepted · 2004 unexpected
+    assert ctx["total"] == 4
+    assert stages["tech"]["in_progress"] == 1      # 2003 Accepted
+    assert stages["mb"]["in_progress"] == 1        # 2002 In Progress
+    assert ctx["unexpected"] == 1
+
+
+def test_overview_teamless_blocker_is_reported_as_unstaged(client):
+    """No team on the blocker -> the ticket is called out, never dropped."""
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        bid = db_blockers.create_blocker(conn, "defect", "NoTeamBlocker", "S4XYZ-8")["blocker_id"]
+        db_blockers.link_blocker(conn, bid, "S4ECOM-2001")
+        ctx = web_delegated.overview_context(conn)
+    finally:
+        conn.close()
+    assert ctx["blocked_unassigned"] == 1
+    assert all(s["blocked"] == 0 for s in ctx["stages"])
+    html = client.get("/delegated/overview").get_data(as_text=True)
+    assert "could not be staged" in html
+    assert "No team assigned" in html          # blocker table group
+
+
+def test_overview_backlog_ticket_is_out_of_the_report(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2003/backlog", data={"value": "1"})
+    conn = web_delegated._get_conn()
+    try:
+        ctx = web_delegated.overview_context(conn)
+    finally:
+        conn.close()
+    assert ctx["total"] == 3
+    stages = {s["key"]: s for s in ctx["stages"]}
+    assert stages["tech"]["in_progress"] == 0
+
+
+def test_overview_download_is_a_standalone_attachment(client):
+    _upload(client)
+    resp = client.get("/delegated/overview/download")
+    assert resp.status_code == 200
+    assert 'attachment; filename="delegated_overview_' in resp.headers["Content-Disposition"]
+    html = resp.get_data(as_text=True)
+    assert "Delegated Testing Overview" in html
+    assert "TECH TEST EXECUTION" in html
+    # toolbar + scripts stripped, call-outs static
+    assert "coSave(" not in html
+    assert "Download HTML" not in html

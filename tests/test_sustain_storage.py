@@ -218,7 +218,7 @@ def test_summary_counts(tmp_path):
     try:
         db_sustain.replace_day_stream(conn, "2026-09-01", "Retail", [
             _task(7, 1, results=("OK", "N/A", "N/A", "N/A")),      # completed
-            _task(8, 2, results=("N/A", "N/A", "N/A", "N/A")),     # completed
+            _task(8, 2, results=("N/A", "N/A", "N/A", "N/A")),     # NOT due
             _task(9, 3, results=(None, "N/A", "N/A", "N/A")),      # pending
             _task(10, 4, details=[_detail(11, value=None)]),       # pending
             _task(27, 5, results=("odd diff", "N/A", "N/A", "N/A")),  # attention
@@ -227,7 +227,11 @@ def test_summary_counts(tmp_path):
                   results=("Review", None, None, None)),           # attention, not due
         ])
         counts = db_sustain.summary_counts(conn, "2026-09-01", "Retail")
-        assert counts == {"due": 5, "completed": 2, "pending": 2,
+        # Since the 2026-08-31 workbook version DUE = OK + Pending + Review:
+        # task 2 is flagged due but rolls up to Overall "N/A", so it is out
+        # of the due population entirely (it used to count as completed).
+        # Task 5 is due and attention -> neither completed nor pending.
+        assert counts == {"due": 4, "completed": 1, "pending": 2,
                           "attention": 2}
     finally:
         conn.close()

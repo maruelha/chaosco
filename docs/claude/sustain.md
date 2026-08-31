@@ -23,10 +23,21 @@ the upload matches on the **suffix** `DTC_GBS Operations_checklist.xlsx`.
 
 - One tab per stream per day: `Retail_<ISO date>` / `eCom_<ISO date>`
   (verified file: 8 tabs = Retail+eCom × 2026-09-01..04).
-- Headers row 6, data from row 7. Columns: A Task ID · B L4 Taxonomy ·
-  C Process/Task · D Cadence · E Due Today · F Country · G Provider/
-  Partner/Financial Account · H–K France/Italy/Portugal/Spain Result ·
-  L Task Overall (formula, "DO NOT EDIT").
+- **The header row moved [2026-08-31].** The September file dropped the
+  "Duplicate this sheet…" instruction line, so headers are on row **5**
+  and data starts at row **6** (was 6/7). The importer therefore
+  **locates** the header row (column A == "Task ID", scanning rows 1–12)
+  instead of hardcoding it — both layouts import, and a genuine structure
+  drift is still loud (`ParseError`).
+- Columns: A Task ID · B L4 Taxonomy · C Process/Task · D Cadence ·
+  E Due Today · F Country · G Provider/Partner/Financial Account ·
+  H–K France/Italy/Portugal/Spain Result · L Task Overall (formula,
+  "DO NOT EDIT") · **M Comments/Observations [new 2026-08-31]**.
+- **Column M** is free text ("Enter optional free-text comments in column
+  M", row 4). It is imported into `comments` on both tables and shown, but
+  it is **informational only — never part of a status**: the workbook's own
+  Task Overall ignores M, so we do too. It is located by header name
+  (substring "comment"), so older files without it simply import `NULL`.
 - **Parent tasks** carry a Task ID at outline level 0. **Detail rows**
   ("↳ Detail check", one per country × provider/account/store) sit at
   outline level 1, collapsed in Excel; openpyxl exposes
@@ -35,10 +46,11 @@ the upload matches on the **suffix** `DTC_GBS Operations_checklist.xlsx`.
   `Review`, or **free text** — the team writes short issue notes directly
   into the cell (how-to in row 5). Free text is the discussion-point
   signal.
-- Row 4 holds DUE/COMPLETED/PENDING/REVIEW `COUNTIFS` summaries; L4 is a
+- The summary row (row 4 before, **row 3** now) holds the
+  DUE/COMPLETED/PENDING/REVIEW `COUNTIFS` summaries; its last cell is a
   save-check ("Save file to check"). Cached formula values are only right
-  after a save → **never trust row 4 or the rollup cells; recompute in
-  Python** (see below).
+  after a save → **never trust the summary row or the rollup cells;
+  recompute in Python** (see below).
 
 ### The workbook's own rollup logic (decoded from the formulas)
 
@@ -51,16 +63,29 @@ the upload matches on the **suffix** `DTC_GBS Operations_checklist.xlsx`.
   `Pending`, else `OK`. Otherwise (due): any `Review` → `Review`, any
   `Pending` → `Pending`, any `OK` → `OK`, all four `N/A` → `N/A`, else
   `Pending` (this fallback is what makes blank-but-due = Pending).
-- Row 4: DUE = parents with E=Yes; COMPLETED = due parents with L in
-  {OK, **N/A**}; PENDING = due parents with L=Pending; REVIEW = **all**
-  parents with L=Review (not only due ones).
+- Summary row — **the definitions changed with the 2026-08-31 file**, and
+  `summary_counts` follows them [USER 2026-08-31]:
+
+  | | old file (row 4) | new file (row 3) |
+  |---|---|---|
+  | DUE | parents with E=Yes | `SUM(COMPLETED:REVIEW)` — i.e. due parents with L in {OK, Pending, Review}; **a due parent whose L is N/A drops out of the due population** |
+  | COMPLETED | due parents with L in {OK, **N/A**} | due parents with L=**OK only** |
+  | PENDING | due parents with L=Pending | unchanged |
+  | REVIEW | **all** parents with L=Review | **due** parents with L=Review |
+
+  Verified: the new `summary_counts` reproduces the new file's cached
+  DUE/COMPLETED/PENDING on all 8 tabs exactly. Consequence to expect: a
+  day imported from an *older* file now shows slightly lower due/completed
+  than that old workbook's own row 4 — the new definitions are applied to
+  all history, which is the point (one consistent trend line).
 - `COUNTIF` matches case-insensitively → every comparison in our Python
   mirror does too (`casefold`).
 
 ## Storage — `app/db/sustain.py`
 
 `sustain_tasks` / `sustain_task_details` (1:n via `task_pk`, technical
-PKs, portable SQL). Each upload calls `replace_day_stream` per tab, so
+PKs, portable SQL; both gained `comments` on 2026-08-31 via the additive
+`_MIGRATIONS` ALTERs in `init_schema`). Each upload calls `replace_day_stream` per tab, so
 consecutive files with different date windows **accumulate history**;
 re-uploading a tab replaces it. Import tables only — never user-authored
 data. Registered in the `database.py` facade; `init_schema` called from
@@ -80,9 +105,16 @@ Classification (pure functions, tested in
   parent fall through to OK if another country is OK — an issue note must
   never hide behind an OK elsewhere in the row.)
 - `summary_counts(conn, day, stream)` → recomputed
-  due/completed/pending/attention. completed+pending partition the due
-  tasks that need no attention; attention counts over ALL parents (like
-  Excel's REVIEW — an on-occurrence issue must surface too).
+  due/completed/pending/attention, per the **new** definitions above:
+  DUE = due parents whose recomputed Overall is OK/Pending/Review,
+  COMPLETED = Overall OK, PENDING = Overall Pending. The deviation stands:
+  a task classified `attention` counts in neither completed nor pending,
+  and attention still counts over ALL parents — an on-occurrence issue
+  must surface too, even though the workbook now restricts its REVIEW
+  count to due tasks [USER 2026-08-31].
+- `comment_items(conn, day, stream)` → every non-blank column-M entry of
+  a tab (parents and details), for the summary's comments table. Comments
+  never influence a status or a count.
 - `list_tabs` (day picker), `list_tasks` (workbook order, details
   attached), `task_count` (dashboard badge).
 
@@ -91,8 +123,12 @@ Classification (pure functions, tested in
 `parse_sustain_workbook` loads with `data_only=True` (cached cell values;
 aggregations are recomputed in storage, never imported). Tab pattern
 `(Retail|eCom)_<ISO date>` (case-insensitive) → (stream, day); other tabs
-ignored; a matching tab whose row-6 column A isn't "Task ID" raises
-`ParseError` (structure drift must be loud). Parent = row with Task ID;
+ignored. `_find_header_row` scans rows 1–12 for column A == "Task ID"
+(row 6 in the old files, row 5 since 2026-08-31) and raises `ParseError`
+if it finds none — structure drift must still be loud.
+`_find_comments_column` locates column M by header name past column L, so
+the Comments/Observations text is imported when present and `None` when
+not. Parent = row with Task ID;
 detail = outline level ≥ 1 under the last parent; level-0 rows without a
 Task ID are dropped. Task IDs arrive as text OR numbers → normalised to
 text. `run_sustain_import` replaces each contained tab
@@ -101,6 +137,11 @@ text. `run_sustain_import` replaces each contained tab
 Verified 2026-08-28 against the real `1_0109_0409` file: 8 tabs,
 236 tasks, 2,720 details; recomputed due/completed/pending matched the
 Excel's cached row 4 on all 8 tabs exactly.
+
+Re-verified 2026-08-31 against the **new version of the same file**
+(header row 5, column M): same 8 tabs / 236 tasks / 2,720 details, and
+the recomputed due/completed/pending match its cached **row 3** on all 8
+tabs exactly. The previous file still imports unchanged.
 
 ## Web — `app/web_sustain.py` (Blueprint `/sustain/`)
 
@@ -123,7 +164,9 @@ accordion, Marina asked for "the structure of the excel". Every shown
 status is recomputed in the web layer via the storage classification
 (`derive_cells`/`derive_overall`/`task_status`); result cells render as
 pills — OK green, Pending amber, Review + **free-text issue notes red
-(verbatim text)**, N/A / Not due gray, blank —. Stat cards =
+(verbatim text)**, N/A / Not due gray, blank —. A last column
+**Comments / Observations** shows column M as plain grey text (parents and
+detail rows), visibly separate from the status pills. Stat cards =
 `summary_counts` (due/completed/pending/attention). Header: back link,
 ⇄ toggle to the other stream of the same day, day-link row per stream.
 
@@ -137,7 +180,10 @@ row to switch. Per stream a `ui.section` (Retail blue, eCom teal, badge
 a red pill (`attention_items`: free-text cells + literal `Review` marks;
 for tasks with details only DUE detail rows are scanned — a note on a
 not-due row isn't today's business; simple parents use their literal
-cells). Then **Day-over-day trend** (`overview`: every tab, completion %
+cells). Underneath, a **Comments / observations** table per stream lists
+every column-M entry of the day (`comment_items`) — deliberately its own
+table below the attention list, because a comment is an observation, not
+an issue, and must not inflate the attention count. Then **Day-over-day trend** (`overview`: every tab, completion %
 = completed/due, rows link to the day reports) and **Repeat offenders**
 (`repeat_offenders`: same stream+task+country+provider in attention on
 2+ days → sorted days + deduped verbatim notes; sorted by day-count
@@ -160,3 +206,17 @@ deviation and the summary v1 layout).
 ## Related
 
 `[[sustain-issues]]` · `[[smoke]]` · `[[report-blocks]]`
+
+## Change log
+
+- **2026-08-31 — new workbook version** (`1_0109_0409-O2C DTC_GBS
+  Operations_checklist (1).xlsx`). Three changes, all handled:
+  1. Header row 6 → 5 (the instruction line was dropped). Would have
+     broken the import outright; the header row is now located, and both
+     layouts import.
+  2. New free-text column M "Comments/Observations" → imported into
+     `comments` on both tables, shown in the day report (own column) and
+     the management summary (own table); informational only.
+  3. The workbook's own summary definitions changed (DUE excludes N/A,
+     COMPLETED = OK only, REVIEW restricted to due) → `summary_counts`
+     follows [USER], so the app's stat cards match the Excel again.

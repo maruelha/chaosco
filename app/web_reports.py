@@ -22,7 +22,7 @@ def report_comment_add(report: str):
     # delegated report's "+ Add call-out" silently 400ed (found 2026-08-27
     # while adding the Management Summary call-outs).
     if report not in ("spillover", "retail", "ecom", "sales",
-                      "delegated", "delegated_numbers"):
+                      "delegated", "delegated_numbers", "delegated_overview"):
         return jsonify({"ok": False}), 400
     comment = request.form.get("comment", "").strip()
     conn = _get_conn()

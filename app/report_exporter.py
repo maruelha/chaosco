@@ -97,7 +97,8 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
     # --------------------------------------------------------------- Delegated
     # Same clean renders as the ⬇ Download HTML buttons on the two pages
     # (download=True: toolbar/filter/scripts stripped, call-outs static).
-    from app.web_delegated import numbers_context, report_context
+    from app.web_delegated import (numbers_context, overview_context,
+                                   report_context)
 
     delegated_html_path = folder / f"delegated_report_{today}.html"
     delegated_html_path.write_text(
@@ -112,5 +113,12 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
                         download=True),
         encoding="utf-8")
     saved.append(delegated_numbers_path)
+
+    delegated_overview_path = folder / f"delegated_overview_{today}.html"
+    delegated_overview_path.write_text(
+        render_template("delegated_overview.html", **overview_context(conn),
+                        download=True),
+        encoding="utf-8")
+    saved.append(delegated_overview_path)
 
     return saved
