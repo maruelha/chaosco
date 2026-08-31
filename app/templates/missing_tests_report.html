@@ -95,8 +95,8 @@
   Requirements, scenarios or categories with <strong>no test case in the Retail
   module at all</strong> — they cannot be executed, and cannot turn green,
   until a test case exists. <strong>Retail only</strong>: ECOM is not covered by
-  this list. Each entry may need <strong>one or several</strong> test cases —
-  how many is not defined yet, so this report deliberately shows no total. The retrofits below are the coming system changes
+  this list. Each one may need one or several test cases — how many is not
+  defined yet, which is why this report shows no counts. The retrofits below are the coming system changes
   for Retail; each one is either <strong>confirmed</strong> or
   <strong>not confirmed yet</strong>, and may bring further test cases with it.
 </p>
@@ -104,7 +104,6 @@
 <div class="rpt-section">
   <div class="rpt-section-head">
     <span class="rpt-section-title">Missing test cases</span>
-    <span class="rpt-section-count">{{ items | length }} entr{{ 'y' if items | length == 1 else 'ies' }}</span>
   </div>
   <div class="rpt-section-body">
     {% if items %}
