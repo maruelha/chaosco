@@ -29,6 +29,10 @@ through the app are made standalone by `emailer.standalone_html` (CSS inlined,
 scripts stripped, sections opened); the routes that already return clean
 standalone HTML are attached as-is.
 
+The Retail attachment is rendered by `emailer.render_retail_html`, which the
+Export Reports snapshot uses too — one renderer, so what you see on the page is
+what the recipient gets (`tests/test_retail_report_copies.py`).
+
 `?reports=<key>` on the page URL pre-ticks just one report — that is what a
 page's own "✉ Send via email" button links to.
 

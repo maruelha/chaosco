@@ -153,6 +153,18 @@ def list_retrofits(conn: sqlite3.Connection,
     return _add_topic_titles(conn, _rows_to_dicts(conn.execute(sql, params)))
 
 
+def list_for_report(conn: sqlite3.Connection,
+                    channel: str | None = None) -> list[dict]:
+    """What the status reports render. Same rows as list_retrofits, but a DB
+    without the table simply means "no retrofits" instead of an exception —
+    a Retail report must not fail because this module was not initialised
+    (partial-init DBs, test fixtures) [2026-08-31]."""
+    try:
+        return list_retrofits(conn, channel=channel)
+    except sqlite3.OperationalError:
+        return []
+
+
 def get_retrofit(conn: sqlite3.Connection, retrofit_id: int) -> dict | None:
     rows = _add_topic_titles(conn, _rows_to_dicts(conn.execute(
         "SELECT * FROM retrofits WHERE id = ?", (retrofit_id,))))

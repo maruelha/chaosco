@@ -13,9 +13,14 @@ backup of the database + the uploaded files to an external drive.
 
 ## Architecture
 
-- **Export Reports** — dated HTML + PowerPoint snapshots of Retail and
-  Spillover, HTML for the Delegated report and Management Summary, into
-  `report_export/`.
+- **Export Reports** — six files into `report_export/`:
+  `retail_report_<date>.html/.pptx`, `spillover_report_<date>.html/.pptx`,
+  `delegated_report_<date>.html`, `delegated_numbers_<date>.html`. Must run
+  inside a REQUEST context (the spillover template calls `url_for`), which the
+  route provides. The Retail HTML goes through `emailer.render_retail_html` —
+  the same renderer as the email attachment and the page's download button
+  [2026-08-31], after the snapshot had drifted (no defect table, no retrofits,
+  and no missing-test-cases block).
 - **DB backup** [USER 2026-07-18] — one click copies the SQLite DB to
   `backup_folder` (machine-specific, `settings.local.yaml`, e.g. the external
   drive) AND mirrors `data/uploads` incrementally to `<backup_folder>/uploads`.

@@ -13,6 +13,8 @@ from pathlib import Path
 from flask import render_template
 
 from app import database
+from app.db import missing_tests as db_missing
+from app.emailer import render_retail_html
 from app.ppt_retail import build_retail_ppt
 from app.ppt_spillover import build_spillover_ppt
 from app.reporter import (compute_impacted_totals, compute_retail_report,
@@ -35,22 +37,18 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
     status_counts   = database.get_retail_status_counts(conn)
     mappings        = load_status_mappings()
     report          = compute_retail_report(status_counts, mappings)
-    report_comments = database.list_report_comments(conn, "retail")
     impacted_defects = database.get_retail_defects_impacted(
         conn, reporter_passed_family(mappings))
     totals = compute_impacted_totals(impacted_defects)
 
-    retail_ctx = dict(
-        report=report,
-        today=today,
-        report_comments=report_comments,
-        total_test_cases=cfg.get("retail_total_test_cases", 646),
-        missing_categories=cfg.get("retail_missing_categories", []),
-    )
+    # ONE renderer for the Retail HTML [2026-08-31]: emailer.render_retail_html
+    # is what the email attachment uses and mirrors GET /retail/report/download.
+    # This used to build its own context and had drifted — the snapshot showed
+    # "No active Retail defects found" and no retrofit section, and after the
+    # 2026-08-30 change it also lost the "Missing test cases" block.
     retail_html_path = folder / f"retail_report_{today}.html"
-    retail_html_path.write_text(
-        render_template("retail_report_download.html", **retail_ctx),
-        encoding="utf-8")
+    retail_html_path.write_text(render_retail_html(conn, cfg, today),
+                                encoding="utf-8")
     saved.append(retail_html_path)
 
     retail_pptx_path = folder / f"retail_report_{today}.pptx"
@@ -62,7 +60,7 @@ def export_all_reports(conn: sqlite3.Connection, cfg: dict) -> list[Path]:
         impacted_total=totals["total"],
         total_test_cases=cfg.get("retail_total_test_cases", 646),
         today=today,
-        missing_categories=cfg.get("retail_missing_categories", []),
+        missing_categories=[m["title"] for m in db_missing.list_for_report(conn)],
     ))
     saved.append(retail_pptx_path)
 

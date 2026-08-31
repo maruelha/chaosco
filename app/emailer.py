@@ -112,6 +112,7 @@ def render_retail_html(conn: sqlite3.Connection, cfg: dict, today: str) -> str:
     Retail report claimed "No active Retail defects found" while the live page
     listed them [fixed 2026-08-10]. Keep this in sync with
     web_retail.retail_report_download."""
+    from app.db import missing_tests as db_missing
     from app.db import retrofits as db_retrofits
     from app.reporter import compute_impacted_totals, passed_family
     mappings = load_status_mappings()
@@ -127,9 +128,13 @@ def render_retail_html(conn: sqlite3.Connection, cfg: dict, today: str) -> str:
         mb_total=totals["mb"],
         sales_total=totals["sales"],
         report_comments=database.list_report_comments(conn, "retail"),
-        retrofits=db_retrofits.list_retrofits(conn, channel="Retail"),
+        retrofits=db_retrofits.list_for_report(conn, channel="Retail"),
         total_test_cases=cfg.get("retail_total_test_cases", 646),
-        missing_categories=cfg.get("retail_missing_categories", []))
+        # The list moved out of settings.yaml into the Missing Test Cases
+        # module [USER 2026-08-30]; passing the retired config key left the
+        # whole "Missing test cases" block OUT of every emailed Retail report
+        # [found + fixed 2026-08-31].
+        missing_tests=db_missing.list_for_report(conn))
 
 
 def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
@@ -212,10 +217,15 @@ def send_message(settings: dict, msg: EmailMessage) -> None:
 
 
 def default_texts(day: str | None = None, reports: list[str] | None = None) -> dict:
+    """Subject + body for the email page. `reports=None` means "not asked"
+    (list everything); an EMPTY list means nothing is ticked and the body must
+    say so — since 2026-08-31 the page opens with no report ticked, so `or`
+    would have listed all of them again [USER]."""
     day = day or date.today().isoformat()
-    picked = reports or [k for k, _ in REPORT_CHOICES]
+    picked = [k for k, _ in REPORT_CHOICES] if reports is None else list(reports)
     labels = dict(REPORT_CHOICES)
-    report_list = "\n".join(f"  - {labels[k]}" for k in picked if k in labels)
+    report_list = ("\n".join(f"  - {labels[k]}" for k in picked if k in labels)
+                   or "  (no report selected yet)")
     return {
         "date": day,
         "subject": DEFAULT_SUBJECT.format(date=day),

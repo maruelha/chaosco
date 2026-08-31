@@ -51,6 +51,13 @@ action-needed flag. It is the source for the Retail Status Report and for
 
 ## Outputs
 
+**One renderer for all three copies** [2026-08-31]: `emailer.render_retail_html`
+produces the page download, the email attachment AND the dated export snapshot.
+They drifted twice before that (the emailed copy lost the impacted defects in
+August, and both the emailed and exported copies silently lost the "Missing
+test cases" block when that list moved into its own module) — pinned by
+`tests/test_retail_report_copies.py`.
+
 Report page · Copy-TSV · standalone HTML download · PowerPoint
 (`app/ppt_retail.py`) · Save to Excel (`output/retail_report_log.xlsx`) ·
 email attachment · dated snapshots via Export Reports · history snapshot in
