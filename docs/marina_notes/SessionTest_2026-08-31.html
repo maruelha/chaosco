@@ -44,9 +44,8 @@ formulas changed. Ticks are remembered by this browser. Links assume the app run
 
 <div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
 both sustain tables get a new <code>comments</code> column on startup (additive, safe to
-re-run). You need <strong>both</strong> checklist files in Downloads to test properly:
-the new <code>…DTC_GBS Operations_checklist (1).xlsx</code> and the older
-<code>…DTC_GBS Operations_checklist.xlsx</code>.
+re-run). You need the new checklist file in Downloads:
+<code>…DTC_GBS Operations_checklist (1).xlsx</code>.
 <br><br>Open points for you to sign off are in
 <a href="MarinaCheckSoon.html">MarinaCheckSoon</a> → section <em>Added 2026-08-31</em>
 (4 items) — section 6 below mirrors them.
@@ -66,16 +65,12 @@ Nothing is missing; just don't be confused when you look at the history.</div>
       <span class="where">→ /sustain/</span>
       <span class="expect">Green banner "…8 day tabs · 236 tasks · 2720 detail rows
       imported". <strong>Before today this file would have failed</strong> — its headers
-      sit on row 5 instead of 6, and the importer used to insist on row 6.</span></span></label>
+      sit on row 5 instead of 6, and the importer used to insist on row 6. (That the
+      older layout still imports too is covered by the test suite, so it is not a
+      click-through step.)</span></span></label>
     <label class="task"><input type="checkbox" data-k="s1b">
       <span>"Imported days" table + dashboard badge.
       <span class="expect">4 days × Retail (33 tasks) + eCom (26 tasks); badge 236.</span></span></label>
-    <label class="task"><input type="checkbox" data-k="s1c">
-      <span><strong>Backward compatibility:</strong> now upload the <strong>older</strong>
-      file <code>…DTC_GBS Operations_checklist.xlsx</code> (headers on row 6, no column M).
-      <span class="expect">Also imports cleanly — 8 tabs · 236 tasks · 2720 details.
-      The header row is now <em>looked for</em>, not assumed, so both versions work.
-      Afterwards re-upload the NEW file for the rest of this checklist.</span></span></label>
     <label class="task"><input type="checkbox" data-k="s1d">
       <span>Try a wrong file (e.g. the UAT tracking Excel).
       <span class="expect">Red banner "That doesn't look like the GBS Operations
