@@ -8,7 +8,7 @@ Sources consolidated here: `docs/archive/project_review_2026-07-04.md` (cleanup 
 `retail-tracker-handoff.md` (tracker spec + decisions), `docs/tech_backlog.md`.
 When an item here is done: mark it done here AND update the source doc.
 
-Last updated: 2026-08-30
+Last updated: 2026-08-31
 
 > Day plan for 2026-07-05: `docs/archive/build_plan_2026-07-05.md`
 
@@ -48,6 +48,29 @@ Last updated: 2026-08-30
 ---
 
 ## Part 1 — Feature work by module
+
+### Email Reports (`/email-report/`) — IN PROGRESS 2026-08-31
+
+Four changes requested [USER 2026-08-31]:
+
+1. ~~Report checkboxes all pre-ticked~~ → open with NOTHING ticked, plus
+   All / None buttons. **Storage/route part pending.**
+2. **Groups** = a whole saved send: recipients + reports + own subject/text.
+   ✅ storage done (`email_list_reports` table, `email_lists.subject/body`,
+   `save_email_list` extended, `list_email_lists` returns everything a click
+   must apply). UI pending.
+3. **"↻ Regenerate text"** so the report list in the mail matches the ticks;
+   auto-follows while the text has not been hand-edited. ✅ `default_texts`
+   now distinguishes "not asked" (list everything) from "nothing ticked".
+   Route + button pending.
+4. **Adding a recipient must not wipe** the typed text or the ticked reports —
+   the buttons on that page are form POSTs that redirect. Planned: answer them
+   as JSON when called with `fetch` (no reload), keep the redirect as the
+   no-JavaScript fallback. Pending.
+
+Done the same day: the Retail report's three copies (page download, email
+attachment, export snapshot) now go through ONE renderer — see
+`docs/claude/retail.md`; and the Missing Test Cases report shows no counts.
 
 ### Missing Test Cases (`/missing-tests/`) — ✅ BUILT 2026-08-30
 

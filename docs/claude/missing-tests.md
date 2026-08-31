@@ -54,11 +54,13 @@ drops that table.)
 
 ## Outputs
 
-**No total on the report** [USER 2026-08-31]: an entry can need one or several
-test cases and how many is not defined, so the report header carries no number
-— the section badge says "N entries", and the intro says so in words. The
-working page and the dashboard badge still count entries; only the report,
-which goes to other people, avoids the claim.
+**No numbers on the report** [USER 2026-08-31]: an entry can need one or
+several test cases and how many is not defined, so the report shows NO count —
+neither in the header nor on the section, which keeps its plain name "Missing
+test cases". The intro says why once. The retrofit section's own count stays
+(it counts retrofits, not test cases). The working page and the dashboard badge
+still count entries; only the report, which goes to other people, avoids the
+claim.
 
 - **HTML report** `/missing-tests/report` (own inline CSS, toolbar) and
   `/missing-tests/report/download` (dated standalone snapshot,

@@ -340,6 +340,7 @@
     <li><a href="#known_prod_defects">known_prod_defects</a></li>
     <li><a href="#prod_defect_review_comments">prod_defect_review_comments</a></li>
     <li><a href="#retrofits">retrofits</a></li>
+    <li><a href="#email_list_reports">email_list_reports</a></li>
     <li><a href="#missing_test_cases">missing_test_cases</a></li>
     <li><a href="#missing_test_meta">missing_test_meta</a></li>
     <li><a href="#encouragement_people">encouragement_people</a></li>
@@ -1434,6 +1435,25 @@
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- email_list_reports -->
+  <div class="table-card" id="email_list_reports">
+    <div class="table-card-header">
+      <span class="tname">email_list_reports</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Which reports a GROUP always gets [USER 2026-08-31]. A group (<code>email_lists</code>) grew from "a named set of recipients" into a whole saved send: recipients + reports + its own subject/text, so a management group and the key users can get different packs and different wording with one click. Storage <code>app/db/email.py</code>, page <code>/email-report/</code>.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">list_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">FK <code>email_lists(id)</code> by convention; deleting a group deletes its rows</td></tr>
+        <tr><td class="col-name">report_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">A key from <code>emailer.REPORT_CHOICES</code> (retail, board, delegated, missing_tests …)</td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>UNIQUE</strong>(list_id, report_key). <code>save_email_list</code> replaces a group's rows only when report keys are PASSED — saving a recipient-only change never silently drops the report set. Also on <code>email_lists</code> since 2026-08-31: nullable <code>subject</code> / <code>body</code> for the group's own wording (additive ALTER, guarded).</div>
   </div>
 
   <!-- missing_test_cases -->
