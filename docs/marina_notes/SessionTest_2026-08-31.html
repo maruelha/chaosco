@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-08-31</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+  table.nums { border-collapse:collapse; font-size:0.84rem; margin:0.5rem 0 0.2rem; }
+  table.nums th, table.nums td { border:1px solid #e2e2ea; padding:2px 8px; text-align:right; }
+  table.nums th:first-child, table.nums td:first-child { text-align:left; }
+  table.nums th { background:#f6f6fa; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-08-31</h1>
+<p class="hint"><strong>Core South Sustainphase Monitoring — new version of the checklist
+workbook.</strong> Three changes in the file, all handled: the header row moved (would have
+broken the import outright), a new free-text column M, and the workbook's own summary
+formulas changed. Ticks are remembered by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
+both sustain tables get a new <code>comments</code> column on startup (additive, safe to
+re-run). You need <strong>both</strong> checklist files in Downloads to test properly:
+the new <code>…DTC_GBS Operations_checklist (1).xlsx</code> and the older
+<code>…DTC_GBS Operations_checklist.xlsx</code>.
+<br><br>Open points for you to sign off are in
+<a href="MarinaCheckSoon.html">MarinaCheckSoon</a> → section <em>Added 2026-08-31</em>
+(4 items) — section 6 below mirrors them.
+<br><br><em>Note on git:</em> these changes are already committed and pushed, but a
+parallel session swept them into commit <code>5a289d5</code> ("Delegated Testing
+Overview — the management report"), so the commit message does not mention sustain.
+Nothing is missing; just don't be confused when you look at the history.</div>
+
+<!-- 1 -->
+<div class="box b-red">
+  <div class="box-head">1 · The import fix — the one that mattered</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Dashboard → <strong>Core South Sustainphase Monitoring</strong> → Open →
+      pick the <strong>new</strong> file <code>…DTC_GBS Operations_checklist (1).xlsx</code>
+      → ⤒ Upload &amp; import.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">Green banner "…8 day tabs · 236 tasks · 2720 detail rows
+      imported". <strong>Before today this file would have failed</strong> — its headers
+      sit on row 5 instead of 6, and the importer used to insist on row 6.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>"Imported days" table + dashboard badge.
+      <span class="expect">4 days × Retail (33 tasks) + eCom (26 tasks); badge 236.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span><strong>Backward compatibility:</strong> now upload the <strong>older</strong>
+      file <code>…DTC_GBS Operations_checklist.xlsx</code> (headers on row 6, no column M).
+      <span class="expect">Also imports cleanly — 8 tabs · 236 tasks · 2720 details.
+      The header row is now <em>looked for</em>, not assumed, so both versions work.
+      Afterwards re-upload the NEW file for the rest of this checklist.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1d">
+      <span>Try a wrong file (e.g. the UAT tracking Excel).
+      <span class="expect">Red banner "That doesn't look like the GBS Operations
+      checklist…" — nothing imported. A file with day tabs but a genuinely broken
+      structure still fails loudly rather than importing nonsense.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-amber">
+  <div class="box-head">2 · The numbers changed — on purpose</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.4rem">The new workbook changed its <em>own</em> summary
+    formulas and you asked me to follow them: <strong>DUE</strong> = OK + Pending + Review
+    (a due task that rolls up to <em>N/A</em> is no longer counted as due at all), and
+    <strong>COMPLETED</strong> = <em>OK</em> only (N/A no longer counts as completed).</p>
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>Open each day report and compare the stat cards against row 3 of the same tab
+      in Excel (the summary row moved from row 4 to row 3).
+      <span class="expect">They must match exactly. Verified values for the new file:</span>
+      <table class="nums">
+        <tr><th>Tab</th><th>Due</th><th>Completed</th><th>Pending</th><th>Attention</th></tr>
+        <tr><td>Retail 09-01</td><td>15</td><td>0</td><td>15</td><td>0</td></tr>
+        <tr><td>eCom 09-01</td><td>13</td><td>0</td><td>13</td><td>0</td></tr>
+        <tr><td>Retail 09-02</td><td>28</td><td>0</td><td>28</td><td>0</td></tr>
+        <tr><td>eCom 09-02</td><td>20</td><td>0</td><td>20</td><td>0</td></tr>
+        <tr><td>Retail 09-03</td><td>15</td><td>0</td><td>15</td><td>0</td></tr>
+        <tr><td>eCom 09-03</td><td>13</td><td>0</td><td>13</td><td>0</td></tr>
+        <tr><td>Retail 09-04</td><td>20</td><td>0</td><td>20</td><td>0</td></tr>
+        <tr><td>eCom 09-04</td><td>17</td><td>0</td><td>17</td><td>0</td></tr>
+      </table></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span><strong>The side effect to be aware of:</strong> days imported from the
+      <em>older</em> file are shown with the new definitions too.
+      <span class="expect">Deliberate — the day-over-day trend stays one consistent line.
+      But those numbers are 1–3 tasks lower than that old workbook's own row 4 (e.g.
+      Retail 09-01 shows 15 due / 0 completed where the old Excel said 16 / 1). If you'd
+      rather keep old days on the old rules, say so.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Check the <strong>attention</strong> card is unaffected by the change.
+      <span class="expect">Still counts over ALL parent tasks, not only the due ones, so
+      an "on occurrence" issue can't disappear — even though the workbook now restricts
+      its own REVIEW count to due tasks. This is our deliberate deviation.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-teal">
+  <div class="box-head">3 · New column M "Comments/Observations"</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open any day report.
+      <span class="where">→ /sustain/day/2026-09-02/Retail</span>
+      <span class="expect">A new last column <strong>Comments / Observations</strong> after
+      Overall. Empty for now — the team hasn't filled anything into column M yet in the
+      file you gave me.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Management summary → per stream.
+      <span class="where">→ /sustain/summary</span>
+      <span class="expect">No "Comments / observations" table yet — it only appears when
+      there is something to show, so the page stays clean.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span><strong>The real test:</strong> in a COPY of the new file, type a comment into
+      column M on a couple of rows (e.g. <code>cut-off moved to 16:00</code>) — one on a
+      parent task row, one on a ↳ detail row — then re-upload.
+      <span class="expect">Day report: the text shows in the last column, in grey, on
+      both the parent and the (expanded) detail row. Summary: a <em>Comments /
+      observations</em> table appears under that stream, below the attention
+      list.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3d">
+      <span><strong>Confirm a comment does NOT change anything:</strong> same upload,
+      look at the stat cards and the attention list.
+      <span class="expect">Counts unchanged; the task does NOT turn red; the comment does
+      NOT appear in the Attention list / discussion agenda. That is my judgment call —
+      the workbook's own "Task Overall" ignores column M as well. See section 6.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-blue">
+  <div class="box-head">4 · Everything that was already there still works</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Click a task row with a ▸ arrow.
+      <span class="expect">Its ↳ country/provider detail rows fold out, like the +/-
+      outline in Excel; click again to collapse. The new Comments column lines up on both
+      parent and detail rows.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Day-link row + the ⇄ button.
+      <span class="expect">Same-stream day switch; ⇄ jumps to the other stream of the same
+      day.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Summary → day-over-day trend + repeat offenders.
+      <span class="expect">8 rows linking to the day reports, completion % per row
+      (0&nbsp;% everywhere — the file is untouched). Repeat offenders empty.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4d">
+      <span><strong>Issue notes still work as before:</strong> in a copy, type a short
+      issue note (e.g. <code>diff 12,50 EUR</code>) into a <em>result</em> cell (H–K, not
+      column M) on two different days, and <code>OK</code> into a few due cells, then
+      re-upload.
+      <span class="expect">Completed counts rise; the note appears as a red pill with the
+      verbatim text in the day report AND in that day's Attention list; on 2+ days for the
+      same task it also shows under Repeat offenders with day chips.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4e">
+      <span>Re-upload the untouched new file afterwards.
+      <span class="expect">Tabs are replaced — counts back to the table in section 2, no
+      duplicates.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-slate">
+  <div class="box-head">5 · Nothing else broke</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Sustainphase <strong>Issues</strong> card (the other sustain app) — open it.
+      <span class="where">→ /sustain-issues/</span>
+      <span class="expect">Untouched by today's work; list and filters as before.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Dashboard overall + a couple of other cards (Smoke, Delegated).
+      <span class="expect">Nothing shifted. Full test suite is green: 783 passing.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-purple">
+  <div class="box-head">6 · Sign off (or tell me to change it)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span><strong>Comments are informational only</strong> — a column-M comment never
+      turns a task red and never lands in the attention list / discussion agenda. If the
+      team starts writing real problems in there instead of into the result cells, tell me
+      and I'll fold column M into the attention list.</span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span><strong>Comments got their own table in the summary</strong>, below the
+      attention list, rather than being mixed into it. Right place for you?</span></label>
+    <label class="task"><input type="checkbox" data-k="s6c">
+      <span><strong>Old days are recounted with the new rules.</strong> One consistent
+      trend line, but historic numbers shift slightly. Keep it?</span></label>
+    <label class="task"><input type="checkbox" data-k="s6d">
+      <span><strong>Attention still counts over all parents</strong>, not only due ones,
+      unlike the workbook's new REVIEW count. Keep our rule, or follow the workbook here
+      too?</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0831-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>
