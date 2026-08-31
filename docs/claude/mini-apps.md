@@ -71,7 +71,7 @@ a dangling `[[link]]` fails the test suite.
 | Teams Chats & channels | `/teams-chats/` | `db/teams_chats.py` → `teams_chats`, `teams_chat_refs` | `teams-chats.md` |
 | Message Types | `/message-types` | `db/message_types.py` → `message_types` | `message-types.md` |
 | Enhancements (chaosco itself) | `/enhancements/page` | `db/core.py` → `enhancements` | `enhancements.md` |
-| Email Reports | `/email-report/` | `db/email.py` → `report_recipients`, `email_lists`, `email_list_members` | `email-reports.md` |
+| Email Reports | `/email-report/` | `db/email.py` → `report_recipients`, `email_lists`, `email_list_members`, `email_list_reports` | `email-reports.md` |
 | Export & Backup | `POST /export-reports`, `POST /backup` | none (files on disk) | `export-backup.md` |
 
 ## Components (`docs/claude/components/`)

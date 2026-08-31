@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-01</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-01</h1>
+<p class="hint"><strong>Email Reports — the four changes you asked for.</strong> The
+important part: until this session only the <em>storage</em> for them existed, which is
+why nothing had changed on screen. Now the page itself is wired up. Ticks are remembered
+by this browser. Links assume the app runs at
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
+the groups feature needs the <code>email_list_reports</code> table and the two new
+<code>email_lists</code> columns, created on startup (additive, safe to re-run). Then
+hard-reload the email page once (<code>Ctrl</code>+<code>F5</code>) so the new page
+script is loaded and not the cached old one.
+<br><br><em>Git:</em> everything below is committed and pushed as <code>547c5ad</code> —
+nothing is waiting on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · The page opens with NOTHING ticked</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Dashboard → Export card → <strong>Email Reports</strong>. Look at
+      <em>Reports to attach</em>.
+      <span class="where">→ /email-report/</span>
+      <span class="expect"><strong>All 13 boxes empty</strong> (before: all 13 ticked, so
+      a two-report mail meant unticking eleven). The grey hint next to the buttons reads
+      "nothing selected yet".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Tick two or three reports and watch the hint next to <em>Quick select</em>.
+      <span class="expect">It counts live: "3 of 13 selected".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span>Press <strong>All</strong>, then <strong>None</strong>.
+      <span class="expect">All 13 on, then all 13 off — the fast way to "everything
+      except one".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1d">
+      <span>The per-page shortcut still pre-ticks exactly one: open Known Production
+      Issues → <strong>✉ Send via email</strong> (or go to
+      <code>/email-report/?reports=retail</code> directly).
+      <span class="expect">Exactly that ONE report ticked, "1 of 13 selected" — the
+      shortcut buttons did not lose their meaning.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · The text in the mail follows the ticks</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.4rem">The body lists the reports you are actually sending. It
+    rebuilds itself <em>as long as you have not typed in it</em> — the moment you edit by
+    hand the app stops overwriting your words, and the ↻ button is there for when you want
+    the generated version back.</p>
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>With nothing ticked, read the <em>Text</em> field.
+      <span class="expect">The report list says "(no report selected yet)" — it no longer
+      claims you are sending all thirteen.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Tick <em>Spillover</em> and <em>Retail Status Report</em>, then look at the
+      text again — without pressing anything.
+      <span class="expect">The list in the body updated by itself to exactly those
+      two.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Now type something of your own into the text (e.g. a greeting), then tick a
+      third report.
+      <span class="expect">Your sentence <strong>survives</strong> — the text stops
+      following. The grey hint by the label says "edited by hand — use ↻ to
+      rebuild".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2d">
+      <span>Press <strong>↻ Regenerate text</strong>.
+      <span class="expect">It <em>asks first</em> ("Rebuild subject and text…? Your edits
+      are lost.") — cancel and your text stays; confirm and subject + body come back
+      matching the three ticked reports and the date.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2e">
+      <span>Change the <em>Report date</em>.
+      <span class="expect">Subject and body follow the new date — same rule: only while
+      you have not hand-edited.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · A group is now a whole saved send</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.4rem">A "mailing list" used to be just a set of recipients. It
+    is now <strong>recipients + reports + its own subject and text</strong> — so
+    "management" and "key users" can be one click each, with different packs and different
+    wording.</p>
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Tick a few recipients, tick 2–3 reports, write the subject/text that group
+      should get, type a name in the group field and press
+      <strong>💾 Save current send as group</strong>.
+      <span class="expect">Green banner confirming the save. It also says "Reload to see
+      it in the group bar" — the new chip appears after a reload, on purpose, because the
+      page deliberately does not reload under you (section 4).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Reload, then change everything on the page (other recipients, other reports,
+      other text) and click the group's <strong>✉ chip</strong>.
+      <span class="expect">One click restores <strong>all of it</strong>: its recipients,
+      its reports and its wording. The chip shows the size, e.g.
+      "✉ Management (4 · 3 rep)".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span><strong>The trap that used to bite:</strong> apply the group, then save it
+      again <em>without</em> touching the reports (e.g. after only adding a recipient).
+      Reload and click the chip.
+      <span class="expect">Its report set is still there — a recipient-only save never
+      silently empties a group's reports.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3d">
+      <span>Press <strong>✕</strong> on a test group's chip.
+      <span class="expect">The group disappears; the recipients themselves stay in the
+      table.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-green">
+  <div class="box-head">4 · Nothing throws your work away any more</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.4rem">This was the annoying one: adding a recipient reloaded
+    the page, and the text you had just written plus the reports you had ticked were
+    gone.</p>
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Tick some reports, write a long text — then <strong>add a recipient</strong>.
+      <span class="expect">The new address appears in the table, and your text and your
+      ticks are <strong>untouched</strong>. No page flash, no scroll jump.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Same again with <strong>set inactive / set active</strong> and with
+      <strong>✕ delete</strong> on a recipient.
+      <span class="expect">The row updates in place; your typed text and ticks
+      survive.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Same again with <strong>saving</strong> and <strong>deleting</strong> a group.
+      <span class="expect">Banner only — the form keeps everything you had.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-red">
+  <div class="box-head">5 · Now actually send one — the real proof</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Pick a group (or tick yourself only), 2 reports, press <strong>Send</strong>
+      and open the mail.
+      <span class="expect">Two attachments, and the body lists <em>those two</em> reports
+      — text and attachments agree, which is the whole point of section 2.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Check that the bucket numbers landed under the report date as before.
+      <span class="expect">Unchanged behaviour — sending still writes the history row;
+      nothing about the send itself was touched.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-slate">
+  <div class="box-head">6 · Sign off (or tell me to change it)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span><strong>Nothing ticked on open.</strong> If you find you almost always send the
+      same pack, say so and the page can instead open with your most-used group already
+      applied.</span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span><strong>A new group's chip needs one reload.</strong> Deliberate trade for
+      "the page never reloads under you". If it bothers you, the chip can be added live
+      too.</span></label>
+    <label class="task"><input type="checkbox" data-k="s6c">
+      <span><strong>The text stops following the moment you type.</strong> Right rule? The
+      alternative is "always rebuild unless you press a lock".</span></label>
+    <label class="task"><input type="checkbox" data-k="s6d">
+      <span><strong>Group wording is optional</strong> — a group saved while the text was
+      still the generated one simply carries that. Say so if a group should instead always
+      keep whatever text is on screen at send time.</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0901-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

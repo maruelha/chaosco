@@ -616,6 +616,37 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01</h2>
+
+<div class="box b-amber">
+  <div class="box-head">Email Reports &mdash; the four changes are now really on the page</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">Worth knowing: until this session only
+    the <em>storage</em> for these existed, which is why the page had not changed for you.
+    Click-through list: <a href="SessionTest_2026-09-01.html">SessionTest 2026-09-01</a>.</p>
+    <label class="task"><input type="checkbox" data-k="mail0901-nothing-ticked">
+      <span><strong>The page now opens with NOTHING ticked</strong> (was: all 13). If it
+      turns out you almost always send the same pack, say so and it can instead open with
+      your most-used group already applied.
+      <span class="where">&#8594; /email-report/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mail0901-group-reload">
+      <span><strong>A newly saved group's chip only appears after a reload.</strong>
+      Deliberate trade: the page never reloads under you any more, so it cannot throw away
+      your typed text. If the missing chip bothers you, it can be added live too.
+      <span class="where">&#8594; /email-report/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mail0901-text-follows">
+      <span><strong>The mail text follows the ticked reports until you type in it.</strong>
+      From then on it is yours and only &#8635; Regenerate rebuilds it (asking first). Right
+      rule, or should it always rebuild unless you press a lock?
+      <span class="where">&#8594; /email-report/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="mail0901-group-wording">
+      <span><strong>A group carries its own subject and text</strong> &mdash; whatever was on
+      screen when you saved it, generated or hand-written. Tell me if a group should instead
+      always use the text on screen at send time.
+      <span class="where">&#8594; /email-report/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

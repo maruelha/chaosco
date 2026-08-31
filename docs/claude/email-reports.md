@@ -1,11 +1,11 @@
 # Email Reports
 
 **Type:** mini app
-**URL:** `/email-report/` (+ `/send`, recipients and mailing-list routes)
-**Storage:** `app/db/email.py` → `report_recipients`, `email_lists`, `email_list_members`
+**URL:** `/email-report/` (+ `/send`, `/text`, recipients and group routes)
+**Storage:** `app/db/email.py` → `report_recipients`, `email_lists`, `email_list_members`, `email_list_reports`
 **Routes:** `app/web_email.py`; sending + rendering in `app/emailer.py`
 **Templates:** `email_report.html`
-**Tests:** `tests/test_emailer.py`, `tests/test_email_lists.py`
+**Tests:** `tests/test_emailer.py`, `tests/test_email_lists.py`, `tests/test_email_page_features.py`
 
 ## Purpose
 
