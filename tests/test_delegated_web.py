@@ -666,6 +666,68 @@ def test_req_tool_absent_from_both_reports(client):
 
 
 # ---------------------------------------------------------------------------
+# SalesXLS [USER 2026-09-01]: dashboard-only TRI-STATE marker (yes/no/maybe,
+# unset = not assessed) — cycling chip on board + detail page, filterable,
+# deliberately absent from all three reports (like ReqTool)
+
+def test_sales_xls_roundtrip_and_validation(client):
+    _upload(client)
+    for value in ("yes", "maybe", "no"):
+        resp = client.post("/delegated/ticket/S4ECOM-2003/sales-xls",
+                           data={"value": value})
+        assert resp.get_json()["ok"]
+        conn = web_delegated._get_conn()
+        try:
+            assert db_delegated.get_delegated_sales_xls(
+                conn, "S4ECOM-2003") == value
+        finally:
+            conn.close()
+
+    # empty value = back to not assessed (the cycle's fourth state)
+    client.post("/delegated/ticket/S4ECOM-2003/sales-xls", data={"value": ""})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2003") is None
+    finally:
+        conn.close()
+
+    # garbage is rejected with 400 and nothing is stored
+    resp = client.post("/delegated/ticket/S4ECOM-2003/sales-xls",
+                       data={"value": "perhaps"})
+    assert resp.status_code == 400
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2003") is None
+    finally:
+        conn.close()
+
+
+def test_sales_xls_renders_on_board_and_detail_with_filter(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2003/sales-xls", data={"value": "maybe"})
+
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert 'class="chip dlg-salesxls"' in html   # the chip column renders
+    assert 'data-salesxls="maybe"' in html       # row marker feeds the filter
+    # the filter dropdown with all four states
+    assert "SalesXLS: all" in html
+    for option in ("SalesXLS: ✓ Yes", "SalesXLS: ? Maybe",
+                   "SalesXLS: ✗ No", "SalesXLS: — not set"):
+        assert option in html
+
+    detail = client.get("/delegated/ticket/S4ECOM-2003").get_data(as_text=True)
+    assert 'dlg-salesxls' in detail and 'data-value="maybe"' in detail
+
+
+def test_sales_xls_absent_from_all_three_reports(client):
+    _upload(client)
+    client.post("/delegated/ticket/S4ECOM-2003/sales-xls", data={"value": "yes"})
+    for path in ("/delegated/report", "/delegated/numbers",
+                 "/delegated/overview"):
+        assert "SalesXLS" not in client.get(path).get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
 # Jira labels (2026-08-28) - imported, chips + filter on board/report/detail
 
 def test_labels_imported_and_shown_with_filter(client):

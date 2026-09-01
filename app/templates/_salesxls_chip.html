@@ -1,0 +1,47 @@
+{# SalesXLS cycling chip [USER 2026-09-01] — dashboard-only TRI-STATE
+   marker "documented in the Sales XLS?". ONE include shared by the board
+   and the ticket detail page so the states/colors/cycle live in one place.
+   A page renders a button like
+     <button type="button" class="chip dlg-salesxls" data-key="<jira_key>"
+             data-value="<'' | yes | maybe | no>"
+             onclick="dlgSalesXlsCycle(this)"></button>
+   and includes this partial at the bottom; the script paints every chip on
+   load and each click cycles — → ✓ Yes → ? Maybe → ✗ No → — (saved
+   immediately via POST /delegated/ticket/<key>/sales-xls). #}
+<script>
+const SALESXLS_STATES = {           /* value: [label, background, text] */
+  '':      ['—',       '#e5e5ea', '#666666'],
+  'yes':   ['✓ Yes',   '#d1f0d9', '#116329'],
+  'maybe': ['? Maybe', '#fff3cd', '#8a6d00'],
+  'no':    ['✗ No',    '#fee2e2', '#a10d19'],
+};
+const SALESXLS_ORDER = ['', 'yes', 'maybe', 'no'];
+
+function dlgSalesXlsPaint(btn) {
+  const [label, bg, fg] = SALESXLS_STATES[btn.dataset.value || ''];
+  btn.textContent = label;
+  btn.style.background = bg;
+  btn.style.color = fg;
+  btn.style.cursor = 'pointer';
+  btn.style.border = 'none';
+  btn.title = 'SalesXLS — documented in the Sales XLS? Click to cycle:'
+            + ' — → ✓ Yes → ? Maybe → ✗ No';
+}
+
+function dlgSalesXlsCycle(btn) {
+  const cur = btn.dataset.value || '';
+  const next = SALESXLS_ORDER[(SALESXLS_ORDER.indexOf(cur) + 1) % SALESXLS_ORDER.length];
+  fetch('/delegated/ticket/' + encodeURIComponent(btn.dataset.key) + '/sales-xls',
+        { method: 'POST', body: new URLSearchParams({ value: next }) })
+    .then(r => {
+      if (!r.ok) throw new Error();
+      btn.dataset.value = next;
+      dlgSalesXlsPaint(btn);
+      const row = btn.closest('tr.dlg-row');       // board only — feeds the filter
+      if (row) row.dataset.salesxls = next;
+    })
+    .catch(() => alert('Saving failed — try again.'));
+}
+
+document.querySelectorAll('.dlg-salesxls').forEach(dlgSalesXlsPaint);
+</script>

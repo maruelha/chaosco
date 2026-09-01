@@ -471,6 +471,27 @@ Dashboard-only authored flag, own column `delegated_annotations.req_tool`
 form (`POST /delegated/ticket/<key>/req-tool`); a "ReqTool: all / checked /
 unchecked" dropdown in the board filter bar (`data-reqtool` per row,
 combined client-side with the Label filter in one `dlgFilterBoard()`).
+
+## SalesXLS tri-state marker (2026-09-01 [USER])
+
+Dashboard-only like ReqTool, but **TRI-STATE**: `delegated_annotations.
+sales_xls` is TEXT `'yes'`/`'no'`/`'maybe'`, NULL = not assessed — Marina
+needs a "maybe", so no 0/1 flag (setter `set_delegated_sales_xls`
+validates against `SALES_XLS_VALUES`). The two markers together show
+where a manually created Jira ticket still needs documenting — the
+tickets live in two places (ReqTool + the Sales XLS).
+
+UI is a **cycling chip** (option A over a mini-select, [USER]): click
+cycles — → ✓ Yes → ? Maybe → ✗ No → — (gray/green/amber/red), saved
+immediately via `POST /delegated/ticket/<key>/sales-xls` (400 on an
+unknown value). States/colors/cycle live ONCE in the shared include
+`_salesxls_chip.html` (script paints every `.dlg-salesxls` button on
+load), used by the board column AND the ticket detail page — on the
+detail page deliberately NOT part of the form save, same reasoning as
+the backlog button. Board filter: "SalesXLS: all / Yes / Maybe / No /
+not set" (`data-salesxls` per row, `unset` matches the empty value) in
+the same `dlgFilterBoard()`. Never read by
+`report_context`/`numbers_context`/`overview_context`.
 **Deliberately excluded from `report_context`/`numbers_context`** — [USER:
 "no report - it is ONLY on the dashboard"], so neither the status report
 nor the Management Summary reads it.

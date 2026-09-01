@@ -115,6 +115,7 @@ def delegated_list():
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
         i["backlog"] = ann.get("backlog", False)
         i["req_tool"] = ann.get("req_tool", False)
+        i["sales_xls"] = ann.get("sales_xls")
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
         mb_row = mb_rows.get(i["jira_key"])
         i["mb_status"] = (mb_row or {}).get("status")
@@ -226,6 +227,22 @@ def delegated_req_tool(jira_key: str):
     return jsonify({"ok": True})
 
 
+@bp.route("/ticket/<jira_key>/sales-xls", methods=["POST"])
+def delegated_sales_xls(jira_key: str):
+    """Cycling-chip save — dashboard-only TRI-STATE marker [USER 2026-09-01]
+    ('documented in the Sales XLS?'): yes/no/maybe, empty = not assessed.
+    Like ReqTool never shown on any report."""
+    value = (request.form.get("value") or "").strip() or None
+    if value is not None and value not in db_delegated.SALES_XLS_VALUES:
+        return jsonify({"ok": False, "error": f"invalid value {value!r}"}), 400
+    conn = _get_conn()
+    try:
+        db_delegated.set_delegated_sales_xls(conn, jira_key, value)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
 @bp.route("/upload-tracking", methods=["POST"])
 def delegated_upload_tracking():
     """Upload the DTC_UAT_testtracking_ROE workbook and import ONLY its
@@ -317,6 +334,7 @@ def delegated_ticket_detail(jira_key: str):
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
         backlog = db_delegated.get_delegated_backlog(conn, jira_key)
         req_tool = db_delegated.get_delegated_req_tool(conn, jira_key)
+        sales_xls = db_delegated.get_delegated_sales_xls(conn, jira_key)
         blockers = db_blockers.list_blockers_for_ticket(conn, jira_key)
         notes = database.list_notes(conn, "delegated", jira_key)
         attachments_by_note = database.get_attachments_for_notes(
@@ -329,7 +347,8 @@ def delegated_ticket_detail(jira_key: str):
         orders=extract_latest_comment_orders(comments),
         is_blocked=(issue.get("jira_status") or "").strip().lower() == "blocked",
         next_step=next_step, blocked_reason=blocked_reason,
-        counts_toward_goal=counts_toward_goal, backlog=backlog, req_tool=req_tool,
+        counts_toward_goal=counts_toward_goal, backlog=backlog,
+        req_tool=req_tool, sales_xls=sales_xls,
         blockers=blockers,
         mb_row=mb_row,
         notes=notes, attachments_by_note=attachments_by_note,

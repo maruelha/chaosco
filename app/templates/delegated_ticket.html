@@ -133,6 +133,15 @@
         <input type="checkbox" name="req_tool" value="1" {% if req_tool %}checked{% endif %}>
         ReqTool
       </label>
+      {# SalesXLS chip saves IMMEDIATELY (not part of the form save) — same
+         cycling control as on the board [USER 2026-09-01] #}
+      <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.2rem 0 0.2rem">
+        SalesXLS
+        <button type="button" class="chip dlg-salesxls" data-key="{{ issue.jira_key }}"
+                data-value="{{ sales_xls or '' }}"
+                onclick="dlgSalesXlsCycle(this)"></button>
+        <span style="color:#888; font-size:0.78rem">(saves immediately)</span>
+      </div>
       <div class="form-field">
         <label for="f-nextstep">Next step
           <button type="button" class="btn btn-sm js-ns-archive" style="margin-left:0.5rem"
@@ -263,4 +272,5 @@ function dlgBacklogSet(value) {
     .catch(() => alert('Saving failed — try again.'));
 }
 </script>
+{% include '_salesxls_chip.html' %}
 {% endblock %}

@@ -77,6 +77,14 @@
     <option value="1">ReqTool: checked</option>
     <option value="0">ReqTool: unchecked</option>
   </select>
+  <select id="dlg-salesxls-filter" onchange="dlgFilterBoard()"
+          title="filter by the SalesXLS marker">
+    <option value="">SalesXLS: all</option>
+    <option value="yes">SalesXLS: ✓ Yes</option>
+    <option value="maybe">SalesXLS: ? Maybe</option>
+    <option value="no">SalesXLS: ✗ No</option>
+    <option value="unset">SalesXLS: — not set</option>
+  </select>
   <span id="dlg-label-info" style="color:#888; font-size:0.82rem"></span>
 </div>
 
@@ -120,12 +128,13 @@
         {# Backlog moved off the board 2026-09-01 [USER: parking is a
            deliberate act, not a list toggle] — button on the detail page #}
         <th style="width:4.5rem" title="dashboard-only flag, filterable — not shown on any report">ReqTool</th>
+        <th style="width:5.5rem" title="dashboard-only tri-state marker (documented in the Sales XLS?), filterable — not shown on any report; click the chip to cycle — → ✓ Yes → ? Maybe → ✗ No">SalesXLS</th>
         <th style="width:12rem"></th>
       </tr>
     </thead>
     <tbody>
       {% for i in section_items %}
-      <tr class="dlg-row" data-labels="{{ i.labels|join(' ') }}" data-reqtool="{{ '1' if i.req_tool else '0' }}">
+      <tr class="dlg-row" data-labels="{{ i.labels|join(' ') }}" data-reqtool="{{ '1' if i.req_tool else '0' }}" data-salesxls="{{ i.sales_xls or '' }}">
         <td class="mono" style="font-size:0.78rem">
           {% if i.link %}<a href="{{ i.link }}" target="_blank" rel="noopener">{{ i.jira_key }} ↗</a>
           {% else %}{{ i.jira_key }}{% endif %}
@@ -184,6 +193,11 @@
                  onchange="dlgReqToolSave(this)"
                  title="dashboard-only flag — not shown on any report">
         </td>
+        <td style="text-align:center">
+          <button type="button" class="chip dlg-salesxls" data-key="{{ i.jira_key }}"
+                  data-value="{{ i.sales_xls or '' }}"
+                  onclick="dlgSalesXlsCycle(this)"></button>
+        </td>
         <td style="white-space:nowrap; text-align:right">
           {% if not is_blocked_section %}
           <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
@@ -202,7 +216,7 @@
         </td>
       </tr>
       <tr class="dlg-jira-detail" style="display:none">
-        <td colspan="{{ 12 if is_blocked_section else (11 if has_mb else 10) }}" style="background:#fafafa; padding:0.6rem 1rem">
+        <td colspan="{{ 13 if is_blocked_section else (12 if has_mb else 11) }}" style="background:#fafafa; padding:0.6rem 1rem">
           {% if i.description %}
           <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888">Description</div>
           <div style="border:1px solid #e5e5ea; border-radius:8px; padding:0.5rem 0.8rem; font-size:0.84rem; margin:0.25rem 0 0.6rem; overflow-x:auto; background:#fff">
@@ -257,18 +271,22 @@ function dlgNsSave(input) {
 function dlgFilterBoard() {
   const labelSel = document.getElementById('dlg-label-filter');
   const reqSel = document.getElementById('dlg-reqtool-filter');
+  const salesSel = document.getElementById('dlg-salesxls-filter');
   const wantLabel = labelSel ? labelSel.value : '';
   const wantReq = reqSel ? reqSel.value : '';
+  const wantSales = salesSel ? salesSel.value : '';
   let shown = 0, hidden = 0;
   document.querySelectorAll('tr.dlg-row').forEach(tr => {
     const labelOk = !wantLabel || (tr.dataset.labels || '').split(' ').includes(wantLabel);
     const reqOk = !wantReq || tr.dataset.reqtool === wantReq;
-    const ok = labelOk && reqOk;
+    const salesOk = !wantSales ||
+      (wantSales === 'unset' ? !tr.dataset.salesxls : tr.dataset.salesxls === wantSales);
+    const ok = labelOk && reqOk && salesOk;
     tr.style.display = ok ? '' : 'none';
     ok ? shown++ : hidden++;
   });
   document.getElementById('dlg-label-info').textContent =
-    (wantLabel || wantReq) ? (shown + ' shown, ' + hidden + ' hidden') : '';
+    (wantLabel || wantReq || wantSales) ? (shown + ' shown, ' + hidden + ' hidden') : '';
 }
 
 function dlgGoalSave(checkbox) {
@@ -288,4 +306,5 @@ function dlgReqToolSave(checkbox) {
     .catch(() => { checkbox.checked = !checkbox.checked; alert('Saving failed — try again.'); });
 }
 </script>
+{% include '_salesxls_chip.html' %}
 {% endblock %}
