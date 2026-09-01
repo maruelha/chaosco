@@ -132,9 +132,10 @@ module: someone else is probably reading its data.**
   changes the mail; a successful send snapshots the bucket numbers into Report
   history.
 - **The Inbox files INTO** defects, retail, spillover, ecom, jira tickets,
-  test learnings, follow-ups, shelf, topics, contacts, links and known
-  production issues — adding a target means touching `_INBOX_TARGET_TYPES`,
-  the picker and a search branch.
+  test learnings, follow-ups, shelf, topics, contacts, links, known
+  production issues and the Delegated Ways of Working page (2026-09-01, a
+  singleton — no search) — adding a target means touching
+  `_INBOX_TARGET_TYPES`, the picker and a search/exists branch.
 - **Status report buckets** for Retail and ECOM come from ONE config
   (`config/status_mappings.yaml`) via `reporter.py`.
 - **`db/core.py` still holds the older shared tables** (defects, spillover,

@@ -103,7 +103,8 @@ uploaded issues?" — yes).
 
 - `app/db/delegated.py` — schema + all SQL (annotations, `delegated_counts`
   for the dashboard badge)
-- `app/delegated_buckets.py` — bucket rules + counts (backlog joins here later)
+- `app/delegated_buckets.py` — bucket rules + counts (incl. the 📦 backlog
+  bucket — the authored flag wins over every status)
 - `app/web_delegated.py` — Blueprint `/delegated/`: board, upload, ticket
   detail (Details/Messages tabs), inline saves, `/report`, `/numbers` +
   `/report/download`, `/numbers/download` (dated standalone HTML — the
@@ -117,8 +118,10 @@ uploaded issues?" — yes).
   keys `delegated` / `delegated_numbers` — gather_attachments fetches the
   download routes, already-clean HTML) [USER 2026-08-26].
 - Templates: `delegated.html`, `delegated_ticket.html`,
-  `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`
-- Registries: `web_notes.REGISTRY['delegated']`,
+  `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`,
+  `delegated_wow.html` + `delegated_wow_download.html` (Ways of Working,
+  2026-09-01), `_salesxls_chip.html` (shared SalesXLS chip include)
+- Registries: `web_notes.REGISTRY['delegated']` + `['delegated_wow']`,
   `web_next_steps.REGISTRY['delegated']`
 - Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
 

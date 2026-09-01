@@ -28,7 +28,9 @@ shared notes storage.
   (2026-07-11, the current gatekeeper; search by jira key / solman id /
   summary), test_learning, followup, shelf, topic, contact, link,
   prod_defect = "Known Prod Issue" (2026-08-06, search by scenario / short
-  description / technical key).
+  description / technical key), delegated_wow = "Delegated — Ways of
+  Working" (2026-09-01, SINGLETON — only id `'main'`, no search branch:
+  picking the type arms Move › immediately).
 - **Reference fields + ⚡ Auto-file** [USER 2026-07-16]: `notes` gained
   optional `order_number`, `solman_id`, `jira_id`, `route_to` (core.py
   migration; set in the add/edit forms, shown as chips — the intended landing

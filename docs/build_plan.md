@@ -166,8 +166,11 @@ ignored (KT tracking lives on the Smoke scenarios).
 
 ### Delegated Testing (`/delegated/`) — ✅ BUILT 2026-08-26…09-01
 
-23 build items done — log → `docs/archive/build_plan_done_2026-09-01.md`; deep-dive `docs/claude/delegated.md`.
-Still open:
+23 build items done — log → `docs/archive/build_plan_done_2026-09-01.md`;
++3 chat-driven on 2026-09-01 (backlog → detail-page button, SalesXLS
+tri-state chip, Ways of Working page — see
+`docs/archive/session_2026-09-01_delegated_markers_wow.md`); deep-dive
+`docs/claude/delegated.md`. Still open:
 
 5. **PARKED — Excel/ECOM join** [USER 2026-08-26]: show the `ecom` rows
    (from the ROE tracking import) matched by Jira key next to the Jira

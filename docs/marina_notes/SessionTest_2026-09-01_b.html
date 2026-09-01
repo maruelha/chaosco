@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-01 (b) — Delegated Testing</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-01 (b) — Delegated Testing</h1>
+<p class="hint"><strong>Three changes on the Delegated Testing card:</strong> backlog is
+now a deliberate button instead of a row checkbox, the new SalesXLS yes/no/maybe chip,
+and the new 🤝 Ways of Working page (dailies decision log, inbox target, HTML download).
+Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: restart the app</strong> (<code>run_web.bat</code>) —
+the SalesXLS column is created at startup (additive migration, safe to re-run). Then
+hard-reload the Delegated board once (<code>Ctrl</code>+<code>F5</code>) so the new board
+script loads.
+<br><br><em>Git:</em> committed and pushed as <code>c026a3b</code>,
+<code>93a292c</code>, <code>2fb33f9</code> — nothing is waiting on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Backlog is a button now, not a checkbox</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Open the Delegated board and look at the columns.
+      <span class="where">→ /delegated/</span>
+      <span class="expect">The <strong>Backlog checkbox column is gone</strong>; ReqTool
+      is still there. The 📦 Backlog section at the bottom is unchanged.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Open any ticket's <strong>Details</strong> page. Above the "My working fields"
+      form: press <strong>📦 Move to backlog</strong>.
+      <span class="expect">Page reloads showing a gray "📦 Parked in Backlog" pill and the
+      button now reads <strong>↩ Move back to board</strong>. On the board the ticket sits
+      in 📦 Backlog.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1c">
+      <span><strong>The safety detail:</strong> while the ticket is parked, change its
+      Next step and press <strong>Save</strong> on the form.
+      <span class="expect">The ticket <strong>stays parked</strong> — the form save can no
+      longer silently unpark it (before, the checkbox lived in the form and saving with it
+      unticked pulled the ticket out).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1d">
+      <span>Press <strong>↩ Move back to board</strong>.
+      <span class="expect">Ticket returns to its status bucket; Management Summary and
+      Overview count it again.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · SalesXLS — the yes/no/maybe chip on the board</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>On the board, find the new <strong>SalesXLS</strong> column (right of ReqTool)
+      and click one ticket's chip four times.
+      <span class="expect">It cycles <strong>— → ✓ Yes → ? Maybe → ✗ No → —</strong>
+      (gray/green/amber/red), saving instantly — no reload, no Save button.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>Set a few tickets to different states, then use the new
+      <strong>SalesXLS filter</strong> dropdown in the filter bar (all / ✓ Yes / ? Maybe /
+      ✗ No / — not set), also combined with the ReqTool filter.
+      <span class="expect">Rows hide/show accordingly; the "n shown, n hidden" hint counts;
+      filters combine (AND).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span>Open the Status report, Management Summary and Overview.
+      <span class="where">→ /delegated/report · /numbers · /overview</span>
+      <span class="expect"><strong>No SalesXLS anywhere</strong> — dashboard-only, exactly
+      like ReqTool (which also stays a plain checkbox, as you said).</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · SalesXLS on the ticket detail page</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open a ticket's Details page — "My working fields", below the ReqTool
+      checkbox.
+      <span class="expect">The same chip, showing the same state as the board, marked
+      "(saves immediately)".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Click it, then go back to the board.
+      <span class="expect">Board and detail page always agree — one value, two places to
+      set it.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-green">
+  <div class="box-head">4 · 🤝 Ways of Working — the dailies decision log</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Board header → <strong>🤝 Ways of working</strong>.
+      <span class="where">→ /delegated/wow</span>
+      <span class="expect">The new page: title, explainer, a Notes card with
+      <strong>+ Add note</strong>.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Add a note ("Daily 09-01" + a decision text). Then hover it and paste a
+      screenshot with <code>Ctrl</code>+<code>V</code>.
+      <span class="expect">Note appears with heading + date; the screenshot attaches as a
+      thumbnail — the full shared notes component, no new table behind it.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>Edit and delete work like everywhere else (pencil/✕ on the note).
+      <span class="expect">Same behaviour as ticket notes.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-amber">
+  <div class="box-head">5 · Inbox → Ways of Working</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Inbox: add a quick item, press <strong>File ›</strong> and pick type
+      <strong>"Delegated — Ways of Working"</strong>.
+      <span class="where">→ /inbox</span>
+      <span class="expect">The search box <strong>disappears</strong> (there is only one
+      such page) and <strong>Move ›</strong> is enabled immediately.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Press <strong>Move ›</strong>, then open the Ways of Working page.
+      <span class="expect">The item is gone from the inbox and sits on the page as a note —
+      attachments travel along.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-red">
+  <div class="box-head">6 · ⬇ Download HTML</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span>On the Ways of Working page press <strong>⬇ Download HTML</strong> and open
+      the file.
+      <span class="expect">A dated standalone page
+      (<code>delegated_ways_of_working_&lt;date&gt;.html</code>) listing every note with
+      heading, date and text — readable without the app, print-friendly. Attachments are
+      listed by name only (the files stay in the tool).</span></span></label>
+  </div>
+</div>
+
+<!-- 7 -->
+<div class="box b-slate">
+  <div class="box-head">7 · Sign off (or tell me to change it)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s7a">
+      <span><strong>SalesXLS cycle order</strong> is — → Yes → Maybe → No. If you usually
+      go "No" first, the order can be flipped.</span></label>
+    <label class="task"><input type="checkbox" data-k="s7b">
+      <span><strong>The detail-page chip saves immediately</strong>, unlike the ReqTool
+      checkbox next to it (which saves with the form's Save button). Consistent enough, or
+      irritating?</span></label>
+    <label class="task"><input type="checkbox" data-k="s7c">
+      <span><strong>Backlog needs the detail page now</strong> — that was the point
+      ("deliberate act"), but if it turns out to be too many clicks in practice, a small 📦
+      row button can come back.</span></label>
+    <label class="task"><input type="checkbox" data-k="s7d">
+      <span><strong>The WoW download lists attachments by name only.</strong> If you need
+      the screenshots IN the snapshot file, they can be embedded (bigger files).</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0901b-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

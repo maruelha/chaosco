@@ -681,6 +681,37 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01 (Delegated: backlog button, SalesXLS, Ways of Working)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Delegated Testing — small choices I made, one sentence each to change</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">The features themselves were your
+    calls (and the SalesXLS chip is option A, which you picked). These details were mine
+    &mdash; the click-through is in
+    <a href="SessionTest_2026-09-01_b.html">SessionTest_2026-09-01_b</a>.</p>
+    <label class="task"><input type="checkbox" data-k="dg0901-cycle-order">
+      <span><strong>SalesXLS cycle order</strong> is &mdash; &#8594; ✓ Yes &#8594; ? Maybe
+      &#8594; ✗ No. Is Yes-first right for how you'll use it, or should No come earlier?
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dg0901-chip-instant">
+      <span><strong>The detail page's SalesXLS chip saves immediately</strong>, while the
+      ReqTool checkbox right above it saves with the form's Save button. Two save styles
+      on one card &mdash; OK, or should ReqTool become instant too?
+      <span class="where">&#8594; ticket detail page</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dg0901-wow-download">
+      <span><strong>The Ways of Working download lists attachments by name only</strong>
+      (screenshots stay in the tool). If the snapshot should carry the images embedded,
+      say so.
+      <span class="where">&#8594; /delegated/wow</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dg0901-wow-inbox-only">
+      <span><strong>Inbox &#8594; Ways of Working goes through the File › picker</strong>
+      (type dropdown, no search). There is no quick "&#8618; route to&hellip;" combobox
+      entry for it &mdash; wanted, or is the picker enough?
+      <span class="where">&#8594; /inbox</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {
