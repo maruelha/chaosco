@@ -44,6 +44,13 @@ Images render as thumbnails, documents as download links (`is_image` filter).
 
 - **Never** create a module-specific notes table, route set, or attachment
   script. Adding notes to a module = a REGISTRY entry + the include.
+- **List-only entities (no detail page)** — `todo`, `meeting_prep`,
+  `sustain_callout` — don't use `_notes_section.html` (it assumes a
+  detail-page layout): each renders an expandable notes row inline in its
+  list table instead, via the SAME generic `list.json` / `add.json`
+  endpoints, with a small page-local script (not `static/notes.js`, which
+  assumes that page's own `.js-notes-toggle` markup). The DATA layer stays
+  unified either way — only the inline-row rendering is per-page glue.
 - A whole PAGE can be one notes thread: a **singleton entity** with a
   fixed id (first: `('delegated_wow', 'main')`, the Delegated Ways of
   Working page, 2026-09-01) — registry entry with `detail_endpoint=None`

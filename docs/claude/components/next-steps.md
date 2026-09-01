@@ -39,7 +39,11 @@ the row cell).
 - Currently on: Spillover details popup, Retail detail, ECOM detail, Defect
   detail, ECOM Gatekeeper list rows (the deprecated manual table AND the
   current Jira tickets table, entity `jira`, ↻/🕘 per row with a per-row
-  `data-ns-target`), Gatekeeper ticket detail.
+  `data-ns-target`), Gatekeeper ticket detail, Delegated Testing ticket
+  detail (entity `delegated`), Blockers (`blocker`, on the blockers table
+  itself), Smoke Testing scenarios (`smoke`), Sustainphase Issues
+  (`sustain_issue`, keyed by issue_key), Sustain Call-outs (`sustain_callout`,
+  2026-09-01 — on the sustain_callouts table itself, blocker pattern).
 
 ## Related
 

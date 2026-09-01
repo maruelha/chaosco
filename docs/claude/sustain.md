@@ -258,7 +258,8 @@ deviation and the summary v1 layout).
 
 ## Related
 
-`[[sustain-issues]]` · `[[smoke]]` · `[[report-blocks]]`
+`[[sustain-issues]]` · `[[smoke]]` · `[[report-blocks]]` ·
+`[[next-steps]]` · `[[notes]]`
 
 ## Change log
 

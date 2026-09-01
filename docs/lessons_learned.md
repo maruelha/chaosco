@@ -10,6 +10,21 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## A rule can be true in spirit and wrong in the literal words (2026-09-01)
+
+**What happened:** `components/notes.md` says "never create module-specific
+notes... JS." Read literally, two modules break it —
+`todo_list.html` (pre-existing) and this session's Sustain Call-outs —
+because a list-only entity with no detail page can't use
+`_notes_section.html` (built for a full page); both instead call the
+SAME generic JSON endpoints from a small page-local script. The doc's
+intent (one data layer, one route set) held; its literal words didn't.
+**Now:** when a repeated pattern in the code doesn't match a rule's
+literal wording, the doc gets the pattern documented as a named
+exception (see `components/notes.md`'s "List-only entities" bullet)
+instead of either quietly copying the deviation a third time or forcing
+a bad fit to satisfy the letter of the rule.
+
 ## Audit before freezing a rule into a test (2026-09-01)
 
 **What happened:** two coverage rules that sounded right were WRONG when
