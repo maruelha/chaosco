@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-02 — Notes fix, Blockers fixes, nextInLine, Working-notes pages</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-02 — one long day's worth</h1>
+<p class="hint">Six changes: the call-out notes fix, two Blockers fixes + a diagnostic,
+the nextInLine rule, the working-notes pages (WoW migrated + 💡 Insights), and
+📝 Meeting Summaries. Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: <code>git pull</code>, then restart the app</strong>
+(<code>run_web.bat</code>) — two data migrations run at startup (your Ways-of-Working notes
+move to the new page mechanism; the backlog flag becomes tri-state for the nextInLine
+rule). Both are one-time and safe to re-run.
+<br><br><em>Git:</em> everything is committed and pushed — nothing waits on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · Sustain call-outs — real notes now</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1a">
+      <span>Open the Sustain card and press <strong>Notes</strong> on a call-out.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">The full notes component expands — your existing notes are there
+      (with "(no heading)"), plus <strong>+ Add note</strong>, and per note: 📷 Add screenshot ·
+      📎 Attach file · Edit · Delete.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s1b">
+      <span>Add a note with a heading, then paste a screenshot into it (Ctrl+V or 📷).
+      <span class="expect">Saving is a page round-trip back to /sustain/ — the touched
+      call-out's notes row reopens by itself with a "✓ Note added." banner (only that one row);
+      the screenshot shows as a thumbnail.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-red">
+  <div class="box-head">2 · Blockers — the close-shift bug is dead</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s2a">
+      <span>On the Blockers list, make sure two open blockers below each other have DIFFERENT
+      Team and Next step values, then ✔ Close the upper one.
+      <span class="where">→ /blockers/</span>
+      <span class="expect">After the page refreshes, every remaining row still shows ITS OWN
+      Team and Next step — nothing slides down a row. (Your data was never wrong in the DB —
+      the browser was repainting form values by position.)</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2b">
+      <span>On a blocked delegated ticket, open the <strong>Blockers</strong> attach dialog.
+      <span class="where">→ /delegated/ → BLOCKED row → Blockers</span>
+      <span class="expect">Closed blockers are no longer offered in the pick list; one already
+      attached stays visible as a chip and can still be detached.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2c">
+      <span><strong>The open investigation:</strong> after your next real Jira upload, check a
+      defect whose status you KNOW changed — read its new <strong>"as of &lt;date&gt;"</strong> stamp.
+      <span class="expect">Old date → your export doesn't carry that ticket. Today's date but
+      the old status → send me that XML. (Also in MarinaCheckSoon.)</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-amber">
+  <div class="box-head">3 · nextInLine — the Backlog fills itself</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s3a">
+      <span>Open the Delegated board and look at "Not started yet" vs 📦 Backlog.
+      <span class="where">→ /delegated/</span>
+      <span class="expect">Open/Reopened tickets WITHOUT the Jira label
+      <code>nextInLine</code> now sit in 📦 Backlog (it may look dramatic the first time!);
+      only labeled ones stay in "Not started yet". The Backlog section has a hint line
+      explaining the rule.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3b">
+      <span>Open the Management Summary.
+      <span class="where">→ /delegated/numbers</span>
+      <span class="expect">Label-parked tickets are OUT of the totals, exactly like manually
+      parked ones.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s3c">
+      <span>On a label-parked ticket's detail page, press <strong>↩ Move back to board</strong>,
+      then do a Jira upload.
+      <span class="expect">The ticket stays on the board — your manual choice beats the label,
+      uploads included. (Add the label in Jira → next upload moves a ticket automatically.)</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-blue">
+  <div class="box-head">4 · Working-notes pages — WoW migrated, 💡 Insights new</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s4a">
+      <span>Press 🤝 <strong>Ways of working</strong> on the Delegated board.
+      <span class="expect">Your existing WoW notes are all there (URL is now
+      /notes-page/delegated_wow; the old /delegated/wow still redirects).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4b">
+      <span>Press 💡 <strong>Testing insights</strong> next to it and add a first note.
+      <span class="expect">Same full page as WoW — separate thread, own ⬇ Download HTML.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s4c">
+      <span>In the Inbox, file an item: Move › → type <strong>"Working notes page"</strong>.
+      <span class="where">→ /inbox</span>
+      <span class="expect">Both pages (and Meeting Summaries) are listed immediately — pick one,
+      Move ›, the note + attachments land on that page.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-green">
+  <div class="box-head">5 · 📝 Meeting Summaries</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s5a">
+      <span>Press 📝 <strong>Meeting summaries</strong> on the Sustain card, then + Add note.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">The heading is a DATE PICKER prefilled with today — no free-text
+      field. Paste a summary, save.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5b">
+      <span>Add a second summary and pick an EARLIER date for it.
+      <span class="expect">It sorts below the newer meeting — the list orders by meeting date,
+      not by when you pasted. Two summaries on the same date are fine.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s5c">
+      <span>Type a word from one summary into the <strong>search box</strong> above the list.
+      <span class="expect">Only summaries containing that word stay visible, with a
+      "1 of 2 matches" count. It matches heading + text (not button labels), case-insensitive,
+      no AI anywhere. Clearing the box brings everything back.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-slate">
+  <div class="box-head">6 · Sign off (or tell me to change it)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s6a">
+      <span><strong>💡 Testing insights sits next to 🤝 on the Delegated board</strong> — my
+      call from your "when I am in the delegated notes app" context. One sentence moves it.</span></label>
+    <label class="task"><input type="checkbox" data-k="s6b">
+      <span><strong>The nextInLine migration reset old un-park decisions</strong>: every ticket
+      never explicitly parked now follows the label. If a ticket you once moved back to the
+      board got parked again, un-park it once — it sticks from then on.</span></label>
+    <label class="task"><input type="checkbox" data-k="s6c">
+      <span><strong>TXT export for Meeting Summaries stays parked</strong> until you know how
+      you want to use it; only the HTML download exists.</span></label>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0902-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

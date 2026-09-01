@@ -171,21 +171,24 @@ Build log → `docs/archive/build_plan_done_2026-09-01.md`. **Parked [USER 2026-
 similar upload-and-view mini app, ANOTHER session. SMOKETEST_KT tab stays
 ignored (KT tracking lives on the Smoke scenarios).
 
-### Delegated Testing (`/delegated/`) — ✅ BUILT 2026-08-26…09-01
+### Delegated Testing (`/delegated/`) — ✅ BUILT 2026-08-26…09-02
 
 23 build items done — log → `docs/archive/build_plan_done_2026-09-01.md`;
-+4 chat-driven on 2026-09-01 (backlog → detail-page button, SalesXLS
-tri-state chip, Ways of Working page — see
-`docs/archive/session_2026-09-01_delegated_markers_wow.md`; SalesXLS
-auto-match upload from the sales workbook — see
-`docs/archive/session_2026-09-01_salesxls_automatch.md`); deep-dive
-`docs/claude/delegated.md`. Still open:
+chat-driven additions logged in the session summaries under
+`docs/archive/session_2026-09-01_*.md` / `session_2026-09-02_*.md`
+(latest: nextInLine label rule, blockers fixes, working-notes pages incl.
+Meeting Summaries); deep-dive `docs/claude/delegated.md` +
+`docs/claude/components/note-pages.md`. Still open:
 
 5. **PARKED — Excel/ECOM join** [USER 2026-08-26]: show the `ecom` rows
    (from the ROE tracking import) matched by Jira key next to the Jira
    data. Marina unsure about scope — re-discuss first.
+- **PARKED — TXT export for Meeting Summaries** [USER 2026-09-01:
+  "revisit later when I know how i want to use it"].
 - `Accepted` not counting toward the weekly goal is to be re-confirmed
   with management [USER 2026-08-27] — tracked in MarinaCheckSoon.
+- Blockers "Jira status never updating" — open investigation, the "as of"
+  stamp on /blockers/ is the diagnostic; tracked in MarinaCheckSoon.
 
 ### Retail Requirements Tracker (`/retail-tracker/board`)
 

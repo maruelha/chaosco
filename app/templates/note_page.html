@@ -53,11 +53,20 @@
   var countEl = document.getElementById('note-filter-count');
   var items = Array.prototype.slice.call(document.querySelectorAll('.note-item'));
   var total = items.length;
+  // match only the note's HEADING + TEXT — not the whole tile, whose
+  // textContent also carries the Edit/Delete/attachment button labels
+  // (searching "edit" would otherwise match every note)
+  function noteText(el) {
+    var parts = el.querySelectorAll('.note-heading, .note-text');
+    return Array.prototype.map.call(parts, function (p) {
+      return p.textContent;
+    }).join(' ').toLowerCase();
+  }
   input.addEventListener('input', function () {
     var q = input.value.trim().toLowerCase();
     var shown = 0;
     items.forEach(function (el) {
-      var match = !q || el.textContent.toLowerCase().indexOf(q) !== -1;
+      var match = !q || noteText(el).indexOf(q) !== -1;
       el.style.display = match ? '' : 'none';
       if (match) shown++;
     });

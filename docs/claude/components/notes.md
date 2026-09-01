@@ -44,13 +44,26 @@ Images render as thumbnails, documents as download links (`is_image` filter).
 
 - **Never** create a module-specific notes table, route set, or attachment
   script. Adding notes to a module = a REGISTRY entry + the include.
-- **List-only entities (no detail page)** — `todo`, `meeting_prep`,
-  `sustain_callout` — don't use `_notes_section.html` (it assumes a
-  detail-page layout): each renders an expandable notes row inline in its
-  list table instead, via the SAME generic `list.json` / `add.json`
-  endpoints, with a small page-local script (not `static/notes.js`, which
-  assumes that page's own `.js-notes-toggle` markup). The DATA layer stays
-  unified either way — only the inline-row rendering is per-page glue.
+- **List-only entities (no detail page)** — `todo`, `meeting_prep` —
+  render a lightweight expandable notes row inline (plain textarea via
+  the generic `list.json` / `add.json` endpoints, small page-local
+  script). **This is the LESSER pattern**: no heading, no attachments.
+  `sustain_callout` used it too until 2026-09-01, when Marina asked
+  where her headings/screenshots were [USER: "what you gave me was a
+  simple text filed"] — its rows now include the full
+  `_notes_section.html` instead (one instance per row). Copy the full
+  component, not the quick-add widget, unless plain-text-only is a
+  deliberate choice.
+- **Multiple instances on ONE page** work since 2026-09-01: the wrapper
+  id is `notes-{entity_type}-{entity_id}` (was a hardcoded `notes` —
+  update anchors accordingly), and the add/edit/delete redirects carry
+  `note_entity=<id>` so `_notes_section.html` shows the "saved" banner
+  only on the instance that was actually touched.
+- **`heading_mode='date'`** (2026-09-01, working-notes pages): if an
+  entity's `get_row` dict carries `heading_mode: "date"`, the shared
+  `note_form.html` renders the heading as a native date picker ONLY
+  (prefilled with today on a fresh add). Generic — any registered
+  entity's row may set it; everyone else keeps the free-text heading.
 - A whole PAGE can be one notes thread: the **working-notes pages**
   (`('note_page', slug)`, 2026-09-01 — Ways of Working, Testing
   Insights, …) share ONE registry entry whose `get_row` looks the slug

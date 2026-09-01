@@ -10,6 +10,44 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## Browsers restore form values BY POSITION on reload (2026-09-02)
+
+**What happened:** closing a blocker on `/blockers/` made every Team and
+Next-step value appear one row lower — Marina reported it as data
+corruption ("copied down the line"). The DB was never wrong: the page's
+inline form controls were repainted by the browser's form-state
+restoration after `location.reload()`, which matches remembered values
+to controls by their position in the page — and the closed row's removal
+shifted every position by one.
+**What it cost:** a corruption-grade bug report and an evening
+investigating a save path that was correct all along.
+**Now:** inline form controls on list pages carry `autocomplete="off"`,
+and a script that removes/reorders rows navigates fresh
+(`location.replace`) instead of reloading. Any list page combining
+inline controls with a row-removing reload has the same latent trap —
+check for it when building one (`blockers.html` is the reference fix).
+**Test:** `test_list_page_inline_fields_opt_out_of_browser_restore`
+pins the attributes.
+
+## The "lesser pattern" spreads if the docs don't rank the patterns (2026-09-02)
+
+**What happened:** Sustain Call-outs copied `todo_list.html`'s quick-add
+notes widget (plain textarea — no heading, no attachments) because it
+was the established precedent for list pages; Marina expected the full
+notes component she knows from everywhere else ("what you gave me was a
+simple text filed"). The 2026-09-01 entry below had even blessed the
+deviation as a "named exception" — without saying it is the WORSE of the
+two patterns. Meanwhile `delegated_wow` had already proven the full
+component works without a detail page.
+**What it cost:** a rebuilt feature, plus the shared component needed
+multi-instance support (per-entity wrapper id, banner scoping) that
+would have been designed in from the start.
+**Now:** when two patterns coexist, the component doc RANKS them and
+says when the lesser one is acceptable (`components/notes.md`: full
+component by default; the quick-add widget only when plain-text-only is
+a deliberate choice). An exception that is really a gap gets labeled as
+a gap.
+
 ## A rule can be true in spirit and wrong in the literal words (2026-09-01)
 
 **What happened:** `components/notes.md` says "never create module-specific
