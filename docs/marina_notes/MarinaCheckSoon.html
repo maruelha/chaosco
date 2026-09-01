@@ -712,6 +712,32 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01 (Sustain Call-outs)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Sustain Call-outs — small choices I made, one sentence each to change</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">The feature shape (fields, cycling
+    status chip, fixed type list, date captured stays put) was your call from the
+    planning chat. These implementation details were mine.</p>
+    <label class="task"><input type="checkbox" data-k="sc0901-summary-every-day">
+      <span><strong>An open call-out shows on EVERY historical day's summary</strong>,
+      not just the latest — call-outs are ongoing, not tied to one day's import. If
+      that clutters older days, we could restrict it to the latest day only.
+      <span class="where">&#8594; /sustain/summary/&lt;day&gt;</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0901-badge-unchanged">
+      <span><strong>The dashboard card badge still counts imported tasks</strong>, not
+      open call-outs — say so if you'd rather see the call-out count (or both) at a
+      glance from the dashboard.
+      <span class="where">&#8594; dashboard card</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0901-notes-own-widget">
+      <span><strong>Call-out notes use their own small expandable-row widget</strong>
+      (todo_list.html pattern) rather than a full note detail page — fine for short
+      daily notes, but there's no dedicated notes page if a thread gets long.
+      <span class="where">&#8594; /sustain/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

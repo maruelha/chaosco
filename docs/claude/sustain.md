@@ -8,7 +8,9 @@ Call-outs section below)
 **Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`;
 call-outs routes `/sustain/callouts/add|<id>/update|<id>/status|<id>/delete`
 **Templates:** `sustain.html` · `sustain_day.html` · `sustain_summary.html`
-**Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`, `tests/test_sustain_web.py`
+**Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`,
+`tests/test_sustain_web.py`, `tests/test_sustain_callouts_storage.py`,
+`tests/test_sustain_callouts_web.py`
 
 ## Purpose
 
@@ -260,6 +262,11 @@ deviation and the summary v1 layout).
 
 ## Change log
 
+- **2026-09-01 — Call-outs** (planning chat, built in 4 steps: storage,
+  card-page section + status chip, next-step/notes wiring, management
+  summary block). Marina's own monitoring log for the daily review — see
+  the Call-outs subsection above for the full shape. 24 new tests across
+  `test_sustain_callouts_storage.py` / `test_sustain_callouts_web.py`.
 - **2026-08-31 — new workbook version** (`1_0109_0409-O2C DTC_GBS
   Operations_checklist (1).xlsx`). Three changes, all handled:
   1. Header row 6 → 5 (the instruction line was dropped). Would have
