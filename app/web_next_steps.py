@@ -98,6 +98,12 @@ REGISTRY: dict[str, NSEntity] = {
         lambda c, i: database.get_sustain_issue_next_step(c, str(i)),
         lambda c, i: database.set_sustain_issue_next_step(c, str(i), None),
     ),
+    # Sustain Call-outs (2026-09-01) — authored next step on the
+    # sustain_callouts table itself, same as blocker
+    "sustain_callout": NSEntity(
+        lambda c, i: database.get_callout_next_step(c, int(i)),
+        lambda c, i: database.set_callout_next_step(c, int(i), None),
+    ),
 }
 
 

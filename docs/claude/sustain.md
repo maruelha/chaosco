@@ -182,8 +182,20 @@ the importer, same separation as `sustain_issue_annotations` from
 - `list_open_for_channel(conn, channel)` — a channel's own open/in-progress
   items **plus every `both` item** — feeds the management summary below.
 
-Next step + notes wiring (`web_next_steps.REGISTRY['sustain_callout']`,
-`web_notes.REGISTRY['sustain_callout']`) is build-plan step 3, not done yet.
+- **next_step** — inline text input (`sustain_issues.html` pattern: onblur
+  save via `POST /sustain/callouts/<id>/next-step`, JSON body), plus ↻
+  archive / 🕘 history through the generic `/next-steps` component
+  (`web_next_steps.REGISTRY['sustain_callout']`, entity id = the row's
+  `id`; `_next_step_history.html` included once on the page). Stored
+  directly on `sustain_callouts.next_step` (blocker pattern), added by an
+  additive `ALTER TABLE` in `init_schema`.
+- **Notes** — generic `/n/sustain_callout/...` JSON routes
+  (`web_notes.REGISTRY['sustain_callout']`, list-only entity: no detail
+  page, same shape as `todo`/`meeting_prep`). Inline expandable row per
+  call-out (todo_list.html pattern: `js-sc-notes-toggle` reveals a list +
+  add-note textarea, own small script block — not `static/notes.js`,
+  which assumes a `.js-notes-toggle` class already used by
+  `todo_list.html`'s bespoke markup rather than a shared widget).
 
 ### Day report — `/sustain/day/<day>/<stream>` (`sustain_day.html`)
 

@@ -42,6 +42,9 @@ def sustain_home():
     try:
         tabs = db_sustain.list_tabs(conn)
         callouts = db_sc.list_callouts(conn, include_closed=show_closed)
+        for c in callouts:
+            c["note_count"] = len(
+                database.list_notes(conn, "sustain_callout", str(c["id"])))
     finally:
         conn.close()
     return render_template(
@@ -114,6 +117,19 @@ def sustain_callout_delete(callout_id: int):
     conn = _get_conn()
     try:
         db_sc.delete_callout(conn, callout_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
+
+
+@bp.route("/callouts/<int:callout_id>/next-step", methods=["POST"])
+def sustain_callout_next_step(callout_id: int):
+    """Save the call-out's next step (inline, onblur; ↻ archive via the
+    generic /next-steps 'sustain_callout' entity)."""
+    value = (request.get_json(silent=True) or {}).get("next_step", "")
+    conn = _get_conn()
+    try:
+        db_sc.set_callout_next_step(conn, callout_id, value)
     finally:
         conn.close()
     return jsonify({"ok": True})

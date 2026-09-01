@@ -155,6 +155,12 @@ REGISTRY: dict[str, NoteEntity] = {
         "To-Do", "todo_list", None, None, None,
         lambda r: "To-Do item", int,
     ),
+    # Sustain Call-outs (2026-09-01) — list-only, no detail page (inline
+    # rows on the sustain card)
+    "sustain_callout": NoteEntity(
+        "Sustain Call-outs", "sustain.sustain_home", None, None, None,
+        lambda r: "Call-out", int,
+    ),
 }
 
 

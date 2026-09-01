@@ -47,6 +47,12 @@ def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
+        # additive migration for DBs created before next_step existed
+        # (build plan step 3, 2026-09-01)
+        try:
+            conn.execute("ALTER TABLE sustain_callouts ADD COLUMN next_step TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
         conn.commit()
     finally:
         conn.close()
@@ -117,6 +123,22 @@ def cycle_status(conn: sqlite3.Connection, callout_id: int) -> str | None:
     nxt = CALLOUT_STATUSES[(CALLOUT_STATUSES.index(cur) + 1) % len(CALLOUT_STATUSES)]
     set_status(conn, callout_id, nxt)
     return nxt
+
+
+def get_callout_next_step(conn: sqlite3.Connection,
+                          callout_id: int) -> str | None:
+    row = conn.execute(
+        "SELECT next_step FROM sustain_callouts WHERE id=?",
+        (callout_id,)).fetchone()
+    return row[0] if row else None
+
+
+def set_callout_next_step(conn: sqlite3.Connection, callout_id: int,
+                          next_step: str | None) -> None:
+    with conn:
+        conn.execute(
+            "UPDATE sustain_callouts SET next_step=?, updated_at=? WHERE id=?",
+            ((next_step or "").strip() or None, _now(), callout_id))
 
 
 def delete_callout(conn: sqlite3.Connection, callout_id: int) -> None:

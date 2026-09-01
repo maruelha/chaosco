@@ -48,7 +48,7 @@
 <table class="ui-table">
   <thead>
     <tr><th>Channel</th><th>Type</th><th>Topic</th><th>Responsible</th>
-        <th>Status</th><th>Date captured</th><th></th></tr>
+        <th>Status</th><th>Date captured</th><th>Next step</th><th></th></tr>
   </thead>
   <tbody>
     {% for c in callouts %}
@@ -63,12 +63,28 @@
       </td>
       <td>{{ c.date_captured }}</td>
       <td>
+        <span style="display:flex; gap:0.3rem; align-items:center">
+          <input type="text" class="rt-comment sc-ns" data-id="{{ c.id }}"
+                 value="{{ c.next_step or '' }}" placeholder="next step…"
+                 style="min-width:9rem" onblur="scNsSave(this)">
+          <button type="button" class="btn btn-sm js-ns-archive"
+                  title="archive the current next step and start fresh"
+                  data-entity-type="sustain_callout" data-entity-id="{{ c.id }}"
+                  data-ns-target='input.sc-ns[data-id="{{ c.id }}"]'>↻</button>
+          <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+                  data-entity-type="sustain_callout" data-entity-id="{{ c.id }}"
+                  data-ns-label="{{ c.topic }}">🕘</button>
+        </span>
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm js-sc-notes-toggle">
+          Notes{% if c.note_count %} ({{ c.note_count }}){% endif %}</button>
         <button type="button" class="btn btn-sm js-sc-edit">Edit</button>
         <button type="button" class="btn btn-sm btn-danger js-sc-delete" title="delete">&#10005;</button>
       </td>
     </tr>
     <tr class="sc-edit-row" data-id="{{ c.id }}" style="display:none">
-      <td colspan="7">
+      <td colspan="8">
         <form method="post" action="{{ url_for('sustain.sustain_callout_update', callout_id=c.id) }}" class="sc-form">
           <select name="channel" class="sc-channel-select">
             {% for ch in callout_channels %}
@@ -87,9 +103,20 @@
         </form>
       </td>
     </tr>
+    <tr class="sc-notes-row" data-id="{{ c.id }}" style="display:none">
+      <td colspan="8">
+        <div class="sc-notes-list js-sc-notes-list">Loading…</div>
+        <div class="sc-note-add">
+          <textarea class="sc-note-textarea js-sc-note-input" rows="2"
+                    placeholder="Add a note…"></textarea>
+          <button type="button" class="btn btn-sm btn-primary js-sc-note-save">Save note</button>
+        </div>
+      </td>
+    </tr>
     {% endfor %}
   </tbody>
 </table>
+{% include '_next_step_history.html' %}
 {% else %}
 <p style="color:#888; margin:0.6rem 0">Nothing to review right now.</p>
 {% endif %}
@@ -181,6 +208,66 @@
       row.previousElementSibling.querySelector('.js-sc-edit').textContent = 'Edit';
     });
   });
+
+  // ---- Notes (todo_list pattern, entity type 'sustain_callout') ----
+  function scRenderNotes(el, notes) {
+    if (!notes.length) {
+      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
+      return;
+    }
+    el.innerHTML = notes.map(function (n) {
+      return '<div class="sc-note-item"><span class="sc-note-ts">' + n.created_at +
+             '</span> ' + (n.note || n.heading || '') + '</div>';
+    }).join('');
+  }
+  document.querySelectorAll('.js-sc-notes-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.closest('tr').dataset.id;
+      var row = document.querySelector('.sc-notes-row[data-id="' + id + '"]');
+      var open = row.style.display !== 'none';
+      if (open) { row.style.display = 'none'; return; }
+      row.style.display = '';
+      var list = row.querySelector('.js-sc-notes-list');
+      list.innerHTML = 'Loading…';
+      fetch('/n/sustain_callout/' + id + '/list.json')
+        .then(function (r) { return r.json(); })
+        .then(function (notes) { scRenderNotes(list, notes); });
+    });
+  });
+  document.querySelectorAll('.js-sc-note-save').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var cell = btn.closest('td');
+      var id = btn.closest('tr').dataset.id;
+      var input = cell.querySelector('.js-sc-note-input');
+      var text = input.value.trim();
+      if (!text) return;
+      var fd = new FormData();
+      fd.append('note', text);
+      fetch('/n/sustain_callout/' + id + '/add.json', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) return;
+          input.value = '';
+          scRenderNotes(cell.querySelector('.js-sc-notes-list'), data.notes);
+          document.querySelector('.sc-row[data-id="' + id + '"] .js-sc-notes-toggle')
+            .textContent = 'Notes (' + data.notes.length + ')';
+        });
+    });
+  });
 }());
+
+function scNsSave(el) {
+  fetch('/sustain/callouts/' + el.dataset.id + '/next-step', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ next_step: el.value }),
+  }).then(function (r) {
+    if (!r.ok) throw new Error();
+    el.style.borderColor = '#1a7f37';
+    setTimeout(function () { el.style.borderColor = ''; }, 800);
+  }).catch(function () {
+    el.style.borderColor = '#c00';
+    alert('Saving failed — try again.');
+  });
+}
 </script>
 {% endblock %}

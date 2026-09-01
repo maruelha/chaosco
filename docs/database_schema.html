@@ -886,10 +886,11 @@
         <tr><td class="col-name">responsible</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open | in_progress | closed, default open — cycled via the chip, saved immediately</td></tr>
         <tr><td class="col-name">date_captured</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO 'YYYY-MM-DD', set once at creation</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-09-01 — inline, onblur save; ↻ archives into next_step_history (entity 'sustain_callout'). Added by an additive ALTER TABLE.</td></tr>
         <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>List/add:</strong> <code>GET /sustain/</code> · <code>POST /sustain/callouts/add</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain_callouts.py</code></div>
+    <div class="relations"><strong>List/add:</strong> <code>GET /sustain/</code> · <code>POST /sustain/callouts/add</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain_callouts.py</code> &nbsp;·&nbsp; <strong>Next step:</strong> entity 'sustain_callout' &nbsp;·&nbsp; <strong>Notes:</strong> entity 'sustain_callout' (list-only, no detail page)</div>
   </div>
 </div>
 

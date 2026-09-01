@@ -1470,6 +1470,13 @@ tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
 .sc-channel--ecom   { background:#e0f7f0; color:#0e7490; }
 .sc-channel--both   { background:#f3e8ff; color:#7c3aed; }
 .sc-type { background:#fff; border-color:#c9c9d4; color:#555; }
+.sc-notes-row td { background:#fafcff; padding:0.7rem 1rem; }
+.sc-notes-list { margin-bottom:0.6rem; display:flex; flex-direction:column; gap:0.35rem; }
+.sc-note-item { font-size:0.85rem; padding:0.3rem 0.5rem; background:#fff;
+    border:1px solid #e8e8e8; border-radius:4px; }
+.sc-note-ts { color:#aaa; font-size:0.78rem; margin-right:0.5rem; }
+.sc-note-add { display:flex; gap:0.5rem; align-items:flex-start; margin-top:0.4rem; }
+.sc-note-textarea { flex:1; min-width:0; font-size:0.85rem; }
 
 /* ---- chips (per-country state marks) ---- */
 .chip, .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
