@@ -2,7 +2,9 @@
 
 **Type:** mini app
 **URL:** `/sustain/` · `/sustain/day/<day>/<stream>` · `/sustain/summary` (+ `/summary/<day>`)
-**Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`
+**Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`;
+`app/db/sustain_callouts.py` → `sustain_callouts` (authored, own log — see
+Call-outs section below)
 **Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`
 **Templates:** `sustain.html` · `sustain_day.html` · `sustain_summary.html`
 **Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`, `tests/test_sustain_web.py`

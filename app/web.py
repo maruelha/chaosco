@@ -180,6 +180,11 @@ from app.web_sustain_issues import bp as _si_bp
 _db_si.init_schema(_db_path)
 app.register_blueprint(_si_bp)
 
+# Sustain Call-outs (2026-09-01) — Marina's own monitoring log, own table,
+# shares the /sustain/ blueprint (see web_sustain.py).
+from app.db import sustain_callouts as _db_sc
+_db_sc.init_schema(_db_path)
+
 
 if __name__ == "__main__":
     import threading

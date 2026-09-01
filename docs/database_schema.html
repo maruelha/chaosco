@@ -868,6 +868,29 @@
       </tbody>
     </table>
   </div>
+
+  <!-- sustain_callouts -->
+  <div class="table-card" id="sustain_callouts">
+    <div class="table-card-header">
+      <span class="tname">sustain_callouts</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Marina's own monitoring log for Sustainphase [USER 2026-09-01] — never touched by the importer. Shown above the imported-days table on /sustain/ (daily review list, closed hidden by default) and, filtered to open/in-progress, per stream on /sustain/summary ('both' appears in both streams). Status cycles open → in_progress → closed → open via a chip.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">retail | ecom | both — normalised on write</td></tr>
+        <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Issue | Spotcheck | Observation | MigrIssue | OrgIssue | Question — fixed list</td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">responsible</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open | in_progress | closed, default open — cycled via the chip, saved immediately</td></tr>
+        <tr><td class="col-name">date_captured</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO 'YYYY-MM-DD', set once at creation</td></tr>
+        <tr><td class="col-name">created_at / updated_at</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="relations"><strong>List/add:</strong> <code>GET /sustain/</code> · <code>POST /sustain/callouts/add</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain_callouts.py</code></div>
+  </div>
 </div>
 
 
