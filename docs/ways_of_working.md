@@ -22,19 +22,49 @@ Even when a plan feels straightforward, split it into discrete steps and execute
 
 After every feature or refactor, update the relevant docs before moving on.
 
-**Files to consider each time:**
-- `CLAUDE.md` — key files table, screens table, output/reports section
-- `docs/architecture.html` — module descriptions, key files, any architecture sections affected. This is the architecture doc YOU read; the same facts exist as a terse map in `CLAUDE.md` (loaded into Claude's context every session). Both get updated together — deliberately no `architecture.md` as a third copy.
-- `docs/screens.html` — screen cards for any new or changed screens/buttons
-- `docs/tech_backlog.md` — mark completed items as done, add new known gaps
+**Which docs?** One lookup: **`docs_map.html`** — every doc, its ONE job,
+its update trigger, and what enforces it. (The list of files used to be
+written out here AND in `CLAUDE.md`; the two copies had already drifted
+apart by 2026-09-01, which is exactly the disease — now both point at the
+map and the list lives once.)
 
-**Rule of thumb:** Ask "which documents would you touch?" before starting the doc update. Claude will list the files — confirm or adjust, then say go ahead.
+**What changed on 2026-09-01:** the FACTS side of this rule no longer
+relies on remembering. `tests/test_docs_structure.py` fails the suite on
+an undocumented table, column, screen or dashboard card, an orphan table,
+or a stale docs_map — so a missed doc update cannot be committed. What
+remains human is the judgment: does the prose still tell the truth after
+the edit? That is the wrap-up skill's coherence pass.
 
-**Archived 2026-08-30:** `docs/screens_visual.html` and its screenshots moved to `docs/archive/` — they are not maintained by anyone, and `docs/screens.html` is the single screen reference.
+**Rule of thumb:** Ask "which documents would you touch?" before starting
+the doc update. Claude will list the files — confirm or adjust, then say
+go ahead.
 
-**Also consider:** `docs/dashboard_cards.html` (a card added/renamed/removed), `docs/database_schema.html` (a table or column changed), and the module's own file — since 2026-08-30 **every mini app has one file** in `docs/claude/` and **every shared component one file** in `docs/claude/components/`, indexed by `docs/claude/mini-apps.md` (the map, which also records how the apps connect). A new mini app = its own file (skeleton `_template.md`) + a row in the map + a card row in dashboard_cards.html. Never a combined doc again — and `tests/test_docs_structure.py` fails the
-suite if a doc drifts (missing headings, a table or module that no longer
-exists, a file missing from the map).
+**Archived 2026-08-30:** `docs/screens_visual.html` and its screenshots
+moved to `docs/archive/` — they are not maintained by anyone, and
+`docs/screens.html` is the single screen reference.
+
+---
+
+## The session ends with /wrap-up (2026-09-01)
+
+Before closing for the day, type **`/wrap-up`** — one word. Claude runs
+the checklist in `.claude/skills/wrap-up/SKILL.md` (its ONLY home):
+coherence re-read of every doc section edited this session · SessionTest
+when a screen changed · MarinaCheckSoon entries for decisions taken on
+Marina's behalf · a session summary with the WHY (and the roads NOT
+taken) to `docs/archive/session_<date>_<topic>.md` · promote lessons
+(technical → `lessons_learned.md`, collaboration → this file) ·
+build_plan pruning — when something is added, something goes · commit,
+push, report.
+
+**Why a summary with the WHY:** commit messages record what WAS built;
+the alternatives considered and rejected exist nowhere else, and they are
+exactly what gets re-litigated months later.
+
+**Closing the window without wrapping up** cannot be detected — but the
+next session start checks for unwrapped work and offers to run the
+wrap-up first (cleanup step 6), so a forgotten wrap-up costs one day,
+never more.
 
 ---
 

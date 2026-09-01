@@ -196,14 +196,19 @@ Print → Save as PDF is the manual fallback.
   to `docs/marina_notes/MarinaCheckSoon.html` (dated section, checkbox per
   item) instead of only mentioning it in chat.
 
-- After every task: update the relevant docs (`docs/claude/*.md`,
-  `docs/screens.html`, `docs/build_plan.md`) — ask "which documents would
-  you touch?" if unsure. ALSO: `docs/database_schema.html` whenever a
-  table or column changes, and `docs/architecture.html` on structural
-  changes (new module/layer/pattern) — both drifted badly once
-  [USER 2026-07-18] because they weren't on this list. And
-  `docs/dashboard_cards.html` (mini dashboard overview) whenever a
-  dashboard card is added/removed/renamed.
+- After every task: update the docs the change touches. Which doc has
+  which job (+ update trigger + enforcement) is ONE lookup:
+  `docs/docs_map.html`. Since 2026-09-01 the FACTS are test-enforced —
+  `tests/test_docs_structure.py` fails the suite on an undocumented
+  table/column/screen/card, an orphan table, or a stale docs_map — so
+  what remains is the judgment part: does the prose still tell the truth?
+- At session end (Marina types `/wrap-up`, or asks to wrap up): run the
+  **wrap-up skill** — coherence re-read of edited docs, SessionTest,
+  MarinaCheckSoon, session summary to `docs/archive/`, lesson promotion
+  (`docs/lessons_learned.md`), build_plan pruning ("when something is
+  added, something goes"). The checklist lives ONLY in
+  `.claude/skills/wrap-up/SKILL.md` — this file and
+  `docs/ways_of_working.md` only point at it.
 - Work in verifiable steps; the user confirms each before the next.
 - **`docs/archive/`** holds finished material (day plans, reviews, session
   write-ups, the old blueprint). Never update a file there and never quote it

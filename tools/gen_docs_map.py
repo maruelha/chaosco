@@ -72,6 +72,13 @@ TOP_LEVEL = {
         "a review finds a recurring pattern (filled in review round 2)",
         "greppable rules become tests (review round 2)",
     ),
+    "lessons_learned.md": (
+        "The STORIES behind the rules — what broke technically, what it "
+        "cost, what we do now (rules live in CLAUDE.md / "
+        "coding_guidelines.md and are pointed at, never restated)",
+        "the wrap-up skill's promote-lessons step finds one worth keeping",
+        "wrap-up skill (story → rule → test)",
+    ),
     "ways_of_working.md": (
         "The WHY of how Marina and Claude collaborate — lessons about the "
         "working method itself",

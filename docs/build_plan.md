@@ -72,13 +72,20 @@ Two rounds were agreed:
    ZERO real gaps (the 2026-09-01 email-docs repair had covered them), so
    the tests freeze a clean state. Verified they bite (probe table failed
    2 tests; unlisted doc fails the map test).
-3. `/wrap-up` skill (coherence re-read · SessionTest when templates/web
-   changed · MarinaCheckSoon · session summary to
-   `docs/archive/session_<date>_<topic>.md` incl. rejected alternatives ·
-   promote lessons · build_plan one-in-one-out) + create
-   `docs/lessons_learned.md` (technical lessons; collaboration lessons
-   stay in `ways_of_working.md`) + shrink the duplicate what-to-document
-   lists in `CLAUDE.md`/`ways_of_working.md` to pointers at the skill.
+3. ✅ DONE 2026-09-01 — `.claude/skills/wrap-up/SKILL.md` (in git, both
+   machines): coherence re-read of edited sections · SessionTest when
+   templates/static/web changed (git-diff check, else say why not) ·
+   MarinaCheckSoon for decisions taken for Marina · session summary WITH
+   the rejected alternatives to `docs/archive/session_<date>_<topic>.md`
+   (existing naming) · promote lessons (story → rule → test) · build_plan
+   one-in-one-out · push + report. `docs/lessons_learned.md` created,
+   seeded with 8 real stories (additive-edit contradictions, hand-typed
+   facts, the moved header row, cached Excel formulas, the two-renderer
+   wrong email report, the 502-line combined doc, SQLite-only SQL, the
+   WeasyPrint dead end). The what-to-document lists in `CLAUDE.md` and
+   `ways_of_working.md` are now POINTERS (docs_map + the skill) — the
+   checklist lives once, in the skill. ways_of_working gained the
+   "/wrap-up ends the session" section.
 4. Trim `dashboard_cards.html` — every card says what it is FOR, nothing
    more [USER 2026-09-01]; unique detail moves to `screens.html` first.
 5. Prune this file: finished sections MOVE to `docs/archive/` — and from
