@@ -103,14 +103,15 @@
         </form>
       </td>
     </tr>
-    <tr class="sc-notes-row" data-id="{{ c.id }}" style="display:none">
+    {% set _reopen_notes = request.args.get('note_entity') == c.id|string
+                           and (request.args.get('note_added') or request.args.get('note_saved')
+                                or request.args.get('note_deleted')) %}
+    <tr class="sc-notes-row" data-id="{{ c.id }}" {% if not _reopen_notes %}style="display:none"{% endif %}>
       <td colspan="8">
-        <div class="sc-notes-list js-sc-notes-list">Loading…</div>
-        <div class="sc-note-add">
-          <textarea class="sc-note-textarea js-sc-note-input" rows="2"
-                    placeholder="Add a note…"></textarea>
-          <button type="button" class="btn btn-sm btn-primary js-sc-note-save">Save note</button>
-        </div>
+        {% with entity_type="sustain_callout", entity_id=c.id, notes=c.notes,
+                attachments_by_note=attachments_by_note %}
+        {% include '_notes_section.html' %}
+        {% endwith %}
       </td>
     </tr>
     {% endfor %}
@@ -209,49 +210,12 @@
     });
   });
 
-  // ---- Notes (todo_list pattern, entity type 'sustain_callout') ----
-  function scRenderNotes(el, notes) {
-    if (!notes.length) {
-      el.innerHTML = '<em style="color:#aaa;font-size:.85rem">No notes yet.</em>';
-      return;
-    }
-    el.innerHTML = notes.map(function (n) {
-      return '<div class="sc-note-item"><span class="sc-note-ts">' + n.created_at +
-             '</span> ' + (n.note || n.heading || '') + '</div>';
-    }).join('');
-  }
+  // ---- Notes toggle (full shared notes component, entity 'sustain_callout') ----
   document.querySelectorAll('.js-sc-notes-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var id = btn.closest('tr').dataset.id;
       var row = document.querySelector('.sc-notes-row[data-id="' + id + '"]');
-      var open = row.style.display !== 'none';
-      if (open) { row.style.display = 'none'; return; }
-      row.style.display = '';
-      var list = row.querySelector('.js-sc-notes-list');
-      list.innerHTML = 'Loading…';
-      fetch('/n/sustain_callout/' + id + '/list.json')
-        .then(function (r) { return r.json(); })
-        .then(function (notes) { scRenderNotes(list, notes); });
-    });
-  });
-  document.querySelectorAll('.js-sc-note-save').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var cell = btn.closest('td');
-      var id = btn.closest('tr').dataset.id;
-      var input = cell.querySelector('.js-sc-note-input');
-      var text = input.value.trim();
-      if (!text) return;
-      var fd = new FormData();
-      fd.append('note', text);
-      fetch('/n/sustain_callout/' + id + '/add.json', { method: 'POST', body: fd })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.ok) return;
-          input.value = '';
-          scRenderNotes(cell.querySelector('.js-sc-notes-list'), data.notes);
-          document.querySelector('.sc-row[data-id="' + id + '"] .js-sc-notes-toggle')
-            .textContent = 'Notes (' + data.notes.length + ')';
-        });
+      row.style.display = row.style.display !== 'none' ? 'none' : '';
     });
   });
 }());

@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
+from urllib.parse import quote
 
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 
@@ -181,14 +182,19 @@ def _urls(ent: NoteEntity, entity_type: str, entity_id: str) -> dict:
 
 
 def _redirect_target(ent: NoteEntity, entity_type: str, entity_id: str, flag: str):
+    """Redirects back with `flag=1` plus `note_entity=<id>` — the latter lets
+    a page that includes _notes_section.html more than once (e.g. one row
+    per list item, Sustain Call-outs) show the "saved" banner only on the
+    entity that was actually touched, not on every instance on the page."""
+    note_entity = quote(str(entity_id), safe="")
     nxt = request.form.get("next") or request.args.get("next")
     if nxt and nxt.startswith("/"):
         sep = "&" if "?" in nxt else "?"
-        return redirect(f"{nxt}{sep}{flag}=1")
+        return redirect(f"{nxt}{sep}{flag}=1&note_entity={note_entity}")
     urls = _urls(ent, entity_type, entity_id)
     base = urls["detail_url"] if request.values.get("return_to") != "list" else urls["list_url"]
     sep = "&" if "?" in base else "?"
-    return redirect(f"{base}{sep}{flag}=1")
+    return redirect(f"{base}{sep}{flag}=1&note_entity={note_entity}")
 
 
 def _row_and_label(conn, ent: NoteEntity, entity_type: str, entity_id: str) -> str:

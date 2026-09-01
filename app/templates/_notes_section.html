@@ -11,16 +11,23 @@
    (loaded globally in base.html).
 #}
 {% set _eid = entity_id | string %}
-<div class="notes-card" id="notes">
+<div class="notes-card" id="notes-{{ entity_type }}-{{ _eid }}">
   <div class="card-header-row">
     <h2>Notes</h2>
     {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
     <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid) }}" class="btn btn-sm">+ Add note</a>
   </div>
 
-  {% if request.args.get('note_added') %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
-  {% if request.args.get('note_saved') %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
-  {% if request.args.get('note_deleted') %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
+  {# note_entity scopes the banner to the ONE instance that was actually
+     touched — a page that includes this component once per row (e.g.
+     Sustain Call-outs) would otherwise show "saved" on every row.
+     Missing note_entity (older links, or a page with a single instance)
+     shows the banner unconditionally — backward compatible. #}
+  {% set _note_match = (request.args.get('note_entity') is none)
+                        or (request.args.get('note_entity') == _eid) %}
+  {% if request.args.get('note_added') and _note_match %}<div class="saved-banner">&#10003;&nbsp; Note added.</div>{% endif %}
+  {% if request.args.get('note_saved') and _note_match %}<div class="saved-banner">&#10003;&nbsp; Note saved.</div>{% endif %}
+  {% if request.args.get('note_deleted') and _note_match %}<div class="saved-banner saved-banner--info">&#10003;&nbsp; Note deleted.</div>{% endif %}
 
   {% if notes %}
   <div class="notes-list">

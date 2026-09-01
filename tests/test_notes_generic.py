@@ -76,7 +76,12 @@ def test_quick_add_next_redirect(client):
     r = client.post(f"/n/shelf/{client.shelf_id}/add",
                     data={"note": "quick", "next": "/shelf"})
     assert r.status_code == 302
-    assert r.headers["Location"].endswith("/shelf?note_added=1")
+    location = r.headers["Location"]
+    assert location.startswith("/shelf?note_added=1")
+    # note_entity scopes the "saved" banner to the touched instance, so a
+    # page including the notes component once PER ROW doesn't flash it on
+    # every row [USER 2026-09-01, Sustain Call-outs fix]
+    assert f"note_entity={client.shelf_id}" in location
 
 
 def test_unknown_entity_type_404s(client):

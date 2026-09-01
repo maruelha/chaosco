@@ -203,6 +203,66 @@ def test_note_count_shown_on_card(client, tmp_path):
     assert "Notes (1)" in html
 
 
+def test_board_renders_the_full_shared_notes_component_per_callout(client, tmp_path):
+    """2026-09-01 fix: the board used to render a bespoke plain-textarea
+    widget with no heading and no attachments — replaced with the SAME
+    shared _notes_section.html every other entity uses, one instance per
+    call-out row."""
+    _add(client, topic="Settlement mismatch")
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        cid = db_sc.list_callouts(conn)[0]["id"]
+    finally:
+        conn.close()
+    client.post(f"/n/sustain_callout/{cid}/add.json",
+               data={"note": "a note taken before the fix"})
+
+    html = client.get("/sustain/").get_data(as_text=True)
+    # the pre-existing note (added via the old quick-add path) survives —
+    # nothing is lost by the swap
+    assert "a note taken before the fix" in html
+    # the full component's markup is present: a heading field on Add, and
+    # per-note attachment upload buttons — neither existed in the old widget
+    assert f'/n/sustain_callout/{cid}/add' in html
+    assert "Add screenshot" in html
+    assert "Attach file" in html
+    assert f'id="notes-sustain_callout-{cid}"' in html
+
+
+def test_note_added_via_full_form_shows_up_and_reopens_its_row(client, tmp_path):
+    """Adding a note through the real /n/.../add form (heading + text, the
+    path that also unlocks attachments) redirects back to the board with
+    note_entity=<id> so only THAT call-out's row reopens and shows the
+    banner — not every row on the page."""
+    _add(client, topic="Settlement mismatch")
+    _add(client, topic="A second, unrelated call-out")
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        ids = [c["id"] for c in db_sc.list_callouts(conn)]
+    finally:
+        conn.close()
+    target_id = ids[0]
+
+    resp = client.post(f"/n/sustain_callout/{target_id}/add",
+                       data={"heading": "Vendor call", "note": "Confirmed by phone"})
+    assert resp.status_code == 302
+    location = resp.headers["Location"]
+    assert "note_added=1" in location
+    assert f"note_entity={target_id}" in location
+
+    html = client.get(location).get_data(as_text=True)
+    assert "Confirmed by phone" in html
+    assert "Vendor call" in html          # heading now shown, unlike the old widget
+    assert "Note added." in html
+    # only the touched row is expanded, the other call-out's row stays closed
+    other_id = ids[1]
+    import re
+    target_row = re.search(rf'<tr class="sc-notes-row" data-id="{target_id}"[^>]*>', html)
+    other_row = re.search(rf'<tr class="sc-notes-row" data-id="{other_id}"[^>]*>', html)
+    assert "display:none" not in target_row.group()
+    assert "display:none" in other_row.group()
+
+
 # ---------------------------------------------------------------------------
 # Management summary (build plan step 4): per-stream Call-outs block
 

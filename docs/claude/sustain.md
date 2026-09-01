@@ -191,13 +191,38 @@ the importer, same separation as `sustain_issue_annotations` from
   `id`; `_next_step_history.html` included once on the page). Stored
   directly on `sustain_callouts.next_step` (blocker pattern), added by an
   additive `ALTER TABLE` in `init_schema`.
-- **Notes** — generic `/n/sustain_callout/...` JSON routes
-  (`web_notes.REGISTRY['sustain_callout']`, list-only entity: no detail
-  page, same shape as `todo`/`meeting_prep`). Inline expandable row per
-  call-out (todo_list.html pattern: `js-sc-notes-toggle` reveals a list +
-  add-note textarea, own small script block — not `static/notes.js`,
-  which assumes a `.js-notes-toggle` class already used by
-  `todo_list.html`'s bespoke markup rather than a shared widget).
+- **Notes** — the SAME shared `_notes_section.html` component every other
+  entity uses (heading + text, per-note 📷 screenshot / 📎 file
+  attachment upload with Ctrl+V paste, edit/delete), one instance
+  included per call-out row, toggled open/closed by a plain "Notes (n)"
+  button (`js-sc-notes-toggle`, board-only JS, no fetch). **Fixed
+  2026-09-01** [USER]: the first build had copied the OTHER, lighter
+  pattern used by `todo_list.html`/Meeting Prep (plain-textarea quick-add,
+  no heading, no attachments) — the wrong precedent to follow; the
+  Delegated Ways of Working page already proved the full component works
+  fine on a list-only entity (`detail_endpoint=None` in
+  `web_notes.REGISTRY`) without a dedicated detail page. No data was lost
+  by the swap — same `notes` table/entity_type, existing notes just had
+  no heading (shown as "(no heading)") and no attachments (there was no
+  button for it before). Two small shared-infrastructure changes made
+  this possible:
+  - `_notes_section.html`'s wrapper id changed from the hardcoded
+    `id="notes"` to `id="notes-{entity_type}-{entity_id}"`, so multiple
+    instances on one page (one per call-out) don't collide (the one other
+    place linking to the bare anchor, Retail's note-count link, updated
+    to match).
+  - `web_notes._redirect_target` now appends `&note_entity=<id>` to every
+    add/edit/delete redirect. `_notes_section.html`'s "saved" banners only
+    show when `note_entity` matches their own `entity_id` (or is absent —
+    single-instance pages are unaffected) — otherwise EVERY call-out row's
+    banner would flash after saving just one note. `sustain.html` also
+    auto-reopens the touched call-out's notes row on that redirect (server
+    side, via the same query params) so the confirmation banner is
+    actually visible, since rows start collapsed.
+  - Add/Edit/Delete are real page navigations back to `/sustain/` (list-only
+    entity, same as `delegated_wow`), not instant like the old widget —
+    other expanded rows re-collapse on that round trip; accepted as-is for
+    now [USER: "try plain first"].
 - **Management summary block** (build plan step 4) — inside each stream's
   section on `/sustain/summary[/<day>]`, right below the stat cards and
   above the Attention list: a table of that channel's open/in-progress
@@ -263,6 +288,11 @@ deviation and the summary v1 layout).
 
 ## Change log
 
+- **2026-09-01 — Call-out notes fixed to the full shared component**
+  [USER: "what you gave me was a simple text filed"] — see the Notes
+  bullet in the Call-outs subsection above for the full story (root
+  cause, the fix, and the two small shared-infrastructure changes it
+  needed). No notes lost.
 - **2026-09-01 — Call-outs** (planning chat, built in 4 steps: storage,
   card-page section + status chip, next-step/notes wiring, management
   summary block). Marina's own monitoring log for the daily review — see

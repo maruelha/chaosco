@@ -43,14 +43,17 @@ def sustain_home():
         tabs = db_sustain.list_tabs(conn)
         callouts = db_sc.list_callouts(conn, include_closed=show_closed)
         for c in callouts:
-            c["note_count"] = len(
-                database.list_notes(conn, "sustain_callout", str(c["id"])))
+            c["notes"] = database.list_notes(conn, "sustain_callout", str(c["id"]))
+            c["note_count"] = len(c["notes"])
+        all_note_ids = [n["id"] for c in callouts for n in c["notes"]]
+        attachments_by_note = database.get_attachments_for_notes(conn, all_note_ids)
     finally:
         conn.close()
     return render_template(
         "sustain.html",
         tabs=tabs,
         callouts=callouts,
+        attachments_by_note=attachments_by_note,
         show_closed=show_closed,
         callout_channels=db_sc.CALLOUT_CHANNELS,
         callout_types=db_sc.CALLOUT_TYPES,
