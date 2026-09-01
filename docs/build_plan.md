@@ -138,6 +138,13 @@ tests (incl. the technical-PK scan); fix `email_list_members` /
   pipeline (screens.html / database_schema.html are styled card layouts,
   not naive markdown), converting 2300-line files, and marina_notes/
   stays html on purpose (checkboxes + localStorage are the point).
+- **Test inventory** [USER 2026-09-01]: a list of every test and, in
+  plain words, what it is actually testing — so Marina can manually
+  scan it and judge whether we are over-testing (too many tests for the
+  same behavior, tests that don't earn their keep). Not scoped yet:
+  could be a generated doc (parsed from test names/docstrings) or a
+  page in the app; where it lives and how it's kept current (generated
+  vs. hand-maintained) still to be decided.
 
 ---
 
