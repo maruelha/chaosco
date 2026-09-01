@@ -114,6 +114,26 @@ Two rounds were agreed:
    from the first session start onward until the FIRST real /wrap-up
    writes a summary — that is correct, no wrap-up has ever run.
 
+**Round 3 — ideas noted 2026-09-01 [USER], not planned yet:**
+
+- **Slim CLAUDE.md** — move what does not earn its always-loaded cost to
+  the correct home (no duplication; save at the right place). CAUTION
+  recorded with it: the seven rules are load-bearing BECAUSE they are
+  always in context — the portable-SQL rule nearly got lost when it lived
+  only in prompts (lessons_learned.md #7); a rule Claude must look up is
+  not in its head while writing code. The bulk of CLAUDE.md is the ~90-line
+  file map, not the ~30-line rules — evaluate THAT first. Each rule's
+  story/why already lives outside (architecture.html, lessons_learned).
+- **Markdown sources, generated HTML** — a tool that renders docs/*.html
+  from .md sources: Claude edits the md, /wrap-up regenerates the html.
+  Would resolve the html/md duality properly (the "no architecture.md"
+  rule banned a third COPY; a generated rendering is not a copy — same
+  facts/meaning concept applied to format), possibly also for
+  architecture.html alone as a first slice. Costs to weigh: a template
+  pipeline (screens.html / database_schema.html are styled card layouts,
+  not naive markdown), converting 2300-line files, and marina_notes/
+  stays html on purpose (checkboxes + localStorage are the point).
+
 **Round 2 — code review after every build (planned):** full review of the
 app; findings fill `docs/coding_guidelines.md`; greppable guidelines become
 tests (incl. the technical-PK scan); fix `email_list_members` /
