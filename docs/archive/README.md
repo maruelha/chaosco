@@ -27,6 +27,7 @@ the way they do — not because it is still true.
 | `inbox_module_plan.md` | Plan for the inbox module, built |
 | `session_2026-08-05_manual_test_cases.md` | Session write-up, Manual Test Cases |
 | `session_2026-08-06_known_prod_issues.md` | Session write-up, Known Production Issues |
+| `session_2026-09-01_docs_cleanup.md` | Session write-up: the documentation concept + cleanup round 1 (first /wrap-up summary; incl. the rejected alternatives) |
 | `v2_blueprint.md` / `.html` | June 2026 blueprint of the tool; superseded by the app |
 | `ppt_template_prompts.txt` | Prompts used to build the PowerPoint templates |
 | `history/` | Nine early `claude_code_prompt_*.md` build prompts |

@@ -647,6 +647,40 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01 (docs cleanup round 1)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Docs cleanup — judgment calls I made without asking</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">The big decisions (menu rule, hooks,
+    pruning, PK rule) were yours. These four were mine &mdash; each is one sentence to
+    change. Full story: <a href="../archive/session_2026-09-01_docs_cleanup.md">session
+    summary</a>.</p>
+    <label class="task"><input type="checkbox" data-k="dc0901-route-altitude">
+      <span><strong>"Every route documented" tests at two altitudes,</strong> not per
+      route: every user-facing page literally, every URL namespace somewhere &mdash; the
+      15th per-row delete button stays prose. The strict version flagged 179 routes and
+      would have bloated the docs; <code>.json</code> data endpoints are auto-exempt.
+      <span class="where">&#8594; tests/test_docs_structure.py</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dc0901-orphan-rule">
+      <span><strong>Table coverage is "no orphans", not "each doc lists all its
+      module's tables"</strong> &mdash; the strict version broke on shared modules
+      (core.py holds 28 tables for many apps). One named exception with a reason:
+      <code>defect_notes</code>, the legacy pre-migration table.
+      <span class="where">&#8594; tests/test_docs_structure.py</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dc0901-gate-cost">
+      <span><strong>The commit gate runs on every git commit (~3s)</strong> and does a
+      cheap check on every other shell command Claude runs. If it ever feels slow or
+      annoying in daily work, say so &mdash; it can be narrowed or removed in one line.
+      <span class="where">&#8594; .claude/settings.json</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dc0901-menu-wording">
+      <span><strong>I rewrote all 31 dashboard-card texts</strong> to your rule ("what is
+      it FOR, nothing more"). The rule was yours, the wording is mine &mdash; worth a
+      one-minute skim to see if any card's purpose reads wrong to you.
+      <span class="where">&#8594; docs/dashboard_cards.html</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

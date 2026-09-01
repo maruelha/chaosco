@@ -53,7 +53,7 @@ Last updated: 2026-09-01 — finished sections MOVED to
 
 The concept itself lives at the top of `docs/docs_map.html` (one job per
 doc · facts generated/tested, meaning hand-written · story → rule → test).
-Two rounds were agreed:
+Round 1 is done, round 2 is agreed, round 3 is noted:
 
 **Round 1 — the docs cleanup, six steps:**
 
@@ -112,7 +112,12 @@ Two rounds were agreed:
    `docs/archive/session_*.md`; when > 0 it hands Claude the context to
    offer /wrap-up for the previous session before new work. It will nag
    from the first session start onward until the FIRST real /wrap-up
-   writes a summary — that is correct, no wrap-up has ever run.
+   writes a summary — that is correct; the first one ran the same day.
+
+**Round 2 — code review after every build (planned):** full review of the
+app; findings fill `docs/coding_guidelines.md`; greppable guidelines become
+tests (incl. the technical-PK scan); fix `email_list_members` /
+`email_list_reports` PKs; review-after-build joins the routine.
 
 **Round 3 — ideas noted 2026-09-01 [USER], not planned yet:**
 
@@ -133,11 +138,6 @@ Two rounds were agreed:
   pipeline (screens.html / database_schema.html are styled card layouts,
   not naive markdown), converting 2300-line files, and marina_notes/
   stays html on purpose (checkboxes + localStorage are the point).
-
-**Round 2 — code review after every build (planned):** full review of the
-app; findings fill `docs/coding_guidelines.md`; greppable guidelines become
-tests (incl. the technical-PK scan); fix `email_list_members` /
-`email_list_reports` PKs; review-after-build joins the routine.
 
 ---
 

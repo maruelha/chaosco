@@ -10,6 +10,27 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## Audit before freezing a rule into a test (2026-09-01)
+
+**What happened:** two coverage rules that sounded right were WRONG when
+run against reality — "every route documented" flagged 179 false
+positives (per-row CRUD endpoints that belong in prose), and "a doc lists
+all tables of its module" broke on shared schema modules.
+**Now:** a rule becomes a test only after an audit run shows what it
+actually flags; a test that cries wolf gets deleted, which is worse than
+no test. Both rules were reshaped by their own audits (two altitudes; no
+orphans) and each carries an explicit exceptions list with reasons.
+
+## A broken settings.json fails SILENTLY (2026-09-01)
+
+**What happened:** while arming a test sentinel, string surgery wrote
+unescaped quotes into `.claude/settings.json` — invalid JSON, and a
+settings file that does not parse disables EVERYTHING in it (hooks
+included) with no error shown.
+**Now:** hooks and settings are edited through a JSON parser
+(`json.load` / `json.dump`), never by string replacement, and the file is
+re-parsed after every write.
+
 ## Additive edits create contradicting docs (2026-09-01)
 
 **What happened:** two email docs each said the opposite of themselves —
