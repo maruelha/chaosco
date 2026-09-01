@@ -81,6 +81,31 @@ silently drifted apart.
 
 ---
 
+## A direct feature request still gets a design check-in first (2026-09-01)
+
+"I want to plan" isn't the only trigger for discussing before building.
+A feature request phrased as a direct build instruction ("add an upload
+that compares X and sets Y") can still hide open design questions —
+resolving a matching-logic ambiguity via one quick clarifying question
+and then writing all the code in one pass is not the same as actually
+planning it out loud first.
+
+**What happened:** the SalesXLS auto-match upload (sales workbook →
+board tickets) landed as a full multi-file build — importer, route,
+button, tests, docs — after only clarifying the matching semantics.
+Marina was irritated afterward: the button's existence, and whether
+outcomes get logged anywhere, were never surfaced as open questions
+before the code was written.
+
+**How to apply now:** for a new feature that adds a new upload,
+automation, or write-path (not a small tweak to something existing),
+sketch it in one short message first — what gets built, what the open
+design questions are (explicitly including whether an audit/history log
+is needed) — and get a go-ahead before writing code, even when the
+request already reads like a direct instruction to build it.
+
+---
+
 ## Getting a screenshot into the chat (2026-08-31)
 
 `Ctrl+V` does not paste images into the Claude Code prompt on this machine

@@ -738,6 +738,34 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01 (Delegated: SalesXLS auto-match upload)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">SalesXLS auto-match upload — small choices I made, one sentence each to change</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">The matching field (raw Summary, not
+    the parsed Solman ID) and the ticket scope (board-visible only) were your calls from
+    the planning question. These were mine — click-through in
+    <a href="SessionTest_2026-09-01_d.html">SessionTest_2026-09-01_d</a>.</p>
+    <label class="task"><input type="checkbox" data-k="sx0901-substring-risk">
+      <span><strong>A SUBSTRING match can false-positive</strong> if a Solman ID in the
+      sales file is short or generic (e.g. it happens to also appear inside an unrelated
+      ticket's Summary text). Worth a look once you've run it against your real file —
+      if it over-matches, an exact-prefix check would be safer.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sx0901-filename-loose">
+      <span><strong>The Sales XLS upload only checks the file ends in .xlsx</strong> — no
+      filename-pattern check like the MB tracking upload has. Fine unless you want a
+      safety net against picking the wrong workbook by mistake.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sx0901-no-log">
+      <span><strong>No log is kept of which upload changed which ticket</strong> — you
+      confirmed the flash-message summary is fine for now; noting it here in case that
+      changes once you're using it for real.
+      <span class="where">&#8594; /delegated/</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

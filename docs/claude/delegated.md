@@ -517,8 +517,8 @@ value Summary". Pure function `delegated_buckets.sales_xls_matches`
 story-only, non-blocker set the board itself shows), not every
 `seen_in_delegated` row.
 
-**Write rule, tri-state-aware** (reuses the existing SalesXLS marker,
-[[delegated]] tri-state section above — no new column):
+**Write rule, tri-state-aware** (reuses the existing SalesXLS marker, see
+the tri-state section above — no new column):
 - Match → `sales_xls` set to `'yes'` **unconditionally**, overwriting
   whatever was there before (manual `maybe`/`no` included).
 - No match → set to `'no'` **only when the marker was not yet assessed**
