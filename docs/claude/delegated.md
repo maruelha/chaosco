@@ -492,6 +492,30 @@ the backlog button. Board filter: "SalesXLS: all / Yes / Maybe / No /
 not set" (`data-salesxls` per row, `unset` matches the empty value) in
 the same `dlgFilterBoard()`. Never read by
 `report_context`/`numbers_context`/`overview_context`.
+
+## Ways of Working page (2026-09-01 [USER])
+
+`/delegated/wow` (🤝 button in the board header) — the decision log for
+what the dailies agree on. Deliberately **no own table** (the one-notes-
+system rule): the page is ONE notes thread in the shared system, pinned
+to the singleton entity `('delegated_wow', 'main')` — a note's
+entity_type/entity_id flag says where it is pinned, this page just has a
+fixed flag. Pieces:
+
+- `web_notes.REGISTRY["delegated_wow"]` — list-only entry (no detail
+  page, no row lookup), so the generic `/n/delegated_wow/main/…` routes,
+  attachments and Ctrl+V paste all just work; template
+  `delegated_wow.html` = page header + `_notes_section.html` include.
+- **Inbox filing target**: `delegated_wow` in
+  `db/notes._INBOX_TARGET_TYPES`; target-exists check accepts ONLY the
+  id `'main'`. In the inbox filing picker the type "Delegated — Ways of
+  Working" is a SINGLETON: picking it hides the search box and arms
+  Move › immediately (special case next to the shelf one in
+  `inbox.html`'s `onTypeChange`).
+- **⬇ Download HTML**: `/delegated/wow/download` — dated standalone
+  snapshot, own self-contained template `delegated_wow_download.html`
+  (inline CSS, like the three report downloads); attachments listed by
+  name only.
 **Deliberately excluded from `report_context`/`numbers_context`** — [USER:
 "no report - it is ONLY on the dashboard"], so neither the status report
 nor the Management Summary reads it.

@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect", "delegated_wow"}
 
 # Incoming buckets [USER 2026-07-16]: the inbox route_to dropdown pushes an
 # item to (module, 'incoming') — sorted manually on that module's page,
@@ -250,6 +250,10 @@ def file_inbox_item(
         target_exists = conn.execute(
             "SELECT 1 FROM known_prod_defects WHERE id = ?", (target_id,)
         ).fetchone() is not None
+    elif target_type == "delegated_wow":
+        # Delegated Ways of Working (2026-09-01 [USER]) — SINGLETON page,
+        # one notes thread: 'main' is the only valid id, no table to check
+        target_exists = target_id == "main"
     if not target_exists:
         return False
     with conn:

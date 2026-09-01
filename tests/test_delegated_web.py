@@ -11,6 +11,7 @@ from app.db import jira as db_jira
 import app.web_blockers as web_blockers
 import app.web_core as web_core
 import app.web_delegated as web_delegated
+import app.web_notes as web_notes
 from app.web import app
 
 XML = """<?xml version="1.0" encoding="UTF-8"?>
@@ -82,6 +83,8 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(web_core, "_db_path", db_path)
     monkeypatch.setattr(web_blockers, "_get_conn",
                         lambda: database.get_connection(db_path))
+    # the Ways of Working page adds notes via the generic /n/... routes
+    monkeypatch.setattr(web_notes, "_db_path", db_path)
     return app.test_client()
 
 
@@ -725,6 +728,60 @@ def test_sales_xls_absent_from_all_three_reports(client):
     for path in ("/delegated/report", "/delegated/numbers",
                  "/delegated/overview"):
         assert "SalesXLS" not in client.get(path).get_data(as_text=True)
+
+
+# ---------------------------------------------------------------------------
+# Ways of Working [USER 2026-09-01]: singleton decision-log page — ONE notes
+# thread pinned to ('delegated_wow', 'main') in the SHARED notes system (no
+# own table), inbox filing target, dated standalone HTML download
+
+def test_wow_page_notes_roundtrip_and_download(client):
+    html = client.get("/delegated/wow").get_data(as_text=True)
+    assert "Ways of Working" in html
+
+    # add via the generic notes routes (registry entry 'delegated_wow')
+    resp = client.post("/n/delegated_wow/main/add", data={
+        "heading": "Daily 2026-09-01",
+        "note": "Orders are always tagged with the market."})
+    assert resp.status_code == 302
+
+    html = client.get("/delegated/wow").get_data(as_text=True)
+    assert "Daily 2026-09-01" in html
+    assert "tagged with the market" in html
+
+    # dated standalone snapshot carries the notes
+    resp = client.get("/delegated/wow/download")
+    assert resp.status_code == 200
+    assert 'attachment; filename="delegated_ways_of_working_' \
+        in resp.headers["Content-Disposition"]
+    snap = resp.get_data(as_text=True)
+    assert "Daily 2026-09-01" in snap and "tagged with the market" in snap
+
+
+def test_wow_is_an_inbox_filing_target(client):
+    conn = web_delegated._get_conn()
+    try:
+        note_id = database.add_inbox_item(
+            conn, "Daily decision", "raised in the daily")
+        # only the singleton id 'main' is a valid target
+        assert database.file_inbox_item(
+            conn, note_id, "delegated_wow", "other") is False
+        assert database.file_inbox_item(
+            conn, note_id, "delegated_wow", "main") is True
+        assert database.count_inbox_items(conn) == 0  # moved, not copied
+    finally:
+        conn.close()
+    html = client.get("/delegated/wow").get_data(as_text=True)
+    assert "Daily decision" in html and "raised in the daily" in html
+    # the inbox page offers the target in its per-item Type picker
+    conn = web_delegated._get_conn()
+    try:
+        database.add_inbox_item(conn, "still unfiled", "second item")
+    finally:
+        conn.close()
+    assert 'value="delegated_wow"' in client.get("/inbox").get_data(as_text=True)
+    # and the board header links to the page
+    assert "Ways of working" in client.get("/delegated/").get_data(as_text=True)
 
 
 # ---------------------------------------------------------------------------

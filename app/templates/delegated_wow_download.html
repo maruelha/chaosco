@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+{# Standalone snapshot of the Delegated Ways of Working notes [USER
+   2026-09-01] — self-contained (inline CSS, no app chrome), served as a
+   dated download by /delegated/wow/download. Attachments by name only. #}
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ways of Working — Delegated Testing — {{ today }}</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         margin: 2rem auto; max-width: 52rem; padding: 0 1rem; color: #1e293b; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-top: 0; }
+  .note { border: 1px solid #e5e5ea; border-radius: 8px;
+          padding: 0.7rem 1rem; margin: 0.7rem 0; }
+  .note-head { display: flex; justify-content: space-between; gap: 1rem;
+               align-items: baseline; margin-bottom: 0.3rem; }
+  .note-heading { font-weight: 600; }
+  .note-date { color: #888; font-size: 0.78rem; font-family: Consolas, monospace;
+               white-space: nowrap; }
+  .note-text { margin: 0; white-space: pre-wrap; font-size: 0.9rem; }
+  .note-atts { color: #888; font-size: 0.78rem; margin-top: 0.4rem; }
+  .empty { color: #888; }
+  @media print { body { margin: 0.5rem; } }
+</style>
+</head>
+<body>
+<h1>🤝 Ways of Working — Delegated Testing</h1>
+<p class="subtitle">Decision log snapshot · {{ today }} · {{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</p>
+
+{% for n in notes %}
+<div class="note">
+  <div class="note-head">
+    <span class="note-heading">{{ n.heading or '(no heading)' }}</span>
+    <span class="note-date">{{ n.created_at }}</span>
+  </div>
+  <p class="note-text">{{ n.note or '' }}</p>
+  {% if attachments_by_note.get(n.id) %}
+  <div class="note-atts">📎 {% for att in attachments_by_note[n.id] %}{{ att.original_name or att.filename }}{% if not loop.last %} · {% endif %}{% endfor %}
+    <em>(attachments stay in the tool — this snapshot lists them by name)</em></div>
+  {% endif %}
+</div>
+{% else %}
+<p class="empty">No notes yet.</p>
+{% endfor %}
+</body>
+</html>

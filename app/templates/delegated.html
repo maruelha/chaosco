@@ -16,6 +16,8 @@
          title="management report: pipeline by stage, execution status, blockers by team">📈 Overview</a>
       <a href="{{ url_for('blockers.blockers_list') }}" class="btn"
          title="defects/tasks/clarifications blocking tickets — tickets registered here are hidden from this board">🚧 Blockers</a>
+      <a href="{{ url_for('delegated.delegated_wow') }}" class="btn"
+         title="decision log — what the dailies agreed on, as notes">🤝 Ways of working</a>
       <form method="post" action="{{ url_for('delegated.delegated_upload') }}"
             enctype="multipart/form-data" style="display:inline">
         <input type="file" name="file" accept=".xml" required

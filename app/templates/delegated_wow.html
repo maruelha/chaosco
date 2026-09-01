@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Ways of Working — Delegated Testing — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('delegated.delegated_list') }}">Delegated Testing</a>
+  <span>›</span>
+  <span>Ways of Working</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>🤝 Ways of Working</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('delegated.delegated_wow_download') }}" class="btn"
+         title="dated standalone HTML snapshot of all notes">⬇ Download HTML</a>
+    </div>
+  </div>
+  <p class="page-subtitle">The delegated-testing decision log — whatever is
+    agreed in the dailies and should be remembered lands here as a note.
+    Inbox items can be filed to this page too (Inbox → Move › → type
+    "Delegated — Ways of Working").</p>
+</div>
+
+{# ONE notes thread — shared notes system, pinned to ('delegated_wow', 'main');
+   attachments + Ctrl+V paste come with the component for free #}
+{% with entity_type='delegated_wow', entity_id='main' %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<div class="btn-row">
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">&#8592; Back to Delegated Testing</a>
+</div>
+{% endblock %}

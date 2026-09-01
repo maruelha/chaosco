@@ -139,6 +139,13 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_link(c, int(i)),
         lambda r: r.get("description") or f"Link #{r['id']}", int,
     ),
+    # Delegated Ways of Working (2026-09-01 [USER]) — ONE page, one thread
+    # (singleton entity id 'main'): decisions from the dailies. Inbox items
+    # can be filed here too (db/notes._INBOX_TARGET_TYPES).
+    "delegated_wow": NoteEntity(
+        "Delegated — Ways of Working", "delegated.delegated_wow", None, None, None,
+        lambda r: "Ways of working",
+    ),
     # list-only quick-add entities: no detail page, no 404 label lookup
     "meeting_prep": NoteEntity(
         "Meeting Prep", "meeting_prep_list", None, None, None,

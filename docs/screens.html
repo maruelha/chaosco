@@ -304,7 +304,7 @@
       <span class="screen-url">GET /inbox</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, ECOM, Gatekeeper ticket, Test Learning, Follow-up, Shelf, Topic, Contact, Link, or Known Prod Issue [added 2026-08-06]) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
+      <p class="screen-desc">Daily capture pad. Paste notes and screenshots during the day, then file each item to its destination (Defect, Retail test case, Spillover, ECOM, Gatekeeper ticket, Test Learning, Follow-up, Shelf, Topic, Contact, Link, Known Prod Issue [added 2026-08-06], or the Delegated <strong>Ways of Working</strong> page [added 2026-09-01]) when ready. Unfiled items stay here until moved or deleted. Dashboard card shows pending count badge.</p>
       <div class="features">
         <span class="feat-label">Add item</span>
         <span class="feat-value">Heading (optional) + large textarea + <span class="pill pill-action">📷 Add screenshot</span> or <span class="pill pill-action">📎 Attach file</span> or Ctrl+V paste. Items appear in reverse-chronological order.</span>
@@ -325,7 +325,8 @@
         <span class="feat-value">The page keeps its scroll position after edit / file / delete / quick-route saves — no more jumping back to the top after each action.</span>
         <span class="feat-label">Filing behaviour</span>
         <span class="feat-value">For Defect / Retail / Spillover / Test Learning / Follow-up: single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.<br>
-        For <strong>Shelf</strong>: a new Shelf item is created from the inbox heading; area and category are entered in the picker (both optional); the note is then re-parented to the new shelf item. Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>.</span>
+        For <strong>Shelf</strong>: a new Shelf item is created from the inbox heading; area and category are entered in the picker (both optional); the note is then re-parented to the new shelf item. Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>.<br>
+        For <strong>Delegated — Ways of Working</strong> (2026-09-01): a SINGLETON target — picking the type hides the search box and arms Move › immediately (target is always <code>('delegated_wow', 'main')</code>); the note + attachments move to the <a href="#delegated-wow">Ways of Working</a> page.</span>
         <span class="feat-label">Attachment support</span>
         <span class="feat-value">Images (PNG/JPG/GIF/WEBP) shown as thumbnails. Documents (PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/TXT/CSV/MSG/EML/ZIP/XML/JSON) shown as download links. Ctrl+V pastes a Snipping Tool image into the last-hovered item. ✕ to delete any attachment.</span>
         <span class="feat-label">Table source</span>
@@ -972,6 +973,17 @@
     </div>
     <div class="screen-card-body">
       <p class="screen-desc">Per-ticket page with a <strong>Details / Messages tab switch</strong> on the read-only Jira card: Details = fields (incl. Reporter), order numbers (latest comment), acceptance criteria, description; Messages = the full comment thread. BLOCKED badge in the header when status is Blocked. Below: "My working fields" (Why blocked — shown when blocked or already filled — + a <strong>Counts toward the weekly goal</strong> checkbox, same visibility rule, added 2026-08-27 — + a <strong>ReqTool</strong> checkbox (2026-08-29, dashboard-only, not on any report) — + a <strong>SalesXLS</strong> tri-state cycling chip (2026-09-01, same control as the board, saves immediately — NOT part of the form save) — + Next step with ↻/🕘 archive component, one form POST saves all fields; above the form a <strong>📦 Backlog park/unpark BUTTON</strong> (2026-09-01 [USER] — "📦 Move to backlog" / "↩ Move back to board" + a parked-state pill, posts to <code>POST /delegated/ticket/&lt;key&gt;/backlog</code>; the ONE backlog control — the board column and the form checkbox are gone, and the form save does not touch backlog), a <strong>Blockers</strong> card (shown when blocked or already has one — chips + "Manage blockers" opening the shared attach picker, same component as the board), 💬 Teams chats / ✉️ Issue message buttons (shared, <code>('jira', key)</code>), and the full notes module with attachments — entity <code>delegated</code>, its OWN thread separate from the gatekeeper's <code>jira</code> notes on the same key.</p>
+    </div>
+  </div>
+
+  <!-- Delegated Ways of Working -->
+  <div class="screen-card" id="delegated-wow">
+    <div class="screen-card-header">
+      <span class="screen-title">Delegated Testing — Ways of Working</span>
+      <span class="screen-url">GET /delegated/wow · GET /delegated/wow/download</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">The delegated-testing <strong>decision log</strong> (2026-09-01 [USER]): one page to capture what the dailies agree on, reached via the 🤝 Ways of working button in the board header. Deliberately NO own table — it is ONE notes thread in the shared notes system, pinned to the singleton entity <code>('delegated_wow', 'main')</code> (registry entry in <code>web_notes.REGISTRY</code>, list-only), so add/edit/delete, attachments and Ctrl+V paste all come from the generic notes component. <strong>Inbox integration</strong>: the page is an inbox filing target — Inbox → File › → type "Delegated — Ways of Working" arms Move › immediately (singleton, no search), and the item plus its attachments moves here wholesale. <strong>⬇ Download HTML</strong> (<code>GET /delegated/wow/download</code>): dated standalone self-contained snapshot (<code>delegated_wow_download.html</code>, inline CSS) listing every note with heading/date/text; attachments are listed by name only.</p>
     </div>
   </div>
 

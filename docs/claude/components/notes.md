@@ -44,6 +44,11 @@ Images render as thumbnails, documents as download links (`is_image` filter).
 
 - **Never** create a module-specific notes table, route set, or attachment
   script. Adding notes to a module = a REGISTRY entry + the include.
+- A whole PAGE can be one notes thread: a **singleton entity** with a
+  fixed id (first: `('delegated_wow', 'main')`, the Delegated Ways of
+  Working page, 2026-09-01) — registry entry with `detail_endpoint=None`
+  and `get_row=None`, the page template is just a header plus the
+  include. No new table, ever.
 - `entity_id` is TEXT on purpose (jira keys as well as integer PKs) —
   `id_cast` in the registry entry converts back for the detail route.
 - Notes-capable entities include `contact` and `link`, so inbox items can be

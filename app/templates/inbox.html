@@ -169,6 +169,7 @@
               <option value="link">Link</option>
               <option value="shelf">Shelf</option>
               <option value="prod_defect">Known Prod Issue</option>
+              <option value="delegated_wow">Delegated — Ways of Working</option>
             </select>
           </div>
           <div id="search-box-{{ item.id }}">
@@ -275,12 +276,15 @@
   window.onTypeChange = function (id) {
     var typeSel = document.querySelector('.file-type-sel[data-item="' + id + '"]');
     var isShelf = typeSel && typeSel.value === 'shelf';
+    // singleton target (2026-09-01): the Delegated Ways-of-Working page —
+    // nothing to search, the Move button arms immediately
+    var isWow   = typeSel && typeSel.value === 'delegated_wow';
     // toggle search vs shelf inputs
     var searchBox   = document.getElementById('search-box-' + id);
     var shelfInputs = document.getElementById('shelf-inputs-' + id);
     var stdForm     = document.getElementById('file-std-form-' + id);
     var shelfForm   = document.getElementById('file-shelf-form-' + id);
-    if (searchBox)   searchBox.style.display   = isShelf ? 'none' : '';
+    if (searchBox)   searchBox.style.display   = (isShelf || isWow) ? 'none' : '';
     if (shelfInputs) shelfInputs.style.display  = isShelf ? ''     : 'none';
     if (stdForm)     stdForm.style.display      = isShelf ? 'none' : '';
     if (shelfForm)   shelfForm.style.display     = isShelf ? ''     : 'none';
@@ -291,7 +295,13 @@
     document.getElementById('file-btn-' + id).disabled = true;
     var searchInp = document.querySelector('.file-search-inp[data-item="' + id + '"]');
     if (searchInp) searchInp.value = '';
-    if (!isShelf) onSearchInput(id);
+    if (isWow) {
+      document.getElementById('target-type-' + id).value = 'delegated_wow';
+      document.getElementById('target-id-' + id).value = 'main';
+      document.getElementById('file-btn-' + id).disabled = false;
+    } else if (!isShelf) {
+      onSearchInput(id);
+    }
   };
 
   var _timers = {};
