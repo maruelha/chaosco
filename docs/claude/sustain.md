@@ -5,7 +5,8 @@
 **Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`;
 `app/db/sustain_callouts.py` → `sustain_callouts` (authored, own log — see
 Call-outs section below)
-**Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`
+**Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`;
+call-outs routes `/sustain/callouts/add|<id>/update|<id>/status|<id>/delete`
 **Templates:** `sustain.html` · `sustain_day.html` · `sustain_summary.html`
 **Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`, `tests/test_sustain_web.py`
 
@@ -155,6 +156,34 @@ import; the prefix before `DTC_GBS` varies per file anyway). Import
 result via `sustain_ok`/`sustain_msg` query params in a result-box.
 Template `sustain.html`; the imported-days table (`list_tabs`) links each
 (day, stream) to the day report.
+
+### Call-outs (`app/db/sustain_callouts.py`, planning chat 2026-09-01)
+
+Marina's own monitoring log, shown on the card page **above** the
+imported-days table (`sustain.html`, `ui.section('Call-outs', 'amber', ...)`).
+Own table `sustain_callouts` (channel, type, topic, responsible, status,
+date_captured) — deliberately separate from `db/sustain.py`, never touched by
+the importer, same separation as `sustain_issue_annotations` from
+`sustain_issues`.
+
+- **channel** — `retail` / `ecom` / `both`, chip at the start of the row.
+- **type** — fixed list `CALLOUT_TYPES`: Issue, Spotcheck, Observation,
+  MigrIssue, OrgIssue, Question.
+- **status** — a cycling chip (SalesXLS pattern, `_salesxls_chip.html`
+  reused as a template, not shared code): click cycles
+  open → in_progress → closed → open, saved immediately via
+  `POST /sustain/callouts/<id>/status` (`db_sc.cycle_status` — server
+  decides the next state, no value posted). Closed items are hidden by
+  default; `?show_closed=1` reveals them.
+- **date_captured** — set once at creation (today), never edited.
+- Add / inline edit (toggle row, urgent.html pattern) / delete — plain forms
+  + small fetch() calls, reload on save/delete (no live re-sort needed for a
+  short daily list).
+- `list_open_for_channel(conn, channel)` — a channel's own open/in-progress
+  items **plus every `both` item** — feeds the management summary below.
+
+Next step + notes wiring (`web_next_steps.REGISTRY['sustain_callout']`,
+`web_notes.REGISTRY['sustain_callout']`) is build-plan step 3, not done yet.
 
 ### Day report — `/sustain/day/<day>/<stream>` (`sustain_day.html`)
 

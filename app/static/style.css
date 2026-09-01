@@ -1456,6 +1456,21 @@ tr.sustain-parent .sustain-arrow { display:inline-block; width:1em;
 tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
     padding-top:0.3rem; padding-bottom:0.3rem; }
 
+/* ---- Sustain Call-outs (2026-09-01) ---- */
+.sc-form { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;
+    margin:0.6rem 0 1rem; }
+.sc-form input, .sc-form select { padding:0.4rem 0.6rem; border:1px solid #c9c9d4;
+    border-radius:6px; font-size:0.9rem; }
+.sc-topic-input { flex:1; min-width:14rem; }
+.sc-resp-input  { min-width:10rem; }
+.sc-channel-select, .sc-type-select { min-width:7rem; }
+.sc-topic-cell { max-width:22rem; }
+.sc-channel { background:#f0f0f5; color:#444; }
+.sc-channel--retail { background:#e8f0ff; color:#2c5fb3; }
+.sc-channel--ecom   { background:#e0f7f0; color:#0e7490; }
+.sc-channel--both   { background:#f3e8ff; color:#7c3aed; }
+.sc-type { background:#fff; border-color:#c9c9d4; color:#555; }
+
 /* ---- chips (per-country state marks) ---- */
 .chip, .rt-chip { display:inline-block; margin:2px 3px; padding:2px 9px; border-radius:14px;
     font-size:0.78rem; font-weight:600; border:1.5px solid transparent; }

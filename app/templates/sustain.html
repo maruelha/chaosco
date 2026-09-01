@@ -27,6 +27,82 @@
 </div>
 {% endif %}
 
+{% call ui.section('Call-outs', 'amber', badge=callouts | length) %}
+<form method="post" action="{{ url_for('sustain.sustain_callout_add') }}" class="sc-form">
+  <select name="channel" class="sc-channel-select" required>
+    {% for c in callout_channels %}
+    <option value="{{ c }}">{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="type" class="sc-type-select" required>
+    {% for t in callout_types %}
+    <option value="{{ t }}">{{ t }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="topic" placeholder="Topic…" required class="sc-topic-input">
+  <input type="text" name="responsible" placeholder="Responsible (optional)" class="sc-resp-input">
+  <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+{% if callouts %}
+<table class="ui-table">
+  <thead>
+    <tr><th>Channel</th><th>Type</th><th>Topic</th><th>Responsible</th>
+        <th>Status</th><th>Date captured</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for c in callouts %}
+    <tr class="sc-row" data-id="{{ c.id }}">
+      <td><span class="chip sc-channel sc-channel--{{ c.channel }}">{{ c.channel }}</span></td>
+      <td><span class="chip sc-type">{{ c.type }}</span></td>
+      <td class="sc-topic-cell">{{ c.topic }}</td>
+      <td>{{ c.responsible or '—' }}</td>
+      <td>
+        <button type="button" class="chip sc-status js-sc-status" data-id="{{ c.id }}"
+                data-value="{{ c.status }}" title="click to cycle: Open → In Progress → Closed"></button>
+      </td>
+      <td>{{ c.date_captured }}</td>
+      <td>
+        <button type="button" class="btn btn-sm js-sc-edit">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger js-sc-delete" title="delete">&#10005;</button>
+      </td>
+    </tr>
+    <tr class="sc-edit-row" data-id="{{ c.id }}" style="display:none">
+      <td colspan="7">
+        <form method="post" action="{{ url_for('sustain.sustain_callout_update', callout_id=c.id) }}" class="sc-form">
+          <select name="channel" class="sc-channel-select">
+            {% for ch in callout_channels %}
+            <option value="{{ ch }}" {% if ch == c.channel %}selected{% endif %}>{{ ch }}</option>
+            {% endfor %}
+          </select>
+          <select name="type" class="sc-type-select">
+            {% for t in callout_types %}
+            <option value="{{ t }}" {% if t == c.type %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" name="topic" value="{{ c.topic }}" required class="sc-topic-input">
+          <input type="text" name="responsible" value="{{ c.responsible or '' }}" placeholder="Responsible" class="sc-resp-input">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn js-sc-cancel">Cancel</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:#888; margin:0.6rem 0">Nothing to review right now.</p>
+{% endif %}
+
+<p style="margin-top:0.6rem">
+  {% if show_closed %}
+  <a href="{{ url_for('sustain.sustain_home') }}">Hide closed</a>
+  {% else %}
+  <a href="{{ url_for('sustain.sustain_home', show_closed='1') }}">Show closed</a>
+  {% endif %}
+</p>
+{% endcall %}
+
 {% if not tabs %}
 <p style="color:#888; margin:0.6rem 0 1rem">
   No checklist imported yet — pick the
@@ -49,4 +125,62 @@
 </table>
 {% endcall %}
 {% endif %}
+
+<script>
+(function () {
+  var SC_STATUS = {
+    open:        ['Open',        '#e5e5ea', '#666666'],
+    in_progress: ['In Progress', '#fef3c7', '#92400e'],
+    closed:      ['Closed',      '#e3f9e5', '#1a7f37'],
+  };
+  function scPaint(btn) {
+    var s = SC_STATUS[btn.dataset.value] || SC_STATUS.open;
+    btn.textContent = s[0];
+    btn.style.background = s[1];
+    btn.style.color = s[2];
+    btn.style.cursor = 'pointer';
+    btn.style.border = 'none';
+  }
+  document.querySelectorAll('.js-sc-status').forEach(scPaint);
+  document.querySelectorAll('.js-sc-status').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      fetch('/sustain/callouts/' + btn.dataset.id + '/status', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.ok) throw new Error();
+          btn.dataset.value = d.status;
+          scPaint(btn);
+          {% if not show_closed %}
+          if (d.status === 'closed') btn.closest('tr').style.display = 'none';
+          {% endif %}
+        })
+        .catch(function () { alert('Saving failed — try again.'); });
+    });
+  });
+  document.querySelectorAll('.js-sc-delete').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('Delete this call-out?')) return;
+      var row = btn.closest('tr');
+      fetch('/sustain/callouts/' + row.dataset.id + '/delete', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { if (d.ok) window.location.reload(); });
+    });
+  });
+  document.querySelectorAll('.js-sc-edit').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr').nextElementSibling;
+      var open = row.style.display !== 'none';
+      row.style.display = open ? 'none' : '';
+      btn.textContent = open ? 'Edit' : 'Close';
+    });
+  });
+  document.querySelectorAll('.js-sc-cancel').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = btn.closest('tr');
+      row.style.display = 'none';
+      row.previousElementSibling.querySelector('.js-sc-edit').textContent = 'Edit';
+    });
+  });
+}());
+</script>
 {% endblock %}

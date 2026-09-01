@@ -14,11 +14,12 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from app import database
 from app.config_loader import load_config
 from app.db import sustain as db_sustain
+from app.db import sustain_callouts as db_sc
 from app.sustain_importer import run_sustain_import
 
 bp = Blueprint("sustain", __name__, url_prefix="/sustain")
@@ -36,17 +37,86 @@ def _get_conn():
 
 @bp.route("/")
 def sustain_home():
+    show_closed = request.args.get("show_closed") == "1"
     conn = _get_conn()
     try:
         tabs = db_sustain.list_tabs(conn)
+        callouts = db_sc.list_callouts(conn, include_closed=show_closed)
     finally:
         conn.close()
     return render_template(
         "sustain.html",
         tabs=tabs,
+        callouts=callouts,
+        show_closed=show_closed,
+        callout_channels=db_sc.CALLOUT_CHANNELS,
+        callout_types=db_sc.CALLOUT_TYPES,
         sustain_ok=request.args.get("sustain_ok"),
         sustain_msg=request.args.get("sustain_msg"),
     )
+
+
+@bp.route("/callouts/add", methods=["POST"])
+def sustain_callout_add():
+    topic = request.form.get("topic", "").strip()
+    if not topic:
+        return redirect(url_for("sustain.sustain_home"))
+    conn = _get_conn()
+    try:
+        db_sc.create_callout(
+            conn,
+            channel=request.form.get("channel", ""),
+            type_=request.form.get("type", ""),
+            topic=topic,
+            responsible=request.form.get("responsible"),
+        )
+    finally:
+        conn.close()
+    return redirect(url_for("sustain.sustain_home"))
+
+
+@bp.route("/callouts/<int:callout_id>/update", methods=["POST"])
+def sustain_callout_update(callout_id: int):
+    topic = request.form.get("topic", "").strip()
+    if not topic:
+        return redirect(url_for("sustain.sustain_home"))
+    conn = _get_conn()
+    try:
+        db_sc.update_callout(
+            conn, callout_id,
+            channel=request.form.get("channel", ""),
+            type_=request.form.get("type", ""),
+            topic=topic,
+            responsible=request.form.get("responsible"),
+        )
+    finally:
+        conn.close()
+    return redirect(url_for("sustain.sustain_home"))
+
+
+@bp.route("/callouts/<int:callout_id>/status", methods=["POST"])
+def sustain_callout_status(callout_id: int):
+    """Cycling status chip — server decides the next state
+    (open -> in_progress -> closed -> open), saved immediately."""
+    conn = _get_conn()
+    try:
+        new_status = db_sc.cycle_status(conn, callout_id)
+    finally:
+        conn.close()
+    if new_status is None:
+        return jsonify({"ok": False, "error": "not found"}), 404
+    return jsonify({"ok": True, "status": new_status,
+                    "label": db_sc.STATUS_LABELS[new_status]})
+
+
+@bp.route("/callouts/<int:callout_id>/delete", methods=["POST"])
+def sustain_callout_delete(callout_id: int):
+    conn = _get_conn()
+    try:
+        db_sc.delete_callout(conn, callout_id)
+    finally:
+        conn.close()
+    return jsonify({"ok": True})
 
 
 @bp.route("/day/<day>/<stream>")

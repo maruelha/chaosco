@@ -133,12 +133,17 @@ def get_callout(conn: sqlite3.Connection, callout_id: int) -> dict | None:
 def list_callouts(conn: sqlite3.Connection,
                   include_closed: bool = False) -> list[dict]:
     """Newest-captured first; open/in_progress before closed when both are
-    shown (daily review list on the card page)."""
+    shown (daily review list on the card page). Tolerant of the table not
+    existing yet (partial-init test fixtures / DBs from before this
+    feature) — the card page must still render."""
     sql = "SELECT * FROM sustain_callouts"
     if not include_closed:
         sql += " WHERE status != 'closed'"
     sql += " ORDER BY date_captured DESC, id DESC"
-    items = _rows_to_dicts(conn.execute(sql))
+    try:
+        items = _rows_to_dicts(conn.execute(sql))
+    except sqlite3.OperationalError:
+        return []
     if include_closed:
         items.sort(key=lambda r: r["status"] == "closed")
     return items
@@ -146,13 +151,16 @@ def list_callouts(conn: sqlite3.Connection,
 
 def list_open_for_channel(conn: sqlite3.Connection, channel: str) -> list[dict]:
     """Open + in-progress call-outs for one stream's management summary:
-    that channel's own items plus every 'both' item."""
+    that channel's own items plus every 'both' item. Tolerant of the table
+    not existing yet."""
     channel = _clean_channel(channel)
-    items = _rows_to_dicts(conn.execute(
-        "SELECT * FROM sustain_callouts WHERE status != 'closed'"
-        " AND channel IN (?, 'both') ORDER BY date_captured DESC, id DESC",
-        (channel,)))
-    return items
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT * FROM sustain_callouts WHERE status != 'closed'"
+            " AND channel IN (?, 'both') ORDER BY date_captured DESC, id DESC",
+            (channel,)))
+    except sqlite3.OperationalError:
+        return []
 
 
 def callout_count(conn: sqlite3.Connection) -> int:
