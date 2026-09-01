@@ -276,6 +276,21 @@ the per-stream dicts use `attention`.
 "Core South Sustainphase Monitoring" (after the Smoke card), task-count
 badge (`db_sustain.task_count`), Open + 📊 Summary buttons.
 
+## Meeting Summaries (2026-09-01 [USER])
+
+**📝 Meeting summaries** button in the card header opens
+`/notes-page/sustain_meeting_summaries` — daily AI meeting summaries kept
+for future reference. Not its own build: one entry in the shared
+**working-notes pages** component (`[[note-pages]]`, registry
+`app/note_pages.PAGES`), with `heading_mode='date'` — the note's heading
+is ONLY a native date picker (prefilled with today), no free text
+[USER: "in the title I can pick a date"]; several meetings on the same
+date are fine, notes sort by that date (newest first), not by when they
+were pasted. A keyword filter box above the list finds a topic by plain
+substring match — no AI, ever [USER: "the app itself NEVER EVER uses
+ai"]. TXT export was asked for and deliberately parked (HTML download
+only, for now).
+
 All 6 build-plan steps done 2026-08-28 (steps 2–6 executed autonomously —
 Marina's click-through checklist: `docs/marina_notes/SessionTest_2026-08-28.html`;
 open review points in `MarinaCheckSoon.html`: the free-text-attention

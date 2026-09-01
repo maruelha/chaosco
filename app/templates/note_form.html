@@ -30,11 +30,21 @@
       <div class="form-error">{{ error }}</div>
       {% endif %}
 
+      {# heading_mode='date' [USER 2026-09-01, Sustain Meeting Summaries]:
+         the heading IS the date, entered via a date picker — no free text.
+         Every other page keeps the plain heading field, unchanged. #}
+      {% if heading_mode == 'date' %}
+      <div class="form-field">
+        <label for="f-heading">Date</label>
+        <input id="f-heading" type="date" name="heading" value="{{ heading or '' }}" autofocus>
+      </div>
+      {% else %}
       <div class="form-field">
         <label for="f-heading">Heading <span class="field-hint">(optional)</span></label>
         <input id="f-heading" type="text" name="heading" value="{{ heading or '' }}"
                placeholder="Short topic label…" autofocus>
       </div>
+      {% endif %}
 
       <div class="form-field">
         <label for="f-note">Note</label>

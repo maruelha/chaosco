@@ -16,6 +16,7 @@ redirect goes back to that URL instead of the entity's detail page.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Callable
 from urllib.parse import quote
@@ -201,13 +202,17 @@ def _redirect_target(ent: NoteEntity, entity_type: str, entity_id: str, flag: st
     return redirect(f"{base}{sep}{flag}=1&note_entity={note_entity}")
 
 
-def _row_and_label(conn, ent: NoteEntity, entity_type: str, entity_id: str) -> str:
+def _get_row(conn, ent: NoteEntity, entity_id: str) -> dict:
     if ent.get_row is None:
-        return ent.label({})
+        return {}
     row = ent.get_row(conn, entity_id)
     if row is None:
         abort(404)
-    return ent.label(row)
+    return row
+
+
+def _row_and_label(conn, ent: NoteEntity, entity_type: str, entity_id: str) -> str:
+    return ent.label(_get_row(conn, ent, entity_id))
 
 
 @bp.route("/<entity_type>/<entity_id>/list.json")
@@ -241,10 +246,16 @@ def note_add_json(entity_type: str, entity_id: str):
 
 @bp.route("/<entity_type>/<entity_id>/add", methods=["GET", "POST"])
 def note_add(entity_type: str, entity_id: str):
+    """heading_mode='date' [USER 2026-09-01, Sustain Meeting Summaries]: an
+    entity's row (e.g. a note_page PAGES entry) can ask for the heading
+    field to be a date picker instead of free text — prefilled with today
+    on a fresh GET, unaffected on a failed re-submit."""
     ent = _entity_or_404(entity_type)
     conn = _get_conn()
     try:
-        label = _row_and_label(conn, ent, entity_type, entity_id)
+        row = _get_row(conn, ent, entity_id)
+        label = ent.label(row)
+        heading_mode = row.get("heading_mode", "text")
         if request.method == "POST":
             heading = request.form.get("heading", "").strip() or None
             note_text = request.form.get("note", "").strip() or None
@@ -257,6 +268,8 @@ def note_add(entity_type: str, entity_id: str):
     finally:
         conn.close()
     urls = _urls(ent, entity_type, entity_id)
+    default_heading = (date.today().isoformat() if heading_mode == "date"
+                      and request.method == "GET" else "")
     return render_template(
         "note_form.html", mode="add",
         entity_label=label, list_label=ent.list_label,
@@ -264,7 +277,9 @@ def note_add(entity_type: str, entity_id: str):
         action_url=url_for("notes.note_add", entity_type=entity_type, entity_id=entity_id),
         cancel_url=urls["detail_url"],
         return_to=request.values.get("return_to", "detail"),
-        heading=request.form.get("heading", ""), note_text=request.form.get("note", ""),
+        heading=request.form.get("heading", default_heading),
+        note_text=request.form.get("note", ""),
+        heading_mode=heading_mode,
         error=error,
     )
 
@@ -277,7 +292,9 @@ def note_edit(entity_type: str, entity_id: str, note_id: int):
         note = database.get_note(conn, note_id)
         if note is None or note["entity_type"] != entity_type or note["entity_id"] != str(entity_id):
             abort(404)
-        label = _row_and_label(conn, ent, entity_type, entity_id)
+        row = _get_row(conn, ent, entity_id)
+        label = ent.label(row)
+        heading_mode = row.get("heading_mode", "text")
         if request.method == "POST":
             heading = request.form.get("heading", "").strip() or None
             note_text = request.form.get("note", "").strip() or None
@@ -299,6 +316,7 @@ def note_edit(entity_type: str, entity_id: str, note_id: int):
         cancel_url=urls["detail_url"], created_at=note["created_at"],
         heading=(request.form.get("heading") if request.method == "POST" else note["heading"]) or "",
         note_text=(request.form.get("note") if request.method == "POST" else note["note"]) or "",
+        heading_mode=heading_mode,
         error=error,
     )
 

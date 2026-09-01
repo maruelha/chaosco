@@ -8,6 +8,8 @@
                        ~ 'for Retail and eCom, imported per day.') %}
 <a href="{{ url_for('sustain.sustain_summary') }}" class="btn"
    title="due vs completed vs pending per stream + the attention list">📊 Management summary</a>
+<a href="{{ url_for('note_pages.note_page', slug='sustain_meeting_summaries') }}" class="btn"
+   title="daily AI meeting summaries, kept for future reference — searchable by keyword">📝 Meeting summaries</a>
 <form method="post" action="{{ url_for('sustain.sustain_upload') }}"
       enctype="multipart/form-data" style="display:inline">
   <input type="file" name="file" accept=".xlsx" required

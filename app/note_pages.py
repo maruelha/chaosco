@@ -45,4 +45,22 @@ PAGES: dict[str, dict] = {
         "home_label": "Delegated Testing",
         "download_stem": "testing_insights",
     },
+    # [USER 2026-09-01: daily AI meeting summaries, "for future reference"]
+    # — 📝 button on the Core South Sustainphase Monitoring card.
+    # heading_mode='date' [USER: "in the title I can pick a date (today is
+    # prefilled)"] — the ONLY heading field is a date picker, not free
+    # text; see web_notes.note_add/note_edit + note_form.html. Notes on a
+    # date-mode page sort by that date (newest first), not by when they
+    # were saved [USER: same date twice is fine — several meetings a day].
+    "sustain_meeting_summaries": {
+        "emoji": "📝",
+        "title": "Meeting Summaries",
+        "context": "Core South Sustainphase Monitoring",
+        "subtitle": "Daily AI meeting summaries, kept for future "
+                    "reference — pick the date, paste the summary.",
+        "home_endpoint": "sustain.sustain_home",
+        "home_label": "Core South Sustainphase Monitoring",
+        "download_stem": "sustain_meeting_summaries",
+        "heading_mode": "date",
+    },
 }

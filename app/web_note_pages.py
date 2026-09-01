@@ -35,7 +35,7 @@ def _page_or_404(slug: str):
     return page, None
 
 
-def _load_notes(slug: str):
+def _load_notes(slug: str, page: dict):
     conn = _get_conn()
     try:
         notes = database.list_notes(conn, "note_page", slug)
@@ -43,6 +43,14 @@ def _load_notes(slug: str):
             conn, [n["id"] for n in notes])
     finally:
         conn.close()
+    if page.get("heading_mode") == "date":
+        # date pages [USER 2026-09-01, Meeting Summaries] sort by the
+        # note's date heading, newest first — NOT by when it was saved,
+        # so pasting yesterday's summary today still lands under
+        # yesterday's date. Same date twice is fine [USER] — ties keep
+        # list_notes' created_at-desc order (Python sort is stable).
+        notes = sorted(notes, key=lambda n: n.get("heading") or n["created_at"],
+                       reverse=True)
     return notes, attachments_by_note
 
 
@@ -51,7 +59,7 @@ def note_page(slug: str):
     page, err = _page_or_404(slug)
     if err:
         return err
-    notes, attachments_by_note = _load_notes(slug)
+    notes, attachments_by_note = _load_notes(slug, page)
     return render_template("note_page.html", slug=slug, page=page,
                            notes=notes,
                            attachments_by_note=attachments_by_note)
@@ -64,7 +72,7 @@ def note_page_download(slug: str):
     page, err = _page_or_404(slug)
     if err:
         return err
-    notes, attachments_by_note = _load_notes(slug)
+    notes, attachments_by_note = _load_notes(slug, page)
     today = date.today().strftime("%Y-%m-%d")
     html = render_template("note_page_download.html", page=page,
                            notes=notes,

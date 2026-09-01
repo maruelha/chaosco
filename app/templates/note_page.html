@@ -23,6 +23,19 @@
     "Working notes page", then pick "{{ page.title }}").</p>
 </div>
 
+{# Keyword filter [USER 2026-09-01: "search for certain Topics within the
+   Meeting summaries ... WITHOUT ai"] — plain client-side substring match
+   over the notes already on the page (heading + text); no server round
+   trip, no AI anywhere. Lives here (not in _notes_section.html) so it
+   only applies to these working-notes pages, not every entity's notes. #}
+{% if notes %}
+<div class="note-filter" style="margin:0.6rem 0 1rem; display:flex; align-items:center; gap:0.6rem">
+  <input type="text" id="note-filter-input" placeholder="Search notes for a word…"
+         style="flex:1; max-width:28rem; padding:0.45rem 0.7rem; border:1px solid #d0d0d8; border-radius:6px; font-size:0.9rem">
+  <span id="note-filter-count" style="color:#888; font-size:0.85rem"></span>
+</div>
+{% endif %}
+
 {# ONE notes thread — shared notes system, pinned to ('note_page', slug);
    attachments + Ctrl+V paste come with the component for free #}
 {% with entity_type='note_page', entity_id=slug %}
@@ -32,4 +45,24 @@
 <div class="btn-row">
   <a href="{{ url_for(page.home_endpoint) }}" class="btn">&#8592; Back to {{ page.home_label }}</a>
 </div>
+
+<script>
+(function () {
+  var input = document.getElementById('note-filter-input');
+  if (!input) return;
+  var countEl = document.getElementById('note-filter-count');
+  var items = Array.prototype.slice.call(document.querySelectorAll('.note-item'));
+  var total = items.length;
+  input.addEventListener('input', function () {
+    var q = input.value.trim().toLowerCase();
+    var shown = 0;
+    items.forEach(function (el) {
+      var match = !q || el.textContent.toLowerCase().indexOf(q) !== -1;
+      el.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    countEl.textContent = q ? (shown + ' of ' + total + ' match' + (shown === 1 ? '' : 'es')) : '';
+  });
+})();
+</script>
 {% endblock %}
