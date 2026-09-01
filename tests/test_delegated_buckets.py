@@ -294,6 +294,37 @@ def test_overview_counts_carries_the_unexpected_status_names():
 
 
 # ---------------------------------------------------------------------------
+# nextInLine label rule (2026-09-01 [USER]): only labeled tickets go into
+# "Not started yet" — the rest wait in Backlog. Manual tri-state wins.
+
+def test_next_in_line_label_rule_parks_unlabeled_open_tickets():
+    assert bucket_key({**_issue("Open"), "labels": []}) == "backlog"
+    assert bucket_key({**_issue("Reopened"), "labels": ["fr_scope"]}) == "backlog"
+    # with the label (case-insensitive) they stay on the board
+    assert bucket_key({**_issue("Open"), "labels": ["nextInLine"]}) == "open"
+    assert bucket_key({**_issue("Open"), "labels": ["NEXTINLINE"]}) == "open"
+
+
+def test_next_in_line_rule_touches_only_not_started_tickets():
+    # tickets already in the workflow keep their bucket, label or not
+    assert bucket_key({**_issue("Accepted"), "labels": []}) == "accepted"
+    assert bucket_key({**_issue("In Progress"), "labels": []}) == "marina"
+    assert bucket_key({**_issue("Blocked"), "labels": []}) == "blocked"
+
+
+def test_manual_backlog_choice_beats_the_label_in_both_directions():
+    parked = {**_issue("Open"), "labels": ["nextInLine"], "backlog": True}
+    assert bucket_key(parked) == "backlog"
+    unparked = {**_issue("Open"), "labels": [], "backlog": False}
+    assert bucket_key(unparked) == "open"
+
+
+def test_label_rule_needs_label_data_to_fire():
+    # pure-count callers that never attach labels keep the plain mapping
+    assert bucket_key(_issue("Open")) == "open"
+
+
+# ---------------------------------------------------------------------------
 # SalesXLS auto-match (2026-09-01 [USER]) — the sales workbook's SolmanID
 # values are checked as a SUBSTRING of the ticket's raw Jira Summary.
 

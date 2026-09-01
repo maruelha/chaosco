@@ -60,16 +60,40 @@ BOARD_CSS = {
 }
 
 
+# the Jira label that lets a not-started ticket onto the board [USER
+# 2026-09-01: "only the jira issues with label nextInLine go into the
+# 'not started yet' bucket - all others go into Backlog"]. Matched
+# case-insensitively; the rule is LIVE — labels refresh with every
+# upload, so adding/removing it in Jira moves the ticket on the next
+# import. Manual park/unpark (the tri-state backlog flag) always wins.
+NEXT_IN_LINE_LABEL = "nextinline"
+
+
+def has_next_in_line(labels) -> bool:
+    return any((l or "").strip().casefold() == NEXT_IN_LINE_LABEL
+               for l in labels or [])
+
+
 def bucket_key(issue: dict) -> str:
     """Section key for one issue — purely by Jira status since 2026-08-31.
     The authored backlog flag wins over EVERYTHING (even Blocked) — a
-    parked ticket is out of the active workflow [USER 2026-08-27]."""
-    if issue.get("backlog"):
+    parked ticket is out of the active workflow [USER 2026-08-27]. Since
+    2026-09-01 the flag is TRI-STATE: True = manually parked, False =
+    manually un-parked, None = no manual decision — then an Open/Reopened
+    ticket WITHOUT the nextInLine label is parked by the label rule
+    [USER]. The rule fires only when the issue CARRIES label data
+    ('labels' key present) — pure-count callers that never attach labels
+    keep the plain status mapping."""
+    manual = issue.get("backlog")
+    if manual:
         return "backlog"
     status = (issue.get("jira_status") or "").strip().lower()
     if status == "blocked":
         return "blocked"
     if status in _OPEN_STATUSES:
+        if (manual is None and "labels" in issue
+                and not has_next_in_line(issue.get("labels"))):
+            return "backlog"
         return "open"
     if status == "accepted":
         return "accepted"

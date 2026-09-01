@@ -653,6 +653,113 @@ def test_backlog_wins_over_blocked_and_button_is_the_one_control(client):
 
 
 # ---------------------------------------------------------------------------
+# nextInLine label rule (2026-09-01 [USER]): only labeled tickets go into
+# "Not started yet" — the rest wait in Backlog; manual override wins.
+
+OPEN_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="0.92"><channel>
+  <item>
+    <key id="1">S4ECOM-3101</key>
+    <summary>SM3101_Pulled next</summary>
+    <type id="17">Story</type>
+    <status id="1">Open</status>
+    <labels><label>nextInLine</label></labels>
+  </item>
+  <item>
+    <key id="2">S4ECOM-3102</key>
+    <summary>SM3102_Waiting its turn</summary>
+    <type id="17">Story</type>
+    <status id="1">Open</status>
+    <labels><label>fr_scope</label></labels>
+  </item>
+</channel></rss>
+"""
+
+
+def test_next_in_line_label_decides_board_placement(client):
+    _upload(client, data=OPEN_XML)
+    html = client.get("/delegated/").get_data(as_text=True)
+    open_part = html.split("<summary>Not started yet")[1].split("<summary>")[0]
+    backlog_part = html.split("<summary>📦 Backlog")[1]
+    assert "S4ECOM-3101" in open_part        # labeled → board
+    assert "S4ECOM-3102" not in open_part
+    assert "S4ECOM-3102" in backlog_part     # unlabeled → parked
+    # the label-parked ticket is out of the Management Summary total
+    summary = client.get("/delegated/numbers").get_data(as_text=True)
+    assert "S4ECOM-3102" not in summary
+
+
+def test_manual_unpark_beats_the_missing_label(client):
+    _upload(client, data=OPEN_XML)
+    # she pulls the unlabeled ticket onto the board by hand
+    client.post("/delegated/ticket/S4ECOM-3102/backlog", data={"value": "0"})
+    html = client.get("/delegated/").get_data(as_text=True)
+    open_part = html.split("<summary>Not started yet")[1].split("<summary>")[0]
+    assert "S4ECOM-3102" in open_part
+    # and the override survives the next upload (labels refresh, manual wins)
+    _upload(client, data=OPEN_XML)
+    html = client.get("/delegated/").get_data(as_text=True)
+    open_part = html.split("<summary>Not started yet")[1].split("<summary>")[0]
+    assert "S4ECOM-3102" in open_part
+
+
+def test_label_added_in_jira_moves_ticket_on_next_upload(client):
+    _upload(client, data=OPEN_XML)
+    # the team labels the waiting ticket in Jira → next export upload
+    labeled = OPEN_XML.replace("<labels><label>fr_scope</label></labels>",
+                               "<labels><label>fr_scope</label>"
+                               "<label>nextInLine</label></labels>")
+    _upload(client, data=labeled)
+    html = client.get("/delegated/").get_data(as_text=True)
+    open_part = html.split("<summary>Not started yet")[1].split("<summary>")[0]
+    assert "S4ECOM-3102" in open_part
+
+
+def test_detail_page_shows_label_parked_state(client):
+    _upload(client, data=OPEN_XML)
+    detail = client.get("/delegated/ticket/S4ECOM-3102").get_data(as_text=True)
+    assert "Parked in Backlog" in detail     # effective state, no manual flag set
+    detail = client.get("/delegated/ticket/S4ECOM-3101").get_data(as_text=True)
+    assert "Move to backlog" in detail       # labeled → on the board
+
+
+def test_backlog_tristate_migration_rebuilds_not_null_column(tmp_path):
+    """One-time migration: the old NOT NULL DEFAULT 0 column becomes
+    nullable; old 0 (mostly 'never touched') → NULL so the label rule can
+    take over, manual parks (1) survive."""
+    import sqlite3 as sq
+    db_path = tmp_path / "mig.db"
+    conn = sq.connect(db_path)
+    conn.executescript("""
+        CREATE TABLE delegated_annotations (
+            jira_key TEXT PRIMARY KEY, blocked_reason TEXT, next_step TEXT,
+            updated_at TEXT, counts_toward_goal INTEGER NOT NULL DEFAULT 0,
+            backlog INTEGER NOT NULL DEFAULT 0,
+            req_tool INTEGER NOT NULL DEFAULT 0, sales_xls TEXT);
+        INSERT INTO delegated_annotations (jira_key, next_step, backlog, sales_xls)
+        VALUES ('S4ECOM-1', 'call Tom', 0, 'maybe'), ('S4ECOM-2', NULL, 1, NULL);
+    """)
+    conn.commit()
+    conn.close()
+    db_delegated.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        assert db_delegated.get_delegated_backlog(conn, "S4ECOM-1") is None
+        assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2") is True
+        # the other authored fields came through untouched
+        ann = db_delegated.get_delegated_annotations(conn)
+        assert ann["S4ECOM-1"]["next_step"] == "call Tom"
+        assert ann["S4ECOM-1"]["sales_xls"] == "maybe"
+        # idempotent — a second init must not error or change anything
+        conn.close()
+        db_delegated.init_schema(db_path)
+        conn = database.get_connection(db_path)
+        assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2") is True
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # ReqTool [USER 2026-08-29]: dashboard-only authored flag, filterable on the
 # board — deliberately absent from both reports
 
@@ -1347,9 +1454,14 @@ def test_reports_name_the_unexpected_status(client):
 
 def test_reopened_is_bucketed_like_open(client):
     """[USER 2026-09-01: "I have the status Reopened - which is to be
-    treated exactly the same as opened"]."""
-    _upload(client, XML.replace(">Ready for Verification<", ">Reopened<"),
-            "delegated_reopened.xml")
+    treated exactly the same as opened"]. The ticket carries nextInLine
+    here because since the label rule (same day) a not-started ticket
+    without it waits in Backlog instead — that path has its own tests."""
+    xml = XML.replace(">Ready for Verification<", ">Reopened<").replace(
+        '<key id="4">S4ECOM-2004</key>',
+        '<key id="4">S4ECOM-2004</key>\n'
+        '    <labels><label>nextInLine</label></labels>')
+    _upload(client, xml, "delegated_reopened.xml")
     conn = web_delegated._get_conn()
     try:
         ctx = web_delegated.overview_context(conn)

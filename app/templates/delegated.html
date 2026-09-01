@@ -113,6 +113,15 @@
     labels, 💬 chats and ✉️ messages live on each ticket's Details page.
   </p>
   {% endif %}
+  {% if section_key == 'backlog' %}
+  <p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+    Not-started tickets <strong>without the Jira label
+    <code>nextInLine</code></strong> wait here automatically; adding the
+    label in Jira moves them to "Not started yet" on the next upload.
+    The 📦/↩ button on a ticket's Details page overrides the label in
+    both directions.
+  </p>
+  {% endif %}
   {% if section_items %}
   <table class="rt-table">
     <thead>

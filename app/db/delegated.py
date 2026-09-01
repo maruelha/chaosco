@@ -45,8 +45,11 @@ def init_schema(db_path: Path) -> None:
             " counts_toward_goal INTEGER NOT NULL DEFAULT 0",
             # backlog (2026-08-27): parked tickets — own board section,
             # excluded from the Management Summary [USER 2026-08-27].
-            "ALTER TABLE delegated_annotations ADD COLUMN"
-            " backlog INTEGER NOT NULL DEFAULT 0",
+            # TRI-STATE since 2026-09-01 [USER, nextInLine rule]: NULL =
+            # no manual decision (the label rule in delegated_buckets
+            # decides), 1 = manually parked, 0 = manually un-parked —
+            # manual always beats the label.
+            "ALTER TABLE delegated_annotations ADD COLUMN backlog INTEGER",
             # req_tool (2026-08-29 [USER]): dashboard-only authored flag,
             # filterable checked/unchecked on the board — deliberately NOT
             # shown on either report [USER: "no report - it is ONLY on the
@@ -63,6 +66,40 @@ def init_schema(db_path: Path) -> None:
                 conn.execute(ddl)
             except sqlite3.OperationalError:
                 pass  # column already exists
+        # backlog NOT NULL -> nullable rebuild (2026-09-01, one-time): the
+        # column was NOT NULL DEFAULT 0, but tri-state needs NULL = "no
+        # manual decision". Old 0 rows (nearly all created as a side effect
+        # of saving OTHER fields) become NULL so the nextInLine label rule
+        # can take over; an explicit new un-park writes 0 again. Manual
+        # parks (1) survive. Idempotent: after the rebuild the notnull
+        # flag is gone and this never runs again.
+        backlog_notnull = any(
+            row[1] == "backlog" and row[3]
+            for row in conn.execute("PRAGMA table_info(delegated_annotations)"))
+        if backlog_notnull:
+            conn.executescript("""
+                CREATE TABLE delegated_annotations_new (
+                    jira_key       TEXT PRIMARY KEY,
+                    blocked_reason TEXT,
+                    next_step      TEXT,
+                    updated_at     TEXT,
+                    counts_toward_goal INTEGER NOT NULL DEFAULT 0,
+                    backlog        INTEGER,
+                    req_tool       INTEGER NOT NULL DEFAULT 0,
+                    sales_xls      TEXT
+                );
+                INSERT INTO delegated_annotations_new
+                    (jira_key, blocked_reason, next_step, updated_at,
+                     counts_toward_goal, backlog, req_tool, sales_xls)
+                SELECT jira_key, blocked_reason, next_step, updated_at,
+                       counts_toward_goal,
+                       CASE WHEN backlog = 1 THEN 1 ELSE NULL END,
+                       req_tool, sales_xls
+                FROM delegated_annotations;
+                DROP TABLE delegated_annotations;
+                ALTER TABLE delegated_annotations_new
+                    RENAME TO delegated_annotations;
+            """)
         conn.commit()
     finally:
         conn.close()
@@ -103,10 +140,12 @@ def delegated_counts(conn: sqlite3.Connection) -> dict:
 def get_delegated_annotations(conn: sqlite3.Connection) -> dict[str, dict]:
     """{jira_key: {'blocked_reason': ..., 'next_step': ...,
     'counts_toward_goal': ..., 'backlog': ..., 'req_tool': ...,
-    'sales_xls': ...}} for the card."""
+    'sales_xls': ...}} for the card. backlog is TRI-STATE (None = no
+    manual decision — the nextInLine label rule decides)."""
     try:
         return {k: {"blocked_reason": br, "next_step": ns,
-                    "counts_toward_goal": bool(ctg), "backlog": bool(bl),
+                    "counts_toward_goal": bool(ctg),
+                    "backlog": None if bl is None else bool(bl),
                     "req_tool": bool(rt), "sales_xls": sx}
                 for k, br, ns, ctg, bl, rt, sx in conn.execute(
                     "SELECT jira_key, blocked_reason, next_step,"
@@ -178,17 +217,24 @@ def set_delegated_counts_toward_goal(conn: sqlite3.Connection, jira_key: str,
         """, (jira_key, 1 if value else 0, _now()))
 
 
-def get_delegated_backlog(conn: sqlite3.Connection, jira_key: str) -> bool:
+def get_delegated_backlog(conn: sqlite3.Connection, jira_key: str) -> bool | None:
+    """TRI-STATE [USER 2026-09-01]: None = no manual decision (the
+    nextInLine label rule decides), True = manually parked, False =
+    manually un-parked."""
     row = conn.execute(
         "SELECT backlog FROM delegated_annotations WHERE jira_key=?",
         (jira_key,)).fetchone()
-    return bool(row[0]) if row else False
+    if row is None or row[0] is None:
+        return None
+    return bool(row[0])
 
 
 def set_delegated_backlog(conn: sqlite3.Connection, jira_key: str,
                           value: bool) -> None:
     """Only-this-field upsert — parked ticket: own Backlog board section,
-    excluded from the Management Summary [USER 2026-08-27]."""
+    excluded from the Management Summary [USER 2026-08-27]. Writes an
+    EXPLICIT 0/1 (a manual decision that beats the nextInLine label rule
+    in both directions [USER 2026-09-01])."""
     with conn:
         conn.execute("""
             INSERT INTO delegated_annotations (jira_key, backlog, updated_at)

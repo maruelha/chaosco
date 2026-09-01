@@ -54,7 +54,7 @@ see below).
 | Bucket | Rule |
 |---|---|
 | 🔴 Blocker (top, wins) | status Blocked |
-| Not started yet | status Open **or Reopened** (2026-09-01 [USER]) |
+| Not started yet | status Open **or Reopened** (2026-09-01 [USER]) **AND label `nextInLine`** (2026-09-01 [USER], see "nextInLine label rule" below — without the label the ticket waits in 📦 Backlog) |
 | Testing team creating order | status Accepted |
 | Marina gatekeeper check | status In Progress |
 | Settlement file to be created | In Verification |
@@ -523,6 +523,43 @@ not set" (`data-salesxls` per row, `unset` matches the empty value) in
 the same `dlgFilterBoard()`. Never read by
 `report_context`/`numbers_context`/`overview_context`.
 
+## nextInLine label rule (2026-09-01 [USER])
+
+[USER: "only the jira issues with label nextInLine go into the 'not
+started yet' bucket - all others go into Backlog! I still want to be
+able to manually push them there - but in the Import this should also
+happen."] Design settled in chat (both recommendations accepted):
+
+- **Scope: not-started tickets only** — an Open/Reopened story without
+  the Jira label `nextInLine` (matched case-insensitively,
+  `delegated_buckets.NEXT_IN_LINE_LABEL` / `has_next_in_line`) lands in
+  📦 Backlog; with the label it shows in "Not started yet". Tickets
+  already moving (Accepted, In Progress, …) keep their workflow bucket
+  regardless of label.
+- **The label is LIVE, not import-stamped.** The rule lives in
+  `bucket_key`, reading the labels the import already refreshes — so
+  "in the Import this should also happen" comes for free, and adding/
+  removing the label in Jira moves the ticket on the next upload. The
+  importer still never writes to `delegated_annotations` (architecture
+  rule 1 intact).
+- **Manual override wins, both directions** — `delegated_annotations.
+  backlog` became **TRI-STATE**: NULL = no manual decision (label rule
+  decides), 1 = manually parked, 0 = manually un-parked (keeps an
+  unlabeled ticket on the board). The old column was `NOT NULL DEFAULT
+  0`; a one-time guarded table rebuild in `db/delegated.init_schema`
+  makes it nullable and converts old `0` → NULL (those rows were almost
+  all created as a side effect of saving other fields, not a deliberate
+  un-park; manual parks `1` survive).
+- `bucket_key` applies the rule **only when the issue dict carries a
+  `labels` key** — pure-count callers that never attach labels (and the
+  dashboard badge) keep the plain status mapping.
+- `numbers_context`/`overview_context` exclude backlog via
+  `bucket_key(i) != "backlog"` now, so label-parked tickets leave the
+  Management Summary and the Overview exactly like manually parked ones.
+  The ticket detail page shows the EFFECTIVE parked state (manual if
+  set, else the label rule) and its 📦/↩ button writes the override.
+- Board: the 📦 Backlog section carries a hint line explaining the rule.
+
 ## SalesXLS auto-match upload (2026-09-01 [USER])
 
 **⤒ Sales XLS** button on the board — `POST /delegated/upload-sales-xls`,
@@ -605,7 +642,10 @@ nor the Management Summary reads it.
    ticket detail page ("📦 Move to backlog" / "↩ Move back to board" +
    parked-state pill); the board checkbox column and the detail form's
    checkbox are gone, and the detail form save deliberately does NOT
-   touch backlog anymore.
+   touch backlog anymore. **Since the nextInLine label rule (same day,
+   see its own section)** the flag is tri-state and the button writes a
+   manual OVERRIDE — with no override, the label decides where a
+   not-started ticket sits.
 
 ## Related
 

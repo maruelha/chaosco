@@ -113,7 +113,8 @@ def delegated_list():
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
-        i["backlog"] = ann.get("backlog", False)
+        # tri-state (None = the nextInLine label rule decides) [USER 2026-09-01]
+        i["backlog"] = ann.get("backlog")
         i["req_tool"] = ann.get("req_tool", False)
         i["sales_xls"] = ann.get("sales_xls")
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
@@ -379,7 +380,14 @@ def delegated_ticket_detail(jira_key: str):
         next_step = db_delegated.get_delegated_next_step(conn, jira_key)
         blocked_reason = db_delegated.get_delegated_blocked_reason(conn, jira_key)
         counts_toward_goal = db_delegated.get_delegated_counts_toward_goal(conn, jira_key)
-        backlog = db_delegated.get_delegated_backlog(conn, jira_key)
+        # EFFECTIVE parked state [USER 2026-09-01]: the manual tri-state if
+        # set, else the nextInLine label rule — the page must show where
+        # the ticket actually sits, and the button writes the override
+        # (issue["labels"] is already attached above)
+        backlog = bucket_key({
+            **issue,
+            "backlog": db_delegated.get_delegated_backlog(conn, jira_key),
+        }) == "backlog"
         req_tool = db_delegated.get_delegated_req_tool(conn, jira_key)
         sales_xls = db_delegated.get_delegated_sales_xls(conn, jira_key)
         blockers = db_blockers.list_blockers_for_ticket(conn, jira_key)
@@ -418,7 +426,7 @@ def report_context(conn) -> dict:
         ann = annotations.get(i["jira_key"]) or {}
         i["next_step"] = ann.get("next_step")
         i["blocked_reason"] = ann.get("blocked_reason")
-        i["backlog"] = ann.get("backlog", False)
+        i["backlog"] = ann.get("backlog")
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
     sections = [(title, css, items)
                 for _key, title, css, items in bucket_issues(issues)]
@@ -480,10 +488,11 @@ def numbers_context(conn) -> dict:
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
         i["counts_toward_goal"] = ann.get("counts_toward_goal", False)
-        i["backlog"] = ann.get("backlog", False)
+        i["backlog"] = ann.get("backlog")
     # backlog tickets are parked — OUT of the Management Summary entirely
-    # (total, stages, goal actual) [USER 2026-08-27]
-    issues = [i for i in issues if not i["backlog"]]
+    # (total, stages, goal actual) [USER 2026-08-27]. Via bucket_key since
+    # 2026-09-01, so label-parked tickets (no nextInLine) are out too.
+    issues = [i for i in issues if bucket_key(i) != "backlog"]
     stages, unexpected = staged_counts(issues)
     post_gatekeeper_total = next(t for k, _l, t, _r in stages if k == "post_gatekeeper")
     blocked_counting = sum(
@@ -594,10 +603,11 @@ def overview_context(conn) -> dict:
         conn, [i["jira_key"] for i in issues])
     for i in issues:
         ann = annotations.get(i["jira_key"]) or {}
-        i["backlog"] = ann.get("backlog", False)
+        i["backlog"] = ann.get("backlog")
         # the Blocked line stages a ticket by its blocker's team
         i["blockers"] = blockers_by_key.get(i["jira_key"], [])
-    issues = [i for i in issues if not i["backlog"]]
+    # bucket-aware since 2026-09-01: label-parked tickets are out too
+    issues = [i for i in issues if bucket_key(i) != "backlog"]
     ctx = overview_counts(issues)
 
     # blocker overview grouped by team [USER 2026-08-31] — fixed teams in
