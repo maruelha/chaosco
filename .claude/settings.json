@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "input=$(cat); printf \"%s\" \"$input\" | grep -q \"git commit\" || exit 0; cd \"${CLAUDE_PROJECT_DIR:-.}\" || exit 0; out=$(.venv/Scripts/python -m pytest tests/test_docs_structure.py -q 2>&1) && exit 0; echo \"docs-structure tests FAILED - the docs drifted from the code; fix before committing:\" >&2; echo \"$out\" | tail -15 >&2; exit 2",
+            "timeout": 120,
+            "statusMessage": "Checking the docs are in sync before the commit"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" || exit 0; last=$(git log -1 --format=%H -- \"docs/archive/session_*.md\" 2>/dev/null); [ -n \"$last\" ] || exit 0; n=$(git rev-list --count \"$last..HEAD\" 2>/dev/null) || exit 0; [ \"$n\" -gt 0 ] 2>/dev/null || exit 0; d=$(git log -1 --format=%ad --date=short); printf \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"SessionStart\\\",\\\"additionalContext\\\":\\\"chaosco wrap-up check: %s commit(s) since the last session summary in docs/archive/ (newest commit %s). If the previous session ended without /wrap-up, offer Marina to run /wrap-up for it before starting new work.\\\"}}\" \"$n\" \"$d\"",
+            "timeout": 15,
+            "statusMessage": "Checking for unwrapped work from the last session"
+          }
+        ]
+      }
+    ]
+  }
+}

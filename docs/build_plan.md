@@ -103,9 +103,16 @@ Two rounds were agreed:
    line in neither file is the old "Last updated" stamp. Standing rule
    from now on: when something is added, something goes [USER 2026-09-01]
    (a wrap-up skill step).
-6. Hooks in `.claude/settings.json` (both machines via git): docs tests
-   before every `git commit`; session-start check for unwrapped work
-   ("yesterday wasn't wrapped — run /wrap-up first?").
+6. ✅ DONE 2026-09-01 — `.claude/settings.json` (checked in → both
+   machines): (a) PreToolUse hook on Bash — a command containing
+   `git commit` first runs `tests/test_docs_structure.py`; on failure the
+   commit is BLOCKED (exit 2) with the failing output. Verified live: the
+   sentinel proof fired in-session, and a probe doc made the gate return
+   exit 2. (b) SessionStart hook — counts commits since the newest
+   `docs/archive/session_*.md`; when > 0 it hands Claude the context to
+   offer /wrap-up for the previous session before new work. It will nag
+   from the first session start onward until the FIRST real /wrap-up
+   writes a summary — that is correct, no wrap-up has ever run.
 
 **Round 2 — code review after every build (planned):** full review of the
 app; findings fill `docs/coding_guidelines.md`; greppable guidelines become

@@ -63,8 +63,8 @@ exactly what gets re-litigated months later.
 
 **Closing the window without wrapping up** cannot be detected — but the
 next session start checks for unwrapped work and offers to run the
-wrap-up first (cleanup step 6), so a forgotten wrap-up costs one day,
-never more.
+wrap-up first (a SessionStart hook in `.claude/settings.json` since
+2026-09-01), so a forgotten wrap-up costs one day, never more.
 
 ---
 
