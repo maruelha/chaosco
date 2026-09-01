@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-{# Standalone snapshot of the Delegated Ways of Working notes [USER
-   2026-09-01] — self-contained (inline CSS, no app chrome), served as a
-   dated download by /delegated/wow/download. Attachments by name only. #}
+{# Standalone snapshot of ONE working-notes page (app/note_pages.PAGES) —
+   self-contained (inline CSS, no app chrome), served as a dated download
+   by /notes-page/<slug>/download. Attachments by name only. #}
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Ways of Working — Delegated Testing — {{ today }}</title>
+<title>{{ page.title }} — {{ page.context }} — {{ today }}</title>
 <style>
   body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
          margin: 2rem auto; max-width: 52rem; padding: 0 1rem; color: #1e293b; }
@@ -25,8 +25,8 @@
 </style>
 </head>
 <body>
-<h1>🤝 Ways of Working — Delegated Testing</h1>
-<p class="subtitle">Decision log snapshot · {{ today }} · {{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</p>
+<h1>{{ page.emoji }} {{ page.title }} — {{ page.context }}</h1>
+<p class="subtitle">Snapshot · {{ today }} · {{ notes|length }} note{{ '' if notes|length == 1 else 's' }}</p>
 
 {% for n in notes %}
 <div class="note">

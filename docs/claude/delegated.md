@@ -121,9 +121,10 @@ uploaded issues?" — yes).
   download routes, already-clean HTML) [USER 2026-08-26].
 - Templates: `delegated.html`, `delegated_ticket.html`,
   `delegated_report.html` (call-outs key `delegated`), `delegated_numbers.html`,
-  `delegated_wow.html` + `delegated_wow_download.html` (Ways of Working,
-  2026-09-01), `_salesxls_chip.html` (shared SalesXLS chip include)
-- Registries: `web_notes.REGISTRY['delegated']` + `['delegated_wow']`,
+  `_salesxls_chip.html` (shared SalesXLS chip include). The Ways of
+  Working / Testing Insights pages render via the shared working-notes
+  pages component (`[[note-pages]]`, templates `note_page*.html`).
+- Registries: `web_notes.REGISTRY['delegated']`,
   `web_next_steps.REGISTRY['delegated']`
 - Tests: `tests/test_delegated_buckets.py`, `tests/test_delegated_web.py`
 
@@ -594,32 +595,25 @@ Flash message reports match/no-match/unchanged counts. Tests:
 non-null values on no-match, always overwrites on match, rejects
 non-.xlsx/missing sheet or column).
 
-## Ways of Working page (2026-09-01 [USER])
+## Ways of Working & Testing Insights pages (2026-09-01 [USER])
 
-`/delegated/wow` (🤝 button in the board header) — the decision log for
-what the dailies agree on. Deliberately **no own table** (the one-notes-
-system rule): the page is ONE notes thread in the shared system, pinned
-to the singleton entity `('delegated_wow', 'main')` — a note's
-entity_type/entity_id flag says where it is pinned, this page just has a
-fixed flag. Pieces:
+🤝 Ways of Working (the dailies decision log) and 💡 Testing Insights
+(learnings collected while testing) — both buttons in the board header,
+both served by the shared **working-notes pages** component
+(`[[note-pages]]` — registry `app/note_pages.PAGES`, generic
+`/notes-page/<slug>` routes, full shared notes component, per-page
+download, one inbox target type "Working notes page").
 
-- `web_notes.REGISTRY["delegated_wow"]` — list-only entry (no detail
-  page, no row lookup), so the generic `/n/delegated_wow/main/…` routes,
-  attachments and Ctrl+V paste all just work; template
-  `delegated_wow.html` = page header + `_notes_section.html` include.
-- **Inbox filing target**: `delegated_wow` in
-  `db/notes._INBOX_TARGET_TYPES`; target-exists check accepts ONLY the
-  id `'main'`. In the inbox filing picker the type "Delegated — Ways of
-  Working" is a SINGLETON: picking it hides the search box and arms
-  Move › immediately (special case next to the shelf one in
-  `inbox.html`'s `onTypeChange`).
-- **⬇ Download HTML**: `/delegated/wow/download` — dated standalone
-  snapshot, own self-contained template `delegated_wow_download.html`
-  (inline CSS, like the three report downloads); attachments listed by
-  name only.
+Ways of Working started the same day as a stand-alone `/delegated/wow`
+build and was **migrated into the component hours later** [USER:
+"certainly migrate it"]: its one-off routes/templates are gone, the
+notes moved (`('delegated_wow','main')` → `('note_page','delegated_wow')`,
+guarded UPDATE in db/core.py), and the old URLs `/delegated/wow` +
+`/delegated/wow/download` redirect to the generic routes.
+
 **Deliberately excluded from `report_context`/`numbers_context`** — [USER:
 "no report - it is ONLY on the dashboard"], so neither the status report
-nor the Management Summary reads it.
+nor the Management Summary reads these pages.
 
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 

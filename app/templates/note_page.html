@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} — {{ page.context }} — Test Coordination{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for(page.home_endpoint) }}">{{ page.home_label }}</a>
+  <span>›</span>
+  <span>{{ page.title }}</span>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ page.emoji }} {{ page.title }}</h1>
+    <div class="page-header-actions">
+      <a href="{{ url_for('note_pages.note_page_download', slug=slug) }}" class="btn"
+         title="dated standalone HTML snapshot of all notes">⬇ Download HTML</a>
+    </div>
+  </div>
+  <p class="page-subtitle">{{ page.subtitle }}
+    Inbox items can be filed to this page too (Inbox → Move › → type
+    "Working notes page", then pick "{{ page.title }}").</p>
+</div>
+
+{# ONE notes thread — shared notes system, pinned to ('note_page', slug);
+   attachments + Ctrl+V paste come with the component for free #}
+{% with entity_type='note_page', entity_id=slug %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<div class="btn-row">
+  <a href="{{ url_for(page.home_endpoint) }}" class="btn">&#8592; Back to {{ page.home_label }}</a>
+</div>
+{% endblock %}

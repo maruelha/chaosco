@@ -185,6 +185,12 @@ app.register_blueprint(_si_bp)
 from app.db import sustain_callouts as _db_sc
 _db_sc.init_schema(_db_path)
 
+# Working-notes pages (2026-09-01) — singleton notes pages (Ways of
+# Working, Testing Insights, …); registry in app/note_pages.py, one
+# generic route pair, no own table (shared notes system).
+from app.web_note_pages import bp as _note_pages_bp
+app.register_blueprint(_note_pages_bp)
+
 
 if __name__ == "__main__":
     import threading

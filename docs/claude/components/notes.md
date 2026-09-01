@@ -51,11 +51,13 @@ Images render as thumbnails, documents as download links (`is_image` filter).
   endpoints, with a small page-local script (not `static/notes.js`, which
   assumes that page's own `.js-notes-toggle` markup). The DATA layer stays
   unified either way — only the inline-row rendering is per-page glue.
-- A whole PAGE can be one notes thread: a **singleton entity** with a
-  fixed id (first: `('delegated_wow', 'main')`, the Delegated Ways of
-  Working page, 2026-09-01) — registry entry with `detail_endpoint=None`
-  and `get_row=None`, the page template is just a header plus the
-  include. No new table, ever.
+- A whole PAGE can be one notes thread: the **working-notes pages**
+  (`('note_page', slug)`, 2026-09-01 — Ways of Working, Testing
+  Insights, …) share ONE registry entry whose `get_row` looks the slug
+  up in `app/note_pages.PAGES` (unknown slug → 404); the generic page
+  template is a header plus the include. See `note-pages.md`. No new
+  table, ever. (The first version was a hand-made singleton
+  `('delegated_wow','main')`; it was generalized the same day.)
 - `entity_id` is TEXT on purpose (jira keys as well as integer PKs) —
   `id_cast` in the registry entry converts back for the detail route.
 - Notes-capable entities include `contact` and `link`, so inbox items can be

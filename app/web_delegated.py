@@ -522,42 +522,18 @@ def numbers_context(conn) -> dict:
 
 @bp.route("/wow")
 def delegated_wow():
-    """Ways of Working — the delegated-testing decision log [USER 2026-09-01]:
-    ONE notes thread (shared notes system, entity ('delegated_wow', 'main'))
-    to capture what is decided in the dailies. Inbox items can be filed
-    here too (inbox filing target 'delegated_wow'). No own table — a note's
-    entity flag says where it is pinned."""
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "delegated_wow", "main")
-        attachments_by_note = database.get_attachments_for_notes(
-            conn, [n["id"] for n in notes])
-    finally:
-        conn.close()
-    return render_template("delegated_wow.html", notes=notes,
-                           attachments_by_note=attachments_by_note)
+    """Ways of Working moved into the generic working-notes pages the day
+    it was built (2026-09-01 [USER: "certainly migrate it"]) — this
+    redirect keeps the old URL alive; the page itself is served by
+    app/web_note_pages.py (registry slug 'delegated_wow')."""
+    return redirect(url_for("note_pages.note_page", slug="delegated_wow"))
 
 
 @bp.route("/wow/download")
 def delegated_wow_download():
-    """Dated standalone HTML snapshot of the Ways of Working notes [USER
-    2026-09-01] — own self-contained template (inline CSS, no toolbar), like
-    the three report downloads. Attachments are listed by name only."""
-    conn = _get_conn()
-    try:
-        notes = database.list_notes(conn, "delegated_wow", "main")
-        attachments_by_note = database.get_attachments_for_notes(
-            conn, [n["id"] for n in notes])
-    finally:
-        conn.close()
-    today = date.today().strftime("%Y-%m-%d")
-    html = render_template("delegated_wow_download.html", notes=notes,
-                           attachments_by_note=attachments_by_note, today=today)
-    return html, 200, {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Disposition":
-            f'attachment; filename="delegated_ways_of_working_{today}.html"',
-    }
+    """Old download URL → the generic per-page download."""
+    return redirect(url_for("note_pages.note_page_download",
+                            slug="delegated_wow"))
 
 
 @bp.route("/report")

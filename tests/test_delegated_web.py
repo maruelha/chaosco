@@ -875,57 +875,20 @@ def test_sales_xls_absent_from_all_three_reports(client):
 
 
 # ---------------------------------------------------------------------------
-# Ways of Working [USER 2026-09-01]: singleton decision-log page — ONE notes
-# thread pinned to ('delegated_wow', 'main') in the SHARED notes system (no
-# own table), inbox filing target, dated standalone HTML download
+# Ways of Working [USER 2026-09-01]: migrated into the generic working-notes
+# pages the same day (app/note_pages.py, tests/test_note_pages.py) — from
+# the delegated side only the buttons and the old-URL redirects remain.
 
-def test_wow_page_notes_roundtrip_and_download(client):
-    html = client.get("/delegated/wow").get_data(as_text=True)
-    assert "Ways of Working" in html
-
-    # add via the generic notes routes (registry entry 'delegated_wow')
-    resp = client.post("/n/delegated_wow/main/add", data={
-        "heading": "Daily 2026-09-01",
-        "note": "Orders are always tagged with the market."})
+def test_wow_and_insights_buttons_and_old_url_redirects(client):
+    html = client.get("/delegated/").get_data(as_text=True)
+    assert "Ways of working" in html
+    assert "Testing insights" in html
+    resp = client.get("/delegated/wow")
     assert resp.status_code == 302
-
-    html = client.get("/delegated/wow").get_data(as_text=True)
-    assert "Daily 2026-09-01" in html
-    assert "tagged with the market" in html
-
-    # dated standalone snapshot carries the notes
+    assert "/notes-page/delegated_wow" in resp.headers["Location"]
     resp = client.get("/delegated/wow/download")
-    assert resp.status_code == 200
-    assert 'attachment; filename="delegated_ways_of_working_' \
-        in resp.headers["Content-Disposition"]
-    snap = resp.get_data(as_text=True)
-    assert "Daily 2026-09-01" in snap and "tagged with the market" in snap
-
-
-def test_wow_is_an_inbox_filing_target(client):
-    conn = web_delegated._get_conn()
-    try:
-        note_id = database.add_inbox_item(
-            conn, "Daily decision", "raised in the daily")
-        # only the singleton id 'main' is a valid target
-        assert database.file_inbox_item(
-            conn, note_id, "delegated_wow", "other") is False
-        assert database.file_inbox_item(
-            conn, note_id, "delegated_wow", "main") is True
-        assert database.count_inbox_items(conn) == 0  # moved, not copied
-    finally:
-        conn.close()
-    html = client.get("/delegated/wow").get_data(as_text=True)
-    assert "Daily decision" in html and "raised in the daily" in html
-    # the inbox page offers the target in its per-item Type picker
-    conn = web_delegated._get_conn()
-    try:
-        database.add_inbox_item(conn, "still unfiled", "second item")
-    finally:
-        conn.close()
-    assert 'value="delegated_wow"' in client.get("/inbox").get_data(as_text=True)
-    # and the board header links to the page
-    assert "Ways of working" in client.get("/delegated/").get_data(as_text=True)
+    assert resp.status_code == 302
+    assert "/notes-page/delegated_wow/download" in resp.headers["Location"]
 
 
 # ---------------------------------------------------------------------------

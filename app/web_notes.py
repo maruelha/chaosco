@@ -23,6 +23,7 @@ from urllib.parse import quote
 from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
 
 from app import database
+from app import note_pages as _note_pages
 from app.config_loader import load_config
 
 bp = Blueprint("notes", __name__, url_prefix="/n")
@@ -140,12 +141,15 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_link(c, int(i)),
         lambda r: r.get("description") or f"Link #{r['id']}", int,
     ),
-    # Delegated Ways of Working (2026-09-01 [USER]) — ONE page, one thread
-    # (singleton entity id 'main'): decisions from the dailies. Inbox items
-    # can be filed here too (db/notes._INBOX_TARGET_TYPES).
-    "delegated_wow": NoteEntity(
-        "Delegated — Ways of Working", "delegated.delegated_wow", None, None, None,
-        lambda r: "Ways of working",
+    # Working-notes pages (2026-09-01 [USER]) — ONE entry for EVERY
+    # singleton page in app/note_pages.PAGES (Ways of Working, Testing
+    # Insights, …); entity_id = the page slug. Unknown slugs 404 via the
+    # registry lookup. Inbox target type 'note_page'
+    # (db/notes._INBOX_TARGET_TYPES).
+    "note_page": NoteEntity(
+        "Working notes", "dashboard", "note_pages.note_page", "slug",
+        lambda _conn, slug: _note_pages.PAGES.get(str(slug)),
+        lambda r: r["title"], str,
     ),
     # list-only quick-add entities: no detail page, no 404 label lookup
     "meeting_prep": NoteEntity(

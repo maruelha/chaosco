@@ -28,9 +28,11 @@ shared notes storage.
   (2026-07-11, the current gatekeeper; search by jira key / solman id /
   summary), test_learning, followup, shelf, topic, contact, link,
   prod_defect = "Known Prod Issue" (2026-08-06, search by scenario / short
-  description / technical key), delegated_wow = "Delegated — Ways of
-  Working" (2026-09-01, SINGLETON — only id `'main'`, no search branch:
-  picking the type arms Move › immediately).
+  description / technical key), note_page = "Working notes page"
+  (2026-09-01 — Ways of Working, Testing Insights, …: the search branch
+  lists every page in `app/note_pages.PAGES` on the empty query, exists
+  check = slug in the registry; replaced the short-lived delegated_wow
+  singleton special case the same day, see `components/note-pages.md`).
 - **Reference fields + ⚡ Auto-file** [USER 2026-07-16]: `notes` gained
   optional `order_number`, `solman_id`, `jira_id`, `route_to` (core.py
   migration; set in the add/edit forms, shown as chips — the intended landing

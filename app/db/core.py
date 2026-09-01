@@ -457,6 +457,15 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             conn.commit()
         except sqlite3.OperationalError:
             pass  # column already exists
+    # working-notes pages (2026-09-01 [USER]): the stand-alone Delegated
+    # Ways-of-Working page joined the generic note_page mechanism the day
+    # it was built — its notes move from ('delegated_wow','main') to
+    # ('note_page','delegated_wow'). Idempotent: no rows match after the
+    # first run.
+    conn.execute(
+        "UPDATE notes SET entity_type='note_page', entity_id='delegated_wow'"
+        " WHERE entity_type='delegated_wow' AND entity_id='main'")
+    conn.commit()
     for col in ("source_entity_type TEXT", "source_entity_id TEXT", "overall_topic TEXT"):
         try:
             conn.execute(f"ALTER TABLE meeting_prep ADD COLUMN {col}")

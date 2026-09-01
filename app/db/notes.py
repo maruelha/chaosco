@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect", "delegated_wow"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect", "note_page"}
 
 # Incoming buckets [USER 2026-07-16]: the inbox route_to dropdown pushes an
 # item to (module, 'incoming') — sorted manually on that module's page,
@@ -250,10 +250,13 @@ def file_inbox_item(
         target_exists = conn.execute(
             "SELECT 1 FROM known_prod_defects WHERE id = ?", (target_id,)
         ).fetchone() is not None
-    elif target_type == "delegated_wow":
-        # Delegated Ways of Working (2026-09-01 [USER]) — SINGLETON page,
-        # one notes thread: 'main' is the only valid id, no table to check
-        target_exists = target_id == "main"
+    elif target_type == "note_page":
+        # Working-notes pages (2026-09-01 [USER]) — singleton notes pages
+        # (Ways of Working, Testing Insights, …); valid ids = the slugs in
+        # the code registry, no table to check (app/note_pages.py is a
+        # pure-config module, safe for the db layer to import)
+        from app.note_pages import PAGES
+        target_exists = target_id in PAGES
     if not target_exists:
         return False
     with conn:
@@ -400,6 +403,15 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
         return [{"value": str(r["id"]),
                  "label": f"{r['scenario'] or '—'} — {r['short_description'] or ''}".rstrip(" —")}
                 for r in rows]
+    elif target_type == "note_page":
+        # Working-notes pages — a code registry, not a table; the empty
+        # query lists every page, so the picker shows them immediately
+        from app.note_pages import PAGES
+        needle = q.strip().casefold()
+        return [{"value": slug, "label": f"{p['emoji']} {p['title']} — {p['context']}"}
+                for slug, p in PAGES.items()
+                if needle in p["title"].casefold()
+                or needle in p["context"].casefold()]
     return []
 
 

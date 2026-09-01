@@ -91,6 +91,7 @@ Shared machinery used by many apps — a change here hits every including page.
 | Shared Jira store | no page — read by 3 apps | `db/jira.py` → `jira_issues`, `jira_comments`, `jira_labels` | `components/jira-store.md` |
 | Shared report blocks (macros, Excel log, 📣 call-outs) | inline on the reports | `db/core.py` → `report_comments` | `components/report-blocks.md` |
 | Row validations (⚠) | button on the boards | none — `row_validations.py` | `components/row-validations.md` |
+| Working-notes pages (🤝 WoW, 💡 Insights, …) | `/notes-page/<slug>` | none — registry `note_pages.py`; notes at `('note_page', slug)` | `components/note-pages.md` |
 
 ## Patterns
 
@@ -133,8 +134,9 @@ module: someone else is probably reading its data.**
   history.
 - **The Inbox files INTO** defects, retail, spillover, ecom, jira tickets,
   test learnings, follow-ups, shelf, topics, contacts, links, known
-  production issues and the Delegated Ways of Working page (2026-09-01, a
-  singleton — no search) — adding a target means touching
+  production issues and the working-notes pages (2026-09-01 — ONE type
+  `note_page`, the search lists every page; see
+  `components/note-pages.md`) — adding a target means touching
   `_INBOX_TARGET_TYPES`, the picker and a search/exists branch.
 - **Status report buckets** for Retail and ECOM come from ONE config
   (`config/status_mappings.yaml`) via `reporter.py`.
