@@ -109,3 +109,180 @@ def test_docs_map_lists_every_doc():
         assert (docs_dir / href).exists(), (
             f"docs_map.html links to {href} which does not exist — "
             "rerun tools/gen_docs_map.py")
+
+
+# ---------------------------------------------------------------------------
+# Facts coverage [USER 2026-09-01, docs cleanup step 2]: hand-written docs
+# must not fall behind the code on FACTS. Each rule carries its exceptions
+# explicitly, with a reason — a deliberate "needs no doc" is a visible
+# one-liner here, never a silent omission.
+# ---------------------------------------------------------------------------
+
+_SQL_KEYWORDS = {"PRIMARY", "FOREIGN", "UNIQUE", "CHECK", "CONSTRAINT"}
+
+# legacy tables that exist only for the migration record — no living doc
+# claims them and none should
+_LEGACY_TABLES = {
+    "defect_notes",  # pre-unified-notes table; see scripts/migrate_notes.py
+}
+
+# GET routes without placeholders that are data endpoints, not screens
+_NON_SCREEN_ROUTES: dict[str, str] = {
+    # path: reason   (paths ending in .json are exempt automatically)
+}
+
+
+def _storage_sources():
+    return list((ROOT / "app" / "db").glob("*.py")) + [ROOT / "app" / "db_retail_tracker.py"]
+
+
+def _columns_of(body: str) -> set[str]:
+    """First word of each comma-separated definition, comments stripped,
+    constraint keywords filtered."""
+    body = re.sub(r"--[^\n]*", "", body)
+    cols, depth, cur, parts = set(), 0, [], []
+    for ch in body:
+        if ch == "(":
+            depth += 1
+        if ch == ")":
+            depth -= 1
+        if ch == "," and depth == 0:
+            parts.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur))
+    for part in parts:
+        words = part.strip().split()
+        if not words:
+            continue
+        name = words[0].strip('"').split("(")[0]
+        if not name or name.upper() in _SQL_KEYWORDS or name.startswith("{"):
+            continue
+        cols.add(name)
+    return cols
+
+
+def _created_tables_with_columns() -> dict[str, set[str]]:
+    tables: dict[str, set[str]] = {}
+    for src in _storage_sources():
+        text = src.read_text(encoding="utf-8")
+        for m in re.finditer(
+            r"CREATE TABLE IF NOT EXISTS (\w+)\s*\((.*?)\)\s*(?:\"\"\"|'''|;)", text, re.S
+        ):
+            tables.setdefault(m.group(1), set()).update(_columns_of(m.group(2)))
+        for m in re.finditer(r"ALTER TABLE (\w+) ADD COLUMN (\w+)", text):
+            tables.setdefault(m.group(1), set()).add(m.group(2))
+    # manual_tests.py builds its pair from a format string
+    mt = (ROOT / "app" / "db" / "manual_tests.py").read_text(encoding="utf-8")
+    fm = re.search(r"CREATE TABLE IF NOT EXISTS \{\w+\}\s*\((.*?)\)\s*(?:\"\"\"|''')", mt, re.S)
+    if fm:
+        for t in ("manual_retail", "manual_ecom"):
+            tables.setdefault(t, set()).update(_columns_of(fm.group(1)))
+    return tables
+
+
+def test_every_table_and_column_reaches_the_schema_page():
+    """database_schema.html is the LEDGER: every table gets a card, every
+    column (CREATE or ALTER) appears on its table's card. This is the test
+    that would have caught email_lists.subject/body going undocumented."""
+    schema = (ROOT / "docs" / "database_schema.html").read_text(encoding="utf-8")
+    cards: dict[str, str] = {}
+    for m in re.finditer(r'<div class="table-card" id="([^"]+)"', schema):
+        nxt = schema.find('<div class="table-card"', m.end())
+        cards[m.group(1)] = schema[m.end(): nxt if nxt != -1 else len(schema)]
+
+    problems = []
+    for table, cols in _created_tables_with_columns().items():
+        if table not in cards:
+            problems.append(f"table `{table}` has no card on database_schema.html")
+            continue
+        for col in sorted(cols):
+            if not re.search(r"\b" + re.escape(col) + r"\b", cards[table]):
+                problems.append(f"column `{table}.{col}` missing from its card")
+    assert not problems, "\n".join(problems)
+
+
+def _docs_corpus() -> str:
+    import html as _html
+
+    parts = [
+        (ROOT / "docs" / "screens.html").read_text(encoding="utf-8"),
+        (ROOT / "docs" / "dashboard_cards.html").read_text(encoding="utf-8"),
+    ]
+    parts += [p.read_text(encoding="utf-8") for p in DOCS.rglob("*.md")]
+    return _html.unescape("\n".join(parts))
+
+
+def test_every_screen_and_namespace_reaches_the_docs():
+    """Two altitudes, deliberately not one per route: every user-facing GET
+    page (no placeholders) must appear in the docs literally, and every
+    top-level URL namespace must appear somewhere — but the Nth per-row CRUD
+    sub-route is prose ("add / edit / delete"), never a doc bullet each."""
+    from app.web import app
+
+    corpus = _docs_corpus()
+    problems = []
+    namespaces = set()
+    for rule in app.url_map.iter_rules():
+        if rule.endpoint == "static":
+            continue
+        path = rule.rule
+        seg = path.strip("/").split("/")[0]
+        if seg and "<" not in seg:
+            namespaces.add("/" + seg)
+        if "GET" in (rule.methods or set()) and "<" not in path:
+            if path.endswith(".json") or path in _NON_SCREEN_ROUTES:
+                continue
+            if path not in corpus and path.rstrip("/") not in corpus:
+                problems.append(
+                    f"screen {path} not in screens.html / dashboard_cards.html / docs/claude"
+                )
+    for ns in sorted(namespaces):
+        if ns not in corpus:
+            problems.append(f"namespace {ns} appears in no doc at all")
+    assert not problems, "\n".join(problems)
+
+
+def _card_titles(text: str) -> set[str]:
+    import html as _html
+
+    out = set()
+    for m in re.finditer(r"<h2>(.*?)</h2>", text, re.S):
+        t = re.sub(r"\{%.*?%\}|\{\{.*?\}\}", "", m.group(1), flags=re.S)
+        t = re.sub(r"<[^>]+>.*?</[^>]+>|<[^>]+>", "", t, flags=re.S)
+        t = _html.unescape(t)
+        t = "".join(ch for ch in t if ch.isalnum() or ch.isspace() or ch in "&—-")
+        t = " ".join(t.split()).strip()
+        if t:
+            out.add(t)
+    return out
+
+
+def test_dashboard_cards_match_the_dashboard():
+    """dashboard_cards.html is the MENU: exactly the cards the dashboard
+    template shows, no more, no less [USER 2026-09-01]."""
+    on_dashboard = _card_titles(
+        (ROOT / "app" / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    )
+    in_doc = _card_titles(
+        (ROOT / "docs" / "dashboard_cards.html").read_text(encoding="utf-8")
+    )
+    assert on_dashboard - in_doc == set(), f"cards missing from the doc: {sorted(on_dashboard - in_doc)}"
+    assert in_doc - on_dashboard == set(), f"doc lists cards that are gone: {sorted(in_doc - on_dashboard)}"
+
+
+def test_every_table_is_claimed_by_a_doc_header():
+    """No orphan tables: every table some storage module creates is named in
+    at least ONE doc's header block. (Per-doc completeness is deliberately
+    NOT required — core.py and planning.py are shared schema modules.)"""
+    claimed = set()
+    for doc in DOCS.rglob("*.md"):
+        text = doc.read_text(encoding="utf-8")
+        head = text.split("## Purpose")[0] if "## Purpose" in text else text
+        claimed |= set(re.findall(r"`([a-z][a-z0-9_]*)`", head))
+    orphans = set(_created_tables_with_columns()) - claimed - _LEGACY_TABLES
+    assert not orphans, (
+        f"tables no doc header claims: {sorted(orphans)} — add each to its "
+        "mini app's Storage line (or to _LEGACY_TABLES with a reason)"
+    )

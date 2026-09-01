@@ -60,10 +60,18 @@ Two rounds were agreed:
    `docs/coding_guidelines.md` skeleton seeded with the ONE new rule
    (every table gets a technical primary key [USER 2026-09-01]; 68/70
    comply, the two email join tables are round-2 work).
-2. Extend the docs tests: every table AND column → `database_schema.html`;
-   every route → `screens.html` or the app's own doc (with an explicit
-   exceptions list); dashboard-card parity; mini-app header completeness.
-   Then fix whatever they flag.
+2. ✅ DONE 2026-09-01 — four facts-coverage tests in
+   `test_docs_structure.py`: every table AND column → its card on
+   `database_schema.html`; every user-facing GET page + every URL namespace
+   → the docs (two altitudes ON PURPOSE — the Nth per-row CRUD sub-route is
+   prose, never a bullet each; `.json` endpoints auto-exempt); dashboard
+   cards ↔ the dashboard template, both directions; every table claimed by
+   at least one doc header (per-doc completeness deliberately NOT required —
+   core.py/planning.py are shared schema modules; `defect_notes` = the one
+   named legacy exception). Audits first, tests second: the audits found
+   ZERO real gaps (the 2026-09-01 email-docs repair had covered them), so
+   the tests freeze a clean state. Verified they bite (probe table failed
+   2 tests; unlisted doc fails the map test).
 3. `/wrap-up` skill (coherence re-read · SessionTest when templates/web
    changed · MarinaCheckSoon · session summary to
    `docs/archive/session_<date>_<topic>.md` incl. rejected alternatives ·

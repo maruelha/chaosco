@@ -41,12 +41,12 @@ TOP_LEVEL = {
     "screens.html": (
         "The MANUAL — every screen, what it shows and does, feature by feature",
         "any screen changes",
-        "route-coverage test (cleanup step 2)",
+        "screen + namespace coverage test (test_docs_structure.py)",
     ),
     "database_schema.html": (
         "The LEDGER — every table, column, constraint and relation",
         "a table or column changes",
-        "table + column coverage test (cleanup step 2)",
+        "table + column coverage test (test_docs_structure.py)",
     ),
     "architecture.html": (
         "The BLUEPRINT — layers, data flow, what each layer may and may not "
@@ -58,7 +58,7 @@ TOP_LEVEL = {
         "The MENU — what each dashboard card is FOR, nothing more "
         "[USER 2026-09-01]",
         "a card is added/removed/renamed",
-        "card-parity test (cleanup step 2)",
+        "card-parity test against the dashboard template",
     ),
     "build_plan.md": (
         "The DIARY — what to build next, per module, and what was just built",
