@@ -20,6 +20,7 @@ the way they do — not because it is still true.
 | File | What it was |
 |---|---|
 | `build_plan_2026-07-05.md` / `.html` | Day plan for 2026-07-05, executed |
+| `build_plan_done_2026-09-01.md` | The finished sections of `build_plan.md` (17 build logs: Email Reports, Sustain, Smoke, Delegated, Known Production Issues, refactoring steps 1-6, ...), moved out 2026-09-01 — open items were carried back to the live file |
 | `project_review_2026-07-04.md` | Cleanup plan — became Part 2 of `build_plan.md` |
 | `refactoring_report_2026-07-04.md` | Report on that refactoring |
 | `code-review-findings.md` | One code review's findings |
