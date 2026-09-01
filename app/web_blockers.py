@@ -229,10 +229,17 @@ def _slim(rows: list[dict]) -> list[dict]:
 
 
 def _picker_payload(conn, jira_key: str) -> dict:
+    """Closed blockers (manually closed or Jira done) are left OUT of the
+    pick list [USER 2026-09-01: "once closed they do not need to be in the
+    list"]; already-attached ones stay in `linked` even when closed, so
+    the chip remains visible and detachable."""
     linked = db_blockers.list_blockers_for_ticket(conn, jira_key)
     linked_ids = {b["blocker_id"] for b in linked}
-    available = [b for b in db_blockers.list_blockers(conn)
-                if b["blocker_id"] not in linked_ids]
+    rows = db_blockers.list_blockers(conn)
+    jira_status = _jira_status_map(conn, rows)
+    available = [b for b in rows
+                 if b["blocker_id"] not in linked_ids
+                 and not db_blockers.is_closed(b, jira_status.get(b["blocker_id"]))]
     return {"linked": _slim(linked), "available": _slim(available)}
 
 

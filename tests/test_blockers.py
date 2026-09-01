@@ -247,6 +247,51 @@ def test_attach_and_detach_blocker(client):
     assert data["ok"] and data["linked"] == []
 
 
+def test_picker_available_excludes_closed_blockers(client):
+    """[USER 2026-09-01] A closed blocker (manually closed OR its Jira
+    ticket done) must not be offered when attaching to a blocked ticket;
+    one that is already attached stays visible in `linked` so its chip
+    can still be seen and detached."""
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        open_b = db_blockers.create_blocker(conn, "defect", "Still blocking", None)
+        manual = db_blockers.create_blocker(conn, "defect", "Manually closed", None)
+        db_blockers.set_blocker_closed(conn, manual["blocker_id"], True)
+        jira_done = db_blockers.create_blocker(conn, "defect", "Done in Jira", "S4DEF-77")
+        db_jira.upsert_jira_issues(conn, [{
+            "jira_key": "S4DEF-77", "summary": "S77_done defect",
+            "jira_status": "Resolved"}])
+        linked_closed = db_blockers.create_blocker(conn, "task", "Attached then closed", None)
+        db_blockers.set_blocker_closed(conn, linked_closed["blocker_id"], True)
+        db_blockers.link_blocker(conn, linked_closed["blocker_id"], "S4ECOM-1")
+    finally:
+        conn.close()
+    data = c.get("/blockers/links/S4ECOM-1").get_json()
+    assert [b["name"] for b in data["available"]] == ["Still blocking"]
+    assert [b["name"] for b in data["linked"]] == ["Attached then closed"]
+
+
+def test_list_page_inline_fields_opt_out_of_browser_restore(client):
+    """[USER 2026-09-01 bug] Closing a blocker shifted every Team/Next step
+    value one row down: the browser restores form values BY POSITION on
+    reload, and the closed row's removal re-aligned them all. The inline
+    controls carry autocomplete=off (and the script navigates fresh instead
+    of reloading) so restoration can never cross rows again."""
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        db_blockers.create_blocker(conn, "defect", "Pricing bug", "S4DEF-1")
+    finally:
+        conn.close()
+    html = c.get("/blockers/").get_data(as_text=True)
+    for marker in ('class="blk-team"', 'blk-impact"', 'blk-ns"'):
+        control = html.split(marker, 1)[1][:300]
+        assert 'autocomplete="off"' in control, marker
+    assert "window.location.reload()" not in html
+    assert "location.replace" in html
+
+
 def test_quick_create_and_attach(client):
     c, db_path = client
     resp = c.post("/blockers/links/S4ECOM-1/quick-create",

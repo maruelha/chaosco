@@ -14,8 +14,13 @@
   {# Responsible team [USER 2026-08-28] — fixed picks + custom "Other"
      values already in use; Other… prompts for the new value #}
   <td>
+    {# autocomplete=off on the inline controls [USER 2026-09-01 bug]: the
+       browser restores form values BY POSITION on reload — after ✔ Close
+       removed a row, every remembered Team/Next step value re-appeared one
+       row further down. Opting out of restoration (plus the fresh
+       navigation in the script below) keeps values with their rows. #}
     <select class="blk-team" data-id="{{ b.blocker_id }}" onchange="blkTeamSave(this)"
-            style="font-size:0.82rem; max-width:9.5rem">
+            autocomplete="off" style="font-size:0.82rem; max-width:9.5rem">
       <option value="">—</option>
       {% for t in team_options %}
       <option value="{{ t }}" {% if b.team == t %}selected{% endif %}>{{ t }}</option>
@@ -31,7 +36,7 @@
   <td>
     <input type="text" class="rt-comment blk-impact" data-id="{{ b.blocker_id }}"
            value="{{ b.impact or '' }}" placeholder="what is blocked…"
-           onblur="blkImpactSave(this)">
+           autocomplete="off" onblur="blkImpactSave(this)">
   </td>
   <td>
     {% if b.jira_key %}
@@ -43,7 +48,8 @@
   <td>{{ blocked_counts.get(b.blocker_id, 0) or '—' }}</td>
   <td>
     <input type="text" class="rt-comment blk-ns" data-id="{{ b.blocker_id }}"
-           value="{{ b.next_step or '' }}" placeholder="next step…" onblur="blkNsSave(this)">
+           value="{{ b.next_step or '' }}" placeholder="next step…"
+           autocomplete="off" onblur="blkNsSave(this)">
   </td>
   <td style="white-space:nowrap; text-align:right">
     <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
@@ -104,6 +110,12 @@
 {% include '_next_step_history.html' %}
 
 <script>
+// Fresh navigation instead of location.reload() [USER 2026-09-01 bug]:
+// a RELOAD makes the browser restore form values by position, which
+// shifted every Team/Next step one row down after ✔ Close removed a row.
+function blkRefresh() {
+  window.location.replace(window.location.pathname + window.location.search);
+}
 function blkNsSave(input) {
   const body = new URLSearchParams({ next_step: input.value });
   fetch('/blockers/' + input.dataset.id + '/next-step', { method: 'POST', body })
@@ -120,7 +132,7 @@ function blkTeamSave(sel) {
   }
   const body = new URLSearchParams({ team });
   fetch('/blockers/' + sel.dataset.id + '/team', { method: 'POST', body })
-    .then(r => { if (!r.ok) throw new Error(); window.location.reload(); })
+    .then(r => { if (!r.ok) throw new Error(); blkRefresh(); })
     .catch(() => alert('Saving failed — try again.'));
 }
 function blkImpactSave(input) {
@@ -135,7 +147,7 @@ document.querySelectorAll('.blk-close-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
     const body = new URLSearchParams({ value: btn.dataset.value });
     const resp = await fetch('/blockers/' + btn.dataset.id + '/close', { method: 'POST', body });
-    if ((await resp.json()).ok) window.location.reload();
+    if ((await resp.json()).ok) blkRefresh();
   });
 });
 </script>

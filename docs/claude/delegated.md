@@ -339,6 +339,11 @@ blocks one or more delegated tickets. Design decisions:
   board's blocked rows + the ticket detail page: attach an existing
   blocker, detach one, or quick-create-and-attach in one step (type, name,
   jira key — "add name+key+type while attaching" [USER 2026-08-27]).
+  Since 2026-09-01 [USER] the pick list offers only OPEN blockers —
+  closed ones (manually closed or Jira done) are filtered out of
+  `available` in `web_blockers._picker_payload`; an already-attached
+  closed blocker stays in `linked` so its chip remains visible and
+  detachable.
   Chips (name + jira key) render inline via `blockers_for_tickets` (one
   batch query for the whole board) / `list_blockers_for_ticket` (detail).
 - **`counts_toward_goal`** (step 8) — per-ticket authored flag on
@@ -415,6 +420,18 @@ blocks one or more delegated tickets. Design decisions:
 - Tests: `tests/test_blockers.py` (storage, list/detail pages, notes,
   board-exclusion, attach/detach/quick-create, blocked_ticket_counts),
   `tests/test_delegated_web.py` (goal toggle, chips on board + detail).
+- **Bug fixed 2026-09-01** [USER: closing a defect "copied the values
+  down the line"]: after ✔ Close reloaded the list, every Team/Next step
+  (and Impact) value appeared one row lower. Not a save bug — the DB was
+  always right — but the browser's form-state restoration on
+  `location.reload()`, which restores form values BY POSITION in the
+  page: the closed row's controls left the open table, so each remembered
+  value landed in the next row's control. Fix in `blockers.html`:
+  `autocomplete="off"` on the three inline controls (opts them out of
+  restoration) + `blkRefresh()` (a fresh `location.replace` navigation)
+  instead of `location.reload()` after close/team-save. Any other list
+  page that combines inline form controls with a row-removing reload has
+  the same latent trap.
 - **Bug fixed 2026-08-27**: `blockers_for_tickets`' join selected both
   `l.jira_key` (the delegated ticket) and `b.jira_key` (the blocker's own,
   often NULL) under the same column name — the blocker's key silently
