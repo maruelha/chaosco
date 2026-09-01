@@ -86,8 +86,13 @@ Two rounds were agreed:
    `ways_of_working.md` are now POINTERS (docs_map + the skill) — the
    checklist lives once, in the skill. ways_of_working gained the
    "/wrap-up ends the session" section.
-4. Trim `dashboard_cards.html` — every card says what it is FOR, nothing
-   more [USER 2026-09-01]; unique detail moves to `screens.html` first.
+4. ✅ DONE 2026-09-01 — `dashboard_cards.html` trimmed to the MENU:
+   every card says what it is FOR, nothing more [USER 2026-09-01]. Checked
+   first: every fact in the long cards already existed in `screens.html`
+   (the two files had become near-duplicates — which is why they were
+   hard to tell apart), so nothing needed moving and nothing was lost.
+   Titles, URLs and accent colors unchanged (the parity test pins the
+   card set); subtitle + footer now state the job and the enforcement.
 5. Prune this file: finished sections MOVE to `docs/archive/` — and from
    then on the standing rule: when something is added, something goes
    [USER 2026-09-01].

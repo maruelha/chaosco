@@ -29,195 +29,197 @@
 <body>
 
 <h1>Dashboard at a glance</h1>
-<p class="subtitle">One mini-card per dashboard card, in the fixed card order (daily work first).
-Full per-screen detail: <code>docs/screens.html</code> · tables: <code>docs/database_schema.html</code> ·
-big picture: <code>docs/architecture.html</code>. Updated 2026-08-26.</p>
+<p class="subtitle">The MENU: one mini-card per dashboard card, in the fixed card order —
+what each card is <strong>FOR</strong>, nothing more [USER 2026-09-01]. Every feature
+detail lives in <code>docs/screens.html</code> (the manual) · tables:
+<code>docs/database_schema.html</code> · big picture: <code>docs/architecture.html</code>.
+Kept in sync with the dashboard by a parity test.</p>
 
 <div class="grid">
 
   <div class="card a-blue">
     <h2>Inbox <span class="badge">count</span></h2>
-    <p>The daily capture pad. Paste notes and screenshots as they happen, tag them with Order/SolMan/Jira IDs or a route-to, then file each item to its destination — by hand or via ⚡ Auto-file.</p>
+    <p>Get a note or screenshot out of your head the moment it happens; file it to where it belongs later.</p>
     <span class="url">/inbox</span>
   </div>
 
   <div class="card">
     <h2>Import DTC ROE Tracking</h2>
-    <p>One click: finds the newest Excel export, archives it, and upserts all enabled tabs (Defects · Spillover · Retail · ECOM) into the database. Idempotent — safe to run any time.</p>
+    <p>Pull the newest tracking Excel into the database with one click. Safe to run any time.</p>
     <span class="url">POST /import</span>
   </div>
 
   <div class="card">
     <h2>Core South Spillover</h2>
-    <p>The spillover items with your annotations (importance, next steps, comment history, sign-off fields). Opens on the "In report" view; feeds the Spillover Status Report.</p>
+    <p>Work the spillover items with your annotations; feeds the Spillover Status Report.</p>
     <span class="url">/spillover</span>
   </div>
 
   <div class="card">
     <h2>Retail</h2>
-    <p>All Retail test-case rows with filters, inline next steps, the Comments dialog, and the ⚠ data check. Source for the Retail Status Report and the Requirements Tracker.</p>
+    <p>Work the Retail test-case rows; source of the Retail Status Report and the Requirements Tracker.</p>
     <span class="url">/retail</span>
   </div>
 
   <div class="card">
     <h2>ECOM Gatekeeper</h2>
-    <p>Sales-facing pre-handoff check on the Jira tickets: Active gatekeeping / Back with Sales sections, next steps, orders, reporter filter, and the 📄 Sales report (also per reporter).</p>
+    <p>Check Sales' Jira tickets before they are handed on — and send back what is not ready.</p>
     <span class="url">/ecom-gatekeeper</span>
   </div>
 
   <div class="card">
     <h2>ECOM</h2>
-    <p>ECOM test cases from the Excel, joined live with the shared Jira store (status, assignee, comments). Comments dialog, reporter filter, ⚠ data checks, own status report.</p>
+    <p>Work the ECOM test cases, joined live with the shared Jira store; own status report.</p>
     <span class="url">/ecom/</span>
   </div>
 
   <div class="card">
     <h2>Delegated Testing <span class="badge">total · blocked</span></h2>
-    <p>Testing delegated to the team — own uploaded Jira XML export (tagged in the shared store), bucketed from 🔴 Blocker to test case completed (status wording rewritten 2026-08-31 — the testing team's own work is <code>Accepted</code>, so <code>In Progress</code> means the gatekeeper check with Marina). Why-blocked + next steps per ticket; three reports: 📄 status report + 📊 Management Summary (goal vs actual, staged bucket counts, blocker overview) + 📈 Delegated Testing Overview (2026-08-31 — pipeline by stage with In progress/Blocked lines, the execution-status bar, blockers by team). Added 2026-08-26. 🚧 Blockers (2026-08-27): defects/tasks/clarifications blocking tickets get their own page + an attach picker on blocked rows — registered blocker keys are hidden from this board.</p>
+    <p>Follow the testing delegated to the team — where each ticket is in the pipeline, what is blocked and why; three management reports.</p>
     <span class="url">/delegated/ · /delegated/report · /delegated/numbers · /delegated/overview · /blockers/</span>
   </div>
 
   <div class="card">
     <h2>CORE SOUTH Smoke Testing <span class="badge">scenario count</span></h2>
-    <p>eCOM/Retail smoke test scenarios from the EU CS Smoke Test execution workbook — file-picker upload (no folder config), filtered to WS eCOM/Retail with MB Invoice Validation = WAHR. Overview page shows 3 stat-card groups (ECOM/OMNI/Retail — total/not started/in progress/completed); eCOM page splits OMNI (Click &amp; Collect / Ship From Store / Return in Store) from ECOM (rest); Retail page is one list. Each scenario expands (native accordion) to its steps; text filter on Scenario. Added 2026-08-27.</p>
+    <p>Follow the EU CS smoke test execution — scenarios and their steps, per channel.</p>
     <span class="url">/smoke/ · /smoke/ecom · /smoke/retail</span>
   </div>
 
   <div class="card">
     <h2>Core South Sustainphase Monitoring <span class="badge">task count</span></h2>
-    <p>Daily GBS Operations checklist (O2C DTC) — …DTC_GBS Operations_checklist.xlsx uploaded via file picker (name matched on containing "DTC_GBS Operations_checklist"; prefix varies per file). One tab per stream per day (Retail_/eCom_&lt;date&gt;), replaced per tab so date-window files accumulate history. Day report mirrors the Excel structure with expandable detail rows and recomputed status pills; Management summary (📊 button) shows due/completed/pending/attention per stream, the verbatim-note Attention list, day-over-day trend and repeat offenders. Added 2026-08-28.</p>
+    <p>Follow the daily GBS Operations checklist — did the day's tasks run, what needs attention.</p>
     <span class="url">/sustain/ · /sustain/day/&lt;day&gt;/&lt;stream&gt; · /sustain/summary</span>
   </div>
 
   <div class="card">
     <h2>Sustainphase Issues <span class="badge">issue count</span></h2>
-    <p>Defects tab of DTC_Sustainphase_Tracking….xlsx (file picker, name contains "DTC_Sustainphase_Tracking"), UPSERTED by ASPEN Defect ID — issues not yet in ASPEN get a SUS-nnn placeholder that stays searchable after the real id arrives. Expandable rows with Channel/ASPEN status/Country/Priority filters, Open/Closed split, red blocks-execution chip, authored call-outs + next steps. Added 2026-08-28.</p>
+    <p>Track the defects from the Sustainphase tracking workbook, with your call-outs and next steps.</p>
     <span class="url">/sustain-issues/</span>
   </div>
 
   <div class="card">
     <h2>Manual Test Cases Retail</h2>
-    <p>Read-only list of the "Manual Test Cases | Retail" tab + simple status report (shared report blocks; defects = referenced in the tab AND Retail channel). Added 2026-08-05.</p>
+    <p>See the manual Retail test cases and their simple status report.</p>
     <span class="url">/manual/retail · /manual/retail/report</span>
   </div>
 
   <div class="card">
     <h2>Manual Test Cases ECOM</h2>
-    <p>Read-only list of the "Manual Test Cases | ECOM" tab + simple status report (same blocks; ecom-channel defects). Added 2026-08-05.</p>
+    <p>The same for ECOM.</p>
     <span class="url">/manual/ecom · /manual/ecom/report</span>
   </div>
 
   <div class="card">
     <h2>MB ROE Defects</h2>
-    <p>All imported defects with search, channel filter (ECOM/RETAIL, casing-proof), status filters, blocked-test-case counts, and the annotation flags (action needed, DTC O2C, daily).</p>
+    <p>Look up the imported defects — search, filters, and your flags.</p>
     <span class="url">/defects</span>
   </div>
 
   <div class="card">
     <h2>Known Production Issues <span class="badge">active count</span></h2>
-    <p>Manually curated register of defects, limitations, risks and accepted defects known to exist in production — feeds the ECOM Spillover Report's Known Production Issues section, plus its own download/review/email flow. Reworked 2026-08-27: expandable rows (no wide table), unique ECOM-/RETAIL- ids, Limitations and Risks split into their own lists, sorted by Scenario. 🗄 Archive: ✓ Mark Fixed moves a row out of the active list, all downloads/reports — kept, not deleted, ↺ Reopen brings it back. 📄 Management report: print-ready summary for ECOM Core South management + GBS Ops (defects/limitations need both audience ticks, all ECOM risks included; per-section + per-scenario counts); its download plus the list snapshot and the review copy are all three Email Reports choices. The dashboard badge counts only active (non-fixed) rows.</p>
+    <p>The curated register of what is known to be broken, limited or risky in production; feeds the reports and the management copy.</p>
     <span class="url">/prod_defects · /prod_defects/archive · /prod_defects/report</span>
   </div>
 
   <div class="card a-teal">
     <h2>Export &amp; Backup</h2>
-    <p>Two jobs: dated snapshots to <code>report_export/</code> — HTML + PowerPoint for Retail/Spillover, HTML for the three Delegated reports — status report, Management Summary and Overview (+ 📧 Email Reports) — and the 💾 DB backup — database + screenshots to the external drive, with a last-backup reminder.</p>
+    <p>Dated report snapshots to <code>report_export/</code>, and the DB backup to the external drive.</p>
     <span class="url">POST /export-reports · POST /backup</span>
   </div>
 
   <div class="card">
     <h2>🔥 Deadlines &amp; Burning <span class="badge">open</span></h2>
-    <p>Red card, first in the grid. Topics that must not slip — deadlines, burning items, and promises you'd be ashamed not to keep. Opens as a popup on the first app open of each day (dismiss with "Got it"); entries can be ticked off straight from the popup.</p>
+    <p>The nag list — deadlines and promises that must not slip; pops up once per day.</p>
     <span class="url">/urgent/</span>
   </div>
 
   <div class="card">
     <h2>Meeting Prep</h2>
-    <p>Topics to raise per meeting — filter by meeting, tick items off as discussed. Per meeting: an Agenda report (plain sorted list) and a Worksheet (comment box per topic, saves/loads JSON offline).</p>
+    <p>Collect topics to raise per meeting; tick them off as discussed.</p>
     <span class="url">/meeting-prep</span>
   </div>
 
   <div class="card">
     <h2>Missing Test Cases — Retail <span class="badge">count</span></h2>
-    <p>The ONE list of <strong>Retail</strong> test cases that do not exist yet (title + detail note; ECOM not covered yet), plus the Retail retrofits mirrored read-only with a test-coverage note and the standing note that test cases are needed for those too. Seeds the "Missing test cases" list on the Retail status report AND the ⚠ list on the Retail Requirements Board. Own HTML report (download + email attachment) and a copy &amp; paste email text.</p>
+    <p>The ONE list of Retail test cases that do not exist yet; seeds the status report and the Requirements Board.</p>
     <span class="url">/missing-tests/</span>
   </div>
 
   <div class="card">
     <h2>Retrofits <span class="badge">count</span></h2>
-    <p>System changes still coming for ECOM / Retail — Confirmed and Potential, each optionally linked to a Topic. Rendered at the bottom of both status reports.</p>
+    <p>Track the system changes still coming for ECOM / Retail; shown on both status reports.</p>
     <span class="url">/retrofits/</span>
   </div>
 
   <div class="card a-amber">
     <h2>Retail Requirements Tracker <span class="badge">unresolved</span></h2>
-    <p>Tracks that every Retail requirement is tested across countries — derived LIVE from Retail statuses, never stored as yes-marks. Board + payment-methods matrix + import &amp; admin.</p>
+    <p>Prove that every Retail requirement is tested across countries — derived live from the Retail statuses.</p>
     <span class="url">/retail-tracker/board</span>
   </div>
 
   <div class="card a-green">
     <h2>Topics <span class="badge">active</span></h2>
-    <p>What you're actively working on: per topic a big formatted workpad (first!), next steps, links, connected defects/test cases/spillover items, and notes.</p>
+    <p>What you are actively working on — workpad, next steps, connected items, notes.</p>
     <span class="url">/topics/</span>
   </div>
 
   <div class="card">
     <h2>Follow-ups</h2>
-    <p>Per-person follow-up items with next-contact dates and notes.</p>
+    <p>Per-person follow-up items with next-contact dates.</p>
     <span class="url">/followups</span>
   </div>
 
   <div class="card">
     <h2>Links</h2>
-    <p>Useful-links store — filter by area/tool/tag, one-click copy. Inbox items can be routed here.</p>
+    <p>Useful-links store with one-click copy.</p>
     <span class="url">/links</span>
   </div>
 
   <div class="card">
     <h2>Contacts</h2>
-    <p>Contact directory (name, email, area, topic, tags) with notes per contact. Inbox items can be routed here.</p>
+    <p>Contact directory with notes per contact.</p>
     <span class="url">/contacts</span>
   </div>
 
   <div class="card a-purple">
     <h2>Shelf <span class="badge">count</span></h2>
-    <p>Catch-all archive for notes that don't belong to a specific entity yet — the counterpart to Topics (Shelf = parked, Topic = active).</p>
+    <p>Parked notes that belong to no entity yet (Topics = active, Shelf = parked).</p>
     <span class="url">/shelf</span>
   </div>
 
   <div class="card">
     <h2>Encouragements <span class="badge">undelivered</span></h2>
-    <p>Positive observations about people, with a delivered flag — so appreciation actually gets said.</p>
+    <p>Positive observations about people — so appreciation actually gets said.</p>
     <span class="url">/encouragements</span>
   </div>
 
   <div class="card">
     <h2>CS Follow-Up Tracker</h2>
-    <p>Core South follow-up items by area and Jira ID, with next steps, owner, and notes.</p>
+    <p>Core South follow-up items by area and Jira ID.</p>
     <span class="url">/cs_followups</span>
   </div>
 
   <div class="card">
     <h2>To-Do</h2>
-    <p>Plain task list with priority, due date, owner, and notes.</p>
+    <p>Plain task list with priority, due date and owner.</p>
     <span class="url">/todos</span>
   </div>
 
   <div class="card">
     <h2>Teams Chats</h2>
-    <p>Registry of Teams chats &amp; channels — pin the important ones for the floating 💬 widget, attach any to Retail / ECOM / Gatekeeper / Spillover items.</p>
+    <p>Registry of Teams chats &amp; channels — pin the important ones, attach any to tickets.</p>
     <span class="url">/teams-chats/</span>
   </div>
 
   <div class="card">
     <h2>Message Types</h2>
-    <p>Reference for the ✉️ issue-message builder: message types with their TIBCO / IIB APIs and comments.</p>
+    <p>Reference for the ✉️ issue-message builder — message types with their APIs.</p>
     <span class="url">/message-types</span>
   </div>
 
   <div class="card">
     <h2>Enhancements <span class="badge">open</span></h2>
-    <p>Tracked improvement ideas for chaosco itself — captured from every page via the floating panel.</p>
+    <p>Improvement ideas for chaosco itself, captured from every page.</p>
     <span class="url">/enhancements/page</span>
   </div>
 
@@ -226,8 +228,10 @@ big picture: <code>docs/architecture.html</code>. Updated 2026-08-26.</p>
 <div class="footer">
   <strong>On every page, not on a card:</strong> the floating 🔍 order-number search ·
   the floating 💬 pinned-chats widget · the ➕ Enhancements capture panel.
-  <br><em>Maintenance note: when a dashboard card is added/removed/renamed, update this file
-  together with docs/screens.html.</em>
+  <br><em>This file is the MENU — a card says what it is FOR, nothing more
+  [USER 2026-09-01]; features and history live in <code>docs/screens.html</code>.
+  Card set is enforced by <code>test_dashboard_cards_match_the_dashboard</code>
+  (parity with the dashboard template, both directions).</em>
 </div>
 
 </body>
