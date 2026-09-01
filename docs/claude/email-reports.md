@@ -48,7 +48,8 @@ clean `/delegated/*/download` renders; Delegated Testing Overview joined
 
 A date field (default today) drives subject and body text (both editable).
 Recipients live in `report_recipients` (add / toggle active / delete; active
-ones pre-ticked) and can be saved as named mailing lists. Reports rendered
+ones pre-ticked) and go into groups — which since 2026-08-31 carry the reports
+and the wording too, see above. Reports rendered
 through the app are made standalone by `emailer.standalone_html` (CSS inlined,
 scripts stripped, sections opened); the routes that already return clean
 standalone HTML are attached as-is.
@@ -69,6 +70,20 @@ successful send into an error.
 - Credentials `email_user` / `email_password` belong ONLY in the gitignored
   `settings.local.yaml`. The page shows setup instructions and disables Send
   until they are configured.
+- `default_texts(reports=...)` distinguishes **`None` = "not asked"** (list every
+  report) from an **empty list = "nothing ticked"** (body says "(no report
+  selected yet)"). A plain `or` here would list all thirteen again on a page that
+  now opens with none ticked — the exact bug this was written to avoid.
+- `save_email_list` replaces a group's **reports only when report keys are
+  passed**. Anything that saves a group without them (a recipient-only change)
+  must keep the existing set, or a group silently loses its reports.
+- The recipient/group routes answer **JSON when `X-Requested-With: fetch` is
+  set and redirect otherwise** (`_wants_json`). Keep both branches when touching
+  them: the page relies on the JSON one to avoid a reload, and the redirect is
+  the no-JavaScript fallback.
+- One definition of the wording: subject/body text belongs in
+  `emailer.default_texts` only. The page never builds its own copy — otherwise
+  ↻ Regenerate and the initial render drift apart.
 
 ## Related
 
