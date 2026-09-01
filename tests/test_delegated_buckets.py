@@ -193,8 +193,8 @@ def _blocked(*teams):
 def test_overview_team_stage_rules():
     assert overview_team_stage("Sales BIZ") == "tech"
     assert overview_team_stage("sales tech") == "tech"      # any "Sales*"
-    assert overview_team_stage("PDM") == "tech"
     assert overview_team_stage("omni") == "tech"
+    assert overview_team_stage("PDM") == "mb"       # moved from tech [USER 2026-09-01]
     assert overview_team_stage("DTC O2C") == "mb"
     assert overview_team_stage("MB BIZ") == "mb"
     assert overview_team_stage("Kibana") == "bpo"
@@ -206,7 +206,8 @@ def test_overview_team_stage_rules():
 
 def test_blocked_ticket_takes_the_earliest_stage_of_its_blocker_teams():
     assert blocked_stage(_blocked("Kibana")) == "bpo"
-    assert blocked_stage(_blocked("Kibana", "PDM")) == "tech"
+    assert blocked_stage(_blocked("Kibana", "Sales BIZ")) == "tech"
+    assert blocked_stage(_blocked("Kibana", "PDM")) == "mb"
     assert blocked_stage(_blocked("Kibana", "DTC O2C")) == "mb"
     assert blocked_stage(_blocked("Some new team")) is None
     assert blocked_stage({"jira_status": "Blocked"}) is None   # no blockers

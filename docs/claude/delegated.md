@@ -135,8 +135,8 @@ line, and TWO lines underneath:
 
 | Card | Owner | In progress (Jira status) | Blocked (blocker's team) |
 |---|---|---|---|
-| TECH TEST EXECUTION | Sales Tech | Open · Accepted | `Sales*` · PDM · Omni |
-| MB EXECUTION & VERIFICATION | MB | In Progress · In Verification · In Validation | DTC O2C · MB BIZ |
+| TECH TEST EXECUTION | Sales Tech | Open · Accepted | `Sales*` · Omni |
+| MB EXECUTION & VERIFICATION | MB | In Progress · In Verification · In Validation | PDM · DTC O2C · MB BIZ |
 | ECOM BPO VERIFICATION | ECOM BPO | In Review | Kibana · ECOM BPO |
 | COMPLETE | — | Resolved · Closed | — |
 
@@ -144,7 +144,8 @@ A BLOCKED ticket's status says nothing about who has to move, so it is
 staged by the **responsible team of its blocker** instead [USER]. Several
 blocker teams on one ticket → the EARLIEST stage wins, so a ticket is
 counted exactly once and the pipeline keeps adding up. `Kibana` and
-`ECOM BPO` joined `db_blockers.FIXED_TEAMS` for this.
+`ECOM BPO` joined `db_blockers.FIXED_TEAMS` for this. PDM moved from the
+Tech stage to MB on 2026-09-01 [USER].
 
 **Execution status** — the mockup's four-group stacked bar [USER: "I want
 to keep the mockups stages as that is what the manager wants"]: Passed

@@ -195,11 +195,12 @@ OVERVIEW_STAGES = [
 ]
 
 # blocker team -> stage [USER 2026-08-31]. Everything starting with "Sales"
-# plus PDM/Omni is Tech; DTC O2C and MB BIZ are MB; Kibana and ECOM BPO are
-# the BPO stage. A blocked ticket whose blockers carry no mapped team is
-# reported on its own line rather than silently dropped.
-_TEAM_STAGES = {"pdm": "tech", "omni": "tech",
-                "dtc o2c": "mb", "mb biz": "mb",
+# plus Omni is Tech; PDM [USER 2026-09-01], DTC O2C and MB BIZ are MB;
+# Kibana and ECOM BPO are the BPO stage. A blocked ticket whose blockers
+# carry no mapped team is reported on its own line rather than silently
+# dropped.
+_TEAM_STAGES = {"omni": "tech",
+                "pdm": "mb", "dtc o2c": "mb", "mb biz": "mb",
                 "kibana": "bpo", "ecom bpo": "bpo"}
 
 # the stacked status bar [USER 2026-08-31] — the four groups management asked

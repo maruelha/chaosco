@@ -660,7 +660,8 @@ one-at-a-time, Marina confirms each:
     EXECUTION & VERIFICATION (MB — In Progress/In Verification/In
     Validation) · ECOM BPO VERIFICATION (ECOM BPO — In Review) · COMPLETE
     (Resolved/Closed). The *Blocked* line stages a ticket by its blocker's
-    responsible TEAM (Sales*/PDM/Omni → Tech, DTC O2C/MB BIZ → MB,
+    responsible TEAM (Sales*/Omni → Tech, PDM/DTC O2C/MB BIZ → MB
+    (PDM moved from Tech 2026-09-01 [USER]),
     Kibana/ECOM BPO → BPO; `Kibana` + `ECOM BPO` joined `FIXED_TEAMS`);
     several teams on one ticket → the EARLIEST stage, so every ticket
     counts exactly once. Then the four-group execution-status bar (Passed /
