@@ -187,6 +187,8 @@ def sustain_summary(day=None):
                                                             o["stream"]),
                     "comments": db_sustain.comment_items(conn, day,
                                                          o["stream"]),
+                    "callouts": db_sc.list_open_for_channel(conn,
+                                                            o["stream"]),
                 })
         offenders = db_sustain.repeat_offenders(conn)
     finally:

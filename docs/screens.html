@@ -1146,6 +1146,8 @@
     <div class="screen-card-body">
       <p class="screen-desc">v1 layout (review pending with Marina). Defaults to the latest imported day. Per stream: stat cards + the <strong>Attention list</strong> — every entry that is neither OK nor pending (free-text notes + Review marks) with task, country, provider and the verbatim note: the auto-generated discussion agenda. Below it, per stream, the <strong>Comments / observations</strong> table lists every entry of the workbook's column M (added 2026-08-31) — informational, so it is kept apart from the attention list and does not affect any count.</p>
       <div class="features">
+        <span class="feat-label">Call-outs</span>
+        <span class="feat-value">Added 2026-09-01 — per stream, above the Attention list: that channel's open/in-progress items from Marina's own monitoring log (<code>db_sc.list_open_for_channel</code>), so a call-out with channel "both" appears in BOTH the Retail and eCom sections. Type, topic, responsible, status, date captured, current next step — shown on every day's summary until closed.</span>
         <span class="feat-label">Trend</span>
         <span class="feat-value">Day-over-day table across all imported tabs — due/completed/pending/attention + completion %, rows link to the day reports (<code>db_sustain.overview</code>).</span>
         <span class="feat-label">Repeat offenders</span>

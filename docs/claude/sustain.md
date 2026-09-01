@@ -196,6 +196,14 @@ the importer, same separation as `sustain_issue_annotations` from
   add-note textarea, own small script block — not `static/notes.js`,
   which assumes a `.js-notes-toggle` class already used by
   `todo_list.html`'s bespoke markup rather than a shared widget).
+- **Management summary block** (build plan step 4) — inside each stream's
+  section on `/sustain/summary[/<day>]`, right below the stat cards and
+  above the Attention list: a table of that channel's open/in-progress
+  call-outs (`db_sc.list_open_for_channel`, so `channel='both'` items show
+  up in BOTH the Retail and eCom sections) — type, topic, responsible,
+  status pill, date captured, current next step. Shown on every day's
+  summary until closed (call-outs are ongoing, not tied to one day's
+  import) — hidden entirely when a channel has none open.
 
 ### Day report — `/sustain/day/<day>/<stream>` (`sustain_day.html`)
 

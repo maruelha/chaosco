@@ -201,3 +201,58 @@ def test_note_count_shown_on_card(client, tmp_path):
     client.post(f"/n/sustain_callout/{cid}/add.json", data={"note": "note one"})
     html = client.get("/sustain/").get_data(as_text=True)
     assert "Notes (1)" in html
+
+
+# ---------------------------------------------------------------------------
+# Management summary (build plan step 4): per-stream Call-outs block
+
+def _import_day(client, day="2026-09-01"):
+    """Minimal (day, stream) import via storage — a full workbook parse
+    isn't needed, just enough for db_sustain.overview() to return a row
+    per stream so the summary page renders its per-stream sections."""
+    conn = database.get_connection(client.db_path)
+    try:
+        for stream in ("Retail", "eCom"):
+            db_sustain.replace_day_stream(conn, day, stream, [{
+                "excel_row": 1, "task_id": "1", "taxonomy": "Tax",
+                "process": "Proc", "cadence": "Daily", "due_today": "No",
+                "country": None, "provider": "Adyen",
+                "result_fr": None, "result_it": None, "result_pt": None,
+                "result_es": None, "overall": None, "details": [],
+            }])
+    finally:
+        conn.close()
+
+
+def test_summary_shows_open_callouts_for_the_stream(client):
+    _import_day(client)
+    _add(client, channel="retail", topic="Retail-only topic")
+    html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert "Retail-only topic" in html
+
+
+def test_summary_channel_both_appears_in_both_streams(client):
+    _import_day(client)
+    _add(client, channel="both", topic="Affects both streams")
+    html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert html.count("Affects both streams") == 2
+
+
+def test_summary_hides_closed_and_other_channel_callouts(client, tmp_path):
+    _import_day(client)
+    _add(client, channel="retail", topic="Retail closed one")
+    _add(client, channel="ecom", topic="Ecom-only topic")
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        cid = [c for c in db_sc.list_callouts(conn)
+              if c["topic"] == "Retail closed one"][0]["id"]
+    finally:
+        conn.close()
+    client.post(f"/sustain/callouts/{cid}/status")  # -> in_progress
+    client.post(f"/sustain/callouts/{cid}/status")  # -> closed
+
+    html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert "Retail closed one" not in html
+    # eCom's own topic must not leak into the Retail section
+    retail_section = html.split("Retail — 2026-09-01")[1].split("eCom — 2026-09-01")[0]
+    assert "Ecom-only topic" not in retail_section

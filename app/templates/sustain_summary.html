@@ -46,6 +46,32 @@
   {{ ui.stat_card(s.counts.pending, 'pending', 'open') }}
   {{ ui.stat_card(s.counts.attention, 'attention', 'alarm') }}
 {% endcall %}
+{# Marina's own monitoring log (2026-09-01) — open/in-progress call-outs
+   for this channel; 'both' shows up in both streams' sections. #}
+{% if s.callouts %}
+<p style="color:#888; font-size:0.85rem; margin:0.6rem 1rem 0.3rem">
+  Call-outs ({{ s.callouts|length }}):
+</p>
+{% call ui.table(['Type', 'Topic', 'Responsible', 'Status', 'Captured', 'Next step']) %}
+  {% for c in s.callouts %}
+  <tr>
+    <td><span class="chip sc-type">{{ c.type }}</span></td>
+    <td>{{ c.topic }}</td>
+    <td>{{ c.responsible or '—' }}</td>
+    <td>
+      {% if c.status == 'in_progress' %}
+      <span class="pill pill--amber">In Progress</span>
+      {% else %}
+      <span class="pill pill--gray">Open</span>
+      {% endif %}
+    </td>
+    <td>{{ c.date_captured }}</td>
+    <td>{{ c.next_step or '—' }}</td>
+  </tr>
+  {% endfor %}
+{% endcall %}
+{% endif %}
+
 {% if s.attention %}
 {% call ui.table(['Task', 'Process', 'Country', 'Provider / Account', 'Note']) %}
   {% for i in s.attention %}
