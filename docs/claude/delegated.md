@@ -485,14 +485,18 @@ nor the Management Summary reads it.
    INVERTED [USER: "define some open tickets as 'backlog' - and then they
    are in their own section 'backlog' - and do not appear on the
    management summary report"]: not extra counted-only items, but a
-   per-ticket authored flag (`delegated_annotations.backlog`, checkbox on
-   every board row + the ticket detail form). Flagged tickets land in a
-   📦 Backlog section at the bottom of the board AND the status report
-   (`bucket_key` returns `backlog` FIRST — wins even over Blocked), and
-   are excluded from the Management Summary entirely (total, staged
-   counts, goal actual — `numbers_context` filters them before
-   `staged_counts`). Toggle `POST /delegated/ticket/<key>/backlog`
-   (board checkbox reloads the page so the row visibly moves).
+   per-ticket authored flag (`delegated_annotations.backlog`). Flagged
+   tickets land in a 📦 Backlog section at the bottom of the board AND
+   the status report (`bucket_key` returns `backlog` FIRST — wins even
+   over Blocked), and are excluded from the Management Summary entirely
+   (total, staged counts, goal actual — `numbers_context` filters them
+   before `staged_counts`). Toggle `POST /delegated/ticket/<key>/backlog`.
+   **Control reworked 2026-09-01 [USER: parking is a deliberate act, not a
+   list toggle]** — the ONE control is the park/unpark BUTTON on the
+   ticket detail page ("📦 Move to backlog" / "↩ Move back to board" +
+   parked-state pill); the board checkbox column and the detail form's
+   checkbox are gone, and the detail form save deliberately does NOT
+   touch backlog anymore.
 
 ## Related
 

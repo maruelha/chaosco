@@ -200,8 +200,10 @@ def delegated_counts_toward_goal(jira_key: str):
 
 @bp.route("/ticket/<jira_key>/backlog", methods=["POST"])
 def delegated_backlog(jira_key: str):
-    """Inline checkbox toggle — park a ticket in the 📦 Backlog section
-    (excluded from the Management Summary) [USER 2026-08-27]."""
+    """Park/unpark toggle for the 📦 Backlog section (excluded from the
+    Management Summary) [USER 2026-08-27]. Since 2026-09-01 [USER] the ONE
+    control is the button on the detail page — parking is a deliberate act,
+    so there is no board checkbox and no detail-form field for it."""
     conn = _get_conn()
     try:
         db_delegated.set_delegated_backlog(
@@ -298,8 +300,8 @@ def delegated_ticket_detail(jira_key: str):
                 request.form.get("blocked_reason", "").strip() or None)
             db_delegated.set_delegated_counts_toward_goal(
                 conn, jira_key, request.form.get("counts_toward_goal") == "1")
-            db_delegated.set_delegated_backlog(
-                conn, jira_key, request.form.get("backlog") == "1")
+            # backlog deliberately NOT part of the form save — the detail
+            # page's park/unpark button posts to /backlog [USER 2026-09-01]
             db_delegated.set_delegated_req_tool(
                 conn, jira_key, request.form.get("req_tool") == "1")
             conn.close()

@@ -102,6 +102,17 @@
   {% if saved %}
   <div class="saved-banner">&#10003;&nbsp; Changes saved.</div>
   {% endif %}
+  {# Backlog is a deliberate action, not a form field [USER 2026-09-01] —
+     this button is the ONE place a ticket is parked/unparked #}
+  <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.8rem">
+    {% if backlog %}
+    <span class="pill" style="background:#e5e5ea; color:#444">&#128230; Parked in Backlog — excluded from the Management Summary</span>
+    <button type="button" class="btn btn-sm" onclick="dlgBacklogSet('0')">&#8617; Move back to board</button>
+    {% else %}
+    <button type="button" class="btn btn-sm" onclick="dlgBacklogSet('1')"
+            title="park in the 📦 Backlog section — excluded from the Management Summary">&#128230; Move to backlog</button>
+    {% endif %}
+  </div>
   <form method="post" action="{{ url_for('delegated.delegated_ticket_detail', jira_key=issue.jira_key) }}">
     <div class="form-stack">
       {% if is_blocked or blocked_reason %}
@@ -117,11 +128,6 @@
       <input type="hidden" name="blocked_reason" value="{{ blocked_reason or '' }}">
       <input type="hidden" name="counts_toward_goal" value="{{ '1' if counts_toward_goal else '0' }}">
       {% endif %}
-      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.2rem 0 0.2rem"
-             title="park in the 📦 Backlog section — excluded from the Management Summary">
-        <input type="checkbox" name="backlog" value="1" {% if backlog %}checked{% endif %}>
-        📦 Backlog (parked — not in the Management Summary)
-      </label>
       <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:-0.2rem 0 0.2rem"
              title="dashboard-only flag, filterable on the board — not shown on any report">
         <input type="checkbox" name="req_tool" value="1" {% if req_tool %}checked{% endif %}>
@@ -248,5 +254,13 @@
   tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
   activate('details');
 }());
+
+function dlgBacklogSet(value) {
+  fetch('{{ url_for("delegated.delegated_backlog", jira_key=issue.jira_key) }}',
+        { method: 'POST', body: new URLSearchParams({ value }) })
+    .then(r => { if (!r.ok) throw new Error();
+                 window.location.reload(); })  // button + pill flip state
+    .catch(() => alert('Saving failed — try again.'));
+}
 </script>
 {% endblock %}

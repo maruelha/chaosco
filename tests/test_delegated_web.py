@@ -576,7 +576,7 @@ def test_backlog_excluded_from_management_summary(client):
     assert total_of(restored) == total_of(before)
 
 
-def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
+def test_backlog_wins_over_blocked_and_button_is_the_one_control(client):
     _upload(client)
     # S4ECOM-2001 is Blocked — parking it moves it OUT of the Blocker section
     client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "1"})
@@ -584,12 +584,27 @@ def test_backlog_wins_over_blocked_and_detail_form_saves_it(client):
     blocked_part = html.split("<summary>🔴 Blocker")[1].split("<summary>")[0]
     assert "S4ECOM-2001" not in blocked_part
     assert "S4ECOM-2001" in html.split("<summary>📦 Backlog")[1]
+    # no backlog checkbox column on the board [USER 2026-09-01]
+    assert "dlg-backlog" not in html
 
-    # detail form round-trip (unpark via the form's missing checkbox)
+    # detail page shows the parked state + the way back — no form checkbox
     detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
-    assert 'name="backlog" value="1" checked' in detail
+    assert "Move back to board" in detail
+    assert 'name="backlog"' not in detail
+
+    # saving the working-fields form must NOT unpark the ticket
     client.post("/delegated/ticket/S4ECOM-2001", data={
         "next_step": "", "blocked_reason": "", "counts_toward_goal": "0"})
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2001") is True
+    finally:
+        conn.close()
+
+    # unpark via the button's route — the detail page offers parking again
+    client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "0"})
+    detail = client.get("/delegated/ticket/S4ECOM-2001").get_data(as_text=True)
+    assert "Move to backlog" in detail
     conn = web_delegated._get_conn()
     try:
         assert db_delegated.get_delegated_backlog(conn, "S4ECOM-2001") is False
@@ -633,8 +648,7 @@ def test_req_tool_detail_form_roundtrip(client):
 
     # unticking via the detail form's missing checkbox clears it
     client.post("/delegated/ticket/S4ECOM-2001", data={
-        "next_step": "", "blocked_reason": "", "counts_toward_goal": "0",
-        "backlog": "0"})
+        "next_step": "", "blocked_reason": "", "counts_toward_goal": "0"})
     conn = web_delegated._get_conn()
     try:
         assert db_delegated.get_delegated_req_tool(conn, "S4ECOM-2001") is False
