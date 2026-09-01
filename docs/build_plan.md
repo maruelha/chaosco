@@ -47,6 +47,46 @@ Last updated: 2026-08-31
 
 ---
 
+## Part 0 — Docs & quality cleanup (concept agreed 2026-09-01)
+
+The concept itself lives at the top of `docs/docs_map.html` (one job per
+doc · facts generated/tested, meaning hand-written · story → rule → test).
+Two rounds were agreed:
+
+**Round 1 — the docs cleanup, six steps:**
+
+1. ✅ DONE 2026-09-01 — `docs/docs_map.html` (GENERATED index:
+   `tools/gen_docs_map.py`, parity test in `test_docs_structure.py`) +
+   `docs/coding_guidelines.md` skeleton seeded with the ONE new rule
+   (every table gets a technical primary key [USER 2026-09-01]; 68/70
+   comply, the two email join tables are round-2 work).
+2. Extend the docs tests: every table AND column → `database_schema.html`;
+   every route → `screens.html` or the app's own doc (with an explicit
+   exceptions list); dashboard-card parity; mini-app header completeness.
+   Then fix whatever they flag.
+3. `/wrap-up` skill (coherence re-read · SessionTest when templates/web
+   changed · MarinaCheckSoon · session summary to
+   `docs/archive/session_<date>_<topic>.md` incl. rejected alternatives ·
+   promote lessons · build_plan one-in-one-out) + create
+   `docs/lessons_learned.md` (technical lessons; collaboration lessons
+   stay in `ways_of_working.md`) + shrink the duplicate what-to-document
+   lists in `CLAUDE.md`/`ways_of_working.md` to pointers at the skill.
+4. Trim `dashboard_cards.html` — every card says what it is FOR, nothing
+   more [USER 2026-09-01]; unique detail moves to `screens.html` first.
+5. Prune this file: finished sections MOVE to `docs/archive/` — and from
+   then on the standing rule: when something is added, something goes
+   [USER 2026-09-01].
+6. Hooks in `.claude/settings.json` (both machines via git): docs tests
+   before every `git commit`; session-start check for unwrapped work
+   ("yesterday wasn't wrapped — run /wrap-up first?").
+
+**Round 2 — code review after every build (planned):** full review of the
+app; findings fill `docs/coding_guidelines.md`; greppable guidelines become
+tests (incl. the technical-PK scan); fix `email_list_members` /
+`email_list_reports` PKs; review-after-build joins the routine.
+
+---
+
 ## Part 1 — Feature work by module
 
 ### Email Reports (`/email-report/`) — ✅ BUILT 2026-08-31/09-01

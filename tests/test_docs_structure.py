@@ -85,3 +85,27 @@ def test_the_split_docs_do_not_come_back():
     2026-08-30 — one file per mini app is the rule now."""
     for gone in ("coordination.md", "verticals.md"):
         assert not (DOCS / gone).exists(), f"{gone} is back — split it again"
+
+
+def test_docs_map_lists_every_doc():
+    """docs/docs_map.html is GENERATED (tools/gen_docs_map.py) — the docs
+    index [USER 2026-09-01]. Adding or removing any doc without regenerating
+    fails here. Only NAMES are compared; last-touched dates go stale between
+    runs on purpose."""
+    docs_dir = ROOT / "docs"
+    map_html = (docs_dir / "docs_map.html").read_text(encoding="utf-8")
+    listed = set(re.findall(r'href="([^"]+)"', map_html))
+
+    expected = {p.name for p in docs_dir.iterdir()
+                if p.is_file() and p.suffix in (".md", ".html")}
+    expected |= {p.relative_to(docs_dir).as_posix()
+                 for p in (docs_dir / "claude").rglob("*.md")}
+    missing = expected - listed
+    assert not missing, (
+        f"docs missing from docs_map.html: {sorted(missing)} — "
+        "rerun tools/gen_docs_map.py (add a registry entry if it asks)")
+
+    for href in listed:
+        assert (docs_dir / href).exists(), (
+            f"docs_map.html links to {href} which does not exist — "
+            "rerun tools/gen_docs_map.py")

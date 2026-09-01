@@ -66,6 +66,28 @@ single-threaded-apartment thread.
 The image path is proven (used on 2026-08-31 to read a 2546×818 mockup);
 the file-drop branch is a convenience message and has not been exercised.
 
+## `gen_docs_map.py` — regenerate the documentation index
+
+**What it makes:** `docs/docs_map.html` — every doc, its ONE job, its update
+trigger, its enforcement, and when it was last touched (from git). The
+concept behind the docs lives at the top of that page.
+
+**The split that keeps it honest:** the one-line job texts are hand-written
+in the script's `TOP_LEVEL` registry (their single home); the file list and
+the dates are read from the filesystem and git. `docs/claude/` files are
+listed but deliberately NOT described — their one-liners live in
+`docs/claude/mini-apps.md`, and a fact is described at one altitude only.
+
+**When to run it:** after adding, removing or renaming any doc —
+`tests/test_docs_structure.py::test_docs_map_lists_every_doc` fails the
+suite until the page matches the tree (names only; stale dates are fine).
+A new top-level doc also needs a registry entry, and the script says so and
+refuses to write until it has one.
+
+```
+.venv\Scripts\python tools\gen_docs_map.py
+```
+
 ## The other two ways to get something to Claude
 
 Neither needs this tool:

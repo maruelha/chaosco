@@ -27,3 +27,4 @@ against the data, run once and kept for the record.
 | Tool | What it does |
 |---|---|
 | `clip_image.ps1` | Saves the image in the Windows clipboard to a PNG and prints the path, so a screenshot can be handed to Claude without saving it by hand |
+| `gen_docs_map.py` | Regenerates `docs/docs_map.html` — the documentation index (job lines hand-written in its registry, file list + last-touched from git). Run after adding/removing a doc; the suite fails until you do |
