@@ -34,6 +34,14 @@
                 title="upload the DTC_UAT_testtracking_ROE workbook — imports ONLY its ECOM tab (shared ecom store, also refreshes the ECOM board) and feeds the MB Status column">
           ⤒ MB tracking</button>
       </form>
+      <form method="post" action="{{ url_for('delegated.delegated_upload_sales_xls') }}"
+            enctype="multipart/form-data" style="display:inline">
+        <input type="file" name="file" accept=".xlsx" required
+               style="font-size:0.8rem; max-width:13rem">
+        <button type="submit" class="btn"
+                title="upload the sales workbook — matches its 'All Countries Combined' tab's SolmanID column against each ticket's Summary and sets the SalesXLS marker (match = Yes, no match = No only if not yet assessed)">
+          ⤒ Sales XLS</button>
+      </form>
     </div>
   </div>
   <p class="page-subtitle">Testing delegated to the team — tickets from the

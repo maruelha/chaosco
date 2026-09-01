@@ -928,6 +928,98 @@ def test_ticket_detail_shows_mb_card(client):
 
 
 # ---------------------------------------------------------------------------
+# SalesXLS auto-match upload (2026-09-01 [USER]) — sales workbook's
+# "All Countries Combined" tab, SolmanID column, matched by substring
+# against each board ticket's raw Jira Summary.
+
+def _sales_xls_xlsx(solman_ids=("SM2001", "SM2003")) -> bytes:
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "All Countries Combined"
+    ws.append(["SolmanID", "Other Column"])
+    for sid in solman_ids:
+        ws.append([sid, "x"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _upload_sales_xls(client, data=None, filename="sales.xlsx"):
+    data = data if data is not None else _sales_xls_xlsx()
+    return client.post("/delegated/upload-sales-xls", data={
+        "file": (io.BytesIO(data), filename)})
+
+
+def test_sales_xls_upload_marks_matches_yes_and_unassessed_no(client):
+    _upload(client)  # S4ECOM-2001..2004 board-visible (Blocker/Marina/Accepted/Unexpected)
+    resp = _upload_sales_xls(client)
+    assert "jira_ok=1" in resp.headers["Location"]
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "2 marked Yes" in html
+    assert "2 newly marked No" in html
+
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2001") == "yes"  # SM2001
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2003") == "yes"  # SM2003
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2002") == "no"   # SM2002, no match
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2004") == "no"   # SM2004, no match
+    finally:
+        conn.close()
+
+
+def test_sales_xls_upload_never_overwrites_an_existing_assessment_with_no(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        db_delegated.set_delegated_sales_xls(conn, "S4ECOM-2002", "maybe")
+    finally:
+        conn.close()
+    _upload_sales_xls(client)  # SM2001/SM2003 match, SM2002 does not
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2002") == "maybe"
+    finally:
+        conn.close()
+
+
+def test_sales_xls_upload_always_overwrites_a_match_regardless_of_prior_value(client):
+    _upload(client)
+    conn = web_delegated._get_conn()
+    try:
+        db_delegated.set_delegated_sales_xls(conn, "S4ECOM-2001", "no")
+    finally:
+        conn.close()
+    _upload_sales_xls(client)  # SM2001 matches S4ECOM-2001
+    conn = web_delegated._get_conn()
+    try:
+        assert db_delegated.get_delegated_sales_xls(conn, "S4ECOM-2001") == "yes"
+    finally:
+        conn.close()
+
+
+def test_sales_xls_upload_rejects_non_xlsx_and_missing_file(client):
+    resp = client.post("/delegated/upload-sales-xls", data={})
+    assert "jira_ok=0" in resp.headers["Location"]
+    resp = _upload_sales_xls(client, filename="notes.txt")
+    assert "jira_ok=0" in resp.headers["Location"]
+
+
+def test_sales_xls_upload_rejects_missing_sheet_or_column(client):
+    _upload(client)
+    import openpyxl
+    wb = openpyxl.Workbook()
+    wb.active.title = "Wrong Sheet"
+    buf = io.BytesIO()
+    wb.save(buf)
+    resp = _upload_sales_xls(client, data=buf.getvalue())
+    assert "jira_ok=0" in resp.headers["Location"]
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "All Countries Combined" in html
+
+
+# ---------------------------------------------------------------------------
 # Report tweaks + call-out archive (2026-08-28)
 
 def test_report_blocker_chips_are_id_only(client):

@@ -24,8 +24,8 @@ from app.db import ecom as db_ecom
 from app.db import jira as db_jira
 from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, bucket_counts,
                                    bucket_issues, bucket_key, mb_status_state,
-                                   overview_counts, staged_counts,
-                                   unexpected_statuses)
+                                   overview_counts, sales_xls_matches,
+                                   staged_counts, unexpected_statuses)
 from app.jira_importer import extract_latest_comment_orders, run_delegated_import
 
 bp = Blueprint("delegated", __name__, url_prefix="/delegated")
@@ -296,6 +296,53 @@ def delegated_upload_tracking():
            f" MB rows match {matched} of {len(keys)} board tickets")
     return redirect(url_for("delegated.delegated_list", jira_ok="1",
                             jira_msg=msg))
+
+
+@bp.route("/upload-sales-xls", methods=["POST"])
+def delegated_upload_sales_xls():
+    """Upload the sales workbook — its "All Countries Combined" tab's
+    SolmanID column is matched as a case-insensitive SUBSTRING against each
+    BOARD-VISIBLE ticket's raw Jira Summary [USER 2026-09-01]. A match
+    always sets SalesXLS to 'yes' (overwrites whatever was there); no match
+    sets 'no' ONLY when the marker was not yet assessed — an existing
+    manual 'maybe' or 'no' is left alone. A dated copy is kept like the
+    other uploads on this card."""
+    f = request.files.get("file")
+    if f is None or not f.filename:
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg="No file selected."))
+    if not f.filename.lower().endswith(".xlsx"):
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg="That is not an .xlsx file — pick the sales workbook."))
+    _UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    xlsx_path = _UPLOAD_FOLDER / f"delegated_salesxls_{stamp}.xlsx"
+    f.save(str(xlsx_path))
+    from app.sales_xls_importer import ParseError, parse_sales_xls
+    try:
+        solman_ids = parse_sales_xls(xlsx_path)
+    except ParseError as exc:
+        return redirect(url_for("delegated.delegated_list", jira_ok="0",
+                                jira_msg=str(exc)))
+    conn = _get_conn()
+    try:
+        issues, _comments = _load_issues(conn)
+        annotations = db_delegated.get_delegated_annotations(conn)
+        matched = newly_no = 0
+        for i in issues:
+            if sales_xls_matches(i.get("summary"), solman_ids):
+                db_delegated.set_delegated_sales_xls(conn, i["jira_key"], "yes")
+                matched += 1
+            elif (annotations.get(i["jira_key"]) or {}).get("sales_xls") is None:
+                db_delegated.set_delegated_sales_xls(conn, i["jira_key"], "no")
+                newly_no += 1
+    finally:
+        conn.close()
+    unchanged = len(issues) - matched - newly_no
+    msg = (f"{f.filename} ({len(solman_ids)} SolmanID values): "
+           f"{matched} marked Yes · {newly_no} newly marked No · "
+           f"{unchanged} left unchanged")
+    return redirect(url_for("delegated.delegated_list", jira_ok="1", jira_msg=msg))
 
 
 @bp.route("/ticket/<jira_key>", methods=["GET", "POST"])

@@ -105,6 +105,8 @@ uploaded issues?" — yes).
   for the dashboard badge)
 - `app/delegated_buckets.py` — bucket rules + counts (incl. the 📦 backlog
   bucket — the authored flag wins over every status)
+- `app/sales_xls_importer.py` — parse-only: sales workbook's "All Countries
+  Combined" tab, SolmanID column (see SalesXLS auto-match section below)
 - `app/web_delegated.py` — Blueprint `/delegated/`: board, upload, ticket
   detail (Details/Messages tabs), inline saves, `/report`, `/numbers` +
   `/report/download`, `/numbers/download` (dated standalone HTML — the
@@ -495,6 +497,40 @@ the backlog button. Board filter: "SalesXLS: all / Yes / Maybe / No /
 not set" (`data-salesxls` per row, `unset` matches the empty value) in
 the same `dlgFilterBoard()`. Never read by
 `report_context`/`numbers_context`/`overview_context`.
+
+## SalesXLS auto-match upload (2026-09-01 [USER])
+
+**⤒ Sales XLS** button on the board — `POST /delegated/upload-sales-xls`,
+same file-upload pattern as the other two uploads (dated copy
+`data/uploads/delegated_salesxls_<timestamp>.xlsx`; no filename check
+beyond `.xlsx`). Parse-only in `app/sales_xls_importer.py`
+(`parse_sales_xls`): reads the workbook's **"All Countries Combined"**
+tab, column **SolmanID**, returns the non-empty values (de-duplicated,
+case-insensitive).
+
+**Matching rule** [USER 2026-09-01, clarified in chat]: each SolmanID
+value is checked as a **case-insensitive SUBSTRING of the ticket's raw
+Jira Summary** — NOT the already-parsed `solman_id` column (summary up to
+the first `_`) — Marina's own wording was "compare SolmanID with the
+value Summary". Pure function `delegated_buckets.sales_xls_matches`
+(tested). Scope: **board-visible tickets only** (`_load_issues` — same
+story-only, non-blocker set the board itself shows), not every
+`seen_in_delegated` row.
+
+**Write rule, tri-state-aware** (reuses the existing SalesXLS marker,
+[[delegated]] tri-state section above — no new column):
+- Match → `sales_xls` set to `'yes'` **unconditionally**, overwriting
+  whatever was there before (manual `maybe`/`no` included).
+- No match → set to `'no'` **only when the marker was not yet assessed**
+  (current value is NULL). An existing manual `maybe` or `no` is left
+  untouched — the upload never silently overrides Marina's own
+  assessment, only ever fills in the unset ones or confirms a hit.
+
+Flash message reports match/no-match/unchanged counts. Tests:
+`tests/test_delegated_buckets.py` (`sales_xls_matches`),
+`tests/test_delegated_web.py` (upload route: matches, preserves existing
+non-null values on no-match, always overwrites on match, rejects
+non-.xlsx/missing sheet or column).
 
 ## Ways of Working page (2026-09-01 [USER])
 

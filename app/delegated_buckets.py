@@ -152,6 +152,18 @@ def mb_status_state(bucket: str, ecom_row: dict | None) -> str:
     return "ok" if _norm_mb(ecom_row.get("status")) in expected else "mismatch"
 
 
+# SalesXLS auto-match (2026-09-01 [USER]) — the sales workbook's SolmanID
+# column values are checked as a case-insensitive SUBSTRING of the ticket's
+# raw Jira Summary (not the parsed solman_id field) [USER: "compare ...
+# SolmanID with the value Summary"].
+def sales_xls_matches(summary: str | None, solman_ids: list[str]) -> bool:
+    """True if ANY solman_ids value appears inside summary (casefolded)."""
+    if not summary or not solman_ids:
+        return False
+    s = summary.casefold()
+    return any(sid.casefold() in s for sid in solman_ids)
+
+
 # Management Summary staging (build plan step 10, 2026-08-27) — the same
 # buckets grouped into 3 review stages [USER 2026-08-27]. "unexpected"
 # belongs to no stage and is reported separately so nothing silently

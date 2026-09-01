@@ -2,7 +2,8 @@
 from app.delegated_buckets import (SECTIONS, STAGES, blocked_stage,
                                    bucket_counts, bucket_issues, bucket_key,
                                    overview_counts, overview_team_stage,
-                                   staged_counts, unexpected_statuses)
+                                   sales_xls_matches, staged_counts,
+                                   unexpected_statuses)
 from app.jira_importer import extract_latest_comment_orders
 
 ME = "haase"
@@ -290,6 +291,26 @@ def test_overview_counts_carries_the_unexpected_status_names():
     ctx = overview_counts([_issue("Open"), _issue("Ready for Verification")])
     assert ctx["unexpected"] == 1
     assert ctx["unexpected_statuses"] == [("Ready for Verification", 1)]
+
+
+# ---------------------------------------------------------------------------
+# SalesXLS auto-match (2026-09-01 [USER]) — the sales workbook's SolmanID
+# values are checked as a SUBSTRING of the ticket's raw Jira Summary.
+
+def test_sales_xls_matches_is_a_case_insensitive_substring_check():
+    assert sales_xls_matches("SM2001_Blocked settlement case", ["sm2001"])
+    assert sales_xls_matches("SM2001_Blocked settlement case", ["SM2001"])
+    assert not sales_xls_matches("SM2002_Marina gatekeeper case", ["sm2001"])
+
+
+def test_sales_xls_matches_any_of_several_values():
+    assert sales_xls_matches("SM2003_Team case", ["sm2001", "sm2003"])
+
+
+def test_sales_xls_matches_false_on_empty_summary_or_no_values():
+    assert not sales_xls_matches(None, ["sm2001"])
+    assert not sales_xls_matches("", ["sm2001"])
+    assert not sales_xls_matches("SM2001_case", [])
 
 
 def test_reopened_lands_on_the_tech_card_and_not_started_bar():
