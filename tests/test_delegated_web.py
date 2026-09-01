@@ -178,6 +178,43 @@ def test_upload_auto_registers_defects_as_blockers(client):
         conn.close()
 
 
+def test_reupload_refreshes_blocker_jira_status_and_autocloses(client):
+    """Reproduction of [USER 2026-09-01: "the Status value in Jira is
+    never updating" on the Blockers page] — the exact flow: the defect is
+    auto-registered on the first upload, gets Resolved in Jira, and the
+    next export upload must refresh the shown status AND auto-close the
+    blocker."""
+    _upload(client)  # S4DEF-3001 arrives as Open, auto-registered
+    html = client.get("/blockers/").get_data(as_text=True)
+    assert "Open" in html
+
+    resolved = XML.replace(
+        "<key id=\"5\">S4DEF-3001</key>\n    "
+        "<summary>SM3001_Unregistered defect in the export</summary>\n    "
+        "<type id=\"1\">Defect</type>\n    <status id=\"3\">Open</status>",
+        "<key id=\"5\">S4DEF-3001</key>\n    "
+        "<summary>SM3001_Unregistered defect in the export</summary>\n    "
+        "<type id=\"1\">Defect</type>\n    <status id=\"3\">Resolved</status>")
+    assert "Resolved" in resolved  # the replace really hit
+    _upload(client, data=resolved)
+
+    conn = web_delegated._get_conn()
+    try:
+        row = conn.execute(
+            "SELECT jira_status FROM jira_issues WHERE jira_key='S4DEF-3001'"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert row[0] == "Resolved"          # the store refreshed
+    html = client.get("/blockers/").get_data(as_text=True)
+    assert "Resolved" in html            # the page shows the fresh status
+    assert "(closed in Jira)" in html    # and the blocker auto-closed
+    # staleness diagnostic: the status carries an "as of <date>" stamp
+    # (last_seen = the last upload that contained this key)
+    from datetime import date
+    assert f"as of {date.today().isoformat()}" in html
+
+
 def test_dashboard_badge_counts_match_the_board(client):
     """The card badge mirrors the board: no defects, no registered
     blockers [2026-08-27]."""

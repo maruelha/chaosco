@@ -28,12 +28,19 @@ def _get_conn():
 
 
 def _jira_status_map(conn, rows):
-    status = {}
+    """{blocker_id: jira_status} plus {blocker_id: last_seen} for the same
+    keys. last_seen = when an upload last carried the key — shown as an
+    "as of" stamp on the list [USER 2026-09-01: "the Status value in Jira
+    is never updating"] so a stale status is diagnosable: an old date
+    means the uploads don't contain this ticket; a current date with an
+    old status would mean the parse is wrong for that file."""
+    status, seen = {}, {}
     for r in rows:
         if r["jira_key"]:
             issue = db_jira.get_jira_issue(conn, r["jira_key"])
             status[r["blocker_id"]] = issue["jira_status"] if issue else None
-    return status
+            seen[r["blocker_id"]] = issue["last_seen"] if issue else None
+    return status, seen
 
 
 @bp.route("/")
@@ -42,7 +49,7 @@ def blockers_list():
     try:
         rows = db_blockers.list_blockers(conn)
         blocked_counts = db_blockers.blocked_ticket_counts(conn)
-        jira_status = _jira_status_map(conn, rows)
+        jira_status, jira_seen = _jira_status_map(conn, rows)
         team_options = db_blockers.team_options(conn)
     finally:
         conn.close()
@@ -58,7 +65,7 @@ def blockers_list():
     return render_template(
         "blockers.html", sections=sections, total=len(open_rows),
         closed_rows=closed_rows,
-        jira_status=jira_status,
+        jira_status=jira_status, jira_seen=jira_seen,
         blocked_counts=blocked_counts,
         type_sections=db_blockers.TYPE_SECTIONS,
         team_options=team_options,
@@ -236,7 +243,7 @@ def _picker_payload(conn, jira_key: str) -> dict:
     linked = db_blockers.list_blockers_for_ticket(conn, jira_key)
     linked_ids = {b["blocker_id"] for b in linked}
     rows = db_blockers.list_blockers(conn)
-    jira_status = _jira_status_map(conn, rows)
+    jira_status, _seen = _jira_status_map(conn, rows)
     available = [b for b in rows
                  if b["blocker_id"] not in linked_ids
                  and not db_blockers.is_closed(b, jira_status.get(b["blocker_id"]))]

@@ -41,6 +41,14 @@
   <td>
     {% if b.jira_key %}
       {{ jira_status.get(b.blocker_id) or '(not in the Jira store yet)' }}
+      {% if jira_seen.get(b.blocker_id) %}
+      {# staleness diagnostic [USER 2026-09-01: "Status is never updating"]:
+         when an upload last carried this key — an OLD date = the uploads
+         don't contain this ticket, so its status cannot refresh #}
+      <span style="color:#999; font-size:0.72rem; white-space:nowrap"
+            title="when an uploaded Jira export last contained this ticket — an old date means your export doesn't carry it, so the status cannot refresh">
+        as of {{ jira_seen.get(b.blocker_id)[:10] }}</span>
+      {% endif %}
     {% elif b.closed_at %}closed manually{% else %}—{% endif %}
   </td>
   {# Notes column removed [USER 2026-08-28]; note count stays on the

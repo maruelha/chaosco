@@ -738,6 +738,26 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-01 (Blockers: Jira status "never updating" — open investigation)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Blockers — check the new "as of" stamp after your next upload</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">You reported the Jira Status on
+    <code>/blockers/</code> never updates, and your export includes all status values. The
+    refresh flow itself is verified green by an automated reproduction test (defect uploaded
+    &#8594; resolved in Jira &#8594; re-upload &#8594; status refreshes + auto-close), so the broken link must
+    be visible in your data. The Status column now shows <strong>"as of &lt;date&gt;"</strong> =
+    the last upload that contained that ticket.</p>
+    <label class="task"><input type="checkbox" data-k="blk0901-asof-check">
+      <span>After your next real Jira upload, look at a defect whose status you KNOW changed
+      in Jira. <strong>Old "as of" date</strong> &#8594; the export does not carry that ticket
+      (filter or file). <strong>Today's date but the old status</strong> &#8594; the parse gets it
+      wrong for your file — send me that XML and I will find it.
+      <span class="where">&#8594; /blockers/</span></span></label>
+  </div>
+</div>
+
 <h2 class="date">Added 2026-09-01 (Delegated: SalesXLS auto-match upload)</h2>
 
 <div class="box b-blue">

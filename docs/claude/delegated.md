@@ -361,7 +361,15 @@ blocks one or more delegated tickets. Design decisions:
   delegated card already refreshes — Marina extends her delegated Jira
   filter to include the blocker issues, and the existing
   `POST /delegated/upload` keeps them current by key, same as any other
-  ticket [USER 2026-08-27].
+  ticket [USER 2026-08-27]. **"as of" stamp (2026-09-01)**: Marina
+  reported statuses "never updating" although her export carries all
+  status values; the refresh flow itself is pinned green by a
+  reproduction test (`test_reupload_refreshes_blocker_jira_status_and_
+  autocloses`), so the list's Jira Status column now shows "as of
+  <last_seen date>" — the last upload that contained the key — to make
+  the broken link findable on her machine (old date = the export doesn't
+  carry this ticket; current date + old status = parse problem with that
+  file, send it in).
 - **AUTO-REGISTER on upload (2026-08-27, second round)** [USER: "why cant
   i see all the defects I uploaded in the list of blockers?"]: every
   Defect/Bug/Task-type issue in the export becomes a blocker row
