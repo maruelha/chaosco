@@ -882,7 +882,10 @@
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
         <tr><td class="col-name">channel</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">retail | ecom | both — normalised on write</td></tr>
         <tr><td class="col-name">type</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Issue | Spotcheck | Observation | MigrIssue | OrgIssue | Question — fixed list</td></tr>
-        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td></td></tr>
+        <tr><td class="col-name">topic</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">Free "more detail" text, shown on the detail page only [USER 2026-09-02]. Mirrors <code>name</code> when a caller gives none.</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-09-02 — the SHORT line every list shows. Back-filled name := topic for older rows on init_schema.</td></tr>
+        <tr><td class="col-name">ticket_no</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-09-02 — free text, SUS-/ASPEN/Jira ids all fit; searched by the list's text filter, deliberately NOT in the global search widget (tickets live only here).</td></tr>
+        <tr><td class="col-name">impact</td><td class="col-type">TEXT</td><td><span class="tag tag-mig">migration</span></td><td class="note-text">2026-09-02 — detail-page free text.</td></tr>
         <tr><td class="col-name">responsible</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">status</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">open | in_progress | closed, default open — cycled via the chip, saved immediately</td></tr>
         <tr><td class="col-name">date_captured</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">ISO 'YYYY-MM-DD', set once at creation</td></tr>

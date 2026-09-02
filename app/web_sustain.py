@@ -73,7 +73,7 @@ def sustain_callout_add():
             conn,
             channel=request.form.get("channel", ""),
             type_=request.form.get("type", ""),
-            topic=topic,
+            name=topic,
             responsible=request.form.get("responsible"),
         )
     finally:
@@ -92,7 +92,7 @@ def sustain_callout_update(callout_id: int):
             conn, callout_id,
             channel=request.form.get("channel", ""),
             type_=request.form.get("type", ""),
-            topic=topic,
+            name=topic,
             responsible=request.form.get("responsible"),
         )
     finally:

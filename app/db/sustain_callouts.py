@@ -7,6 +7,15 @@ imported workbook row. Deliberately its own table, never touched by
 Shown above the imported-days table on the sustain card (the daily
 review list) and, filtered to open/in-progress, inside the management
 summary per stream (channel 'both' appears in both streams).
+
+Fields (planning chat 2026-09-02 [USER]): `name` is the SHORT line shown
+in the list; `topic` (the original free text), `ticket_no` (free text —
+SUS-/ASPEN/Jira ids all fit) and `impact` are the "more detail" fields
+that live on the detail page. When a caller gives no topic, topic
+mirrors name — so rows created before `name` existed were back-filled
+name := topic, and the list-page add form (name only) keeps both in
+step. `name` is what every screen shows; `topic` is never shown in the
+list again.
 """
 from __future__ import annotations
 
@@ -33,26 +42,42 @@ CREATE TABLE IF NOT EXISTS sustain_callouts (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     channel        TEXT NOT NULL,           -- retail | ecom | both
     type           TEXT NOT NULL,           -- CALLOUT_TYPES
-    topic          TEXT NOT NULL,
+    topic          TEXT NOT NULL,           -- detail-page free text
+    name           TEXT,                    -- short line shown in the list
+    ticket_no      TEXT,                    -- free text: SUS-/ASPEN/Jira id
+    impact         TEXT,                    -- detail-page free text
     responsible    TEXT,
     status         TEXT NOT NULL DEFAULT 'open',
     date_captured  TEXT NOT NULL,           -- ISO 'YYYY-MM-DD'
+    next_step      TEXT,
     created_at     TEXT NOT NULL,
     updated_at     TEXT NOT NULL
 );
 """
+
+# additive migrations for DBs created before a column existed — each
+# guarded, safe to re-run (next_step: build plan step 3, 2026-09-01;
+# name/ticket_no/impact: planning chat 2026-09-02)
+_MIGRATIONS = [
+    "ALTER TABLE sustain_callouts ADD COLUMN next_step TEXT",
+    "ALTER TABLE sustain_callouts ADD COLUMN name TEXT",
+    "ALTER TABLE sustain_callouts ADD COLUMN ticket_no TEXT",
+    "ALTER TABLE sustain_callouts ADD COLUMN impact TEXT",
+]
 
 
 def init_schema(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(_SCHEMA)
-        # additive migration for DBs created before next_step existed
-        # (build plan step 3, 2026-09-01)
-        try:
-            conn.execute("ALTER TABLE sustain_callouts ADD COLUMN next_step TEXT")
-        except sqlite3.OperationalError:
-            pass  # column already exists
+        for stmt in _MIGRATIONS:
+            try:
+                conn.execute(stmt)
+            except sqlite3.OperationalError:
+                pass  # column already exists
+        # rows from before `name` existed: the short line IS the old topic
+        conn.execute(
+            "UPDATE sustain_callouts SET name = topic WHERE name IS NULL")
         conn.commit()
     finally:
         conn.close()
@@ -80,28 +105,44 @@ def _clean_status(status: str | None) -> str:
     return key if key in CALLOUT_STATUSES else CALLOUT_STATUSES[0]
 
 
+def _opt(text: str | None) -> str | None:
+    return (text or "").strip() or None
+
+
 def create_callout(conn: sqlite3.Connection, channel: str, type_: str,
-                   topic: str, responsible: str | None = None) -> int:
+                   name: str, responsible: str | None = None, *,
+                   topic: str | None = None, ticket_no: str | None = None,
+                   impact: str | None = None) -> int:
+    """`name` = the short list line. `topic` defaults to the name (list-page
+    add form gives only a name; the detail page can then say more)."""
     now = _now()
+    name = name.strip()
     with conn:
         cur = conn.execute(
-            "INSERT INTO sustain_callouts (channel, type, topic, responsible,"
-            " status, date_captured, created_at, updated_at)"
-            " VALUES (?, ?, ?, ?, 'open', ?, ?, ?)",
-            (_clean_channel(channel), _clean_type(type_), topic.strip(),
-             (responsible or "").strip() or None, date.today().isoformat(),
-             now, now))
+            "INSERT INTO sustain_callouts (channel, type, topic, name,"
+            " ticket_no, impact, responsible, status, date_captured,"
+            " created_at, updated_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?)",
+            (_clean_channel(channel), _clean_type(type_),
+             _opt(topic) or name, name, _opt(ticket_no), _opt(impact),
+             _opt(responsible), date.today().isoformat(), now, now))
     return cur.lastrowid
 
 
 def update_callout(conn: sqlite3.Connection, callout_id: int, channel: str,
-                   type_: str, topic: str, responsible: str | None) -> None:
+                   type_: str, name: str, responsible: str | None, *,
+                   topic: str | None = None, ticket_no: str | None = None,
+                   impact: str | None = None) -> None:
+    """Full-row update (detail-page edit form). A missing topic mirrors
+    the name, same rule as create."""
+    name = name.strip()
     with conn:
         conn.execute(
-            "UPDATE sustain_callouts SET channel=?, type=?, topic=?,"
-            " responsible=?, updated_at=? WHERE id=?",
-            (_clean_channel(channel), _clean_type(type_), topic.strip(),
-             (responsible or "").strip() or None, _now(), callout_id))
+            "UPDATE sustain_callouts SET channel=?, type=?, topic=?, name=?,"
+            " ticket_no=?, impact=?, responsible=?, updated_at=? WHERE id=?",
+            (_clean_channel(channel), _clean_type(type_),
+             _opt(topic) or name, name, _opt(ticket_no), _opt(impact),
+             _opt(responsible), _now(), callout_id))
 
 
 def set_status(conn: sqlite3.Connection, callout_id: int, status: str) -> None:

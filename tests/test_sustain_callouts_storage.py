@@ -89,8 +89,84 @@ def test_update_callout_changes_fields(tmp_path):
     item = db_sc.get_callout(conn, cid)
     assert item["channel"] == "ecom"
     assert item["type"] == "MigrIssue"
-    assert item["topic"] == "New topic"
+    assert item["name"] == "New topic"
+    assert item["topic"] == "New topic"      # no topic given -> mirrors name
     assert item["responsible"] == "Someone"
+
+
+# --- name / ticket_no / impact (planning chat 2026-09-02) -----------------
+
+def test_create_name_is_the_short_line_and_topic_mirrors_it(tmp_path):
+    conn = _setup(tmp_path)
+    cid = db_sc.create_callout(conn, "retail", "Issue", "  Short line  ")
+    item = db_sc.get_callout(conn, cid)
+    assert item["name"] == "Short line"
+    assert item["topic"] == "Short line"
+    assert item["ticket_no"] is None
+    assert item["impact"] is None
+
+
+def test_create_with_detail_fields(tmp_path):
+    conn = _setup(tmp_path)
+    cid = db_sc.create_callout(
+        conn, "ecom", "MigrIssue", "Prices wrong", "Marina",
+        topic="Migrated prices differ from legacy for DE web orders",
+        ticket_no="SUS-017", impact="Customers see old prices at checkout")
+    item = db_sc.get_callout(conn, cid)
+    assert item["name"] == "Prices wrong"
+    assert item["topic"].startswith("Migrated prices differ")
+    assert item["ticket_no"] == "SUS-017"
+    assert item["impact"].startswith("Customers see")
+
+
+def test_update_sets_detail_fields_and_blanks_clear_them(tmp_path):
+    conn = _setup(tmp_path)
+    cid = db_sc.create_callout(conn, "retail", "Issue", "Name",
+                                ticket_no="ASPEN-1", impact="big")
+    db_sc.update_callout(conn, cid, "retail", "Issue", "New name", None,
+                         topic="Long topic text", ticket_no="ASPEN-2",
+                         impact="")
+    item = db_sc.get_callout(conn, cid)
+    assert item["name"] == "New name"
+    assert item["topic"] == "Long topic text"
+    assert item["ticket_no"] == "ASPEN-2"
+    assert item["impact"] is None            # blank clears
+
+
+def test_init_schema_backfills_name_from_topic_on_old_dbs(tmp_path):
+    """A DB from before 2026-09-02 has topic but no name column: the
+    guarded ALTERs add the columns and every old row's short line becomes
+    its topic (so the list never shows an empty name)."""
+    db_path = tmp_path / "old.db"
+    database.init_db(db_path).close()
+    conn = database.get_connection(db_path)
+    with conn:
+        conn.execute("DROP TABLE IF EXISTS sustain_callouts")
+        conn.execute("""
+            CREATE TABLE sustain_callouts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                channel TEXT NOT NULL, type TEXT NOT NULL,
+                topic TEXT NOT NULL, responsible TEXT,
+                status TEXT NOT NULL DEFAULT 'open',
+                date_captured TEXT NOT NULL,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""")
+        conn.execute(
+            "INSERT INTO sustain_callouts (channel, type, topic,"
+            " date_captured, created_at, updated_at)"
+            " VALUES ('retail', 'Issue', 'Old row topic', '2026-09-01',"
+            " 'x', 'x')")
+    conn.close()
+
+    db_sc.init_schema(db_path)
+    db_sc.init_schema(db_path)               # re-run is harmless
+
+    conn = database.get_connection(db_path)
+    item = db_sc.list_callouts(conn)[0]
+    assert item["name"] == "Old row topic"
+    assert item["topic"] == "Old row topic"
+    assert item["ticket_no"] is None
+    assert item["impact"] is None
+    assert item["next_step"] is None
 
 
 def test_delete_callout(tmp_path):
