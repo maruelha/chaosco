@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-02 (b) — Sustain call-outs: detail page, filters, inbox push</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-02 (b) — Sustain call-outs</h1>
+<p class="hint">One change in six steps: the call-out list shows a short <strong>name</strong>,
+everything else moved to a <strong>detail page</strong> (topic, ticket no, impact, notes), a
+<strong>filter bar</strong> with type checkboxes, and the <strong>inbox</strong> can push a note
+to a call-out. Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: <code>git pull</code>, then restart the app</strong>
+(<code>run_web.bat</code>) — one data migration runs at startup: three new columns on the
+call-outs table, and every existing call-out gets its <em>name</em> filled from its old
+<em>topic</em>. One-time, safe to re-run, nothing is lost.
+<br><br><em>Git:</em> everything is committed and pushed — nothing waits on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-teal">
+  <div class="box-head">1 · The list — name, ticket, Detail button</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="l1">
+      <span>Open the Sustain card and look at the Call-outs table.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">Columns: Channel · Type · <strong>Name</strong> · <strong>Ticket</strong> ·
+      Responsible · Status · Date captured · Next step · buttons. Your existing call-outs show
+      their old topic text as the name. No Edit button any more — <strong>Detail</strong>
+      instead, and the name itself is a link.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l2">
+      <span>Quick-add one: channel, type, a short name, a ticket no (e.g. <code>SUS-099</code>),
+      responsible, <strong>Add</strong>.
+      <span class="expect">The row appears with the ticket as a small grey chip. The
+      inline edit row that used to open under a row is gone.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l3">
+      <span>Click the status chip on that row twice.
+      <span class="expect">Open → In Progress → Closed, and the row disappears (closed hidden
+      by default). "Show closed" at the bottom brings it back.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-blue">
+  <div class="box-head">2 · The detail page</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="d1">
+      <span>Press <strong>Detail</strong> (or the name) on a call-out.
+      <span class="where">→ /sustain/callouts/&lt;id&gt;</span>
+      <span class="expect">Headline = the name with channel / type / ticket chips and the
+      clickable status chip; "captured &lt;date&gt;" on the right; breadcrumb back to the
+      Sustain card.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d2">
+      <span>In the form: shorten the <strong>Name</strong>, put the long text into
+      <strong>Topic</strong>, write something into <strong>Impact</strong>, set a ticket no,
+      <strong>Save</strong>.
+      <span class="expect">"Changes saved." banner, the headline shows the new name and ticket
+      chip, "Last saved" updates. Back on the list only the short name shows.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d3">
+      <span>Clear the Name field completely and press Save.
+      <span class="expect">Red message "The name (the short line in the list) is required." —
+      nothing saved.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d4">
+      <span>Click the status chip on the detail page.
+      <span class="expect">It cycles and stays — reload the page, the new status is still
+      there.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d5">
+      <span>Type a next step, click elsewhere, then ↻ and 🕘.
+      <span class="expect">Green flash on save; ↻ archives it and clears the field; 🕘 opens
+      the history with the archived one.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d6">
+      <span>Scroll down: <strong>+ Add note</strong> with a heading and a pasted screenshot.
+      <span class="expect">The note form's breadcrumb names the call-out; saving lands back on
+      the detail page with "Note added." and the thumbnail. The same note is also under
+      <strong>Notes (n)</strong> on the list row.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="d7">
+      <span>On the <em>list</em>, open Notes on a row and use <strong>+ Add note</strong> there.
+      <span class="expect">Comes back to the list with only that row's notes open (as before).
+      Editing or deleting a note from the list lands on the detail page instead — see
+      MarinaCheckSoon if you'd rather it came back to the list.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-amber">
+  <div class="box-head">3 · Filter bar</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="f1">
+      <span>Above the table: pick a channel.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">Rows of other channels vanish instantly (no reload); the grey
+      counter says "n shown, m hidden".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f2">
+      <span>Tick <strong>two</strong> type checkboxes, e.g. Issue + Question.
+      <span class="expect">Rows of either type stay, everything else hides — the checkboxes
+      combine. Untick both → all types again.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f3">
+      <span>Type part of a ticket no or a name into the "name / ticket…" box.
+      <span class="expect">Narrows as you type, case doesn't matter.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f4">
+      <span>Status: Closed — with "Show closed" off, then on.
+      <span class="expect">Off: nothing shown (closed rows aren't on the page). On: only the
+      closed ones. <strong>Clear</strong> resets every control.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="f5">
+      <span>With a filter active, click a row's status chip to Closed.
+      <span class="expect">The row hides (default view) and the counter updates.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-purple">
+  <div class="box-head">4 · Inbox → call-out</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="i1">
+      <span>Add an inbox item with a heading and some text, press <strong>File ›</strong>,
+      type = <strong>Sustain call-out</strong>.
+      <span class="where">→ /inbox</span>
+      <span class="expect">The search lists your open call-outs right away (ticket · name ·
+      channel/type · status, closed ones last); typing a name or ticket narrows it. Below the
+      search a dashed block "…or create a NEW call-out from this note" with channel, type,
+      name (prefilled with the heading) and ticket no.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="i2">
+      <span>Pick an existing call-out and press <strong>Move ›</strong>.
+      <span class="expect">"Filed to sustain_callout." — the item is gone from the inbox and
+      shows as a note on that call-out's detail page (and under Notes on the list).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="i3">
+      <span>Another inbox item: same picker, but use <strong>New call-out ›</strong> with a
+      channel, type and ticket no.
+      <span class="expect">"Filed to Sustain call-out." — a new call-out with that name/ticket
+      is at the top of the Sustain list, its Detail page has the inbox text as its first note.
+      Its Topic equals the name until you edit it.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-slate">
+  <div class="box-head">5 · Management summary</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="m1">
+      <span>Open the management summary.
+      <span class="where">→ /sustain/summary</span>
+      <span class="expect">The per-stream Call-outs block shows the short <strong>name</strong>
+      column now (was topic); "both" items still appear in both streams.</span></span></label>
+  </div>
+</div>
+
+<p class="hint">Small judgment calls of this build are listed as questions in
+<a href="MarinaCheckSoon.html">MarinaCheckSoon</a> (section "Sustain call-outs: detail page,
+filters, inbox push").</p>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0902b-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

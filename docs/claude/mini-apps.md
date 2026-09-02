@@ -134,10 +134,12 @@ module: someone else is probably reading its data.**
   history.
 - **The Inbox files INTO** defects, retail, spillover, ecom, jira tickets,
   test learnings, follow-ups, shelf, topics, contacts, links, known
-  production issues and the working-notes pages (2026-09-01 — ONE type
+  production issues, the working-notes pages (2026-09-01 — ONE type
   `note_page`, the search lists every page; see
-  `components/note-pages.md`) — adding a target means touching
-  `_INBOX_TARGET_TYPES`, the picker and a search/exists branch.
+  `components/note-pages.md`) and Sustain call-outs (2026-09-02 —
+  existing one by name/ticket, or a NEW one created from the note, see
+  `sustain.md`) — adding a target means touching `_INBOX_TARGET_TYPES`,
+  the picker and a search/exists branch.
 - **Status report buckets** for Retail and ECOM come from ONE config
   (`config/status_mappings.yaml`) via `reporter.py`.
 - **`db/core.py` still holds the older shared tables** (defects, spillover,

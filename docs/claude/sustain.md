@@ -256,7 +256,7 @@ filter finds them [USER: "not really needed"].
   section on `/sustain/summary[/<day>]`, right below the stat cards and
   above the Attention list: a table of that channel's open/in-progress
   call-outs (`db_sc.list_open_for_channel`, so `channel='both'` items show
-  up in BOTH the Retail and eCom sections) — type, topic, responsible,
+  up in BOTH the Retail and eCom sections) — type, name, responsible,
   status pill, date captured, current next step. Shown on every day's
   summary until closed (call-outs are ongoing, not tied to one day's
   import) — hidden entirely when a channel has none open.

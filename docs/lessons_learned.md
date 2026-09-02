@@ -10,6 +10,20 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## Giving a list-only entity a detail page reroutes its notes (2026-09-02)
+
+**What happened:** Sustain call-outs had notes on the list page only
+(`detail_endpoint=None`). Adding the detail page and registering it in
+`web_notes.REGISTRY` silently changed where every note add/edit/delete
+redirects — the list page's existing test went red because its
+"+ Add note" now landed on the detail page.
+**What it cost:** one red suite, a small shared-component change.
+**Now:** the include takes an optional `notes_return_to='list'`
+(`_notes_section.html`), and a list page that keeps inline notes after
+its entity gains a detail page must pass it. Rule lives in
+`docs/claude/components/notes.md` (Template bullet). The same applies to
+`todo` / `meeting_prep` if they ever get a detail page.
+
 ## Browsers restore form values BY POSITION on reload (2026-09-02)
 
 **What happened:** closing a blocker on `/blockers/` made every Team and
