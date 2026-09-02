@@ -106,6 +106,22 @@ request already reads like a direct instruction to build it.
 
 ---
 
+## "Similar to what we have" triggers the component question (2026-09-02)
+
+When Marina asks for something similar to an existing feature, Claude asks
+first whether this is the SECOND user of a one-off. Second user → extract
+the shared component, then build on it (notes, next steps and the
+working-notes pages all came about that way). First user with no second in
+sight → build inside the app with the seam visible, no generalizing on a
+guess. The rule itself is in `CLAUDE.md` (Conventions); it was asked for
+after the 📣 report call-outs turned out to be copied into five templates
+(now refactoring step 14).
+
+A sub-lesson from the same discussion: **when a word is overloaded, name
+both meanings in the answer.** "Call-outs" is the Sustain monitoring log
+AND the 📣 editable bullets on the reports; an answer that used the word
+without saying which one cost a full round of confusion.
+
 ## Getting a screenshot into the chat (2026-08-31)
 
 `Ctrl+V` does not paste images into the Claude Code prompt on this machine

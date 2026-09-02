@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-02 (c) — Delegated board strip, two Teams lists, Sustain WoW + day notes</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-02 (c) — Delegated + Sustain</h1>
+<p class="hint">Four things to click through: the <strong>count strip</strong> on the Delegated
+board (and the section now called <strong>Blocked</strong>), the two new
+<strong>Teams-paste lists</strong> (DTC O2C blockers, Settlement file) with their Copy button,
+the Sustain <strong>Ways of working</strong> page, and <strong>day notes</strong> on the Sustain
+day reports. Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: <code>git pull</code>, then restart the app</strong>
+(<code>run_web.bat</code>). No data migration this time — new code only, nothing changes in
+your database until you add a note.
+<br><br><em>Git:</em> everything is committed and pushed — nothing waits on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-slate">
+  <div class="box-head">1 · Delegated board — count strip + "Blocked"</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b1">
+      <span>Open the Delegated Testing board.
+      <span class="where">→ /delegated/</span>
+      <span class="expect">Above the filter bar a colored strip: one segment per section with
+      its number (and the heading where there is room), and under it a legend with EVERY
+      heading and its count — including 📦 Backlog and the sections that are 0 — plus
+      <strong>Total</strong> on the right.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b2">
+      <span>Compare the Total with the Management Summary's total.
+      <span class="where">→ /delegated/numbers</span>
+      <span class="expect">The board total is HIGHER by exactly the backlog count — the strip
+      counts every user story, the summary and overview keep leaving parked tickets out.
+      That is on purpose; see MarinaCheckSoon if you'd rather have them equal.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b3">
+      <span>Look at the first section heading, then open the status report and the
+      Management Summary.
+      <span class="expect">"🔴 Blocked" everywhere (was "Blocker"). The Blockers page is still
+      called Blockers.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-red">
+  <div class="box-head">2 · 🚧 DTC O2C blockers list + Copy for Teams</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="o1">
+      <span>Make sure at least one OPEN blocker has team <strong>DTC O2C</strong> and is
+      attached to a blocked ticket (Blockers page → team select; board → blocked row →
+      Manage blockers).
+      <span class="where">→ /blockers/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="o2">
+      <span>Board header → <strong>🚧 DTC O2C blockers</strong>.
+      <span class="where">→ /delegated/dtc-o2c-blockers</span>
+      <span class="expect">One bold line per blocker (id · name, impact in grey when filled),
+      one bullet per blocked test case: Jira id as a link + the order lines from its latest
+      comment, or "no order number yet". No test case names. Closed blockers and other
+      teams are NOT listed. The counter top right says n blockers · m blocked.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="o3">
+      <span>Press <strong>📋 Copy for Teams</strong>, then paste into a Teams chat (or a channel
+      post).
+      <span class="expect">Button says "✓ Copied — paste into Teams" for a moment. In Teams:
+      bold blocker lines, bullet list under each, ticket ids clickable to Jira. Also try
+      pasting into a Jira comment box: plain lines with "•" bullets.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="o4">
+      <span><strong>⬇ Download HTML</strong>.
+      <span class="expect">File <code>delegated_dtc_o2c_blockers_&lt;date&gt;.html</code>, same
+      list, no buttons.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-purple">
+  <div class="box-head">3 · 🧾 Settlement file list</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1">
+      <span>Board header → <strong>🧾 Settlement file</strong>.
+      <span class="where">→ /delegated/settlement</span>
+      <span class="expect">Heading "Settlement file to be created (&lt;date&gt;)", one bullet
+      per ticket in that bucket (status In Verification): Jira id link + order lines.
+      Parked tickets are not in it.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2">
+      <span>Copy for Teams + paste; ⬇ Download HTML.
+      <span class="expect">Same behaviour as the blockers list; file
+      <code>delegated_settlement_&lt;date&gt;.html</code>.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-blue">
+  <div class="box-head">4 · Email Reports</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="e1">
+      <span>Open Email Reports and look at the report checkboxes.
+      <span class="where">→ /email-report</span>
+      <span class="expect">Two new choices: "Delegated Testing — DTC O2C Blockers" and
+      "Delegated Testing — Settlement File Waiting List". Sending one attaches the same file
+      the Download button gives. The dashboard Export Reports card does NOT write them —
+      you said email only.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-teal">
+  <div class="box-head">5 · Sustain — 🤝 Ways of working</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="w1">
+      <span>Sustain card header → <strong>🤝 Ways of working</strong> (next to 📝 Meeting
+      summaries).
+      <span class="where">→ /notes-page/sustain_wow</span>
+      <span class="expect">A working-notes page like the Delegated one: free-text heading,
+      text, attachments, keyword filter, download. Breadcrumb back to the Sustain card.
+      Notes here are separate from the Delegated Ways of Working page.</span></span></label>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="box b-green">
+  <div class="box-head">6 · Sustain — day notes (NOT call-outs)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="n1">
+      <span>Open any imported day report (Imported days table → a row).
+      <span class="where">→ /sustain/day/&lt;day&gt;/&lt;stream&gt;</span>
+      <span class="expect">At the bottom, under the task table, a <strong>Notes</strong> card
+      with "+ Add note".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="n2">
+      <span>Add a note with a heading, some text and a pasted screenshot (Ctrl+V).
+      <span class="expect">The note form's breadcrumb names the day ("Retail 2026-09-01 — day
+      notes"); saving lands back on the SAME day report with "Note added." and the
+      thumbnail. Edit and delete come back here too.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="n3">
+      <span>Back on the Sustain card: the Imported days table.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">New <strong>Notes</strong> column — "📝 1" chip on that day's row,
+      "—" on the others. The Call-outs table above is UNCHANGED: the note is not a
+      call-out.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="n4">
+      <span>Open the management summary for that day.
+      <span class="where">→ /sustain/summary/&lt;day&gt;</span>
+      <span class="expect">In that stream's section, under the call-outs table: "Day notes (1)
+      — edit on the day report:" and your note as a bullet, heading in bold. Streams without
+      notes show nothing extra.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="n5">
+      <span>Re-upload the same checklist workbook, then open the day report again.
+      <span class="expect">The note is still there — notes hang on the day + stream, not on the
+      imported rows, so a re-import never loses them.</span></span></label>
+  </div>
+</div>
+
+<p class="hint">Small judgment calls of this build are listed as questions in
+<a href="MarinaCheckSoon.html">MarinaCheckSoon</a> (section "Delegated strip + Teams lists,
+Sustain WoW + day notes").</p>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0902c-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

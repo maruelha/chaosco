@@ -174,10 +174,9 @@ ignored (KT tracking lives on the Smoke scenarios).
 ### Delegated Testing (`/delegated/`) — ✅ BUILT 2026-08-26…09-02
 
 23 build items done — log → `docs/archive/build_plan_done_2026-09-01.md`;
-chat-driven additions logged in the session summaries under
-`docs/archive/session_2026-09-01_*.md` / `session_2026-09-02_*.md`
-(latest: nextInLine label rule, blockers fixes, working-notes pages incl.
-Meeting Summaries); deep-dive `docs/claude/delegated.md` +
+chat-driven additions are logged ONLY in the session summaries under
+`docs/archive/session_2026-09-0*_*.md` (no running list here any more —
+it only grew); deep-dive `docs/claude/delegated.md` +
 `docs/claude/components/note-pages.md`. Still open:
 
 5. **PARKED — Excel/ECOM join** [USER 2026-08-26]: show the `ecom` rows

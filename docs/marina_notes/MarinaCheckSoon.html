@@ -853,6 +853,55 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-02 (c)</h2>
+<div class="box b-slate">
+  <div class="box-head">Delegated strip + Teams lists, Sustain WoW + day notes — my calls, one sentence each to change</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">Click-through in
+    <a href="SessionTest_2026-09-02_c.html">SessionTest_2026-09-02_c</a>. The list vs table,
+    email-only and Jira-links choices were yours; these were mine.</p>
+    <label class="task"><input type="checkbox" data-k="dl0902-blocked-everywhere">
+      <span><strong>"Blocked" replaced "Blocker" on the status report and the Management
+      Summary too</strong>, not only on the board — it is one heading list in the code. Say
+      so if the reports should keep "Blocker".
+      <span class="where">&#8594; /delegated/report · /delegated/numbers</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dl0902-strip-total">
+      <span><strong>The board strip's Total includes the backlog</strong>, so it is larger
+      than the Management Summary / Overview totals (which exclude parked tickets). Fine as
+      "the board counts what it shows"? Or should the strip show the backlog separately
+      from the total?
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dl0902-blocker-order">
+      <span><strong>DTC O2C list order</strong> = the Blockers page order (defects → tasks →
+      clarifications, alphabetical). Alternative: the blocker with the most blocked test
+      cases first — one line to change.
+      <span class="where">&#8594; /delegated/dtc-o2c-blockers</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dl0902-impact-in-paste">
+      <span><strong>The blocker's Impact text is pasted into Teams</strong> (grey, after the
+      name) when it is filled. Keep, or paste id + name only?
+      <span class="where">&#8594; /delegated/dtc-o2c-blockers</span></span></label>
+    <label class="task"><input type="checkbox" data-k="dl0902-order-lines">
+      <span><strong>Order numbers are pasted as the comment's own lines</strong>
+      ("Return Order: 6000084252 · Order Number - ASK…"), not stripped to the bare numbers.
+      If the labels are noise in Teams, say so.
+      <span class="where">&#8594; both lists</span></span></label>
+    <label class="task"><input type="checkbox" data-k="su0902-wow-headings">
+      <span><strong>Sustain Ways of working has free-text headings</strong> like the Delegated
+      one (not the date picker of Meeting summaries). Change if you want dated entries.
+      <span class="where">&#8594; /notes-page/sustain_wow</span></span></label>
+    <label class="task"><input type="checkbox" data-k="su0902-daynotes-summary">
+      <span><strong>Day notes show on the management summary</strong> as read-only bullets
+      under each stream's call-outs. If the summary should stay a pure numbers page, one
+      block to remove.
+      <span class="where">&#8594; /sustain/summary</span></span></label>
+    <label class="task"><input type="checkbox" data-k="su0902-daynotes-key">
+      <span><strong>Day notes hang on day + stream, not on the imported rows</strong> — a
+      re-import keeps them, but a note stays even if a day tab later disappears from the
+      workbook (you just can't open its day page any more). Acceptable?
+      <span class="where">&#8594; /sustain/day/…</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

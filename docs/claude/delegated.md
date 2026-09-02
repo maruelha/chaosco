@@ -74,7 +74,8 @@ longer decides a bucket**: `bucket_key`/`bucket_issues`/`bucket_counts`/
 `staged_counts` lost their `me` argument and `web_delegated._me()` is
 gone. Both sections stay [USER: "the sections still stay"] — they are just
 fed by different statuses. The wording above is Marina's own (she corrected
-a first draft: "Issue" → **Blocker**, "With Marina for first check" →
+a first draft: "Issue" → **Blocker** — and on 2026-09-02 to **Blocked**, see
+the count-strip section below —, "With Marina for first check" →
 **Marina gatekeeper check**, "With Flora" → **ECOM BPO test**). `Accepted`
 joins the **Until Gatekeeper Check** stage of the Management Summary, so it
 does NOT count toward the weekly goal — to be re-confirmed [USER: "need to
