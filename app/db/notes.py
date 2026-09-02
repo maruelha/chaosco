@@ -66,7 +66,7 @@ def delete_note(conn: sqlite3.Connection, note_id: int) -> None:
 # Inbox — unfiled notes (entity_type='input', entity_id='inbox')
 # ---------------------------------------------------------------------------
 
-_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect", "note_page"}
+_INBOX_TARGET_TYPES = {"defect", "retail", "spillover", "ecom", "ecom_gatekeeper", "jira", "test_learning", "followup", "shelf", "topic", "contact", "link", "prod_defect", "note_page", "sustain_callout"}
 
 # Incoming buckets [USER 2026-07-16]: the inbox route_to dropdown pushes an
 # item to (module, 'incoming') — sorted manually on that module's page,
@@ -257,6 +257,12 @@ def file_inbox_item(
         # pure-config module, safe for the db layer to import)
         from app.note_pages import PAGES
         target_exists = target_id in PAGES
+    elif target_type == "sustain_callout":
+        # Sustain call-outs (2026-09-02 [USER]) — push an inbox note under
+        # a call-out; shows on the call-out's detail page + list row
+        target_exists = conn.execute(
+            "SELECT 1 FROM sustain_callouts WHERE id = ?", (target_id,)
+        ).fetchone() is not None
     if not target_exists:
         return False
     with conn:
@@ -412,6 +418,22 @@ def search_targets(conn: sqlite3.Connection, target_type: str, q: str) -> list[d
                 for slug, p in PAGES.items()
                 if needle in p["title"].casefold()
                 or needle in p["context"].casefold()]
+    elif target_type == "sustain_callout":
+        # Sustain call-outs — by name or ticket no; open ones first so the
+        # empty query shows the live list immediately
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT id, name, ticket_no, channel, type, status"
+            " FROM sustain_callouts"
+            " WHERE LOWER(name) LIKE LOWER(?) OR LOWER(ticket_no) LIKE LOWER(?)"
+            " ORDER BY CASE WHEN status = 'closed' THEN 1 ELSE 0 END,"
+            " date_captured DESC, id DESC LIMIT 20",
+            (like, like),
+        ))
+        return [{"value": str(r["id"]),
+                 "label": " · ".join(x for x in (
+                     r["ticket_no"], r["name"], f"{r['channel']}/{r['type']}",
+                     r["status"]) if x)}
+                for r in rows]
     return []
 
 

@@ -781,11 +781,14 @@ def inbox():
     note_saved   = request.args.get("note_saved") == "1"
     note_deleted = request.args.get("note_deleted") == "1"
     note_filed   = request.args.get("note_filed")
+    from app.db import sustain_callouts as db_sc
     return render_template(
         "inbox.html", items=items, attachments_by_note=attachments_by_note,
         note_added=note_added, note_saved=note_saved,
         note_deleted=note_deleted, note_filed=note_filed,
         auto_filed=request.args.get("auto_filed"),
+        callout_channels=db_sc.CALLOUT_CHANNELS,
+        callout_types=db_sc.CALLOUT_TYPES,
     )
 
 
@@ -945,6 +948,35 @@ def inbox_file_to_shelf(note_id: int):
     finally:
         conn.close()
     return redirect(url_for("inbox", note_filed="Shelf"))
+
+
+@app.route("/inbox/<int:note_id>/file-to-callout", methods=["POST"])
+def inbox_file_to_callout(note_id: int):
+    """Push an inbox note to a NEW Sustain call-out [USER 2026-09-02]:
+    creates the call-out (channel/type/name/ticket no from the small
+    picker, name defaulting to the note heading) and files the note under
+    it — same shape as file-to-shelf. Filing under an EXISTING call-out
+    goes through the standard /inbox/<id>/file with target_type
+    'sustain_callout'."""
+    conn = _get_conn()
+    try:
+        note = database.get_inbox_item(conn, note_id)
+        if note is None:
+            return redirect(url_for("inbox"))
+        name = (request.form.get("callout_name", "").strip()
+                or (note["heading"] or "").strip())
+        if not name and (note["note"] or "").strip():
+            name = note["note"].strip().splitlines()[0][:80]
+        if not name:
+            return redirect(url_for("inbox"))
+        callout_id = database.create_callout(
+            conn, request.form.get("callout_channel", ""),
+            request.form.get("callout_type", ""), name,
+            ticket_no=request.form.get("callout_ticket_no"))
+        database.file_inbox_item(conn, note_id, "sustain_callout", str(callout_id))
+    finally:
+        conn.close()
+    return redirect(url_for("inbox", note_filed="Sustain call-out"))
 
 
 @app.route("/inbox/targets")

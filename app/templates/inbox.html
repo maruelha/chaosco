@@ -173,6 +173,9 @@
                  results list every page (Ways of Working, Testing
                  Insights, …), no per-page wiring #}
               <option value="note_page">Working notes page</option>
+              {# Sustain call-outs (2026-09-02): search files under an
+                 existing one; the extra block below creates a new one #}
+              <option value="sustain_callout">Sustain call-out</option>
             </select>
           </div>
           <div id="search-box-{{ item.id }}">
@@ -194,6 +197,24 @@
           </div>
         </div>
         <div id="search-results-{{ item.id }}" style="margin-bottom:0.75rem"></div>
+        {# New Sustain call-out from this note (2026-09-02) — shown next to
+           the search when type = Sustain call-out #}
+        <div id="callout-new-{{ item.id }}" style="display:none;margin-bottom:0.75rem;padding-top:0.6rem;border-top:1px dashed #d5dde5">
+          <div style="font-size:0.75rem;font-weight:600;margin-bottom:6px">…or create a NEW call-out from this note</div>
+          <form method="post" action="{{ url_for('inbox_file_to_callout', note_id=item.id) }}"
+                style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+            <select name="callout_channel" class="form-control">
+              {% for ch in callout_channels %}<option value="{{ ch }}">{{ ch }}</option>{% endfor %}
+            </select>
+            <select name="callout_type" class="form-control">
+              {% for t in callout_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+            </select>
+            <input type="text" name="callout_name" class="form-control" value="{{ item.heading or '' }}"
+                   placeholder="name (short description)" style="min-width:14rem" required>
+            <input type="text" name="callout_ticket_no" class="form-control" placeholder="ticket no (optional)" style="min-width:9rem">
+            <button type="submit" class="btn btn-sm btn-primary">New call-out ›</button>
+          </form>
+        </div>
         {# Standard file form (defect / retail / spillover / etc.) #}
         <form method="post" action="{{ url_for('inbox_file', note_id=item.id) }}" id="file-std-form-{{ item.id }}">
           <input type="hidden" name="target_type" id="target-type-{{ item.id }}">
@@ -279,6 +300,9 @@
   window.onTypeChange = function (id) {
     var typeSel = document.querySelector('.file-type-sel[data-item="' + id + '"]');
     var isShelf = typeSel && typeSel.value === 'shelf';
+    var isCallout = typeSel && typeSel.value === 'sustain_callout';
+    var calloutNew = document.getElementById('callout-new-' + id);
+    if (calloutNew) calloutNew.style.display = isCallout ? '' : 'none';
     // (the former delegated_wow singleton special case is gone — working
     // notes pages are a normal searchable type since 2026-09-01: the empty
     // search lists every page immediately)
