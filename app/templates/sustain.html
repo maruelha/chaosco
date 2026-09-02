@@ -41,7 +41,9 @@
     <option value="{{ t }}">{{ t }}</option>
     {% endfor %}
   </select>
-  <input type="text" name="topic" placeholder="Topic…" required class="sc-topic-input">
+  {# name = the short line; topic / impact are filled on the detail page [USER 2026-09-02] #}
+  <input type="text" name="name" placeholder="Name (short description)…" required class="sc-topic-input">
+  <input type="text" name="ticket_no" placeholder="Ticket no (optional)" class="sc-ticket-input">
   <input type="text" name="responsible" placeholder="Responsible (optional)" class="sc-resp-input">
   <button type="submit" class="btn btn-primary">Add</button>
 </form>
@@ -49,7 +51,7 @@
 {% if callouts %}
 <table class="ui-table">
   <thead>
-    <tr><th>Channel</th><th>Type</th><th>Topic</th><th>Responsible</th>
+    <tr><th>Channel</th><th>Type</th><th>Name</th><th>Ticket</th><th>Responsible</th>
         <th>Status</th><th>Date captured</th><th>Next step</th><th></th></tr>
   </thead>
   <tbody>
@@ -57,7 +59,8 @@
     <tr class="sc-row" data-id="{{ c.id }}">
       <td><span class="chip sc-channel sc-channel--{{ c.channel }}">{{ c.channel }}</span></td>
       <td><span class="chip sc-type">{{ c.type }}</span></td>
-      <td class="sc-topic-cell">{{ c.name }}</td>
+      <td class="sc-topic-cell"><a href="{{ url_for('sustain.sustain_callout_detail', callout_id=c.id) }}">{{ c.name }}</a></td>
+      <td>{% if c.ticket_no %}<span class="chip chip--none mono">{{ c.ticket_no }}</span>{% else %}—{% endif %}</td>
       <td>{{ c.responsible or '—' }}</td>
       <td>
         <button type="button" class="chip sc-status js-sc-status" data-id="{{ c.id }}"
@@ -91,7 +94,7 @@
                            and (request.args.get('note_added') or request.args.get('note_saved')
                                 or request.args.get('note_deleted')) %}
     <tr class="sc-notes-row" data-id="{{ c.id }}" {% if not _reopen_notes %}style="display:none"{% endif %}>
-      <td colspan="8">
+      <td colspan="9">
         {# notes_return_to='list': a note added from this row comes back
            HERE, not to the call-out's detail page (the registry's default
            now that one exists) #}

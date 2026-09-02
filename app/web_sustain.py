@@ -65,8 +65,10 @@ def sustain_home():
 
 @bp.route("/callouts/add", methods=["POST"])
 def sustain_callout_add():
-    topic = request.form.get("topic", "").strip()
-    if not topic:
+    """Quick add from the list: name (+ optional ticket no / responsible);
+    topic and impact are filled on the detail page."""
+    name = request.form.get("name", "").strip()
+    if not name:
         return redirect(url_for("sustain.sustain_home"))
     conn = _get_conn()
     try:
@@ -74,8 +76,9 @@ def sustain_callout_add():
             conn,
             channel=request.form.get("channel", ""),
             type_=request.form.get("type", ""),
-            name=topic,
+            name=name,
             responsible=request.form.get("responsible"),
+            ticket_no=request.form.get("ticket_no"),
         )
     finally:
         conn.close()

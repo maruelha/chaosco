@@ -32,7 +32,7 @@ def client(tmp_path, monkeypatch):
 
 
 def _add(client, **fields):
-    data = {"channel": "retail", "type": "Issue", "topic": "Something to check"}
+    data = {"channel": "retail", "type": "Issue", "name": "Something to check"}
     data.update(fields)
     return client.post("/sustain/callouts/add", data=data)
 
@@ -43,14 +43,14 @@ def test_home_shows_call_outs_section(client):
 
 
 def test_add_shows_up_on_card(client):
-    _add(client, topic="Settlement mismatch", responsible="Marina")
+    _add(client, name="Settlement mismatch", responsible="Marina")
     html = client.get("/sustain/").get_data(as_text=True)
     assert "Settlement mismatch" in html
     assert "Marina" in html
 
 
-def test_add_without_topic_is_rejected(client):
-    resp = _add(client, topic="  ")
+def test_add_without_name_is_rejected(client):
+    resp = _add(client, name="  ")
     assert resp.status_code == 302
     html = client.get("/sustain/").get_data(as_text=True)
     assert "Nothing to review" in html
@@ -88,7 +88,7 @@ def _first_id(client, tmp_path):
 def test_update_changes_fields(client, tmp_path):
     """The full-row save lives on the detail page since 2026-09-02 (the
     list's inline edit row is gone)."""
-    _add(client, topic="Original")
+    _add(client, name="Original")
     cid = _first_id(client, tmp_path)
     resp = client.post(f"/sustain/callouts/{cid}", data={
         "channel": "ecom", "type": "MigrIssue", "name": "Updated name",
@@ -114,8 +114,29 @@ def test_update_changes_fields(client, tmp_path):
 # Detail page (planning chat 2026-09-02): topic / ticket no / impact live
 # here, list shows only the short name
 
+def test_add_form_asks_for_name_and_ticket_and_the_list_shows_the_ticket(client, tmp_path):
+    """Step 3 (2026-09-02): the quick-add form on the list takes name +
+    ticket no (topic/impact live on the detail page); the list gets a
+    Ticket column and the name links to the detail page."""
+    _add(client, name="Settlement mismatch", ticket_no="SUS-042")
+    cid = _first_id(client, tmp_path)
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert 'name="name"' in html and 'name="ticket_no"' in html
+    assert 'name="topic"' not in html
+    assert "<th>Name</th><th>Ticket</th>" in html
+    assert "SUS-042" in html
+    assert f'<a href="/sustain/callouts/{cid}">Settlement mismatch</a>' in html
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        item = db_sc.get_callout(conn, cid)
+    finally:
+        conn.close()
+    assert item["ticket_no"] == "SUS-042"
+    assert item["topic"] == "Settlement mismatch"     # mirrors name until edited
+
+
 def test_list_links_to_the_detail_page_and_has_no_inline_edit(client, tmp_path):
-    _add(client, topic="Settlement mismatch")
+    _add(client, name="Settlement mismatch")
     cid = _first_id(client, tmp_path)
     html = client.get("/sustain/").get_data(as_text=True)
     assert f'href="/sustain/callouts/{cid}"' in html
@@ -124,7 +145,7 @@ def test_list_links_to_the_detail_page_and_has_no_inline_edit(client, tmp_path):
 
 
 def test_detail_page_shows_every_field_and_the_notes_component(client, tmp_path):
-    _add(client, topic="Settlement mismatch", responsible="Marina")
+    _add(client, name="Settlement mismatch", responsible="Marina")
     cid = _first_id(client, tmp_path)
     conn = database.get_connection(tmp_path / "sc.db")
     try:
@@ -153,7 +174,7 @@ def test_detail_page_404s_for_unknown_id(client):
 
 
 def test_detail_save_without_name_is_rejected(client, tmp_path):
-    _add(client, topic="Keep me")
+    _add(client, name="Keep me")
     cid = _first_id(client, tmp_path)
     resp = client.post(f"/sustain/callouts/{cid}", data={
         "channel": "retail", "type": "Issue", "name": "   ", "topic": "x"})
@@ -167,7 +188,7 @@ def test_detail_save_without_name_is_rejected(client, tmp_path):
 
 
 def test_note_added_from_the_detail_page_comes_back_to_it(client, tmp_path):
-    _add(client, topic="Settlement mismatch")
+    _add(client, name="Settlement mismatch")
     cid = _first_id(client, tmp_path)
     resp = client.post(f"/n/sustain_callout/{cid}/add",
                        data={"heading": "Vendor call", "note": "Confirmed by phone"})
@@ -178,14 +199,14 @@ def test_note_added_from_the_detail_page_comes_back_to_it(client, tmp_path):
 
 
 def test_note_form_breadcrumb_names_the_callout(client, tmp_path):
-    _add(client, topic="Settlement mismatch")
+    _add(client, name="Settlement mismatch")
     cid = _first_id(client, tmp_path)
     html = client.get(f"/n/sustain_callout/{cid}/add").get_data(as_text=True)
     assert "Settlement mismatch" in html
 
 
 def test_delete_removes_it(client, tmp_path):
-    _add(client, topic="Gone soon")
+    _add(client, name="Gone soon")
     conn = database.get_connection(tmp_path / "sc.db")
     try:
         cid = db_sc.list_callouts(conn)[0]["id"]
@@ -198,7 +219,7 @@ def test_delete_removes_it(client, tmp_path):
 
 
 def test_closed_hidden_by_default_and_shown_with_toggle(client, tmp_path):
-    _add(client, topic="Will be closed")
+    _add(client, name="Will be closed")
     conn = database.get_connection(tmp_path / "sc.db")
     try:
         cid = db_sc.list_callouts(conn)[0]["id"]
@@ -299,7 +320,7 @@ def test_board_renders_the_full_shared_notes_component_per_callout(client, tmp_p
     widget with no heading and no attachments — replaced with the SAME
     shared _notes_section.html every other entity uses, one instance per
     call-out row."""
-    _add(client, topic="Settlement mismatch")
+    _add(client, name="Settlement mismatch")
     conn = database.get_connection(tmp_path / "sc.db")
     try:
         cid = db_sc.list_callouts(conn)[0]["id"]
@@ -325,8 +346,8 @@ def test_note_added_via_full_form_shows_up_and_reopens_its_row(client, tmp_path)
     path that also unlocks attachments) redirects back to the board with
     note_entity=<id> so only THAT call-out's row reopens and shows the
     banner — not every row on the page."""
-    _add(client, topic="Settlement mismatch")
-    _add(client, topic="A second, unrelated call-out")
+    _add(client, name="Settlement mismatch")
+    _add(client, name="A second, unrelated call-out")
     conn = database.get_connection(tmp_path / "sc.db")
     try:
         ids = [c["id"] for c in db_sc.list_callouts(conn)]
@@ -384,22 +405,22 @@ def _import_day(client, day="2026-09-01"):
 
 def test_summary_shows_open_callouts_for_the_stream(client):
     _import_day(client)
-    _add(client, channel="retail", topic="Retail-only topic")
+    _add(client, channel="retail", name="Retail-only topic")
     html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
     assert "Retail-only topic" in html
 
 
 def test_summary_channel_both_appears_in_both_streams(client):
     _import_day(client)
-    _add(client, channel="both", topic="Affects both streams")
+    _add(client, channel="both", name="Affects both streams")
     html = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
     assert html.count("Affects both streams") == 2
 
 
 def test_summary_hides_closed_and_other_channel_callouts(client, tmp_path):
     _import_day(client)
-    _add(client, channel="retail", topic="Retail closed one")
-    _add(client, channel="ecom", topic="Ecom-only topic")
+    _add(client, channel="retail", name="Retail closed one")
+    _add(client, channel="ecom", name="Ecom-only topic")
     conn = database.get_connection(tmp_path / "sc.db")
     try:
         cid = [c for c in db_sc.list_callouts(conn)

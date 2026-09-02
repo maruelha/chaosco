@@ -1463,6 +1463,7 @@ tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
     border-radius:6px; font-size:0.9rem; }
 .sc-topic-input { flex:1; min-width:14rem; }
 .sc-resp-input  { min-width:10rem; }
+.sc-ticket-input { min-width:9rem; }
 .sc-channel-select, .sc-type-select { min-width:7rem; }
 .sc-topic-cell { max-width:22rem; }
 .sc-channel { background:#f0f0f5; color:#444; }
