@@ -497,6 +497,24 @@ docs/CLAUDE.md split · UI component library. Full logs → `docs/archive/build_
 - **Done when:** no module is a multi-feature grab-bag; the app's look is
   controlled solely by `style.css` (inline styles ≈ 0).
 
+### Refactoring step 14 — ONE 📣 report call-outs partial (added 2026-09-02 [USER])
+
+- The editable 📣 call-outs block (`report_comments`: "+ Add call-out",
+  inline edit, 🗄 archive + the archived expander, static text in
+  downloads) is copied into FIVE report templates today:
+  `delegated_report.html` · `delegated_numbers.html` ·
+  `delegated_overview.html` · `gatekeeper_sales_report.html` ·
+  `spillover_report_table.html` (the read-only bullets macro
+  `_report_blocks.additional_comments` is shared, the EDITING is not).
+  Extract one `_report_callouts.html` include (parameters: report key,
+  comments, archived list, `download` flag) + one shared JS block; swap the
+  five copies to it. Replace `web_reports.report_comment_add`'s hardcoded
+  key tuple with a registry so a new report is one entry (the missing
+  `delegated` key silently 400ed for a day in August).
+- **Done when:** the five templates contain only the include, the route
+  smoke tests still see "+ Add call-out" on every report, and a sixth
+  report (or a per-day page) can use call-outs with one include line.
+
 ### Cross-cutting rules (apply during every step above)
 
 - **Portable SQL [USER 2026-08-06, standing]:** new/touched SQL must stay
