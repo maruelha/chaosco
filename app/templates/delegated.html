@@ -75,6 +75,24 @@
 </p>
 {% endif %}
 
+{# count strip [USER 2026-09-02]: every user story in the export, one
+   segment per board section (incl. 📦 Backlog) + the total — the board's
+   own numbers, NOT the Management Summary's (that one excludes backlog) #}
+{% if total %}
+<div class="ui-stackbar" title="all user stories in the delegated export, by board section">
+  {% for b in board_bar %}{% if b.count %}
+  <div class="ui-stackbar-seg ui-stackbar-seg--{{ b.css }}" style="flex:{{ b.count }} 0 0"
+       title="{{ b.title }}: {{ b.count }}"><b>{{ b.count }}</b><span>{{ b.title }}</span></div>
+  {% endif %}{% endfor %}
+</div>
+<div class="ui-stackbar-legend">
+  {% for b in board_bar %}
+  <span class="ui-stackbar-item"><i class="ui-stackbar-swatch ui-stackbar-seg--{{ b.css }}"></i>{{ b.title }}: <b>{{ b.count }}</b></span>
+  {% endfor %}
+  <span class="ui-stackbar-item ui-stackbar-total">Total: <b>{{ total }}</b></span>
+</div>
+{% endif %}
+
 <div class="ui-filterbar" style="margin-bottom:0.8rem">
   {% if all_labels %}
   <select id="dlg-label-filter" onchange="dlgFilterBoard()"

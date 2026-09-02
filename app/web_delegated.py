@@ -22,7 +22,7 @@ from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import ecom as db_ecom
 from app.db import jira as db_jira
-from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, bucket_counts,
+from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, board_bar, bucket_counts,
                                    bucket_issues, bucket_key, mb_status_state,
                                    overview_counts, sales_xls_matches,
                                    staged_counts, unexpected_statuses)
@@ -125,6 +125,7 @@ def delegated_list():
         "delegated.html",
         sections=bucket_issues(issues),
         board_css=BOARD_CSS,
+        board_bar=board_bar(issues),
         total=len(issues),
         all_labels=sorted({l for i in issues for l in i.get("labels", [])},
                           key=str.lower),

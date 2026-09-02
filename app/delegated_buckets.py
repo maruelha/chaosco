@@ -5,7 +5,9 @@ of the web layer so the rules are testable and the later backlog items
 (counted, not listed) can join the counting without touching routes.
 
 Bucket rules — the workflow wording agreed [USER 2026-08-31]:
-- Blocked         -> "Blocker" (top; shown ONLY there, wins over everything)
+- Blocked         -> "Blocked" (top; shown ONLY there, wins over everything;
+                     heading renamed from "Blocker" 2026-09-02 [USER] — the
+                     blockers themselves live on the Blockers page)
 - Open, Reopened  -> "Not started yet" (Reopened added 2026-09-01 [USER]:
                      "to be treated exactly the same as opened")
 - Accepted        -> "Testing team creating order"
@@ -25,7 +27,9 @@ from __future__ import annotations
 
 # (key, title, css class on the report section head)
 SECTIONS = [
-    ("blocked",    "🔴 Blocker",                          "sec-blocked"),
+    # "Blocked", not "Blocker" [USER 2026-09-02: "the blockers are on the
+    # other page"] — this section holds the blocked TEST CASES
+    ("blocked",    "🔴 Blocked",                          "sec-blocked"),
     ("open",       "Not started yet",                     "sec-open"),
     ("accepted",   "Testing team creating order",         "sec-accepted"),
     ("marina",     "Marina gatekeeper check",             "sec-marina"),
@@ -131,6 +135,20 @@ def unexpected_statuses(issues: list[dict]) -> list[tuple[str, int]]:
             key = (issue.get("jira_status") or "").strip() or "(no status)"
             counts[key] = counts.get(key, 0) + 1
     return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower()))
+
+
+def board_bar(issues: list[dict]) -> list[dict]:
+    """The count strip at the top of the board [USER 2026-09-02: "a bar like
+    the one on overview - but with the headings on the page and the
+    number"]: one entry per board section in board order, INCLUDING the
+    backlog (the strip counts every user story the export carries; the
+    Management Summary and Overview keep excluding parked tickets).
+    [{key, title, css (BOARD_CSS color name), count}, …] — zero counts are
+    kept so the legend can list every heading; the bar itself skips them."""
+    return [{"key": key, "title": title,
+             "css": BOARD_CSS[key].replace("ui-section--", ""),
+             "count": count}
+            for key, title, count in bucket_counts(issues)]
 
 
 def bucket_counts(issues: list[dict]) -> list[tuple[str, str, int]]:

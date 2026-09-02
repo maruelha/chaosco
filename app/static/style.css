@@ -1398,6 +1398,30 @@ details.ui-section[open] > summary::before, details.rt-section[open] > summary::
 .ui-section--gray > summary   { background:#6b7280; }
 .ui-section--red > summary    { background:#c1121f; }
 .ui-section--amber > summary  { background:#b45309; }
+/* ---- stacked count strip (Delegated board, 2026-09-02) — one segment per
+   section, colors = the ui-section-- modifiers below; legend lists every
+   heading incl. zero counts + the total ---- */
+.ui-stackbar { display:flex; width:100%; height:2.4rem; border:2px solid #0f172a;
+  border-radius:4px; overflow:hidden; margin:0.2rem 0 0.5rem; }
+.ui-stackbar-seg { display:flex; align-items:center; justify-content:center; gap:0.4rem;
+  color:#fff; font-size:0.8rem; min-width:2rem; padding:0 0.4rem; overflow:hidden; white-space:nowrap; }
+.ui-stackbar-seg b { font-weight:800; font-size:0.9rem; }
+.ui-stackbar-seg span { overflow:hidden; text-overflow:ellipsis; }
+.ui-stackbar-seg--red    { background:#c1121f; }
+.ui-stackbar-seg--slate  { background:#334155; }
+.ui-stackbar-seg--teal   { background:#0e7490; }
+.ui-stackbar-seg--amber  { background:#b45309; }
+.ui-stackbar-seg--purple { background:#7c3aed; }
+.ui-stackbar-seg--blue   { background:#2b6cb0; }
+.ui-stackbar-seg--green  { background:#1a7f37; }
+.ui-stackbar-seg--gray   { background:#6b7280; }
+.ui-stackbar-legend { display:flex; flex-wrap:wrap; gap:0.4rem 1.2rem; margin:0 0 1rem;
+  font-size:0.82rem; color:#475569; }
+.ui-stackbar-item { display:inline-flex; align-items:center; gap:0.4rem; }
+.ui-stackbar-item b { color:#0f172a; }
+.ui-stackbar-swatch { display:inline-block; width:0.75rem; height:0.75rem; border-radius:2px; }
+.ui-stackbar-total { margin-left:auto; font-weight:700; color:#0f172a; }
+
 .ui-section-count, .rt-count { margin-left:auto; background:rgba(255,255,255,.22);
     border-radius:20px; padding:2px 12px; font-size:0.85rem; font-weight:700; }
 .ui-section-count--full, .rt-count--full { background:#1a7f37; }

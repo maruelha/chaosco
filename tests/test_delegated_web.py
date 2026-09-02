@@ -102,7 +102,7 @@ def test_upload_imports_and_page_shows_buckets(client):
 
     html = client.get("/delegated/?jira_ok=1&jira_msg=x").get_data(as_text=True)
     assert "S4ECOM-2001" in html                       # blocked ticket present
-    assert "\U0001f534 Blocker" in html
+    assert "\U0001f534 Blocked" in html
     assert "Marina gatekeeper check" in html
     assert "Testing team creating order" in html
     assert "Unexpected status" in html                 # odd status is visible
@@ -110,7 +110,13 @@ def test_upload_imports_and_page_shows_buckets(client):
     # every section carries a ui-section color modifier — a bare rt-section
     # summary renders WHITE on white (invisible title) [USER 2026-08-26]
     assert 'class="rt-section "' not in html
-    assert "ui-section--red" in html                   # Blocker section color
+    assert "ui-section--red" in html                   # Blocked section color
+    # count strip at the top [USER 2026-09-02]: every section heading with
+    # its number + the total, backlog included
+    strip = html.split('class="ui-stackbar-legend"')[1].split("</div>")[0]
+    assert "🔴 Blocked: <b>1</b>" in strip
+    assert "📦 Backlog: <b>" in strip
+    assert "Total: <b>" in strip
 
 
 def test_only_user_stories_on_board_report_and_numbers(client):
@@ -340,7 +346,7 @@ def test_status_report_renders_buckets(client):
                 data={"blocked_reason": "no settlement file yet"})
     html = client.get("/delegated/report").get_data(as_text=True)
     assert "Delegated Testing Report" in html
-    assert "\U0001f534 Blocker" in html
+    assert "\U0001f534 Blocked" in html
     assert "Marina gatekeeper check" in html
     assert "no settlement file yet" in html            # why-blocked column
     assert "Return Order: 6000084252" in html          # LATEST comment's order
@@ -591,7 +597,7 @@ def test_backlog_ticket_moves_to_own_section_on_board_and_report(client):
     backlog_part = html.split("<summary>📦 Backlog")[1]
     assert "S4ECOM-2003" in backlog_part
     # gone from its old bucket (Testing team creating order)
-    team_part = html.split("Testing team creating order")[1].split("<summary>📦 Backlog")[0]
+    team_part = html.split("<summary>Testing team creating order")[1].split("<summary>📦 Backlog")[0]
     assert 'data-key="S4ECOM-2003"' not in team_part
 
     report_html = client.get("/delegated/report").get_data(as_text=True)
@@ -621,7 +627,7 @@ def test_backlog_wins_over_blocked_and_button_is_the_one_control(client):
     # S4ECOM-2001 is Blocked — parking it moves it OUT of the Blocker section
     client.post("/delegated/ticket/S4ECOM-2001/backlog", data={"value": "1"})
     html = client.get("/delegated/").get_data(as_text=True)
-    blocked_part = html.split("<summary>🔴 Blocker")[1].split("<summary>")[0]
+    blocked_part = html.split("<summary>🔴 Blocked")[1].split("<summary>")[0]
     assert "S4ECOM-2001" not in blocked_part
     assert "S4ECOM-2001" in html.split("<summary>📦 Backlog")[1]
     # no backlog checkbox column on the board [USER 2026-09-01]
@@ -1435,5 +1441,6 @@ def test_reopened_is_bucketed_like_open(client):
     stages = {s["key"]: s for s in ctx["stages"]}
     assert stages["tech"]["in_progress"] == 2   # Accepted + the Reopened one
     html = client.get("/delegated/").get_data(as_text=True)
-    not_started = html.split("Not started yet")[1].split("<summary>")[0]
+    # split on the SECTION heading — the count strip names it first (2026-09-02)
+    not_started = html.split("<summary>Not started yet")[1].split("<summary>")[0]
     assert 'data-key="S4ECOM-2004"' in not_started

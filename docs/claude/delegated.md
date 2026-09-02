@@ -11,7 +11,7 @@
 
 The card for testing work DELEGATED to the team. Its own Jira XML export,
 uploaded as a file on the card; tickets bucketed by status/assignee from
-🔴 Blocker down to "Test case completed" (wording rewritten 2026-08-31,
+🔴 Blocked down to "Test case completed" (wording rewritten 2026-08-31,
 see below).
 
 ## Design decisions (planning chat 2026-08-26)
@@ -53,7 +53,7 @@ see below).
 
 | Bucket | Rule |
 |---|---|
-| 🔴 Blocker (top, wins) | status Blocked |
+| 🔴 Blocked (top, wins; heading "Blocker" → "Blocked" 2026-09-02 [USER], the blockers themselves are on the Blockers page) | status Blocked |
 | Not started yet | status Open **or Reopened** (2026-09-01 [USER]) **AND label `nextInLine`** (2026-09-01 [USER], see "nextInLine label rule" below — without the label the ticket waits in 📦 Backlog) |
 | Testing team creating order | status Accepted |
 | Marina gatekeeper check | status In Progress |
@@ -614,6 +614,29 @@ guarded UPDATE in db/core.py), and the old URLs `/delegated/wow` +
 **Deliberately excluded from `report_context`/`numbers_context`** — [USER:
 "no report - it is ONLY on the dashboard"], so neither the status report
 nor the Management Summary reads these pages.
+
+## Board count strip + "Blocked" heading (2026-09-02 [USER])
+
+- **Count strip at the top of the board** [USER: "a count of all test
+  cases (so stories - not defects or tasks) including the backlog - maybe
+  a bar like the one on overview - but with the headings on the page and
+  the number → and the total number"]: `delegated_buckets.board_bar`
+  (pure) turns `bucket_counts` into one segment per board section in
+  board order, colored like the section heads (`BOARD_CSS` color names →
+  `.ui-stackbar-seg--<color>` in style.css — the strip is a style.css
+  component, `.ui-stackbar`, not an inline copy of the Overview's bar).
+  Segments carry number + heading; the legend under it lists EVERY
+  heading with its count (zero included) and the total. **Backlog is
+  IN** — the strip counts what the board shows, i.e. every user story
+  the export carries; the Management Summary and the Overview keep
+  excluding parked tickets, so their totals are deliberately smaller.
+  Board only, not on any report [USER: "not for now on the reports"].
+- **Section heading "🔴 Blocker" → "🔴 Blocked"** [USER: "the blockers
+  are on the other page"] — the section holds blocked TEST CASES; the
+  blockers themselves live on `/blockers/`. Changed once in
+  `SECTIONS`, so the status report and Management Summary say "Blocked"
+  too. (This supersedes the 2026-08-31 wording "Blocker", which had
+  replaced a first draft "Issue".)
 
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 
