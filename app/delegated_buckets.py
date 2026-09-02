@@ -268,6 +268,18 @@ BAR_GROUPS = [
 ]
 
 
+# The team whose open blockers get their own report [USER 2026-09-02:
+# "blockers (not blocked test cases) in DTC O2C"] — matched like the
+# stage mapping: whitespace-collapsed, case-insensitive.
+DTC_O2C_TEAM = "DTC O2C"
+
+
+def team_is(team, wanted: str) -> bool:
+    import re
+    norm = lambda t: re.sub(r"\s+", " ", str(t or "")).strip().casefold()
+    return norm(team) == norm(wanted)
+
+
 def overview_team_stage(team) -> str | None:
     """Pipeline stage for a blocker's responsible team, None if unmapped."""
     import re

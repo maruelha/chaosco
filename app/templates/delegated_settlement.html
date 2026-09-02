@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settlement File Waiting List — {{ today }}</title>
+  {% include '_teams_list_report.css.html' %}
+</head>
+<body>
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">Settlement file to be created</span>
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('delegated.delegated_dtc_blockers') }}" class="btn">🚧 DTC O2C blockers</a>
+  <button type="button" class="btn btn-primary" onclick="teamsCopy(this)"
+          title="copies the list below with bullets and Jira links — paste straight into a Teams chat or post">📋 Copy for Teams</button>
+  <a href="{{ url_for('delegated.delegated_settlement_download') }}" class="btn">⬇ Download HTML</a>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+{% endif %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
+    <div class="rh-title">Waiting for settlement file</div>
+    <div class="rh-date">{{ today }} · test cases in "Settlement file to be created" (Jira status In Verification), with order numbers from the latest comment</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ tickets|length }}</div>
+    <div class="rh-stat-lbl">Test cases</div>
+  </div>
+</div>
+
+{# The paste content — EXACTLY what "Copy for Teams" puts on the clipboard. #}
+<div class="paste" id="teams-copy">
+  <p>Settlement file to be created ({{ today }})</p>
+  <ul>
+  {% for t in tickets %}
+    <li>{% if t.link %}<a href="{{ t.link }}">{{ t.jira_key }}</a>{% else %}{{ t.jira_key }}{% endif %}{% if t.orders %} — {{ t.orders }}{% else %} — no order number yet{% endif %}</li>
+  {% else %}
+    <li>nothing waiting for a settlement file right now</li>
+  {% endfor %}
+  </ul>
+</div>
+
+{% if not download %}
+<p class="hint">Parked (📦 Backlog) tickets are not listed, same as on every report.</p>
+{% include '_teams_copy_script.html' %}
+{% endif %}
+
+</body>
+</html>

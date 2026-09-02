@@ -1,0 +1,41 @@
+{# Copy-for-Teams (2026-09-02 [USER]) — shared by the Teams-paste list
+   reports (delegated_dtc_blockers.html, delegated_settlement.html).
+
+   The page renders the paste content ONCE into a hidden <div id="teams-copy">
+   (bold heading lines as <p>, bullets as <ul><li>, ticket ids as <a>). The
+   button puts TWO clipboard flavors on the clipboard at the same time:
+     - text/html  = that div's markup → Teams / Outlook / Word keep bold,
+                    bullets and links
+     - text/plain = the same lines with "• " bullets → Jira comment boxes and
+                    anything that only takes plain text
+   Falls back to plain text alone on browsers without ClipboardItem.
+   Bullets, never numbering [USER 2026-08-10]. #}
+<script>
+async function teamsCopy(btn) {
+  const src = document.getElementById("teams-copy");
+  const html = src.innerHTML.trim();
+  const lines = [];
+  src.querySelectorAll("p, li").forEach(el => {
+    const t = el.textContent.replace(/\s+/g, " ").trim();
+    if (!t) return;
+    if (el.tagName === "P" && lines.length) lines.push("");
+    lines.push(el.tagName === "LI" ? "• " + t : t);
+  });
+  const text = lines.join("\n");
+  const orig = btn.textContent;
+  try {
+    if (window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([html], {type: "text/html"}),
+        "text/plain": new Blob([text], {type: "text/plain"}),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    btn.textContent = "✓ Copied — paste into Teams";
+  } catch (e) {
+    btn.textContent = "Copy failed: " + e.message;
+  }
+  setTimeout(() => { btn.textContent = orig; }, 2500);
+}
+</script>

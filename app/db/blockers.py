@@ -349,6 +349,28 @@ def blockers_for_tickets(conn: sqlite3.Connection,
     return out
 
 
+def tickets_for_blockers(conn: sqlite3.Connection,
+                         blocker_ids: list[int]) -> dict[int, list[str]]:
+    """{blocker_id: [jira_key, …]} — the delegated tickets each blocker is
+    attached to, one query for the batch, keys sorted. The reverse of
+    blockers_for_tickets; feeds the per-team blocker report (2026-09-02).
+    Tolerant of the tables not existing yet (partial-init test fixtures)."""
+    if not blocker_ids:
+        return {}
+    out: dict[int, list[str]] = {b: [] for b in blocker_ids}
+    placeholders = ",".join("?" for _ in blocker_ids)
+    try:
+        rows = conn.execute(
+            f"SELECT blocker_id, jira_key FROM blocker_links"
+            f" WHERE blocker_id IN ({placeholders})"
+            f" ORDER BY jira_key", list(blocker_ids)).fetchall()
+    except sqlite3.OperationalError:
+        return out
+    for blocker_id, jira_key in rows:
+        out[blocker_id].append(jira_key)
+    return out
+
+
 def blocked_ticket_counts(conn: sqlite3.Connection) -> dict[int, int]:
     """{blocker_id: count of delegated tickets it blocks} — Blockers list
     page and (later) the Management Summary blocker overview."""

@@ -43,6 +43,9 @@ REPORT_CHOICES = [
     ("delegated", "Delegated Testing Report"),
     ("delegated_numbers", "Delegated Testing — Management Summary"),
     ("delegated_overview", "Delegated Testing Overview"),
+    # the two Teams-paste lists (2026-09-02 [USER: "email reports only"])
+    ("delegated_dtc_blockers", "Delegated Testing — DTC O2C Blockers"),
+    ("delegated_settlement", "Delegated Testing — Settlement File Waiting List"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -193,6 +196,14 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
     if "delegated_overview" in reports:
         resp = flask_app.test_client().get("/delegated/overview/download")
         out.append((f"delegated_overview_{day}.html",
+                    resp.get_data(as_text=True)))
+    if "delegated_dtc_blockers" in reports:
+        resp = flask_app.test_client().get("/delegated/dtc-o2c-blockers/download")
+        out.append((f"delegated_dtc_o2c_blockers_{day}.html",
+                    resp.get_data(as_text=True)))
+    if "delegated_settlement" in reports:
+        resp = flask_app.test_client().get("/delegated/settlement/download")
+        out.append((f"delegated_settlement_{day}.html",
                     resp.get_data(as_text=True)))
     return out
 

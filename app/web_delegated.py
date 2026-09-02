@@ -22,7 +22,8 @@ from app.db import blockers as db_blockers
 from app.db import delegated as db_delegated
 from app.db import ecom as db_ecom
 from app.db import jira as db_jira
-from app.delegated_buckets import (BOARD_CSS, MB_EXPECTED, board_bar, bucket_counts,
+from app.delegated_buckets import (BOARD_CSS, DTC_O2C_TEAM, MB_EXPECTED, board_bar,
+                                   bucket_counts, team_is,
                                    bucket_issues, bucket_key, mb_status_state,
                                    overview_counts, sales_xls_matches,
                                    staged_counts, unexpected_statuses)
@@ -535,6 +536,118 @@ def delegated_wow_download():
     """Old download URL → the generic per-page download."""
     return redirect(url_for("note_pages.note_page_download",
                             slug="delegated_wow"))
+
+
+# ---------------------------------------------------------------------------
+# Two list reports made to be PASTED INTO TEAMS (2026-09-02 [USER]) — a
+# bullet list per block, no tables, ticket ids as Jira links. Both pages
+# carry a "Copy for Teams" button (HTML + plain-text clipboard flavors, see
+# _teams_copy_script.html), a dated download, and are Email Reports
+# attachments. Not on the Export Reports card [USER: "email reports only"].
+
+def _order_text(issue: dict | None) -> str:
+    """The ticket's latest-comment order lines ("Return Order: 6000084252 ·
+    Order Number - ASK0342321") as one string; empty when none."""
+    orders = (issue or {}).get("orders") or []
+    return " · ".join(str(o) for o in orders)
+
+
+def dtc_blockers_context(conn) -> dict:
+    """Open blockers whose responsible team is DTC O2C, each with the
+    blocked test cases it is attached to (Jira id + latest-comment
+    orders) [USER 2026-09-02: "blocker name, ID, order numbers of blocked
+    test cases and ID of blocked test cases" — no test case names].
+    Closed blockers are left out (same _open_blockers rule as the Mgmt
+    Summary / Overview); a blocker with no attached ticket is still
+    listed, so nothing hides."""
+    issues, _comments = _load_issues(conn)
+    by_key = {i["jira_key"]: i for i in issues}
+    blockers = [b for b in _open_blockers(conn)
+                if team_is(b.get("team"), DTC_O2C_TEAM)]
+    linked = db_blockers.tickets_for_blockers(
+        conn, [b["blocker_id"] for b in blockers])
+    blocks = []
+    for b in blockers:
+        tickets = []
+        for key in linked.get(b["blocker_id"], []):
+            issue = by_key.get(key)
+            tickets.append({"jira_key": key,
+                            "link": (issue or {}).get("link"),
+                            "orders": _order_text(issue)})
+        blocks.append({"blocker_id": b["blocker_id"],
+                       "label": db_blockers.chip_label(b),
+                       "name": b["name"], "type": b["type"],
+                       "jira_key": b.get("jira_key"),
+                       "impact": b.get("impact"),
+                       "tickets": tickets})
+    return {"blocks": blocks, "team": DTC_O2C_TEAM,
+            "total_tickets": sum(len(b["tickets"]) for b in blocks),
+            "today": date.today().strftime("%Y-%m-%d")}
+
+
+def settlement_context(conn) -> dict:
+    """Every ticket in the "Settlement file to be created" bucket (status In
+    Verification): Jira id + latest-comment orders [USER 2026-09-02:
+    "waiting for settlement file → Jira ID and order numbers"]. Parked
+    (backlog) tickets are out, like on every report."""
+    issues, _comments = _load_issues(conn)
+    annotations = db_delegated.get_delegated_annotations(conn)
+    for i in issues:
+        i["backlog"] = (annotations.get(i["jira_key"]) or {}).get("backlog")
+    tickets = [{"jira_key": i["jira_key"], "link": i.get("link"),
+                "orders": _order_text(i)}
+               for i in sorted(issues, key=lambda i: i["jira_key"])
+               if bucket_key(i) == "settlement"]
+    return {"tickets": tickets, "today": date.today().strftime("%Y-%m-%d")}
+
+
+def _download(html: str, stem: str, today: str):
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": f'attachment; filename="{stem}_{today}.html"',
+    }
+
+
+@bp.route("/dtc-o2c-blockers")
+def delegated_dtc_blockers():
+    conn = _get_conn()
+    try:
+        ctx = dtc_blockers_context(conn)
+    finally:
+        conn.close()
+    return render_template("delegated_dtc_blockers.html", **ctx)
+
+
+@bp.route("/dtc-o2c-blockers/download")
+def delegated_dtc_blockers_download():
+    conn = _get_conn()
+    try:
+        ctx = dtc_blockers_context(conn)
+    finally:
+        conn.close()
+    html = render_template("delegated_dtc_blockers.html", **ctx, download=True)
+    return _download(html, "delegated_dtc_o2c_blockers", ctx["today"])
+
+
+@bp.route("/settlement")
+def delegated_settlement():
+    conn = _get_conn()
+    try:
+        ctx = settlement_context(conn)
+    finally:
+        conn.close()
+    return render_template("delegated_settlement.html", **ctx)
+
+
+@bp.route("/settlement/download")
+def delegated_settlement_download():
+    conn = _get_conn()
+    try:
+        ctx = settlement_context(conn)
+    finally:
+        conn.close()
+    html = render_template("delegated_settlement.html", **ctx, download=True)
+    return _download(html, "delegated_settlement", ctx["today"])
 
 
 @bp.route("/report")

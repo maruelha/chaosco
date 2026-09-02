@@ -638,6 +638,50 @@ nor the Management Summary reads these pages.
   too. (This supersedes the 2026-08-31 wording "Blocker", which had
   replaced a first draft "Issue".)
 
+## Two Teams-paste lists (2026-09-02 [USER])
+
+Two more buttons in the board header, two list pages made to be pasted
+into a Teams chat or post — bullets, no tables, ticket ids as Jira links
+[USER: "list, email reports only, with links"]:
+
+- **🚧 DTC O2C blockers** — `/delegated/dtc-o2c-blockers` (+ `/download`),
+  template `delegated_dtc_blockers.html`, context `dtc_blockers_context`.
+  The BLOCKERS (not the blocked test cases) whose responsible team is
+  `DTC O2C` (`delegated_buckets.DTC_O2C_TEAM`, matched whitespace- and
+  case-insensitively via `team_is`), OPEN only (`_open_blockers`, the same
+  rule as the Management Summary / Overview). One bold line per blocker
+  (chip label = jira key → BC id → name, then the name, then the impact
+  in gray), one bullet per blocked test case: Jira id + the
+  latest-comment order lines. **No test case names** [USER: "I only need
+  blocker name - not test case name"]. A blocker with no attached ticket
+  is still listed ("no test case attached") so nothing hides.
+  `db_blockers.tickets_for_blockers` (batch, the reverse of
+  `blockers_for_tickets`) feeds it.
+- **🧾 Settlement file** — `/delegated/settlement` (+ `/download`),
+  template `delegated_settlement.html`, context `settlement_context`:
+  every ticket in the "Settlement file to be created" bucket (status In
+  Verification), Jira id + order lines, backlog excluded like every
+  report.
+
+**Copy for Teams** (screen only, `_teams_copy_script.html`, shared by
+both): the page renders the paste content once into a hidden-border
+`<div id="teams-copy">`; the button writes TWO clipboard flavors at once —
+`text/html` (that div's markup: bold headings, bullets, links → Teams,
+Outlook and Word keep the formatting) and `text/plain` (the same lines
+with "• " bullets → Jira comment boxes). Falls back to plain text on
+browsers without `ClipboardItem`. All earlier copy buttons in chaosco are
+plain-text only; this is the first rich one — reuse the include for the
+next Teams-bound list.
+
+Both pages share `_teams_list_report.css.html` (inline CSS on purpose:
+standalone downloads / email attachments must not depend on style.css).
+Downloads are dated (`delegated_dtc_o2c_blockers_<date>.html`,
+`delegated_settlement_<date>.html`) and drop toolbar + copy script. Email
+Reports choices `delegated_dtc_blockers` / `delegated_settlement`
+(`emailer.REPORT_CHOICES` + `gather_attachments`); deliberately NOT on
+the Export Reports card [USER: "email reports only"] — a test pins that.
+Tests: `tests/test_delegated_teams_lists.py`.
+
 ## PARKED — explicitly pushed to later [USER 2026-08-26]
 
 1. **Excel/ECOM info join**: the `ecom` table rows (filled by the ROE

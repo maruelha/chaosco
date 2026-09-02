@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DTC O2C Blockers — {{ today }}</title>
+  {% include '_teams_list_report.css.html' %}
+</head>
+<body>
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">DTC O2C Blockers</span>
+  <a href="{{ url_for('delegated.delegated_list') }}" class="btn">← Delegated Testing</a>
+  <a href="{{ url_for('blockers.blockers_list') }}" class="btn">🚧 Blockers</a>
+  <a href="{{ url_for('delegated.delegated_settlement') }}" class="btn">🧾 Settlement file</a>
+  <button type="button" class="btn btn-primary" onclick="teamsCopy(this)"
+          title="copies the list below with bold headings, bullets and Jira links — paste straight into a Teams chat or post">📋 Copy for Teams</button>
+  <a href="{{ url_for('delegated.delegated_dtc_blockers_download') }}" class="btn">⬇ Download HTML</a>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+{% endif %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Delegated Testing</div>
+    <div class="rh-title">Open blockers — team {{ team }}</div>
+    <div class="rh-date">{{ today }} · each blocker with the test cases it blocks (Jira id + order numbers from the latest comment)</div>
+  </div>
+  <div>
+    <div class="rh-stat-val">{{ blocks|length }}</div>
+    <div class="rh-stat-lbl">Blockers · {{ total_tickets }} blocked</div>
+  </div>
+</div>
+
+{# The paste content — EXACTLY what "Copy for Teams" puts on the clipboard.
+   Bold line per blocker, one bullet per blocked test case. #}
+<div class="paste" id="teams-copy">
+{% for b in blocks %}
+  <p>{{ b.label }}{% if b.label != b.name %} · {{ b.name }}{% endif %}{% if b.impact %} <span class="muted">— {{ b.impact }}</span>{% endif %}</p>
+  <ul>
+  {% for t in b.tickets %}
+    <li>{% if t.link %}<a href="{{ t.link }}">{{ t.jira_key }}</a>{% else %}{{ t.jira_key }}{% endif %}{% if t.orders %} — {{ t.orders }}{% else %} — no order number yet{% endif %}</li>
+  {% else %}
+    <li>no test case attached</li>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p class="empty">No open blocker with team {{ team }} at the moment.</p>
+{% endfor %}
+</div>
+
+{% if not download %}
+<p class="hint">Only OPEN blockers whose responsible team is <strong>{{ team }}</strong> (set on the Blockers page). Closed blockers and other teams are not listed.</p>
+{% include '_teams_copy_script.html' %}
+{% endif %}
+
+</body>
+</html>

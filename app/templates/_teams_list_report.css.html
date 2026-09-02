@@ -1,0 +1,47 @@
+{# Shared inline CSS for the two Teams-paste list reports (2026-09-02).
+   Inline on purpose: the pages are standalone downloads / email
+   attachments, so they must not depend on style.css (same rule as the
+   other delegated reports). #}
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 13.5px; color: #1e293b; background: #fff;
+    padding: 2rem 2.5rem; line-height: 1.5; max-width: 900px; margin: 0 auto;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+  }
+  .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+  .btn {
+    display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+    border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+    font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+  }
+  .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .btn-primary { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  .btn-primary:hover { background: #1e40af; }
+  .report-header {
+    border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+  }
+  .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+  .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+  .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+  .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+  .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                 color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+  .paste { border: 1px dashed #cbd5e1; border-radius: 8px; padding: 1rem 1.25rem; }
+  .paste p { font-weight: 700; margin: 0.9rem 0 0.25rem; }
+  .paste p:first-child { margin-top: 0; }
+  .paste ul { margin: 0 0 0.4rem 1.4rem; }
+  .paste li { margin: 0.1rem 0; }
+  .paste a { color: #1d4ed8; text-decoration: none; }
+  .paste .muted { color: #94a3b8; font-weight: 400; }
+  .hint { color: #64748b; font-size: 0.8rem; margin-top: 1rem; }
+  .empty { color: #94a3b8; }
+  @media print { .toolbar, .hint { display: none !important; } .paste { border: none; padding: 0; } }
+</style>

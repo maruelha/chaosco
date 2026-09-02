@@ -43,8 +43,10 @@ Requirements Board · ECOM · Manual Retail + ECOM · Known Production Issues
 purpose — and its **Management Report**, both separate choices) · Delegated
 Testing Report + Management Summary (since 2026-08-26, the pair attaches the
 clean `/delegated/*/download` renders; Delegated Testing Overview joined
-2026-08-31) · Missing Test Cases (Retail) (since
-2026-08-30).
+2026-08-31; the two Teams-paste lists **DTC O2C Blockers** + **Settlement
+File Waiting List** joined 2026-09-02 [USER: "email reports only" — they are
+deliberately NOT on the Export Reports card]) · Missing Test Cases (Retail)
+(since 2026-08-30).
 
 A date field (default today) drives subject and body text (both editable).
 Recipients live in `report_recipients` (add / toggle active / delete; active

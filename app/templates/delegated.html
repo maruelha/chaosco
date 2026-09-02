@@ -14,6 +14,10 @@
          title="staged bucket counts, weekly goal vs actual, blocker overview">📊 Management Summary</a>
       <a href="{{ url_for('delegated.delegated_overview') }}" class="btn" target="_blank"
          title="management report: pipeline by stage, execution status, blockers by team">📈 Overview</a>
+      <a href="{{ url_for('delegated.delegated_dtc_blockers') }}" class="btn" target="_blank"
+         title="open blockers with team DTC O2C and the test cases they block (ids + order numbers) — Copy for Teams">🚧 DTC O2C blockers</a>
+      <a href="{{ url_for('delegated.delegated_settlement') }}" class="btn" target="_blank"
+         title="tickets waiting for a settlement file (ids + order numbers) — Copy for Teams">🧾 Settlement file</a>
       <a href="{{ url_for('blockers.blockers_list') }}" class="btn"
          title="defects/tasks/clarifications blocking tickets — tickets registered here are hidden from this board">🚧 Blockers</a>
       <a href="{{ url_for('note_pages.note_page', slug='delegated_wow') }}" class="btn"
