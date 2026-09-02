@@ -110,6 +110,13 @@
   {% endfor %}
 {% endcall %}
 
+{# Day notes (2026-09-02 [USER: "capture notes for the day that do not
+   automatically make it into callouts list"]) — the shared notes component,
+   keyed by this (day, stream) tab. Nothing here flows into the call-outs. #}
+{% with entity_type=day_notes_entity, entity_id=day_notes_key %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
 <script>
 function sustainToggle(id) {
   document.querySelectorAll('tr.sustain-detail[data-parent="' + id + '"]')

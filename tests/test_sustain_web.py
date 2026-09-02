@@ -63,6 +63,9 @@ def client(tmp_path, monkeypatch):
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_sustain._cfg, "database_path", str(db_path))
     monkeypatch.setattr(web_sustain, "_UPLOAD_FOLDER", tmp_path / "uploads")
+    # the generic notes routes must see the same DB (day notes, 2026-09-02)
+    import app.web_notes as web_notes
+    monkeypatch.setattr(web_notes, "_db_path", db_path)
     return app.test_client()
 
 
@@ -206,3 +209,46 @@ def test_upload_reports_error_when_no_day_tabs(client):
     assert "sustain_ok=0" in resp.headers["Location"]
     html = client.get(resp.headers["Location"]).get_data(as_text=True)
     assert "day tabs" in html
+
+
+# ---------------------------------------------------------------------------
+# Day notes (2026-09-02 [USER: "capture notes for the day that do not
+# automatically make it into callouts list"]) — the shared notes component
+# keyed "<day>|<stream>" on the day report; count on the card; bullets on
+# the summary; NOT call-outs.
+
+def test_day_notes_roundtrip_card_count_and_summary_bullets(client):
+    _upload(client)
+    html = client.get("/sustain/day/2026-09-01/Retail").get_data(as_text=True)
+    assert 'id="notes-sustain_day-2026-09-01|Retail"' in html
+    assert "/n/sustain_day/2026-09-01%7CRetail/add" in html or "/n/sustain_day/2026-09-01|Retail/add" in html
+
+    # the add form knows the entity and lands back on the day report
+    form = client.get("/n/sustain_day/2026-09-01|Retail/add").get_data(as_text=True)
+    assert "Retail 2026-09-01" in form
+    resp = client.post("/n/sustain_day/2026-09-01|Retail/add",
+                       data={"heading": "FR pending", "note": "invoice run late"})
+    assert resp.status_code == 302
+    assert "/sustain/day/2026-09-01/Retail" in resp.headers["Location"]
+    assert "note_added=1" in resp.headers["Location"]
+
+    html = client.get("/sustain/day/2026-09-01/Retail").get_data(as_text=True)
+    assert "FR pending" in html and "invoice run late" in html
+
+    # card: count chip on the imported-days row
+    home = client.get("/sustain/").get_data(as_text=True)
+    row = home.split("Imported days")[1]
+    assert "📝 1" in row
+    # NOT a call-out
+    assert "FR pending" not in home.split("Imported days")[0]
+
+    # summary: read-only bullets under the stream section
+    summary = client.get("/sustain/summary/2026-09-01").get_data(as_text=True)
+    assert "Day notes (1)" in summary
+    assert "<strong>FR pending</strong> — invoice run late" in summary
+
+
+def test_day_notes_404_for_a_day_that_was_never_imported(client):
+    _upload(client)
+    assert client.get("/n/sustain_day/2026-01-01|Retail/add").status_code == 404
+    assert client.get("/n/sustain_day/garbage/add").status_code == 404

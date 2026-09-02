@@ -270,6 +270,33 @@ def replace_day_stream(conn: sqlite3.Connection, day: str, stream: str,
     return {"tasks": n_tasks, "details": n_details}
 
 
+# Day notes (2026-09-02 [USER: "capture notes for the day that do not
+# automatically make it into the call-outs list"]) — the shared notes
+# component keyed by ONE string, so a (day, stream) tab becomes
+# "<day>|<stream>". Kept here (Flask-free) so web_notes' registry and the
+# sustain routes agree on the format.
+DAY_NOTES_ENTITY = "sustain_day"
+
+
+def day_key(day: str, stream: str) -> str:
+    return f"{day}|{stream}"
+
+
+def split_day_key(key: str) -> tuple[str, str] | None:
+    """('2026-09-01', 'Retail') from the notes entity_id, None if malformed."""
+    parts = str(key or "").split("|", 1)
+    return (parts[0], parts[1]) if len(parts) == 2 and all(parts) else None
+
+
+def tab_exists(conn: sqlite3.Connection, day: str, stream: str) -> bool:
+    try:
+        return conn.execute(
+            "SELECT 1 FROM sustain_tasks WHERE day = ? AND stream = ? LIMIT 1",
+            (day, stream)).fetchone() is not None
+    except sqlite3.OperationalError:
+        return False
+
+
 def list_tabs(conn: sqlite3.Connection) -> list[dict]:
     """Imported (day, stream) tabs with parent-task counts, ordered by
     day then stream — drives the day picker."""

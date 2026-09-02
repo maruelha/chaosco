@@ -45,6 +45,15 @@ non-negotiable.
 `POST /notes/<note_id>/attachments/add`, `…/<id>/delete` (in `web_home.py`).
 Images render as thumbnails, documents as download links (`is_image` filter).
 
+**Multi-part detail URLs (2026-09-02):** `NoteEntity.detail_kwargs` — an
+optional `entity_id -> url_for kwargs` callable for entities whose detail
+page takes more than one URL part; when set, `detail_arg`/`id_cast` are
+not used for the URL. First user: Sustain day notes (`sustain_day`,
+entity_id `"<day>|<stream>"` → `/sustain/day/<day>/<stream>`).
+`db/notes.note_counts(conn, entity_type)` returns `{entity_id: count}` in
+one query for list pages that want a badge per row (first user: the
+Sustain imported-days table).
+
 ## Rules & gotchas
 
 - **Never** create a module-specific notes table, route set, or attachment

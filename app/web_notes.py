@@ -25,6 +25,7 @@ from flask import Blueprint, abort, jsonify, redirect, render_template, request,
 
 from app import database
 from app import note_pages as _note_pages
+from app.db import sustain as _db_sustain
 from app.config_loader import load_config
 
 bp = Blueprint("notes", __name__, url_prefix="/n")
@@ -47,6 +48,18 @@ class NoteEntity:
     get_row: Callable | None                     # (conn, id) -> dict | None; None = skip 404 check
     label: Callable[[dict], str]                 # row -> heading text
     id_cast: Callable = str                      # notes.entity_id is TEXT; detail routes may need int
+    # entity_id -> url_for kwargs, for detail pages addressed by MORE than one
+    # URL part (first user 2026-09-02: Sustain day notes, /day/<day>/<stream>).
+    # When set, detail_arg/id_cast are not used for the URL.
+    detail_kwargs: Callable[[str], dict] | None = None
+
+
+def _sustain_day_row(conn, key) -> dict | None:
+    """404 guard for day notes: the (day, stream) tab must be imported."""
+    parts = _db_sustain.split_day_key(key)
+    if not parts or not _db_sustain.tab_exists(conn, *parts):
+        return None
+    return {"day": parts[0], "stream": parts[1]}
 
 
 REGISTRY: dict[str, NoteEntity] = {
@@ -172,6 +185,16 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_callout(c, int(i)),
         lambda r: r.get("name") or r.get("topic") or f"Call-out #{r['id']}", int,
     ),
+    # Sustain day notes (2026-09-02 [USER]) — notes on one imported
+    # (day, stream) tab, entity_id "<day>|<stream>"; NOT call-outs. The
+    # detail page is the day report, addressed by two URL parts.
+    "sustain_day": NoteEntity(
+        "Sustain day", "sustain.sustain_home",
+        "sustain.sustain_day", None, _sustain_day_row,
+        lambda r: f"{r['stream']} {r['day']} — day notes", str,
+        detail_kwargs=lambda key: dict(zip(("day", "stream"),
+                                           _db_sustain.split_day_key(key) or ("", ""))),
+    ),
 }
 
 
@@ -184,7 +207,9 @@ def _entity_or_404(entity_type: str) -> NoteEntity:
 
 def _urls(ent: NoteEntity, entity_type: str, entity_id: str) -> dict:
     list_url = url_for(ent.list_endpoint)
-    if ent.detail_endpoint:
+    if ent.detail_endpoint and ent.detail_kwargs:
+        detail_url = url_for(ent.detail_endpoint, **ent.detail_kwargs(entity_id))
+    elif ent.detail_endpoint:
         detail_url = url_for(ent.detail_endpoint, **{ent.detail_arg: ent.id_cast(entity_id)})
     else:
         detail_url = list_url

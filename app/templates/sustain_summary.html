@@ -72,6 +72,20 @@
 {% endcall %}
 {% endif %}
 
+{# Day notes (2026-09-02 [USER]) — Marina's own notes on this day's report,
+   read-only here; edited on the day report page. Not call-outs. #}
+{% if s.day_notes %}
+<p style="color:#888; font-size:0.85rem; margin:0.6rem 1rem 0.3rem">
+  Day notes ({{ s.day_notes|length }}) —
+  <a href="{{ url_for('sustain.sustain_day', day=day, stream=s.stream) }}">edit on the day report</a>:
+</p>
+<ul style="margin:0 1rem 0.8rem 2.2rem; font-size:0.9rem">
+  {% for n in s.day_notes %}
+  <li>{% if n.heading %}<strong>{{ n.heading }}</strong>{% if n.note %} — {% endif %}{% endif %}{{ n.note or '' }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
 {% if s.attention %}
 {% call ui.table(['Task', 'Process', 'Country', 'Provider / Account', 'Note']) %}
   {% for i in s.attention %}

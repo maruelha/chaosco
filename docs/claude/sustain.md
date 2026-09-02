@@ -2,7 +2,8 @@
 
 **Type:** mini app
 **URL:** `/sustain/` · `/sustain/day/<day>/<stream>` · `/sustain/summary` (+ `/summary/<day>`)
-**Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`;
+**Storage:** `app/db/sustain.py` → `sustain_tasks`, `sustain_task_details`
+(+ day notes in the shared `notes` table, entity `('sustain_day', '<day>|<stream>')`);
 `app/db/sustain_callouts.py` → `sustain_callouts` (authored, own log — see
 Call-outs section below)
 **Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`;
@@ -304,6 +305,36 @@ the per-stream dicts use `attention`.
 
 "Core South Sustainphase Monitoring" (after the Smoke card), task-count
 badge (`db_sustain.task_count`), Open + 📊 Summary buttons.
+
+## Day notes (2026-09-02 [USER])
+
+[USER: "capture notes for the day that do NOT automatically make it into
+the call-outs list"] — so NOT a call-out variant and NOT a new text field:
+the shared notes component (`[[notes]]`), keyed by the imported tab.
+
+- **Key**: entity `sustain_day`, entity_id `"<day>|<stream>"` —
+  `db_sustain.DAY_NOTES_ENTITY`, `day_key()`, `split_day_key()`,
+  `tab_exists()` (Flask-free, so `web_notes`' registry and the sustain
+  routes share one format). The registry entry's 404 guard is
+  `web_notes._sustain_day_row`: notes only on a tab that was imported.
+- **Day report page** (`/sustain/day/<day>/<stream>`): the full
+  `_notes_section.html` at the bottom — heading + text, 📷/📎
+  attachments, Ctrl+V, edit/delete. Add/edit/delete redirect back to the
+  day report: the notes registry gained an optional `detail_kwargs`
+  callable for detail pages addressed by MORE than one URL part (day AND
+  stream) — first user of that option.
+- **Card page**: the imported-days table has a **Notes** column with a
+  "📝 n" chip (`database.note_counts`, one GROUP BY query for the whole
+  table) linking to the day report; "—" when none.
+- **Management summary**: per stream, a read-only "Day notes (n)" bullet
+  list (heading bold — text) with an "edit on the day report" link,
+  between the call-outs table and the Attention list.
+- **Nothing flows into call-outs.** If a day note turns out to be a real
+  call-out, Marina creates the call-out herself (a "make this a call-out"
+  button could reuse the inbox → call-out filing later — not built).
+- Tests: `tests/test_sustain_web.py` (roundtrip + card count + summary
+  bullets; 404 for a never-imported day). The sustain test fixture now
+  also points `web_notes._db_path` at the tmp DB.
 
 ## Ways of Working (2026-09-02 [USER])
 

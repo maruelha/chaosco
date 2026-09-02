@@ -42,6 +42,11 @@ def sustain_home():
     conn = _get_conn()
     try:
         tabs = db_sustain.list_tabs(conn)
+        # day-note count per imported tab (2026-09-02 [USER]) — one query
+        day_note_counts = database.note_counts(conn, db_sustain.DAY_NOTES_ENTITY)
+        for t in tabs:
+            t["note_count"] = day_note_counts.get(
+                db_sustain.day_key(t["day"], t["stream"]), 0)
         callouts = db_sc.list_callouts(conn, include_closed=show_closed)
         for c in callouts:
             c["notes"] = database.list_notes(conn, "sustain_callout", str(c["id"]))
@@ -177,6 +182,12 @@ def sustain_day(day, stream):
         tasks = db_sustain.list_tasks(conn, day, stream)
         counts = db_sustain.summary_counts(conn, day, stream)
         tabs = db_sustain.list_tabs(conn)
+        # day notes (2026-09-02 [USER]) — the shared notes component on the
+        # day report, keyed "<day>|<stream>"; nothing flows into call-outs
+        notes = database.list_notes(conn, db_sustain.DAY_NOTES_ENTITY,
+                                    db_sustain.day_key(day, stream))
+        attachments_by_note = database.get_attachments_for_notes(
+            conn, [n["id"] for n in notes])
     finally:
         conn.close()
     for t in tasks:
@@ -191,7 +202,10 @@ def sustain_day(day, stream):
                             if t["day"] == day and t["stream"] != stream})
     return render_template(
         "sustain_day.html", day=day, stream=stream, tasks=tasks,
-        counts=counts, day_links=day_links, other_streams=other_streams)
+        counts=counts, day_links=day_links, other_streams=other_streams,
+        day_notes_entity=db_sustain.DAY_NOTES_ENTITY,
+        day_notes_key=db_sustain.day_key(day, stream),
+        notes=notes, attachments_by_note=attachments_by_note)
 
 
 @bp.route("/summary")
@@ -220,6 +234,10 @@ def sustain_summary(day=None):
                                                          o["stream"]),
                     "callouts": db_sc.list_open_for_channel(conn,
                                                             o["stream"]),
+                    # day notes (2026-09-02 [USER]) — read-only bullets
+                    "day_notes": database.list_notes(
+                        conn, db_sustain.DAY_NOTES_ENTITY,
+                        db_sustain.day_key(day, o["stream"])),
                 })
         offenders = db_sustain.repeat_offenders(conn)
     finally:

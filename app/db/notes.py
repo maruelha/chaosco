@@ -21,6 +21,14 @@ def list_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> li
     ))
 
 
+def note_counts(conn: sqlite3.Connection, entity_type: str) -> dict[str, int]:
+    """{entity_id: number of notes} for one entity type — one query for a
+    whole list page (first user: the Sustain imported-days table)."""
+    return {row[0]: row[1] for row in conn.execute(
+        "SELECT entity_id, COUNT(*) FROM notes WHERE entity_type = ?"
+        " GROUP BY entity_id", (entity_type,))}
+
+
 def get_note(conn: sqlite3.Connection, note_id: int) -> dict | None:
     rows = _rows_to_dicts(conn.execute(
         "SELECT * FROM notes WHERE id = ?", (note_id,)
