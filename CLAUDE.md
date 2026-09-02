@@ -210,6 +210,15 @@ Print → Save as PDF is the manual fallback.
   `.claude/skills/wrap-up/SKILL.md` — this file and
   `docs/ways_of_working.md` only point at it.
 - Work in verifiable steps; the user confirms each before the next.
+- **The component question [USER 2026-09-02]:** whenever Marina asks for
+  something "similar to what we already have" (a second Ways-of-Working
+  page, a second call-out log, a second report of a known shape), ASK
+  before building: is this the SECOND user of an existing one-off? If
+  yes, extract the shared component first and build the new thing on it
+  (that is how notes, next steps and note-pages came about). If it is
+  still the first and no second user is in sight, build it inside its
+  app with the seam visible (small includes, scope-neutral column names)
+  and do NOT generalize on a guess. Never silently copy the first one.
 - **`docs/archive/`** holds finished material (day plans, reviews, session
   write-ups, the old blueprint). Never update a file there and never quote it
   as current; when a plan is executed or a concept is built, MOVE it there.
