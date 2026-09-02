@@ -49,6 +49,32 @@
 </form>
 
 {% if callouts %}
+{# client-side filter bar [USER 2026-09-02]: channel + status single
+   select, TYPE as combinable checkboxes, free text over name + ticket
+   no. Rows carry data-* attributes; nothing round-trips the server.
+   Closed rows are only on the page with ?show_closed=1 (toggle below),
+   so the status filter can only pick among what is loaded. #}
+<div class="ui-filterbar sc-filterbar" style="margin-bottom:0.6rem">
+  <select id="sc-filter-channel" onchange="scApplyFilters()">
+    <option value="">Channel: all</option>
+    {% for ch in callout_channels %}<option value="{{ ch }}">{{ ch }}</option>{% endfor %}
+  </select>
+  <span class="sc-type-filter">
+    <span style="color:#666; font-size:0.82rem">Type:</span>
+    {% for t in callout_types %}
+    <label><input type="checkbox" name="sc-filter-type" value="{{ t }}" onchange="scApplyFilters()"> {{ t }}</label>
+    {% endfor %}
+  </span>
+  <select id="sc-filter-status" onchange="scApplyFilters()">
+    <option value="">Status: all</option>
+    <option value="open">Open</option>
+    <option value="in_progress">In Progress</option>
+    <option value="closed">Closed</option>
+  </select>
+  <input type="text" id="sc-filter-text" placeholder="name / ticket…" oninput="scApplyFilters()" style="min-width:11rem">
+  <button type="button" class="btn btn-sm" onclick="scClearFilters()">Clear</button>
+  <span id="sc-filter-info" style="color:#888; font-size:0.82rem"></span>
+</div>
 <table class="ui-table">
   <thead>
     <tr><th>Channel</th><th>Type</th><th>Name</th><th>Ticket</th><th>Responsible</th>
@@ -56,7 +82,8 @@
   </thead>
   <tbody>
     {% for c in callouts %}
-    <tr class="sc-row" data-id="{{ c.id }}">
+    <tr class="sc-row" data-id="{{ c.id }}" data-channel="{{ c.channel }}" data-type="{{ c.type }}"
+        data-status="{{ c.status }}" data-search="{{ ((c.name or '') ~ ' ' ~ (c.ticket_no or '')) | lower }}">
       <td><span class="chip sc-channel sc-channel--{{ c.channel }}">{{ c.channel }}</span></td>
       <td><span class="chip sc-type">{{ c.type }}</span></td>
       <td class="sc-topic-cell"><a href="{{ url_for('sustain.sustain_callout_detail', callout_id=c.id) }}">{{ c.name }}</a></td>
@@ -167,10 +194,12 @@
         .then(function (d) {
           if (!d.ok) throw new Error();
           btn.dataset.value = d.status;
+          btn.closest('tr').dataset.status = d.status;
           scPaint(btn);
           {% if not show_closed %}
           if (d.status === 'closed') btn.closest('tr').style.display = 'none';
           {% endif %}
+          scApplyFilters();
         })
         .catch(function () { alert('Saving failed — try again.'); });
     });
@@ -193,6 +222,43 @@
     });
   });
 }());
+
+// ---- Call-outs filter bar (client-side) ----
+function scApplyFilters() {
+  var bar = document.querySelector('.sc-filterbar');
+  if (!bar) return;
+  var channel = document.getElementById('sc-filter-channel').value;
+  var status = document.getElementById('sc-filter-status').value;
+  var text = document.getElementById('sc-filter-text').value.trim().toLowerCase();
+  var types = Array.prototype.map.call(
+    document.querySelectorAll('input[name="sc-filter-type"]:checked'),
+    function (cb) { return cb.value; });
+  var active = channel || status || text || types.length;
+  var shown = 0, hidden = 0;
+  document.querySelectorAll('tr.sc-row').forEach(function (row) {
+    var ok = (!channel || row.dataset.channel === channel)
+          && (!status || row.dataset.status === status)
+          && (!types.length || types.indexOf(row.dataset.type) !== -1)
+          && (!text || row.dataset.search.indexOf(text) !== -1);
+    row.style.display = ok ? '' : 'none';
+    // a hidden row takes its notes row along; a shown one leaves it as it was
+    if (!ok) {
+      var notes = document.querySelector('.sc-notes-row[data-id="' + row.dataset.id + '"]');
+      if (notes) notes.style.display = 'none';
+    }
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('sc-filter-info').textContent =
+    active ? (shown + ' shown, ' + hidden + ' hidden') : '';
+}
+
+function scClearFilters() {
+  document.getElementById('sc-filter-channel').value = '';
+  document.getElementById('sc-filter-status').value = '';
+  document.getElementById('sc-filter-text').value = '';
+  document.querySelectorAll('input[name="sc-filter-type"]').forEach(function (cb) { cb.checked = false; });
+  scApplyFilters();
+}
 
 function scNsSave(el) {
   fetch('/sustain/callouts/' + el.dataset.id + '/next-step', {

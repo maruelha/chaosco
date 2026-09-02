@@ -135,6 +135,27 @@ def test_add_form_asks_for_name_and_ticket_and_the_list_shows_the_ticket(client,
     assert item["topic"] == "Settlement mismatch"     # mirrors name until edited
 
 
+def test_filter_bar_renders_with_type_checkboxes_and_rows_carry_filter_data(client, tmp_path):
+    """Step 4 (2026-09-02): client-side filter bar — channel/status
+    selects, one checkbox per type (combinable), text over name + ticket.
+    Rows expose the filter keys as data-* attributes."""
+    _add(client, name="Settlement mismatch", ticket_no="SUS-042",
+         channel="ecom", type="MigrIssue")
+    cid = _first_id(client, tmp_path)
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert 'id="sc-filter-channel"' in html
+    assert 'id="sc-filter-status"' in html
+    assert 'id="sc-filter-text"' in html
+    for t in db_sc.CALLOUT_TYPES:
+        assert f'<input type="checkbox" name="sc-filter-type" value="{t}"' in html
+    import re
+    row = re.search(rf'<tr class="sc-row" data-id="{cid}"[^>]*>', html, re.S).group()
+    assert 'data-channel="ecom"' in row
+    assert 'data-type="MigrIssue"' in row
+    assert 'data-status="open"' in row
+    assert 'data-search="settlement mismatch sus-042"' in row
+
+
 def test_list_links_to_the_detail_page_and_has_no_inline_edit(client, tmp_path):
     _add(client, name="Settlement mismatch")
     cid = _first_id(client, tmp_path)

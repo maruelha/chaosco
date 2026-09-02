@@ -1464,6 +1464,10 @@ tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
 .sc-topic-input { flex:1; min-width:14rem; }
 .sc-resp-input  { min-width:10rem; }
 .sc-ticket-input { min-width:9rem; }
+.sc-filterbar { padding:0.5rem 0; background:transparent; border-bottom:none; }
+.sc-type-filter { display:inline-flex; gap:0.6rem; align-items:center; flex-wrap:wrap; font-size:0.84rem; }
+.sc-type-filter label { display:inline-flex; gap:0.25rem; align-items:center; cursor:pointer; white-space:nowrap; }
+.sc-type-filter input[type=checkbox] { accent-color:#0071e3; }
 .sc-channel-select, .sc-type-select { min-width:7rem; }
 .sc-topic-cell { max-width:22rem; }
 .sc-channel { background:#f0f0f5; color:#444; }
