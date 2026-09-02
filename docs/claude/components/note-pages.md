@@ -91,6 +91,7 @@ no notes.
 | `delegated_wow` | 🤝 Ways of Working | Delegated Testing board header |
 | `testing_insights` | 💡 Testing Insights | Delegated Testing board header |
 | `sustain_meeting_summaries` | 📝 Meeting Summaries (`heading_mode='date'`) | Core South Sustainphase Monitoring card header |
+| `sustain_wow` | 🤝 Ways of Working (added 2026-09-02 [USER], free-text headings) | Core South Sustainphase Monitoring card header |
 
 ## Parked
 

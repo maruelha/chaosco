@@ -63,4 +63,18 @@ PAGES: dict[str, dict] = {
         "download_stem": "sustain_meeting_summaries",
         "heading_mode": "date",
     },
+    # [USER 2026-09-02: "a ways of working page similar to the one we did
+    # in delegated testing"] — 🤝 button on the Core South Sustainphase
+    # Monitoring card; free-text headings like the delegated one.
+    "sustain_wow": {
+        "emoji": "🤝",
+        "title": "Ways of Working",
+        "context": "Core South Sustainphase Monitoring",
+        "subtitle": "The sustain-phase decision log — whatever the team "
+                    "agrees on and should be remembered lands here as a "
+                    "note.",
+        "home_endpoint": "sustain.sustain_home",
+        "home_label": "Core South Sustainphase Monitoring",
+        "download_stem": "sustain_ways_of_working",
+    },
 }

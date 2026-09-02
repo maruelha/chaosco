@@ -129,6 +129,10 @@ def test_meeting_summaries_button_on_sustain_card(client, monkeypatch):
     html = client.get("/sustain/").get_data(as_text=True)
     assert "Meeting summaries" in html
     assert "/notes-page/sustain_meeting_summaries" in html
+    # [USER 2026-09-02] the sustain Ways of Working page — free-text headings
+    assert "/notes-page/sustain_wow" in html
+    page = client.get("/notes-page/sustain_wow").get_data(as_text=True)
+    assert "Ways of Working" in page and "Core South Sustainphase Monitoring" in page
 
 
 def test_add_form_shows_a_date_picker_prefilled_with_today(client):

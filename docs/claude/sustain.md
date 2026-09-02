@@ -305,6 +305,16 @@ the per-stream dicts use `attention`.
 "Core South Sustainphase Monitoring" (after the Smoke card), task-count
 badge (`db_sustain.task_count`), Open + 📊 Summary buttons.
 
+## Ways of Working (2026-09-02 [USER])
+
+**🤝 Ways of working** button in the card header opens
+`/notes-page/sustain_wow` — the sustain team's decision log. Not its own
+build either: one more entry in the shared working-notes pages registry
+(`[[note-pages]]`), free-text headings exactly like the Delegated one.
+Asked for as "similar to the one we did in delegated testing" — the
+component question (CLAUDE.md) was asked and answered: the component
+already exists, this is its fourth user.
+
 ## Meeting Summaries (2026-09-01 [USER])
 
 **📝 Meeting summaries** button in the card header opens
