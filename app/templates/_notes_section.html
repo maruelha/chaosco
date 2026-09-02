@@ -5,6 +5,10 @@
      entity_id            the parent row's id (str or int)
      notes                list of note dicts
      attachments_by_note  {note_id: [attachment, ...]}  (pass {} to hide attachments)
+   Optional:
+     notes_return_to      'list' when the include sits on a LIST page of an
+                          entity that also has a detail page — the add form
+                          then redirects back to the list (2026-09-02).
 
    Banners read request.args (note_added / note_saved / note_deleted) directly.
    Attachment upload/delete/Ctrl+V-paste behavior comes from static/notes.js
@@ -15,7 +19,7 @@
   <div class="card-header-row">
     <h2>Notes</h2>
     {% if notes %}<span class="notes-count-badge">{{ notes | length }}</span>{% endif %}
-    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid) }}" class="btn btn-sm">+ Add note</a>
+    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid, return_to=notes_return_to) }}" class="btn btn-sm">+ Add note</a>
   </div>
 
   {# note_entity scopes the banner to the ONE instance that was actually
@@ -68,6 +72,6 @@
   </div>
   {% else %}
   <p class="notes-empty">No notes yet.
-    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid) }}">Add the first one.</a></p>
+    <a href="{{ url_for('notes.note_add', entity_type=entity_type, entity_id=_eid, return_to=notes_return_to) }}">Add the first one.</a></p>
   {% endif %}
 </div>

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ record.name }} — Sustain Call-out — Test Coordination{% endblock %}
+
+{% block content %}
+{# Sustain Call-out detail page (planning chat 2026-09-02 [USER]): the
+   list shows only the short `name`; everything else — topic, ticket no,
+   impact, responsible — is edited HERE, with the next step and the full
+   shared notes component below. Same shape as blocker_detail.html. #}
+<div class="breadcrumb">
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <span>›</span>
+  <a href="{{ url_for('sustain.sustain_home') }}">Core South Sustainphase Monitoring</a>
+  <span>›</span>
+  <span>{{ record.name }}</span>
+</div>
+
+<div class="page-header">
+  <div class="page-header-row">
+    <h1>{{ record.name }}
+      <span class="chip sc-channel sc-channel--{{ record.channel }}">{{ record.channel }}</span>
+      <span class="chip sc-type">{{ record.type }}</span>
+      {% if record.ticket_no %}<span class="chip chip--none mono">{{ record.ticket_no }}</span>{% endif %}
+      <button type="button" class="chip sc-status js-sc-status" data-id="{{ record.id }}"
+              data-value="{{ record.status }}" title="click to cycle: Open → In Progress → Closed"></button>
+    </h1>
+    <div class="page-header-actions">
+      <span class="last-edited">captured {{ record.date_captured }}</span>
+    </div>
+  </div>
+</div>
+
+{% if saved %}
+<div class="saved-banner">Changes saved.</div>
+{% endif %}
+{% if error %}
+<div class="result-box result-box--error" style="margin-bottom:1rem">
+  <div class="result-row"><span class="result-value">{{ error }}</span></div>
+</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('sustain.sustain_callout_detail', callout_id=record.id) }}">
+  <div class="detail-card">
+    <div class="form-stack">
+
+      <div class="form-field">
+        <label for="f-name">Name <span class="field-hint">the short line shown in the list</span></label>
+        <input type="text" id="f-name" name="name" value="{{ record.name or '' }}" required>
+      </div>
+
+      <div class="form-field">
+        <label for="f-channel">Channel</label>
+        <select id="f-channel" name="channel">
+          {% for ch in callout_channels %}
+          <option value="{{ ch }}" {% if ch == record.channel %}selected{% endif %}>{{ ch }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="f-type">Type</label>
+        <select id="f-type" name="type">
+          {% for t in callout_types %}
+          <option value="{{ t }}" {% if t == record.type %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="f-ticket">Ticket no <span class="field-hint">free text — SUS-, ASPEN or Jira id</span></label>
+        <input type="text" id="f-ticket" name="ticket_no" value="{{ record.ticket_no or '' }}"
+               placeholder="e.g. SUS-017 / S4ECOM-1234">
+      </div>
+
+      <div class="form-field">
+        <label for="f-topic">Topic <span class="field-hint">the longer description</span></label>
+        <textarea id="f-topic" name="topic" rows="3">{{ record.topic or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-impact">Impact</label>
+        <textarea id="f-impact" name="impact" rows="3"
+                  placeholder="what this means for the business / the sustain phase">{{ record.impact or '' }}</textarea>
+      </div>
+
+      <div class="form-field">
+        <label for="f-responsible">Responsible</label>
+        <input type="text" id="f-responsible" name="responsible" value="{{ record.responsible or '' }}">
+      </div>
+
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('sustain.sustain_home') }}" class="btn">Back to the list</a>
+    <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
+  </div>
+</form>
+
+<div class="detail-card" style="margin-top:1.25rem">
+  <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:0.4rem">Next step</div>
+  <div style="display:flex; gap:0.5rem; align-items:center">
+    <input type="text" class="rt-comment sc-ns" data-id="{{ record.id }}" style="flex:1"
+           value="{{ record.next_step or '' }}" placeholder="next step…" onblur="scNsSave(this)">
+    <button type="button" class="btn btn-sm js-ns-archive" title="archive the current next step and start fresh"
+            data-entity-type="sustain_callout" data-entity-id="{{ record.id }}"
+            data-ns-target='input.sc-ns[data-id="{{ record.id }}"]'>↻</button>
+    <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+            data-entity-type="sustain_callout" data-entity-id="{{ record.id }}"
+            data-ns-label="{{ record.name }}">🕘</button>
+  </div>
+</div>
+{% include '_next_step_history.html' %}
+
+{% with entity_type='sustain_callout', entity_id=record.id %}
+  {% include '_notes_section.html' %}
+{% endwith %}
+
+<script>
+(function () {
+  var SC_STATUS = {
+    open:        ['Open',        '#e5e5ea', '#666666'],
+    in_progress: ['In Progress', '#fef3c7', '#92400e'],
+    closed:      ['Closed',      '#e3f9e5', '#1a7f37'],
+  };
+  function scPaint(btn) {
+    var s = SC_STATUS[btn.dataset.value] || SC_STATUS.open;
+    btn.textContent = s[0];
+    btn.style.background = s[1];
+    btn.style.color = s[2];
+    btn.style.cursor = 'pointer';
+    btn.style.border = 'none';
+  }
+  var btn = document.querySelector('.js-sc-status');
+  scPaint(btn);
+  btn.addEventListener('click', function () {
+    fetch('/sustain/callouts/' + btn.dataset.id + '/status', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error();
+        btn.dataset.value = d.status;
+        scPaint(btn);
+      })
+      .catch(function () { alert('Saving failed — try again.'); });
+  });
+}());
+
+function scNsSave(el) {
+  fetch('/sustain/callouts/' + el.dataset.id + '/next-step', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ next_step: el.value }),
+  }).then(function (r) {
+    if (!r.ok) throw new Error();
+    el.style.borderColor = '#1a7f37';
+    setTimeout(function () { el.style.borderColor = ''; }, 800);
+  }).catch(function () {
+    el.style.borderColor = '#c00';
+    alert('Saving failed — try again.');
+  });
+}
+</script>
+{% endblock %}

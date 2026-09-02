@@ -57,7 +57,7 @@
     <tr class="sc-row" data-id="{{ c.id }}">
       <td><span class="chip sc-channel sc-channel--{{ c.channel }}">{{ c.channel }}</span></td>
       <td><span class="chip sc-type">{{ c.type }}</span></td>
-      <td class="sc-topic-cell">{{ c.topic }}</td>
+      <td class="sc-topic-cell">{{ c.name }}</td>
       <td>{{ c.responsible or '—' }}</td>
       <td>
         <button type="button" class="chip sc-status js-sc-status" data-id="{{ c.id }}"
@@ -75,34 +75,16 @@
                   data-ns-target='input.sc-ns[data-id="{{ c.id }}"]'>↻</button>
           <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
                   data-entity-type="sustain_callout" data-entity-id="{{ c.id }}"
-                  data-ns-label="{{ c.topic }}">🕘</button>
+                  data-ns-label="{{ c.name }}">🕘</button>
         </span>
       </td>
       <td>
         <button type="button" class="btn btn-sm js-sc-notes-toggle">
           Notes{% if c.note_count %} ({{ c.note_count }}){% endif %}</button>
-        <button type="button" class="btn btn-sm js-sc-edit">Edit</button>
+        {# edit moved to the detail page (topic / ticket no / impact live
+           there) [USER 2026-09-02] #}
+        <a href="{{ url_for('sustain.sustain_callout_detail', callout_id=c.id) }}" class="btn btn-sm">Detail</a>
         <button type="button" class="btn btn-sm btn-danger js-sc-delete" title="delete">&#10005;</button>
-      </td>
-    </tr>
-    <tr class="sc-edit-row" data-id="{{ c.id }}" style="display:none">
-      <td colspan="8">
-        <form method="post" action="{{ url_for('sustain.sustain_callout_update', callout_id=c.id) }}" class="sc-form">
-          <select name="channel" class="sc-channel-select">
-            {% for ch in callout_channels %}
-            <option value="{{ ch }}" {% if ch == c.channel %}selected{% endif %}>{{ ch }}</option>
-            {% endfor %}
-          </select>
-          <select name="type" class="sc-type-select">
-            {% for t in callout_types %}
-            <option value="{{ t }}" {% if t == c.type %}selected{% endif %}>{{ t }}</option>
-            {% endfor %}
-          </select>
-          <input type="text" name="topic" value="{{ c.topic }}" required class="sc-topic-input">
-          <input type="text" name="responsible" value="{{ c.responsible or '' }}" placeholder="Responsible" class="sc-resp-input">
-          <button type="submit" class="btn btn-primary">Save</button>
-          <button type="button" class="btn js-sc-cancel">Cancel</button>
-        </form>
       </td>
     </tr>
     {% set _reopen_notes = request.args.get('note_entity') == c.id|string
@@ -110,8 +92,11 @@
                                 or request.args.get('note_deleted')) %}
     <tr class="sc-notes-row" data-id="{{ c.id }}" {% if not _reopen_notes %}style="display:none"{% endif %}>
       <td colspan="8">
+        {# notes_return_to='list': a note added from this row comes back
+           HERE, not to the call-out's detail page (the registry's default
+           now that one exists) #}
         {% with entity_type="sustain_callout", entity_id=c.id, notes=c.notes,
-                attachments_by_note=attachments_by_note %}
+                attachments_by_note=attachments_by_note, notes_return_to='list' %}
         {% include '_notes_section.html' %}
         {% endwith %}
       </td>
@@ -196,22 +181,6 @@
         .then(function (d) { if (d.ok) window.location.reload(); });
     });
   });
-  document.querySelectorAll('.js-sc-edit').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var row = btn.closest('tr').nextElementSibling;
-      var open = row.style.display !== 'none';
-      row.style.display = open ? 'none' : '';
-      btn.textContent = open ? 'Edit' : 'Close';
-    });
-  });
-  document.querySelectorAll('.js-sc-cancel').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var row = btn.closest('tr');
-      row.style.display = 'none';
-      row.previousElementSibling.querySelector('.js-sc-edit').textContent = 'Edit';
-    });
-  });
-
   // ---- Notes toggle (full shared notes component, entity 'sustain_callout') ----
   document.querySelectorAll('.js-sc-notes-toggle').forEach(function (btn) {
     btn.addEventListener('click', function () {

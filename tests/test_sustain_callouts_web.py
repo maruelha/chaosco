@@ -77,20 +77,111 @@ def test_status_unknown_id_404s(client):
     assert resp.status_code == 404
 
 
-def test_update_changes_fields(client, tmp_path):
-    _add(client, topic="Original")
+def _first_id(client, tmp_path):
     conn = database.get_connection(tmp_path / "sc.db")
     try:
-        cid = db_sc.list_callouts(conn)[0]["id"]
+        return db_sc.list_callouts(conn)[0]["id"]
     finally:
         conn.close()
-    client.post(f"/sustain/callouts/{cid}/update", data={
-        "channel": "ecom", "type": "MigrIssue", "topic": "Updated topic",
-        "responsible": "Someone",
+
+
+def test_update_changes_fields(client, tmp_path):
+    """The full-row save lives on the detail page since 2026-09-02 (the
+    list's inline edit row is gone)."""
+    _add(client, topic="Original")
+    cid = _first_id(client, tmp_path)
+    resp = client.post(f"/sustain/callouts/{cid}", data={
+        "channel": "ecom", "type": "MigrIssue", "name": "Updated name",
+        "topic": "The long story", "ticket_no": "SUS-003",
+        "impact": "Refunds delayed", "responsible": "Someone",
     })
+    assert resp.status_code == 302 and "saved=1" in resp.headers["Location"]
     html = client.get("/sustain/").get_data(as_text=True)
-    assert "Updated topic" in html
+    assert "Updated name" in html
     assert "Original" not in html
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        item = db_sc.get_callout(conn, cid)
+    finally:
+        conn.close()
+    assert item["topic"] == "The long story"
+    assert item["ticket_no"] == "SUS-003"
+    assert item["impact"] == "Refunds delayed"
+    assert item["responsible"] == "Someone"
+
+
+# ---------------------------------------------------------------------------
+# Detail page (planning chat 2026-09-02): topic / ticket no / impact live
+# here, list shows only the short name
+
+def test_list_links_to_the_detail_page_and_has_no_inline_edit(client, tmp_path):
+    _add(client, topic="Settlement mismatch")
+    cid = _first_id(client, tmp_path)
+    html = client.get("/sustain/").get_data(as_text=True)
+    assert f'href="/sustain/callouts/{cid}"' in html
+    assert "sc-edit-row" not in html
+    assert "/update" not in html
+
+
+def test_detail_page_shows_every_field_and_the_notes_component(client, tmp_path):
+    _add(client, topic="Settlement mismatch", responsible="Marina")
+    cid = _first_id(client, tmp_path)
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        db_sc.update_callout(conn, cid, "ecom", "MigrIssue", "Settlement mismatch",
+                             "Marina", topic="Adyen payout differs from SAP",
+                             ticket_no="SUS-001", impact="Finance cannot reconcile")
+        db_sc.set_callout_next_step(conn, cid, "ask Adyen for the report")
+    finally:
+        conn.close()
+    client.post(f"/n/sustain_callout/{cid}/add.json", data={"note": "phoned Adyen"})
+
+    resp = client.get(f"/sustain/callouts/{cid}")
+    assert resp.status_code == 200
+    html = resp.get_data(as_text=True)
+    for text in ("Settlement mismatch", "Adyen payout differs from SAP", "SUS-001",
+                 "Finance cannot reconcile", "Marina", "ask Adyen for the report",
+                 "phoned Adyen", "Add screenshot", f'id="notes-sustain_callout-{cid}"'):
+        assert text in html, text
+    assert 'name="ticket_no"' in html and 'name="impact"' in html
+    assert 'name="topic"' in html
+    assert 'data-entity-type="sustain_callout"' in html     # next-step ↻ / 🕘
+
+
+def test_detail_page_404s_for_unknown_id(client):
+    assert client.get("/sustain/callouts/9999").status_code == 404
+
+
+def test_detail_save_without_name_is_rejected(client, tmp_path):
+    _add(client, topic="Keep me")
+    cid = _first_id(client, tmp_path)
+    resp = client.post(f"/sustain/callouts/{cid}", data={
+        "channel": "retail", "type": "Issue", "name": "   ", "topic": "x"})
+    assert resp.status_code == 200
+    assert "required" in resp.get_data(as_text=True)
+    conn = database.get_connection(tmp_path / "sc.db")
+    try:
+        assert db_sc.get_callout(conn, cid)["name"] == "Keep me"
+    finally:
+        conn.close()
+
+
+def test_note_added_from_the_detail_page_comes_back_to_it(client, tmp_path):
+    _add(client, topic="Settlement mismatch")
+    cid = _first_id(client, tmp_path)
+    resp = client.post(f"/n/sustain_callout/{cid}/add",
+                       data={"heading": "Vendor call", "note": "Confirmed by phone"})
+    assert resp.status_code == 302
+    assert resp.headers["Location"].startswith(f"/sustain/callouts/{cid}?")
+    html = client.get(resp.headers["Location"]).get_data(as_text=True)
+    assert "Confirmed by phone" in html and "Note added." in html
+
+
+def test_note_form_breadcrumb_names_the_callout(client, tmp_path):
+    _add(client, topic="Settlement mismatch")
+    cid = _first_id(client, tmp_path)
+    html = client.get(f"/n/sustain_callout/{cid}/add").get_data(as_text=True)
+    assert "Settlement mismatch" in html
 
 
 def test_delete_removes_it(client, tmp_path):
@@ -243,10 +334,17 @@ def test_note_added_via_full_form_shows_up_and_reopens_its_row(client, tmp_path)
         conn.close()
     target_id = ids[0]
 
+    # the list page's "+ Add note" link carries return_to=list (the
+    # include's notes_return_to) — without it the add form would land on
+    # the call-out's detail page, which exists since 2026-09-02
+    list_html = client.get("/sustain/").get_data(as_text=True)
+    assert f"/n/sustain_callout/{target_id}/add?return_to=list" in list_html
     resp = client.post(f"/n/sustain_callout/{target_id}/add",
-                       data={"heading": "Vendor call", "note": "Confirmed by phone"})
+                       data={"heading": "Vendor call", "note": "Confirmed by phone",
+                             "return_to": "list"})
     assert resp.status_code == 302
     location = resp.headers["Location"]
+    assert location.startswith("/sustain/?")
     assert "note_added=1" in location
     assert f"note_entity={target_id}" in location
 

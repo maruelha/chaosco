@@ -21,6 +21,7 @@ from app.config_loader import load_config
 from app.db import sustain as db_sustain
 from app.db import sustain_callouts as db_sc
 from app.sustain_importer import run_sustain_import
+from app.web_core import _not_found
 
 bp = Blueprint("sustain", __name__, url_prefix="/sustain")
 
@@ -81,23 +82,47 @@ def sustain_callout_add():
     return redirect(url_for("sustain.sustain_home"))
 
 
-@bp.route("/callouts/<int:callout_id>/update", methods=["POST"])
-def sustain_callout_update(callout_id: int):
-    topic = request.form.get("topic", "").strip()
-    if not topic:
-        return redirect(url_for("sustain.sustain_home"))
+@bp.route("/callouts/<int:callout_id>", methods=["GET", "POST"])
+def sustain_callout_detail(callout_id: int):
+    """Detail page (planning chat 2026-09-02 [USER]): the list shows only
+    the short name; topic, ticket no, impact and responsible are edited
+    here, with the next step and the shared notes component below —
+    same shape as the Blocker detail page. POST = the full-row save."""
     conn = _get_conn()
     try:
-        db_sc.update_callout(
-            conn, callout_id,
-            channel=request.form.get("channel", ""),
-            type_=request.form.get("type", ""),
-            name=topic,
-            responsible=request.form.get("responsible"),
-        )
+        record = db_sc.get_callout(conn, callout_id)
+        if record is None:
+            return _not_found(str(callout_id))
+        error = None
+        if request.method == "POST":
+            fields = {
+                "channel": request.form.get("channel", ""),
+                "type_": request.form.get("type", ""),
+                "name": request.form.get("name", "").strip(),
+                "responsible": request.form.get("responsible"),
+                "topic": request.form.get("topic"),
+                "ticket_no": request.form.get("ticket_no"),
+                "impact": request.form.get("impact"),
+            }
+            if not fields["name"]:
+                error = "The name (the short line in the list) is required."
+                record = {**record, **fields, "type": fields["type_"]}
+            else:
+                db_sc.update_callout(conn, callout_id, **fields)
+                return redirect(url_for("sustain.sustain_callout_detail",
+                                        callout_id=callout_id, saved="1"))
+        notes = database.list_notes(conn, "sustain_callout", str(callout_id))
+        attachments_by_note = database.get_attachments_for_notes(
+            conn, [n["id"] for n in notes])
     finally:
         conn.close()
-    return redirect(url_for("sustain.sustain_home"))
+    return render_template(
+        "sustain_callout_detail.html", record=record, error=error,
+        saved=request.args.get("saved") == "1",
+        callout_channels=db_sc.CALLOUT_CHANNELS,
+        callout_types=db_sc.CALLOUT_TYPES,
+        notes=notes, attachments_by_note=attachments_by_note,
+    )
 
 
 @bp.route("/callouts/<int:callout_id>/status", methods=["POST"])

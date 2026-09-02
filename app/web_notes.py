@@ -163,9 +163,14 @@ REGISTRY: dict[str, NoteEntity] = {
     ),
     # Sustain Call-outs (2026-09-01) — list-only, no detail page (inline
     # rows on the sustain card)
+    # detail page since 2026-09-02 (planning chat) — the list page's
+    # include passes notes_return_to='list' so its quick path still lands
+    # back on the board
     "sustain_callout": NoteEntity(
-        "Sustain Call-outs", "sustain.sustain_home", None, None, None,
-        lambda r: "Call-out", int,
+        "Sustain Call-outs", "sustain.sustain_home",
+        "sustain.sustain_callout_detail", "callout_id",
+        lambda c, i: database.get_callout(c, int(i)),
+        lambda r: r.get("name") or r.get("topic") or f"Call-out #{r['id']}", int,
     ),
 }
 
