@@ -107,7 +107,7 @@ uploaded issues?" — yes).
 - `app/delegated_buckets.py` — bucket rules + counts (incl. the 📦 backlog
   bucket — the authored flag wins over every status)
 - `app/sales_xls_importer.py` — parse-only: sales workbook's "All Countries
-  Combined" tab, SolmanID column (see SalesXLS auto-match section below)
+  Combined" tab, "Solman ID" column (see SalesXLS auto-match section below)
 - `app/web_delegated.py` — Blueprint `/delegated/`: board, upload, ticket
   detail (Details/Messages tabs), inline saves, `/report`, `/numbers` +
   `/report/download`, `/numbers/download` (dated standalone HTML — the
@@ -569,7 +569,9 @@ same file-upload pattern as the other two uploads (dated copy
 `data/uploads/delegated_salesxls_<timestamp>.xlsx`; no filename check
 beyond `.xlsx`). Parse-only in `app/sales_xls_importer.py`
 (`parse_sales_xls`): reads the workbook's **"All Countries Combined"**
-tab, column **SolmanID**, returns the non-empty values (de-duplicated,
+tab, column **Solman ID** (header matched ignoring case and spaces — the
+first build looked for "SolmanID" and never found Marina's column, fixed
+2026-09-02 [USER]), returns the non-empty values (de-duplicated,
 case-insensitive).
 
 **Matching rule** [USER 2026-09-01, clarified in chat]: each SolmanID

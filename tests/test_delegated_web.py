@@ -1042,15 +1042,16 @@ def test_ticket_detail_shows_mb_card(client):
 
 # ---------------------------------------------------------------------------
 # SalesXLS auto-match upload (2026-09-01 [USER]) — sales workbook's
-# "All Countries Combined" tab, SolmanID column, matched by substring
+# "All Countries Combined" tab, "Solman ID" column, matched by substring
 # against each board ticket's raw Jira Summary.
 
-def _sales_xls_xlsx(solman_ids=("SM2001", "SM2003")) -> bytes:
+def _sales_xls_xlsx(solman_ids=("SM2001", "SM2003"), header="Solman ID") -> bytes:
+    # the real header is "Solman ID" [USER 2026-09-02: not "SolmanID"]
     import openpyxl
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "All Countries Combined"
-    ws.append(["SolmanID", "Other Column"])
+    ws.append([header, "Other Column"])
     for sid in solman_ids:
         ws.append([sid, "x"])
     buf = io.BytesIO()
@@ -1444,3 +1445,19 @@ def test_reopened_is_bucketed_like_open(client):
     # split on the SECTION heading — the count strip names it first (2026-09-02)
     not_started = html.split("<summary>Not started yet")[1].split("<summary>")[0]
     assert 'data-key="S4ECOM-2004"' in not_started
+
+
+def test_sales_xls_column_header_matches_with_or_without_the_space(tmp_path):
+    """[USER 2026-09-02]: the column is called "Solman ID" (with a space) —
+    the first build looked for "SolmanID" and never found it. Both spell
+    the same column; case and spaces are ignored, anything else is loud."""
+    from app.read_defects import ParseError
+    from app.sales_xls_importer import parse_sales_xls
+    for header in ("Solman ID", "SolmanID", "solman id ", "SOLMAN ID"):
+        path = tmp_path / "sales.xlsx"
+        path.write_bytes(_sales_xls_xlsx(("SM1", "SM2"), header=header))
+        assert parse_sales_xls(path) == ["SM1", "SM2"], header
+    path = tmp_path / "wrong.xlsx"
+    path.write_bytes(_sales_xls_xlsx(("SM1",), header="Solman"))
+    with pytest.raises(ParseError, match="Solman ID"):
+        parse_sales_xls(path)
