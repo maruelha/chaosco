@@ -758,6 +758,46 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-02 (Sustain call-outs: detail page, filters, inbox push)</h2>
+
+<div class="box b-blue">
+  <div class="box-head">Small choices I made — one sentence each to change</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">The features were your calls (name as the short
+    line, topic on the detail page, ticket no free text, type filter as checkboxes, no global
+    search). These details were mine.</p>
+    <label class="task"><input type="checkbox" data-k="sc0902-old-names">
+      <span><strong>Your existing call-outs now show their old topic text as the name</strong> — the
+      migration copied topic into name, so nothing is empty, but long ones may deserve a shorter
+      name. Open each Detail, shorten the name, leave the long text in Topic.
+      <span class="where">&#8594; /sustain/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0902-no-delete-detail">
+      <span><strong>Delete is on the list only</strong>, not on the detail page — same as the
+      first build. Say if you want a delete button on the detail page too.
+      <span class="where">&#8594; /sustain/callouts/&lt;id&gt;</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0902-closed-filter">
+      <span><strong>The status filter only sees rows on the page</strong> — closed call-outs
+      still need "Show closed" first, then "Status: Closed" narrows to them. If that is one
+      click too many, the toggle could become part of the filter bar.
+      <span class="where">&#8594; /sustain/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0902-filter-not-remembered">
+      <span><strong>Filters reset on every reload</strong> (status click and delete reload the
+      page, note add/edit round-trips too). Remembering them in the browser is a small add if it
+      annoys you.
+      <span class="where">&#8594; /sustain/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0902-note-edit-lands-detail">
+      <span><strong>Editing or deleting a note from a list row lands on the call-out's detail
+      page</strong>, not back on the list (only "Add note" returns to the list). Probably fine —
+      the detail page is where the notes live now — but say if you want the list back.
+      <span class="where">&#8594; /sustain/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sc0902-inbox-new-callout-topic">
+      <span><strong>A call-out created from an inbox note gets topic = name</strong>; the note
+      text itself becomes the first note, not the topic. Open Detail if you want the note text
+      in Topic as well.
+      <span class="where">&#8594; /inbox</span></span></label>
+  </div>
+</div>
+
 <h2 class="date">Added 2026-09-02 (nextInLine rule, working-notes pages)</h2>
 
 <div class="box b-blue">

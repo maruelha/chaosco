@@ -25,7 +25,12 @@ non-negotiable.
   `NoteEntity` in its `REGISTRY` (label, list/detail endpoints, row getter,
   id cast) — that is all a new module needs.
 - **Template** `{% include '_notes_section.html' %}` with `entity_type`,
-  `entity_id`, `notes`, `attachments_by_note` in context.
+  `entity_id`, `notes`, `attachments_by_note` in context. Optional
+  `notes_return_to='list'` (2026-09-02) when the include sits on a LIST
+  page of an entity that also has a detail page: the "+ Add note" links
+  then carry `return_to=list` so the add form redirects back to the list
+  (edit/delete still land on the detail page — the form has no return_to
+  in edit mode). First user: the Sustain call-outs board.
 - **JS** `static/notes.js`, loaded globally: attachment upload, delete,
   Ctrl+V paste — via event delegation. Never inline a copy.
 - **Data access** `app.db.notes`: add_note / list_notes / update_note /
@@ -51,9 +56,10 @@ Images render as thumbnails, documents as download links (`is_image` filter).
   `sustain_callout` used it too until 2026-09-01, when Marina asked
   where her headings/screenshots were [USER: "what you gave me was a
   simple text filed"] — its rows now include the full
-  `_notes_section.html` instead (one instance per row). Copy the full
-  component, not the quick-add widget, unless plain-text-only is a
-  deliberate choice.
+  `_notes_section.html` instead (one instance per row; since 2026-09-02
+  the entity also has a detail page, `/sustain/callouts/<id>`, registered
+  as `detail_endpoint`). Copy the full component, not the quick-add
+  widget, unless plain-text-only is a deliberate choice.
 - **Multiple instances on ONE page** work since 2026-09-01: the wrapper
   id is `notes-{entity_type}-{entity_id}` (was a hardcoded `notes` —
   update anchors accordingly), and the add/edit/delete redirects carry

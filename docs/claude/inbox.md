@@ -32,7 +32,12 @@ shared notes storage.
   (2026-09-01 — Ways of Working, Testing Insights, …: the search branch
   lists every page in `app/note_pages.PAGES` on the empty query, exists
   check = slug in the registry; replaced the short-lived delegated_wow
-  singleton special case the same day, see `components/note-pages.md`).
+  singleton special case the same day, see `components/note-pages.md`),
+  sustain_callout = "Sustain call-out" (2026-09-02 — search by name /
+  ticket no, open first; PLUS a shelf-style "new call-out from this note"
+  form → `POST /inbox/<id>/file-to-callout`, `inbox_file_to_callout` in
+  `web_reference.py`: `create_callout` then `file_inbox_item`; name =
+  picker field → heading → first note line; see `[[sustain]]`).
 - **Reference fields + ⚡ Auto-file** [USER 2026-07-16]: `notes` gained
   optional `order_number`, `solman_id`, `jira_id`, `route_to` (core.py
   migration; set in the add/edit forms, shown as chips — the intended landing

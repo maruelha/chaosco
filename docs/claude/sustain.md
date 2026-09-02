@@ -6,11 +6,13 @@
 `app/db/sustain_callouts.py` → `sustain_callouts` (authored, own log — see
 Call-outs section below)
 **Routes:** `app/web_sustain.py`; importer `app/sustain_importer.py`;
-call-outs routes `/sustain/callouts/add|<id>/update|<id>/status|<id>/delete`
-**Templates:** `sustain.html` · `sustain_day.html` · `sustain_summary.html`
+call-outs routes `/sustain/callouts/add|<id>|<id>/status|<id>/delete|<id>/next-step`
+(`<id>` = the detail page, GET + POST save)
+**Templates:** `sustain.html` · `sustain_callout_detail.html` · `sustain_day.html` ·
+`sustain_summary.html`
 **Tests:** `tests/test_sustain_importer.py`, `tests/test_sustain_storage.py`,
 `tests/test_sustain_web.py`, `tests/test_sustain_callouts_storage.py`,
-`tests/test_sustain_callouts_web.py`
+`tests/test_sustain_callouts_web.py`, `tests/test_inbox_to_callout.py`
 
 ## Purpose
 
@@ -163,10 +165,22 @@ Template `sustain.html`; the imported-days table (`list_tabs`) links each
 
 Marina's own monitoring log, shown on the card page **above** the
 imported-days table (`sustain.html`, `ui.section('Call-outs', 'amber', ...)`).
-Own table `sustain_callouts` (channel, type, topic, responsible, status,
-date_captured) — deliberately separate from `db/sustain.py`, never touched by
-the importer, same separation as `sustain_issue_annotations` from
-`sustain_issues`.
+Own table `sustain_callouts` (channel, type, **name**, topic, ticket_no,
+impact, responsible, status, date_captured, next_step) — deliberately
+separate from `db/sustain.py`, never touched by the importer, same
+separation as `sustain_issue_annotations` from `sustain_issues`.
+
+**Short line vs. detail** [USER 2026-09-02, planning chat]: the list shows
+only the short `name` (+ ticket no); `topic` (the longer text), `impact`
+and `responsible` are edited on the **detail page** `/sustain/callouts/<id>`
+(`sustain_callout_detail.html`, blocker-detail shape: full-row form,
+status chip, next step with ↻/🕘, the shared notes component). Rows from
+before 2026-09-02 were back-filled `name := topic` on `init_schema`; a
+call-out created without a topic keeps `topic == name` until edited on
+the detail page (storage rule in `create_callout`/`update_callout`).
+`ticket_no` is free text (SUS-/ASPEN/Jira ids all fit) and deliberately
+NOT in the global 🔍 widget — tickets live only here, the list's text
+filter finds them [USER: "not really needed"].
 
 - **channel** — `retail` / `ecom` / `both`, chip at the start of the row.
 - **type** — fixed list `CALLOUT_TYPES`: Issue, Spotcheck, Observation,
@@ -178,9 +192,20 @@ the importer, same separation as `sustain_issue_annotations` from
   decides the next state, no value posted). Closed items are hidden by
   default; `?show_closed=1` reveals them.
 - **date_captured** — set once at creation (today), never edited.
-- Add / inline edit (toggle row, urgent.html pattern) / delete — plain forms
-  + small fetch() calls, reload on save/delete (no live re-sort needed for a
-  short daily list).
+- Quick add on the list (channel · type · name · ticket no · responsible)
+  + delete (fetch, reload); everything else is edited on the detail page
+  (the inline edit row of the first build is gone since 2026-09-02).
+- **Filter bar** (2026-09-02, client-side, `sc-filterbar`): channel and
+  status selects, one **checkbox per type** (combinable — Marina's ask),
+  free text over name + ticket no, Clear, shown/hidden counter. Rows carry
+  `data-channel/type/status/search`; the status chip keeps `data-status`
+  in step. Closed rows are only on the page with `?show_closed=1`, so the
+  status filter can only pick among what is loaded.
+- **Inbox → call-out** (2026-09-02): the inbox filing picker's target
+  "Sustain call-out" files a note under an existing call-out (search by
+  name / ticket no, open first) or creates a NEW one from the note
+  (`POST /inbox/<id>/file-to-callout`, name defaults to the heading) —
+  see `[[inbox]]`.
 - `list_open_for_channel(conn, channel)` — a channel's own open/in-progress
   items **plus every `both` item** — feeds the management summary below.
 
@@ -219,10 +244,14 @@ the importer, same separation as `sustain_issue_annotations` from
     auto-reopens the touched call-out's notes row on that redirect (server
     side, via the same query params) so the confirmation banner is
     actually visible, since rows start collapsed.
-  - Add/Edit/Delete are real page navigations back to `/sustain/` (list-only
-    entity, same as `delegated_wow`), not instant like the old widget —
-    other expanded rows re-collapse on that round trip; accepted as-is for
-    now [USER: "try plain first"].
+  - Add/Edit/Delete are real page navigations, not instant like the old
+    widget — other expanded rows re-collapse on that round trip; accepted
+    as-is for now [USER: "try plain first"]. Since the detail page exists
+    (2026-09-02) the registry entry has a `detail_endpoint`; the list
+    page's include passes `notes_return_to='list'` so **Add** from a row
+    still lands back on the board, while Edit/Delete of a note from the
+    list land on the call-out's detail page (the note form carries no
+    return_to in edit mode).
 - **Management summary block** (build plan step 4) — inside each stream's
   section on `/sustain/summary[/<day>]`, right below the stat cards and
   above the Attention list: a table of that channel's open/in-progress
@@ -303,6 +332,15 @@ deviation and the summary v1 layout).
 
 ## Change log
 
+- **2026-09-02 — Call-outs: name + detail page, ticket no, impact, filter
+  bar, inbox push** (planning chat, 6 steps). `name` is the short list
+  line; topic/impact/ticket no/responsible live on the new detail page
+  `/sustain/callouts/<id>` (the inline edit row is gone); type filter as
+  combinable checkboxes + channel/status/text; inbox notes can be pushed
+  under an existing or a new call-out. Global-search registration was
+  dropped on Marina's call (tickets live only here). Shared change:
+  `_notes_section.html` takes an optional `notes_return_to`. 14 new
+  tests.
 - **2026-09-01 — Call-out notes fixed to the full shared component**
   [USER: "what you gave me was a simple text filed"] — see the Notes
   bullet in the Call-outs subsection above for the full story (root

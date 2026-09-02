@@ -210,6 +210,7 @@
     <li><a href="#smoke-retail">Smoke Testing — Retail</a></li>
     <li class="group-label">Core South Sustainphase Monitoring</li>
     <li><a href="#sustain-home">Sustainphase — Card &amp; Upload</a></li>
+    <li><a href="#sustain-callout-detail">Sustainphase — Call-out Detail</a></li>
     <li><a href="#sustain-day">Sustainphase — Day Report</a></li>
     <li><a href="#sustain-summary">Sustainphase — Management Summary</a></li>
     <li class="group-label">Sustainphase Issues</li>
@@ -326,7 +327,8 @@
         <span class="feat-label">Filing behaviour</span>
         <span class="feat-value">For Defect / Retail / Spillover / Test Learning / Follow-up: single SQL UPDATE — the note row and all its attachments move to the target entity. Filed items appear immediately in the target's detail page notes log.<br>
         For <strong>Shelf</strong>: a new Shelf item is created from the inbox heading; area and category are entered in the picker (both optional); the note is then re-parented to the new shelf item. Route: <code>POST /inbox/&lt;note_id&gt;/file-to-shelf</code>.<br>
-        For <strong>Working notes pages</strong> (2026-09-01, generic since the same day): ONE type — the search results list every page (Ways of Working, Testing Insights, …) on the empty query; picking one moves the note + attachments to that <a href="#delegated-wow">page</a> wholesale (the earlier delegated_wow singleton special case in <code>onTypeChange</code> is gone).</span>
+        For <strong>Working notes pages</strong> (2026-09-01, generic since the same day): ONE type — the search results list every page (Ways of Working, Testing Insights, …) on the empty query; picking one moves the note + attachments to that <a href="#delegated-wow">page</a> wholesale (the earlier delegated_wow singleton special case in <code>onTypeChange</code> is gone).<br>
+        For <strong>Sustain call-outs</strong> (2026-09-02 [USER: "push notes from inbox to a callout"]): two paths in one picker — the search lists open call-outs first (by name or ticket no) and Move › files the note under the chosen one; a dashed block below it (channel · type · name prefilled with the heading · ticket no) creates a <em>new</em> call-out from the note and files it there (<code>POST /inbox/&lt;note_id&gt;/file-to-callout</code>). Either way the note shows on the <a href="#sustain-callout-detail">call-out detail page</a>.</span>
         <span class="feat-label">Attachment support</span>
         <span class="feat-value">Images (PNG/JPG/GIF/WEBP) shown as thumbnails. Documents (PDF/DOC/DOCX/XLS/XLSX/PPT/PPTX/TXT/CSV/MSG/EML/ZIP/XML/JSON) shown as download links. Ctrl+V pastes a Snipping Tool image into the last-hovered item. ✕ to delete any attachment.</span>
         <span class="feat-label">Table source</span>
@@ -1113,7 +1115,7 @@
       <p class="screen-desc">Added 2026-08-28. File-picker upload of the daily GBS Operations checklist workbook <code>…DTC_GBS Operations_checklist.xlsx</code> (the prefix before <code>DTC_GBS</code> varies per file — the guard checks the name <em>contains</em> <code>DTC_GBS Operations_checklist</code>, so browser " (1)" double-download copies still import; dated copy at <code>data/uploads/sustain_&lt;timestamp&gt;.xlsx</code>). <code>app/sustain_importer.py</code> parses one tab per stream per day (<code>Retail_&lt;date&gt;</code> / <code>eCom_&lt;date&gt;</code>): parent tasks = rows with a Task ID, country/provider detail rows = Excel outline level ≥ 1. <strong>Updated 2026-08-31</strong> for the new file version — the header row is now <em>located</em> (it moved from row 6 to row 5) and the new free-text column M "Comments/Observations" is imported, so both the old and the new layout import. <strong>Replace per (day, stream) tab</strong> — consecutive files with different date windows accumulate history; re-uploading a day refreshes it.</p>
       <div class="features">
         <span class="feat-label">Call-outs</span>
-        <span class="feat-value">Added 2026-09-01 — Marina's own monitoring log, ABOVE the imported-days table: channel (retail/ecom/both) · type (Issue/Spotcheck/Observation/MigrIssue/OrgIssue/Question) · topic · responsible · status · date captured. Cycling status chip (open → in progress → closed → open, saved immediately via <code>POST /sustain/callouts/&lt;id&gt;/status</code>); closed items hidden by default (<code>?show_closed=1</code> to reveal). Inline next step (onblur save + ↻ archive/🕘 history via the generic <code>/next-steps</code> entity <code>sustain_callout</code>). Own table <code>sustain_callouts</code>, never touched by the importer — storage <code>app/db/sustain_callouts.py</code>. <strong>Notes fixed 2026-09-01</strong> [USER: "what you gave me was a simple text filed"]: a "Notes (n)" button per row expands the SAME shared notes component every other entity uses (heading + text, 📷 screenshot / 📎 file attachments with Ctrl+V paste, edit/delete) — the first build had wired the lighter To-Do-style quick-add widget instead (plain text, no heading, no attachments); the swap kept every existing note (they just show "(no heading)"). Add/Edit/Delete are real page round-trips back to <code>/sustain/</code>, not instant.</span>
+        <span class="feat-value">Added 2026-09-01 — Marina's own monitoring log, ABOVE the imported-days table: channel (retail/ecom/both) · type (Issue/Spotcheck/Observation/MigrIssue/OrgIssue/Question) · <strong>name</strong> (the short line, links to the <a href="#sustain-callout-detail">detail page</a>) · ticket · responsible · status · date captured. <strong>2026-09-02</strong> [USER]: topic moved off the list onto the detail page (with impact + ticket no); the quick-add form takes channel/type/name/ticket no/responsible; the inline edit row is gone (Detail button instead). <strong>Filter bar</strong> above the table: channel + status selects, one <em>checkbox per type</em> (combinable), text over name/ticket, Clear, shown/hidden counter — all client-side; closed rows need the show-closed toggle first. Cycling status chip (open → in progress → closed → open, saved immediately via <code>POST /sustain/callouts/&lt;id&gt;/status</code>); closed items hidden by default (<code>?show_closed=1</code> to reveal). Inline next step (onblur save + ↻ archive/🕘 history via the generic <code>/next-steps</code> entity <code>sustain_callout</code>). Own table <code>sustain_callouts</code>, never touched by the importer — storage <code>app/db/sustain_callouts.py</code>. <strong>Notes fixed 2026-09-01</strong> [USER: "what you gave me was a simple text filed"]: a "Notes (n)" button per row expands the SAME shared notes component every other entity uses (heading + text, 📷 screenshot / 📎 file attachments with Ctrl+V paste, edit/delete) — the first build had wired the lighter To-Do-style quick-add widget instead (plain text, no heading, no attachments); the swap kept every existing note (they just show "(no heading)"). Add/Edit/Delete are real page round-trips back to <code>/sustain/</code>, not instant.</span>
         <span class="feat-label">Imported days</span>
         <span class="feat-value">Table of imported (day, stream) tabs with task counts (<code>db_sustain.list_tabs</code>), each linking to its day report.</span>
         <span class="feat-label">Recomputed, never cached</span>
@@ -1127,6 +1129,26 @@
   </div>
 
   <!-- Sustain day report -->
+  <div class="screen-card" id="sustain-callout-detail">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase — Call-out Detail</span>
+      <span class="screen-url">GET /sustain/callouts/&lt;id&gt; · POST (save)</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">Added 2026-09-02 [USER: "topic moves to details view — I want the possibility to add more details, but a short one to view"]. One page per call-out, blocker-detail shape: headline = name with channel / type / ticket chips and the clickable status chip; full-row edit form (name · channel · type · ticket no · topic · impact · responsible, Save → "Changes saved." banner, empty name rejected); next step with ↻ archive / 🕘 history; the shared notes component with attachments. Reached from the name link or the Detail button on the list, and from the notes breadcrumb.</p>
+      <div class="features">
+        <span class="feat-label">Fields</span>
+        <span class="feat-value"><strong>name</strong> = the short line every list shows; <strong>topic</strong> = the longer text (mirrors the name until edited); <strong>ticket no</strong> free text (SUS-/ASPEN/Jira, not in the global 🔍 by design); <strong>impact</strong> free text. Older rows carry their old topic as name.</span>
+        <span class="feat-label">Notes</span>
+        <span class="feat-value">Add/edit/delete return to this page; the list page's own Add-note link carries <code>return_to=list</code> so it returns to the board. Inbox notes pushed here (see <a href="#inbox">Inbox</a>) appear in the same log.</span>
+        <span class="feat-label">Not here</span>
+        <span class="feat-value">Delete stays on the list only.</span>
+        <span class="feat-label">Table source</span>
+        <span class="feat-value"><code>sustain_callouts</code> + <code>notes</code> (entity_type='sustain_callout') + <code>next_step_history</code></span>
+      </div>
+    </div>
+  </div>
+
   <div class="screen-card" id="sustain-day">
     <div class="screen-card-header">
       <span class="screen-title">Sustainphase Monitoring — Day Report</span>
