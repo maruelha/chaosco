@@ -493,3 +493,42 @@ def test_next_step_save_and_archive(client):
         conn.close()
     hist = c.get(f"/next-steps/blocker/{bid}/list.json").get_json()
     assert hist["count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Link source + "not seen in Jira since" stamp (2026-09-03 [USER]) — storage
+# for the import-driven attach; links are never overwritten or deleted.
+
+def test_links_carry_source_and_jira_missing_stamp(tmp_path):
+    db_path = tmp_path / "links.db"
+    database.init_db(db_path).close()
+    db_jira.init_schema(db_path)
+    db_blockers.init_schema(db_path)
+    conn = database.get_connection(db_path)
+    try:
+        b = db_blockers.create_blocker(conn, "defect", "Pricing", "S4DEF-1")
+        db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-1")            # manual
+        db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-2", source="jira")
+        db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-1", source="jira")  # no overwrite
+        links = {l["jira_key"]: l for l in db_blockers.list_links(conn)}
+        assert links["S4ECOM-1"]["source"] == "manual"
+        assert links["S4ECOM-2"]["source"] == "jira"
+        assert links["S4ECOM-1"]["blocker_key"] == "S4DEF-1"
+        assert links["S4ECOM-1"]["jira_missing_since"] is None
+
+        db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", "2026-09-03T10:00:00")
+        db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", "2026-09-04T10:00:00")
+        links = {l["jira_key"]: l for l in db_blockers.list_links(conn)}
+        assert links["S4ECOM-1"]["jira_missing_since"] == "2026-09-03T10:00:00"  # set once
+        # the chips see it too
+        chips = db_blockers.blockers_for_tickets(conn, ["S4ECOM-1", "S4ECOM-2"])
+        assert chips["S4ECOM-1"][0]["link_jira_missing_since"] == "2026-09-03T10:00:00"
+        assert chips["S4ECOM-1"][0]["link_source"] == "manual"
+        assert chips["S4ECOM-2"][0]["link_jira_missing_since"] is None
+        one = db_blockers.list_blockers_for_ticket(conn, "S4ECOM-1")
+        assert one[0]["link_source"] == "manual"
+
+        db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", None)
+        assert db_blockers.list_links(conn)[0]["jira_missing_since"] is None
+    finally:
+        conn.close()

@@ -664,7 +664,7 @@
     <div class="table-card-header">
       <span class="tname">blocker_links</span>
       <span class="badge badge-authored">Authored</span>
-      <span class="tdesc">Many-to-many: which delegated tickets a blocker blocks. Populated via the attach picker (<code>_blocker_picker.html</code>, build plan step 8, 2026-08-27) on the board's blocked rows + ticket detail — attach existing, detach, or quick-create-and-attach in one step.</span>
+      <span class="tdesc">Many-to-many: which delegated tickets a blocker blocks. Populated via the attach picker (<code>_blocker_picker.html</code>, build plan step 8, 2026-08-27) on the board's blocked rows + ticket detail — attach existing, detach, or quick-create-and-attach in one step — and, since 2026-09-03, by the delegated import from the export's "Blocks" issue links (<code>source</code> column).</span>
     </div>
     <table>
       <thead>
@@ -674,6 +674,8 @@
         <tr><td class="col-name">blocker_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → blockers</span></td><td></td></tr>
         <tr><td class="col-name">jira_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → jira_issues</span></td><td class="note-text">the delegated ticket it blocks</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+        <tr><td class="col-name">source</td><td class="col-type">TEXT</td><td>NOT NULL DEFAULT 'manual'</td><td class="note-text">2026-09-03 — <code>manual</code> (attach picker) or <code>jira</code> (created by the delegated import from the export's "Blocks" issue links); existing rows became manual</td></tr>
+        <tr><td class="col-name">jira_missing_since</td><td class="col-type">TEXT</td><td></td><td class="note-text">2026-09-03 — set by the delegated import when the blocker was in the export but Jira does NOT link it to this ticket (set once, cleared when Jira confirms again); the board/detail chips show it as an amber "not in Jira" marker. Links are never deleted by the import.</td></tr>
       </tbody>
     </table>
     <div class="relations"><strong>Attach/detach/quick-create:</strong> <code>GET /blockers/links/&lt;jira_key&gt;</code> · <code>POST .../attach</code> · <code>POST .../detach</code> · <code>POST .../quick-create</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> (<code>list_blockers_for_ticket</code>, <code>blockers_for_tickets</code> — batched for the board)</div>

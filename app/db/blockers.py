@@ -77,6 +77,11 @@ def init_schema(db_path: Path) -> None:
             # responsible team (2026-08-28 [USER]) — fixed picks + free
             # "Other" text; custom values re-appear in the combobox
             "ALTER TABLE blockers ADD COLUMN team TEXT",
+            # Jira-driven links (2026-09-03 [USER]): where a link came from
+            # ('manual' = attach picker, 'jira' = the export's "Blocks"
+            # links) and the import's "not seen in Jira since" stamp
+            "ALTER TABLE blocker_links ADD COLUMN source TEXT NOT NULL DEFAULT 'manual'",
+            "ALTER TABLE blocker_links ADD COLUMN jira_missing_since TEXT",
         ):
             try:
                 conn.execute(ddl)
@@ -294,12 +299,49 @@ def list_blocker_jira_keys(conn: sqlite3.Connection) -> set[str]:
 # Attach to tickets (build plan step 8, 2026-08-27) — blocker_links, m:n
 # between a blocker and the delegated ticket(s) it blocks.
 
-def link_blocker(conn: sqlite3.Connection, blocker_id: int, jira_key: str) -> None:
+LINK_SOURCES = ("manual", "jira")
+
+
+def link_blocker(conn: sqlite3.Connection, blocker_id: int, jira_key: str,
+                 source: str = "manual") -> None:
+    """Attach a blocker to a delegated ticket. An existing link is left as
+    it is (its source and stamp included) — attaching never overwrites
+    [USER 2026-09-03: "it should not overwrite"]."""
+    assert source in LINK_SOURCES
     with conn:
         conn.execute(
-            "INSERT INTO blocker_links (blocker_id, jira_key, created_at)"
-            " VALUES (?, ?, ?) ON CONFLICT (blocker_id, jira_key) DO NOTHING",
-            (blocker_id, jira_key, _now()))
+            "INSERT INTO blocker_links (blocker_id, jira_key, created_at, source)"
+            " VALUES (?, ?, ?, ?) ON CONFLICT (blocker_id, jira_key) DO NOTHING",
+            (blocker_id, jira_key, _now(), source))
+
+
+def set_link_jira_missing(conn: sqlite3.Connection, blocker_id: int,
+                          jira_key: str, since: str | None) -> None:
+    """Stamp (or clear, since=None) a link the export did NOT confirm —
+    set once: an already-stamped link keeps its original date."""
+    with conn:
+        if since is None:
+            conn.execute(
+                "UPDATE blocker_links SET jira_missing_since = NULL"
+                " WHERE blocker_id = ? AND jira_key = ?", (blocker_id, jira_key))
+        else:
+            conn.execute(
+                "UPDATE blocker_links SET jira_missing_since = ?"
+                " WHERE blocker_id = ? AND jira_key = ?"
+                " AND jira_missing_since IS NULL", (since, blocker_id, jira_key))
+
+
+def list_links(conn: sqlite3.Connection) -> list[dict]:
+    """Every blocker link with its blocker's jira key — what the delegated
+    import compares against the export's "Blocks" pairs."""
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT l.blocker_id, l.jira_key, l.source, l.jira_missing_since,"
+            " b.jira_key AS blocker_key, b.type"
+            " FROM blocker_links l JOIN blockers b ON b.blocker_id = l.blocker_id"
+            " ORDER BY l.blocker_id, l.jira_key"))
+    except sqlite3.OperationalError:
+        return []
 
 
 def unlink_blocker(conn: sqlite3.Connection, blocker_id: int, jira_key: str) -> None:
@@ -315,7 +357,8 @@ def list_blockers_for_ticket(conn: sqlite3.Connection, jira_key: str) -> list[di
     Tolerant of the tables not existing yet (partial-init test fixtures)."""
     try:
         return _rows_to_dicts(conn.execute(
-            "SELECT b.* FROM blockers b"
+            "SELECT b.*, l.source AS link_source,"
+            " l.jira_missing_since AS link_jira_missing_since FROM blockers b"
             " JOIN blocker_links l ON l.blocker_id = b.blocker_id"
             " WHERE l.jira_key = ?"
             " ORDER BY CASE b.type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
@@ -335,7 +378,9 @@ def blockers_for_tickets(conn: sqlite3.Connection,
     placeholders = ",".join("?" for _ in jira_keys)
     try:
         rows = conn.execute(
-            f"SELECT l.jira_key AS ticket_key, b.* FROM blocker_links l"
+            f"SELECT l.jira_key AS ticket_key, l.source AS link_source,"
+            f" l.jira_missing_since AS link_jira_missing_since, b.*"
+            f" FROM blocker_links l"
             f" JOIN blockers b ON b.blocker_id = l.blocker_id"
             f" WHERE l.jira_key IN ({placeholders})"
             f" ORDER BY CASE b.type WHEN 'defect' THEN 0 WHEN 'task' THEN 1 ELSE 2 END,"
