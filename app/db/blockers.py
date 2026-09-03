@@ -331,7 +331,7 @@ def set_link_jira_missing(conn: sqlite3.Connection, blocker_id: int,
                 " AND jira_missing_since IS NULL", (since, blocker_id, jira_key))
 
 
-def list_links(conn: sqlite3.Connection) -> list[dict]:
+def list_blocker_links(conn: sqlite3.Connection) -> list[dict]:
     """Every blocker link with its blocker's jira key — what the delegated
     import compares against the export's "Blocks" pairs."""
     try:

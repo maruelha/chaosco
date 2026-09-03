@@ -382,6 +382,34 @@ blocks one or more delegated tickets. Design decisions:
   this existed. Stories and other types (Epic, …) are never
   auto-registered; unhandled non-story types show in the board's 🛈
   hint. The upload flash message appends "· n blockers registered".
+- **AUTO-ATTACH from the export's "Blocks" links (2026-09-03)** [USER:
+  "the defects and tasks show which issues they block in the xml — extract
+  that from the upload and automatically add the defects to the blocked
+  test cases in the column Blockers"]. `parse_jira_xml` reads every
+  item's `<issuelinks>`: ONLY the link type named **Blocks** (Cloners etc.
+  ignored), both directions (`blocks` outward / `is blocked by` inward)
+  into `issue["blocks"]`; `jira_importer.blocked_pairs` turns a whole
+  export into `{(blocker_key, blocked_key)}`. `run_delegated_import` →
+  `_attach_from_blocks_links`: for every pair whose blocker is registered
+  and whose target is a user story (jira-store type check — an epic or
+  unknown key is counted as `links_skipped`), `link_blocker(source='jira')`;
+  an existing link (manual or jira) is NEVER overwritten.
+  **The comparison** [USER: "if a blocker is already there that is NOT
+  referenced in the xml - it should not overwrite - but comment on it"]:
+  every link whose blocker IS in this export but whose pair the export
+  does not carry gets `blocker_links.jira_missing_since` (set once,
+  cleared when a later export confirms the pair); a blocker absent from
+  the export gets no verdict. **Nothing is ever deleted** — the chips on
+  the board's blocked rows, the ticket detail, the picker and the status
+  report show a ⚠ suffix + amber fill (`chip--warn`) with "attached here
+  but NOT linked in Jira (since <date>)" in the tooltip; the upload flash
+  message lists them ("⚠ n blocker link(s) not in Jira, kept: S4DEF-1 →
+  S4ECOM-2"). Blocked section only [USER: "no hint" on stories in other
+  sections; links stay attached after a defect closes]; no reverse marker
+  on the Blockers page [USER: "not needed"]. `blocker_links.source`
+  (`manual` | `jira`) records where a link came from. Tests:
+  `tests/test_jira_importer.py` (parser), `tests/test_blockers.py`
+  (storage), `tests/test_delegated_web.py` (end-to-end upload).
 - **Excluded from the delegated board.** A jira key registered as a
   blocker is filtered out in `web_delegated._load_issues` (the board,
   status report and numbers all route through it) — a blocking defect must

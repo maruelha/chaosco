@@ -334,7 +334,12 @@ def run_delegated_import(cfg: dict, xml_path: Path) -> dict:
     before this existed."""
     result: dict = {"ok": False, "error": None, "xml_path": str(xml_path),
                     "parsed": 0, "inserted": 0, "updated": 0, "comments": 0,
-                    "blockers_registered": 0}
+                    "blockers_registered": 0,
+                    # "Blocks" links (2026-09-03): new links created from the
+                    # export, pairs skipped (target not a story), and the
+                    # links the export did NOT confirm ("blocker → ticket")
+                    "links_from_jira": 0, "links_skipped": 0,
+                    "links_not_in_jira": []}
     try:
         issues = parse_jira_xml(xml_path)
     except ET.ParseError as exc:
@@ -361,11 +366,64 @@ def run_delegated_import(cfg: dict, xml_path: Path) -> dict:
                     conn, btype, iss.get("summary") or iss["jira_key"],
                     iss["jira_key"], solman_id=iss.get("solman_id"))
                 result["blockers_registered"] += 1
+        _attach_from_blocks_links(conn, issues, result)
     finally:
         conn.close()
     result.update(counts)
     result["ok"] = True
     return result
+
+
+def _attach_from_blocks_links(conn, issues: list[dict], result: dict) -> None:
+    """AUTO-ATTACH from the export's "Blocks" links (2026-09-03 [USER]:
+    "automatically adds the defects to the blocked test cases in the column
+    Blockers"). For every (blocker, ticket) pair in the file whose blocker
+    is registered and whose ticket is a user story: attach (source 'jira';
+    an existing link — manual or jira — is left untouched). Then the
+    COMPARISON [USER: "if a blocker is already there that is NOT referenced
+    in the xml - it should not overwrite - but comment on it"]: a link whose
+    blocker IS in this export but whose pair the export does not carry gets
+    the `jira_missing_since` stamp (set once); a pair the export confirms
+    has its stamp cleared. Nothing is ever deleted. Blockers absent from
+    the export cannot be judged and are left alone."""
+    from datetime import datetime
+    from app.db import blockers as db_blockers
+    from app.db import delegated as db_delegated
+
+    pairs = blocked_pairs(issues)
+    export_keys = {iss["jira_key"] for iss in issues}
+    by_blocker_key = {b["jira_key"]: b for b in db_blockers.list_blockers(conn)
+                      if b.get("jira_key")}
+    existing = {(l["blocker_id"], l["jira_key"]) for l in db_blockers.list_blocker_links(conn)}
+    now = datetime.now().isoformat(timespec="seconds")
+
+    def _is_story(key: str) -> bool:
+        iss = db_jira.get_jira_issue(conn, key)
+        return iss is not None and db_delegated.is_story_type(iss.get("type"))
+
+    for blocker_key, ticket_key in sorted(pairs):
+        blocker = by_blocker_key.get(blocker_key)
+        if blocker is None:
+            continue                      # not a registered blocker (e.g. an epic)
+        if not _is_story(ticket_key):
+            result["links_skipped"] += 1   # blocks a non-story / unknown ticket
+            continue
+        if (blocker["blocker_id"], ticket_key) not in existing:
+            db_blockers.link_blocker(conn, blocker["blocker_id"], ticket_key,
+                                     source="jira")
+            result["links_from_jira"] += 1
+
+    for link in db_blockers.list_blocker_links(conn):
+        bkey = link.get("blocker_key")
+        if not bkey or bkey not in export_keys:
+            continue                      # blocker not in this file: no verdict
+        if (bkey, link["jira_key"]) in pairs:
+            db_blockers.set_link_jira_missing(conn, link["blocker_id"],
+                                              link["jira_key"], None)
+        else:
+            db_blockers.set_link_jira_missing(conn, link["blocker_id"],
+                                              link["jira_key"], now)
+            result["links_not_in_jira"].append(f"{bkey} → {link['jira_key']}")
 
 
 def run_jira_import(cfg: dict) -> dict:

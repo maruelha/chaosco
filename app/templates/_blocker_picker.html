@@ -76,9 +76,13 @@ if (!window.blkPickerInit) {
       // ID only [USER 2026-08-27: "I only want to see the id (else
       // everything explodes)"] — full name stays in the tooltip; the
       // chip links to the blocker's detail page.
-      return '<a class="chip chip--other" href="/blockers/' + b.blocker_id + '"'
-           + ' title="' + TYPE_LABEL[b.type] + ': ' + blkEsc(b.name) + '">'
-           + blkEsc(b.label || b.name) + '</a>';
+      // ⚠ + amber fill when the delegated import found the link NOT in
+      // Jira (2026-09-03) — same marker as the server-rendered chips.
+      const warn = !!b.jira_missing_since;
+      return '<a class="chip chip--other' + (warn ? ' chip--warn' : '') + '" href="/blockers/' + b.blocker_id + '"'
+           + ' title="' + TYPE_LABEL[b.type] + ': ' + blkEsc(b.name)
+           + (warn ? ' · ⚠ not linked in Jira since ' + blkEsc(String(b.jira_missing_since).slice(0, 10)) : '') + '">'
+           + blkEsc(b.label || b.name) + (warn ? ' ⚠' : '') + '</a>';
     }
 
     function renderRowChips(linked) {

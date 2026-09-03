@@ -1461,3 +1461,95 @@ def test_sales_xls_column_header_matches_with_or_without_the_space(tmp_path):
     path.write_bytes(_sales_xls_xlsx(("SM1",), header="Solman"))
     with pytest.raises(ParseError, match="Solman ID"):
         parse_sales_xls(path)
+
+
+# ---------------------------------------------------------------------------
+# Auto-attach from the export's "Blocks" links (2026-09-03 [USER]) — defects/
+# tasks are attached to the stories they block; existing links are never
+# overwritten or removed, unconfirmed ones get the ⚠ "not in Jira" marker.
+
+LINKS_BLOCK = """
+    <issuelinks>
+      <issuelinktype id="10000">
+        <name>Blocks</name>
+        <outwardlinks description="blocks">
+          <issuelink><issuekey id="1">S4ECOM-2001</issuekey></issuelink>
+          <issuelink><issuekey id="2">S4ECOM-2002</issuekey></issuelink>
+          <issuelink><issuekey id="6">S4EPIC-4001</issuekey></issuelink>
+        </outwardlinks>
+      </issuelinktype>
+      <issuelinktype id="10001">
+        <name>Cloners</name>
+        <outwardlinks description="clones">
+          <issuelink><issuekey id="9">TRANS4M-1</issuekey></issuelink>
+        </outwardlinks>
+      </issuelinktype>
+    </issuelinks>
+"""
+
+
+def _xml_with_blocks_links(extra_target=None):
+    block = LINKS_BLOCK
+    if extra_target:
+        block = block.replace(
+            '<issuelink><issuekey id="6">S4EPIC-4001</issuekey></issuelink>',
+            '<issuelink><issuekey id="6">S4EPIC-4001</issuekey></issuelink>'
+            f'<issuelink><issuekey id="7">{extra_target}</issuekey></issuelink>')
+    return XML.replace(
+        "<summary>SM3001_Unregistered defect in the export</summary>",
+        "<summary>SM3001_Unregistered defect in the export</summary>" + block)
+
+
+def test_upload_attaches_blockers_from_jira_links_and_marks_unconfirmed(client):
+    from urllib.parse import unquote_plus
+    from app.db import blockers as db_blockers
+    conn = web_delegated._get_conn()
+    try:
+        # pre-existing MANUAL links: one on the export's defect to a ticket
+        # Jira does NOT link (-> marked), one on a defect NOT in the export
+        # (-> no verdict, left alone)
+        b1 = db_blockers.create_blocker(conn, "defect", "Pricing", "S4DEF-3001")
+        db_blockers.link_blocker(conn, b1["blocker_id"], "S4ECOM-2003")
+        b2 = db_blockers.create_blocker(conn, "defect", "Elsewhere", "S4DEF-3002")
+        db_blockers.link_blocker(conn, b2["blocker_id"], "S4ECOM-2001")
+    finally:
+        conn.close()
+
+    resp = _upload(client, _xml_with_blocks_links(), "links.xml")
+    loc = unquote_plus(resp.headers["Location"])
+    assert "jira_ok=1" in loc
+    assert "2 blocker links from Jira" in loc
+    assert "1 blocker link(s) not in Jira, kept: S4DEF-3001" in loc and "S4ECOM-2003" in loc
+
+    conn = web_delegated._get_conn()
+    try:
+        links = {(l["blocker_key"], l["jira_key"]): l for l in db_blockers.list_blocker_links(conn)}
+    finally:
+        conn.close()
+    assert links[("S4DEF-3001", "S4ECOM-2001")]["source"] == "jira"
+    assert links[("S4DEF-3001", "S4ECOM-2002")]["source"] == "jira"
+    assert ("S4DEF-3001", "S4EPIC-4001") not in links               # not a story -> skipped
+    manual = links[("S4DEF-3001", "S4ECOM-2003")]
+    assert manual["source"] == "manual" and manual["jira_missing_since"]  # kept + stamped
+    other = links[("S4DEF-3002", "S4ECOM-2001")]
+    assert other["jira_missing_since"] is None                       # blocker not in export
+
+    # the Jira-confirmed chip on the board carries NO marker
+    board = client.get("/delegated/").get_data(as_text=True)
+    blocked = board.split("<summary>🔴 Blocked")[1].split("<summary>")[0]
+    assert "S4DEF-3001" in blocked
+    assert "chip--warn" not in blocked
+    # ...the unconfirmed one on the ticket detail does
+    detail = client.get("/delegated/ticket/S4ECOM-2003").get_data(as_text=True)
+    assert "chip--warn" in detail and "S4DEF-3001 ⚠" in detail
+    assert "NOT linked in Jira" in detail
+
+    # a later export that DOES carry the link clears the stamp
+    _upload(client, _xml_with_blocks_links(extra_target="S4ECOM-2003"), "links2.xml")
+    conn = web_delegated._get_conn()
+    try:
+        links = {(l["blocker_key"], l["jira_key"]): l for l in db_blockers.list_blocker_links(conn)}
+    finally:
+        conn.close()
+    assert links[("S4DEF-3001", "S4ECOM-2003")]["jira_missing_since"] is None
+    assert links[("S4DEF-3001", "S4ECOM-2003")]["source"] == "manual"    # never overwritten

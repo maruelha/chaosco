@@ -510,7 +510,7 @@ def test_links_carry_source_and_jira_missing_stamp(tmp_path):
         db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-1")            # manual
         db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-2", source="jira")
         db_blockers.link_blocker(conn, b["blocker_id"], "S4ECOM-1", source="jira")  # no overwrite
-        links = {l["jira_key"]: l for l in db_blockers.list_links(conn)}
+        links = {l["jira_key"]: l for l in db_blockers.list_blocker_links(conn)}
         assert links["S4ECOM-1"]["source"] == "manual"
         assert links["S4ECOM-2"]["source"] == "jira"
         assert links["S4ECOM-1"]["blocker_key"] == "S4DEF-1"
@@ -518,7 +518,7 @@ def test_links_carry_source_and_jira_missing_stamp(tmp_path):
 
         db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", "2026-09-03T10:00:00")
         db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", "2026-09-04T10:00:00")
-        links = {l["jira_key"]: l for l in db_blockers.list_links(conn)}
+        links = {l["jira_key"]: l for l in db_blockers.list_blocker_links(conn)}
         assert links["S4ECOM-1"]["jira_missing_since"] == "2026-09-03T10:00:00"  # set once
         # the chips see it too
         chips = db_blockers.blockers_for_tickets(conn, ["S4ECOM-1", "S4ECOM-2"])
@@ -529,6 +529,6 @@ def test_links_carry_source_and_jira_missing_stamp(tmp_path):
         assert one[0]["link_source"] == "manual"
 
         db_blockers.set_link_jira_missing(conn, b["blocker_id"], "S4ECOM-1", None)
-        assert db_blockers.list_links(conn)[0]["jira_missing_since"] is None
+        assert db_blockers.list_blocker_links(conn)[0]["jira_missing_since"] is None
     finally:
         conn.close()

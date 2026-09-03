@@ -173,7 +173,7 @@
   </div>
   <p class="blk-chips" data-key="{{ issue.jira_key }}" style="margin-bottom:0.6rem">
     {% if blockers %}
-      {% for b in blockers %}<a class="chip chip--other" href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" title="{{ b.type }}: {{ b.name }}">{{ b.jira_key or b.display_id or b.name }}</a>{% endfor %}
+      {% for b in blockers %}<a class="chip chip--other{% if b.link_jira_missing_since %} chip--warn{% endif %}" href="{{ url_for('blockers.blocker_detail', blocker_id=b.blocker_id) }}" title="{{ b.type }}: {{ b.name }}{% if b.link_jira_missing_since %} · ⚠ attached here but NOT linked in Jira (since {{ b.link_jira_missing_since[:10] }}) — kept; unlink here or link it in Jira{% endif %}">{{ b.jira_key or b.display_id or b.name }}{% if b.link_jira_missing_since %} ⚠{% endif %}</a>{% endfor %}
     {% else %}—{% endif %}
   </p>
   <button type="button" class="btn js-open-blockers"

@@ -160,6 +160,14 @@ def delegated_upload():
                f"{result['comments']} comments")
         if result.get("blockers_registered"):
             msg += f" · {result['blockers_registered']} blockers registered"
+        # "Blocks" links (2026-09-03 [USER]) — say what was attached and
+        # which existing links Jira does not confirm (never removed)
+        if result.get("links_from_jira"):
+            msg += f" · {result['links_from_jira']} blocker links from Jira"
+        if result.get("links_not_in_jira"):
+            missing = result["links_not_in_jira"]
+            msg += (f" · ⚠ {len(missing)} blocker link(s) not in Jira, kept: "
+                    + ", ".join(missing))
         return redirect(url_for("delegated.delegated_list", jira_ok="1", jira_msg=msg))
     return redirect(url_for("delegated.delegated_list", jira_ok="0",
                             jira_msg=result["error"]))

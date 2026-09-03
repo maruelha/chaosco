@@ -232,7 +232,9 @@ def _slim(rows: list[dict]) -> list[dict]:
     # explodes)"]; the full name stays for the dialog's pick list + titles.
     return [{"blocker_id": r["blocker_id"], "type": r["type"],
              "name": r["name"], "jira_key": r["jira_key"],
-             "label": db_blockers.chip_label(r)} for r in rows]
+             "label": db_blockers.chip_label(r),
+             # linked rows only (2026-09-03): the import's "not in Jira" stamp
+             "jira_missing_since": r.get("link_jira_missing_since")} for r in rows]
 
 
 def _picker_payload(conn, jira_key: str) -> dict:

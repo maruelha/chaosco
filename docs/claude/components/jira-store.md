@@ -22,6 +22,11 @@ real export (8 tickets, 27 comments; the parser worked first try).
   JIRAUSER keys).
 - **`app/jira_importer.py`** — a Jira RSS parser (DC 10.3; a pre-pass escapes
   bare `&`; parses reporter + markets [USER 2026-07-12: needed later]).
+  Since 2026-09-03 every parsed issue also carries `blocks` =
+  `{"outward": [keys it blocks], "inward": [keys blocking it]}` from
+  `<issuelinks>` (link type "Blocks" only) — NOT stored in the jira
+  tables; consumed at import time by the delegated auto-attach
+  (`[[delegated]]`). `blocked_pairs(issues)` unions both directions.
   `run_jira_import(cfg)` is ONE unified import [USER 2026-07-12]: newest `.xml`
   in `jira_folder` (fallback `jira_gatekeeper_folder`); both boards' buttons
   run the same import.

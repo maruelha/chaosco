@@ -274,7 +274,7 @@
         {# id-only chips [USER 2026-08-28: "just with the numbers"] — full
            name stays in the tooltip #}
         <td class="rpt-blockers">
-          {% for b in i.blockers %}<span title="{{ b.type }}: {{ b.name }}{% if b.team %} · team: {{ b.team }}{% endif %}">{{ b.jira_key or b.display_id or b.name }}{% if b.team %} <em style="font-style:normal; opacity:0.75">· {{ b.team }}</em>{% endif %}</span>{% else %}—{% endfor %}
+          {% for b in i.blockers %}<span title="{{ b.type }}: {{ b.name }}{% if b.team %} · team: {{ b.team }}{% endif %}">{{ b.jira_key or b.display_id or b.name }}{% if b.team %} <em style="font-style:normal; opacity:0.75">· {{ b.team }}</em>{% endif %}{% if b.link_jira_missing_since %} <em style="font-style:normal; color:#b45309" title="not linked in Jira since {{ b.link_jira_missing_since[:10] }}">⚠ not in Jira</em>{% endif %}</span>{% else %}—{% endfor %}
         </td>
         {% endif %}
         <td class="rpt-next">{{ i.next_step or "" }}</td>
