@@ -1045,15 +1045,22 @@ def test_ticket_detail_shows_mb_card(client):
 # "All Countries Combined" tab, "Solman ID" column, matched by substring
 # against each board ticket's raw Jira Summary.
 
-def _sales_xls_xlsx(solman_ids=("SM2001", "SM2003"), header="Solman ID") -> bytes:
+def _sales_xls_xlsx(solman_ids=("SM2001", "SM2003"), header="Solman ID",
+                    blank_first_row=False, delegated=None) -> bytes:
+    """delegated = {solman_id: cell value} adds a "Delegated testing" column
+    [USER 2026-09-03]; blank_first_row mirrors Marina's real file (headers
+    on row 2)."""
     # the real header is "Solman ID" [USER 2026-09-02: not "SolmanID"]
     import openpyxl
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "All Countries Combined"
-    ws.append([header, "Other Column"])
+    if blank_first_row:
+        ws.append([None, None, None])
+    cols = [header, "Other Column"] + (["Delegated testing"] if delegated is not None else [])
+    ws.append(cols)
     for sid in solman_ids:
-        ws.append([sid, "x"])
+        ws.append([sid, "x"] + ([(delegated or {}).get(sid)] if delegated is not None else []))
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -1553,3 +1560,56 @@ def test_upload_attaches_blockers_from_jira_links_and_marks_unconfirmed(client):
         conn.close()
     assert links[("S4DEF-3001", "S4ECOM-2003")]["jira_missing_since"] is None
     assert links[("S4DEF-3001", "S4ECOM-2003")]["source"] == "manual"    # never overwritten
+
+
+# ---------------------------------------------------------------------------
+# Sales XLS: header on row 2 + the reverse "Delegated testing = yes but not
+# on the board" check (2026-09-03 [USER])
+
+def test_sales_xls_header_row_is_located_not_assumed(tmp_path):
+    from app.sales_xls_importer import parse_sales_xls, parse_sales_xls_rows
+    path = tmp_path / "sales.xlsx"
+    path.write_bytes(_sales_xls_xlsx(("SM1", "SM2"), blank_first_row=True))
+    assert parse_sales_xls(path) == ["SM1", "SM2"]
+    # no delegated column -> delegated False everywhere
+    assert parse_sales_xls_rows(path) == [{"solman_id": "SM1", "delegated": False},
+                                          {"solman_id": "SM2", "delegated": False}]
+    path.write_bytes(_sales_xls_xlsx(("SM1", "SM2", "SM3"), blank_first_row=True,
+                                     delegated={"SM1": "Yes", "SM2": "no", "SM3": " x "}))
+    assert [r["delegated"] for r in parse_sales_xls_rows(path)] == [True, False, True]
+
+
+def test_sales_xls_upload_lists_delegated_yes_ids_missing_from_the_board(client):
+    from urllib.parse import unquote_plus
+    _upload(client)  # board: SM2001 (blocked), SM2002, SM2003, SM2004
+    data = _sales_xls_xlsx(("SM2001", "SM2003", "SM9001", "SM9002", "SM9003"),
+                           blank_first_row=True,
+                           delegated={"SM2001": "yes", "SM2003": "no",
+                                      "SM9001": "yes", "SM9002": "YES", "SM9003": "no"})
+    resp = _upload_sales_xls(client, data, "sales_v2.xlsx")
+    loc = unquote_plus(resp.headers["Location"])
+    assert "jira_ok=1" in loc
+    assert "3 rows delegated = yes, 2 of them NOT on the board" in loc
+
+    conn = web_delegated._get_conn()
+    try:
+        check = db_delegated.get_sales_xls_check(conn)
+    finally:
+        conn.close()
+    assert check["filename"] == "sales_v2.xlsx"
+    assert check["missing_ids"] == ["SM9001", "SM9002"]     # yes + no ticket; SM9003 is "no"
+
+    html = client.get("/delegated/").get_data(as_text=True)
+    section = html.split("Sales XLS: delegated = yes, but NOT on this board")[1].split("</details>")[0]
+    assert "sales_v2.xlsx" in section
+    assert "SM9001" in section and "SM9002" in section and "SM9003" not in section
+    # the matching itself still works with the header on row 2
+    assert "2 marked Yes" in loc
+
+    # a second upload with nothing missing replaces the list
+    _upload_sales_xls(client, _sales_xls_xlsx(("SM2001",), blank_first_row=True,
+                                              delegated={"SM2001": "yes"}), "sales_v3.xlsx")
+    html = client.get("/delegated/").get_data(as_text=True)
+    section = html.split("Sales XLS: delegated = yes, but NOT on this board")[1].split("</details>")[0]
+    assert "every delegated = yes Solman ID is on the board" in section
+    assert "SM9001" not in section

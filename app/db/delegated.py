@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS delegated_goal (
     goal       INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT
 );
+
+-- Sales XLS check (2026-09-03 [USER]): the LAST upload's list of Solman IDs
+-- with "Delegated testing = yes" that are NOT on the board. One row, replaced
+-- per upload — the board shows it until the next Sales XLS upload.
+CREATE TABLE IF NOT EXISTS delegated_sales_xls_check (
+    id          INTEGER PRIMARY KEY,  -- always 1
+    filename    TEXT,
+    checked_at  TEXT,
+    missing_ids TEXT                  -- newline-joined Solman IDs
+);
 """
 
 
@@ -294,6 +304,35 @@ def set_delegated_sales_xls(conn: sqlite3.Connection, jira_key: str,
                 sales_xls  = excluded.sales_xls,
                 updated_at = excluded.updated_at
         """, (jira_key, value, _now()))
+
+
+def set_sales_xls_check(conn: sqlite3.Connection, filename: str,
+                        missing_ids: list[str]) -> None:
+    """Replace the one-row result of the last Sales XLS upload."""
+    with conn:
+        conn.execute("""
+            INSERT INTO delegated_sales_xls_check (id, filename, checked_at, missing_ids)
+            VALUES (1, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                filename    = excluded.filename,
+                checked_at  = excluded.checked_at,
+                missing_ids = excluded.missing_ids
+        """, (filename, _now(), "\n".join(missing_ids)))
+
+
+def get_sales_xls_check(conn: sqlite3.Connection) -> dict | None:
+    """{'filename', 'checked_at', 'missing_ids': [...]} of the last upload,
+    None before the first one."""
+    try:
+        row = conn.execute(
+            "SELECT filename, checked_at, missing_ids"
+            " FROM delegated_sales_xls_check WHERE id = 1").fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if row is None:
+        return None
+    return {"filename": row[0], "checked_at": row[1],
+            "missing_ids": [x for x in (row[2] or "").split("\n") if x]}
 
 
 def get_delegated_goal(conn: sqlite3.Connection) -> int:

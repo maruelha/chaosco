@@ -626,6 +626,28 @@ Flash message reports match/no-match/unchanged counts. Tests:
 non-null values on no-match, always overwrites on match, rejects
 non-.xlsx/missing sheet or column).
 
+**Header row is LOCATED, not assumed (2026-09-03 [USER])**: Marina's real
+file has an empty first row and the headers on row 2 (she does not own the
+workbook, so the file stays as it is). `parse_sales_xls_rows` reads the
+tab without a header and scans the first 15 rows for the one carrying the
+Solman ID header (same idea as the sustain importer); the error names the
+first row's cells when nothing is found.
+
+**Reverse check — "Delegated testing = yes" but not on the board
+(2026-09-03 [USER])**: the same header row carries a **Delegated testing**
+column (yes-ish values `yes/y/x/true/1/ja`, case-insensitive; an older
+file without the column simply yields no delegated rows). After the
+marker pass the upload collects every delegated = yes Solman ID that is a
+substring of NO board ticket summary (same `sales_xls_matches` rule, same
+board-visible scope) and stores the list in the one-row table
+`delegated_sales_xls_check` (filename, checked_at, newline-joined ids —
+replaced per upload, `ON CONFLICT DO UPDATE`). The board shows it as an
+amber section "Sales XLS: delegated = yes, but NOT on this board" above
+the count strip (chips of the ids, open when non-empty, a green "✓ every
+… is on the board" line otherwise) until the next Sales XLS upload; the
+flash message adds "n rows delegated = yes, m of them NOT on the board".
+Storage `db_delegated.set_sales_xls_check` / `get_sales_xls_check`.
+
 ## Ways of Working & Testing Insights pages (2026-09-01 [USER])
 
 🤝 Ways of Working (the dailies decision log) and 💡 Testing Insights

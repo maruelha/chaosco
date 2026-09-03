@@ -272,6 +272,7 @@
     <li class="group-label">Blockers</li>
     <li><a href="#blockers">blockers</a></li>
     <li><a href="#blocker_links">blocker_links</a></li>
+    <li><a href="#delegated_sales_xls_check">delegated_sales_xls_check</a></li>
 
     <li class="group-label">CORE SOUTH Smoke Testing</li>
     <li><a href="#smoke_scenarios">smoke_scenarios</a></li>
@@ -657,6 +658,26 @@
       </tbody>
     </table>
     <div class="relations"><strong>List/add/edit:</strong> <code>GET /blockers/</code> · <code>GET/POST /blockers/new</code> · <code>GET/POST /blockers/&lt;id&gt;</code> &nbsp;·&nbsp; <strong>Close/next step:</strong> <code>POST /blockers/&lt;id&gt;/close</code> · <code>POST /blockers/&lt;id&gt;/next-step</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/blockers.py</code> &nbsp;·&nbsp; <strong>Notes:</strong> entity <code>('blocker', blocker_id)</code></div>
+  </div>
+
+  <!-- delegated_sales_xls_check -->
+  <div class="table-card" id="delegated_sales_xls_check">
+    <div class="table-card-header">
+      <span class="tname">delegated_sales_xls_check</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">ONE row — the result of the LAST ⤒ Sales XLS upload on the Delegated Testing board (2026-09-03 [USER]): the Solman IDs whose "Delegated testing" cell is yes but which match no board ticket summary. Replaced per upload (<code>ON CONFLICT(id) DO UPDATE</code>); shown as the amber "Sales XLS: delegated = yes, but NOT on this board" section until the next upload.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">always 1 — single row</td></tr>
+        <tr><td class="col-name">filename</td><td class="col-type">TEXT</td><td></td><td class="note-text">the uploaded workbook's name, shown in the section</td></tr>
+        <tr><td class="col-name">checked_at</td><td class="col-type">TEXT</td><td></td><td class="note-text">ISO datetime of the upload</td></tr>
+        <tr><td class="col-name">missing_ids</td><td class="col-type">TEXT</td><td></td><td class="note-text">newline-joined Solman IDs (delegated = yes, not on the board); empty string = nothing missing</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- blocker_links -->

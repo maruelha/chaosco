@@ -103,6 +103,7 @@ def delegated_list():
         blockers_by_key = db_blockers.blockers_for_tickets(
             conn, [i["jira_key"] for i in issues])
         hidden_non_story = _hidden_non_story(conn)
+        sales_xls_check = db_delegated.get_sales_xls_check(conn)
         # MB join (2026-08-28 [USER]): the ECOM tab's row for the same
         # Jira ID — MB Status column on four buckets, full card on detail
         mb_rows = db_ecom.ecom_rows_for_jira_keys(
@@ -133,6 +134,7 @@ def delegated_list():
         jira_comments=comments_map,
         note_counts=note_counts,
         hidden_non_story=hidden_non_story,
+        sales_xls_check=sales_xls_check,
         jira_ok=request.args.get("jira_ok"),
         jira_msg=request.args.get("jira_msg"),
     )
@@ -329,12 +331,13 @@ def delegated_upload_sales_xls():
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     xlsx_path = _UPLOAD_FOLDER / f"delegated_salesxls_{stamp}.xlsx"
     f.save(str(xlsx_path))
-    from app.sales_xls_importer import ParseError, parse_sales_xls
+    from app.sales_xls_importer import ParseError, parse_sales_xls_rows
     try:
-        solman_ids = parse_sales_xls(xlsx_path)
+        rows = parse_sales_xls_rows(xlsx_path)
     except ParseError as exc:
         return redirect(url_for("delegated.delegated_list", jira_ok="0",
                                 jira_msg=str(exc)))
+    solman_ids = [r["solman_id"] for r in rows]
     conn = _get_conn()
     try:
         issues, _comments = _load_issues(conn)
@@ -347,12 +350,22 @@ def delegated_upload_sales_xls():
             elif (annotations.get(i["jira_key"]) or {}).get("sales_xls") is None:
                 db_delegated.set_delegated_sales_xls(conn, i["jira_key"], "no")
                 newly_no += 1
+        # the reverse check (2026-09-03 [USER]): "Delegated testing = yes"
+        # rows whose Solman ID matches NO board ticket — stored (one row)
+        # and shown on the board until the next Sales XLS upload
+        summaries = [i.get("summary") for i in issues]
+        missing = [r["solman_id"] for r in rows if r["delegated"]
+                   and not any(sales_xls_matches(s, [r["solman_id"]])
+                               for s in summaries)]
+        db_delegated.set_sales_xls_check(conn, f.filename, missing)
     finally:
         conn.close()
     unchanged = len(issues) - matched - newly_no
-    msg = (f"{f.filename} ({len(solman_ids)} SolmanID values): "
+    delegated_yes = sum(1 for r in rows if r["delegated"])
+    msg = (f"{f.filename} ({len(solman_ids)} Solman ID values): "
            f"{matched} marked Yes · {newly_no} newly marked No · "
-           f"{unchanged} left unchanged")
+           f"{unchanged} left unchanged · "
+           f"{delegated_yes} rows delegated = yes, {len(missing)} of them NOT on the board")
     return redirect(url_for("delegated.delegated_list", jira_ok="1", jira_msg=msg))
 
 

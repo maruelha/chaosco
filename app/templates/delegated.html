@@ -79,6 +79,27 @@
 </p>
 {% endif %}
 
+{# Sales XLS reverse check (2026-09-03 [USER]): Solman IDs with "Delegated
+   testing = yes" in the sales workbook that match NO ticket on this board —
+   the last upload's result, kept until the next ⤒ Sales XLS upload. #}
+{% if sales_xls_check %}
+{% call ui.section('Sales XLS: delegated = yes, but NOT on this board', 'amber',
+                   badge=sales_xls_check.missing_ids|length, open=(sales_xls_check.missing_ids|length > 0)) %}
+<p style="color:#666; font-size:0.85rem; margin:0.6rem 1rem">
+  From <strong>{{ sales_xls_check.filename }}</strong> ({{ sales_xls_check.checked_at[:16]|replace('T', ' ') }}) —
+  rows whose "Delegated testing" is yes and whose Solman ID appears in no ticket summary here.
+  Refreshed by every Sales XLS upload.
+</p>
+{% if sales_xls_check.missing_ids %}
+<p style="margin:0 1rem 0.8rem; line-height:2">
+  {% for sid in sales_xls_check.missing_ids %}<span class="chip chip--other mono" style="user-select:all">{{ sid }}</span> {% endfor %}
+</p>
+{% else %}
+<p style="color:#1a7f37; font-size:0.9rem; margin:0 1rem 0.8rem">✓ every delegated = yes Solman ID is on the board.</p>
+{% endif %}
+{% endcall %}
+{% endif %}
+
 {# count strip [USER 2026-09-02]: every user story in the export, one
    segment per board section (incl. 📦 Backlog) + the total — the board's
    own numbers, NOT the Management Summary's (that one excludes backlog) #}
