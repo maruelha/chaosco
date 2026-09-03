@@ -18,21 +18,13 @@
    [USER], NO next step [USER: "leave next step out for now"]. Standalone
    (download=True drops the toolbar); filters are screen-only. #}
 
-{% if not download %}
-<div class="toolbar">
-  <span class="toolbar-title">ASPEN Incidents Report</span>
-  <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
-  <a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn">Σ Totals</a>
-  <a href="{{ url_for('sustain_issues.sustain_incidents_report_download') }}" class="btn">⬇ Download HTML</a>
-  <button class="btn" onclick="window.print()">Print</button>
-</div>
-{% endif %}
-
+{# no button toolbar on the reports [USER 2026-09-03: "the buttons on the
+   top of the report make NO sense at all"] — only a text download link #}
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · Sustainphase Issues</div>
     <div class="rh-title">ASPEN Incidents</div>
-    <div class="rh-date">{{ today }} · from the Go-Live defect tracker · grouped by status, newest comment/action per incident</div>
+    <div class="rh-date">{{ today }} · from the Go-Live defect tracker · grouped by status, newest comment/action per incident{% if not download %} · <a href="{{ url_for('sustain_issues.sustain_incidents_report_download') }}" class="dl-link">⬇ Download HTML</a>{% endif %}</div>
   </div>
   <div class="rh-stats">
     <div><div class="rh-stat-val">{{ total }}</div><div class="rh-stat-lbl">incidents</div></div>
@@ -43,7 +35,7 @@
 </div>
 
 {% if not download and total %}
-<div class="toolbar" id="rf-bar">
+<div class="toolbar" id="rf-bar" style="background:transparent; border:none; padding:0.2rem 0">
   <input type="text" id="rf-search" placeholder="incident number / title…" oninput="rfApply()"
          style="padding:0.3rem 0.6rem; border:1px solid #cbd5e1; border-radius:5px; font-size:0.8rem; min-width:14rem">
   {% for field, label in [('requestor', 'Requestor'), ('assigned', 'Assigned to')] %}

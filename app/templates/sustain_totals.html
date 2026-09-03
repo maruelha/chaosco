@@ -45,22 +45,12 @@
   {% endif %}
 {% endmacro %}
 
-{% if not download %}
-<div class="toolbar">
-  <span class="toolbar-title">Sustainphase Issues — Totals</span>
-  <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
-  <a href="{{ url_for('sustain_issues.sustain_solutions') }}" class="btn">🧩 Issue solutions</a>
-  <a href="{{ url_for('sustain_issues.sustain_incidents_report') }}" class="btn">📄 Incidents report</a>
-  <a href="{{ url_for('sustain_issues.sustain_totals_download') }}" class="btn">⬇ Download HTML</a>
-  <button class="btn" onclick="window.print()">Print</button>
-</div>
-{% endif %}
-
+{# no button toolbar on the reports [USER 2026-09-03] — only a text download link #}
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · Sustainphase Issues</div>
     <div class="rh-title">Totals — issue solutions per interface and per reason</div>
-    <div class="rh-date">{{ today }} · computed from the Issue Solution tracker · click a line to see the rows that count toward it</div>
+    <div class="rh-date">{{ today }} · computed from the Issue Solution tracker · click a line to see the rows that count toward it{% if not download %} · <a href="{{ url_for('sustain_issues.sustain_totals_download') }}" class="dl-link">⬇ Download HTML</a>{% endif %}</div>
   </div>
   <div class="rh-stats">
     <div><div class="rh-stat-val">{{ totals.total_all }}</div><div class="rh-stat-lbl">rows</div></div>

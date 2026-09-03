@@ -88,15 +88,17 @@ over the two tables, tested):
 round [USER: "click on a line and get the rows shown that applies to -
 and to be able to copy it somewhere"; "the totals would love to have a
 report"])**: `sustain_totals.html` is a standalone template in the
-delegated-report pattern (in-app WITH toolbar, `download=True` without).
+delegated-report pattern — but WITHOUT the button toolbar [USER 2026-09-03:
+"the buttons on the top of the report make NO sense at all"]: the only
+control is a text "⬇ Download HTML" link in the header line (screen only).
 Every interface / extra / reason line is a plain `<details>`; open it and
 the tracker rows behind the number appear as a table (open rows first —
 `_solutions_with_open_flag`, attached as `solutions` on every totals
 row). **⎘ Copy rows** per block (screen only) writes two clipboard
 flavors — the table as HTML (Teams / Outlook / Word keep it a table) and
 tab-separated text (Excel pastes into cells). The download keeps the
-click-to-open (no script needed) and drops toolbar + copy buttons; a
-print shows only the opened lines. `GET /sustain-issues/totals/download`,
+click-to-open (no script needed) and drops the download link + copy
+buttons; a browser print shows only the opened lines. `GET /sustain-issues/totals/download`,
 Email Reports choice `sustain_totals`.
 
 ## ASPEN incidents report — `/sustain-issues/report` (2026-09-03 [USER])
@@ -108,8 +110,10 @@ Requestor · Title · Assigned to · Latest comment/action — **grouped by
 Status** (`db_sustain_issues.incidents_by_status`: groups in order of
 first appearance over the date-desc list, "(no status)" last), **newest
 comment only**, **no next step** [USER: "leave next step out for now"].
-Screen-only filter bar (incident/title text, Requestor, Assigned to).
-`/report/download` = dated standalone file (toolbar + filters dropped),
+No button toolbar (same [USER] call as on Totals) — a text "⬇ Download
+HTML" link in the header line and a plain screen-only filter row
+(incident/title text, Requestor, Assigned to, Clear).
+`/report/download` = dated standalone file (link + filters dropped),
 Email Reports choice `sustain_incidents`. Button 📄 Incidents report in
 the board header; the board keeps the full history + notes.
 
