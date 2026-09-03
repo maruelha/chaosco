@@ -42,7 +42,8 @@ the row cell).
   `data-ns-target`), Gatekeeper ticket detail, Delegated Testing ticket
   detail (entity `delegated`), Blockers (`blocker`, on the blockers table
   itself), Smoke Testing scenarios (`smoke`), Sustainphase Issues
-  (`sustain_issue`, keyed by issue_key), Sustain Call-outs (`sustain_callout`,
+  (`sustain_incident`, keyed by the ASPEN incident number since 2026-09-03 —
+  was `sustain_issue`/issue_key), Sustain Call-outs (`sustain_callout`,
   2026-09-01 — on the sustain_callouts table itself, blocker pattern).
 
 ## Related

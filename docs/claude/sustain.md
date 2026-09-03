@@ -169,7 +169,8 @@ imported-days table (`sustain.html`, `ui.section('Call-outs', 'amber', ...)`).
 Own table `sustain_callouts` (channel, type, **name**, topic, ticket_no,
 impact, responsible, status, date_captured, next_step) — deliberately
 separate from `db/sustain.py`, never touched by the importer, same
-separation as `sustain_issue_annotations` from `sustain_issues`.
+separation as `sustain_incident_annotations` from `sustain_incidents` in
+Sustainphase Issues.
 
 **Short line vs. detail** [USER 2026-09-02, planning chat]: the list shows
 only the short `name` (+ ticket no); `topic` (the longer text), `impact`

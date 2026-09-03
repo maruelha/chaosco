@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-03 (b) — Sustainphase Issues rewritten: Go-Live defect tracker</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-03 (b) — Sustainphase Issues</h1>
+<p class="hint">The app was <strong>replaced</strong>: its source is now the
+<strong>Go-Live defect tracker</strong> workbook. One upload, three tabs, four pages: the
+incidents board, the Issue Solution tracker, the Totals report and the Incidents report.
+Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: <code>git pull</code>, then restart the app</strong>
+(<code>run_web.bat</code>). Five new tables are created at startup; the old Defects-tab
+tables stay in your database unused (nothing is dropped, nothing is carried over — see
+MarinaCheckSoon). You need your REAL <code>Go-Live defect tracker.xlsx</code> — the sample in
+<code>Download/</code> has no data rows.
+<br><br><em>Git:</em> everything is committed and pushed — nothing waits on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-blue">
+  <div class="box-head">1 · Upload + the incidents board</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="u1">
+      <span>Open the card, pick the Go-Live defect tracker, <strong>⤒ Upload &amp; import</strong>.
+      <span class="where">→ /sustain-issues/</span>
+      <span class="expect">Message: "…: n incidents — n new · 0 updated · m new comments · k
+      issue-solution rows · 17 interfaces". If some rows have no incident number: "… row(s)
+      without incident number skipped".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="u2">
+      <span>Look at the list.
+      <span class="expect">One row per incident: number · title · status chip · date /
+      requestor / assignee on the right. Open a row: meta line, <strong>Latest comment /
+      action</strong> (the newest, highlighted), a next-step field with ↻ / 🕘, and the
+      Notes card with "+ Add note".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="u3">
+      <span>Filters: type part of an incident number, then pick a Requestor, a Status, an
+      Assigned to.
+      <span class="expect">Rows narrow instantly, counter says "n shown, m hidden";
+      <strong>Clear</strong> resets everything.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="u4">
+      <span>Add a note with a heading and a pasted screenshot on one incident; type a next
+      step and click elsewhere.
+      <span class="expect">"Note added." back on the board with the thumbnail; the row shows
+      a notes badge and "→ your next step" in the summary.</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-amber">
+  <div class="box-head">2 · Comment history (column G)</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="c1">
+      <span>In the Excel, change the "Latest comment/action" of ONE incident, save, upload
+      again.
+      <span class="expect">Message "… 1 new comments". That incident's row now shows the new
+      text on top (highlighted) and the old one below it, each with its first-seen date.
+      Every other incident is unchanged.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="c2">
+      <span>Upload the same file once more without changes.
+      <span class="expect">"0 new comments" — the history does not grow.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-teal">
+  <div class="box-head">3 · 🧩 Issue Solution tracker</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="s1">
+      <span>Board header → <strong>🧩 Issue solutions</strong>.
+      <span class="where">→ /sustain-issues/solutions</span>
+      <span class="expect">A plain table with all nine columns, nothing editable.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="s2">
+      <span>Use the dropdowns (Owner, Interface, Msg, External ref., INC ref., Status) and the
+      text box.
+      <span class="expect">The text box searches Text, Reason AND Solution; dropdowns combine
+      with it; Clear resets.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-purple">
+  <div class="box-head">4 · Σ Totals report</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="t1">
+      <span>Board header → <strong>Σ Totals</strong>.
+      <span class="where">→ /sustain-issues/totals</span>
+      <span class="expect">No button bar — just the header (rows · open · interfaces) with a
+      small "⬇ Download HTML" text link. The interface list from the Total tab with
+      <strong>All</strong> and <strong>Open</strong> per line; amber "(not on the Total tab)"
+      lines for n/a and friends; a Total line whose All equals the tracker's row count.
+      Below: the same per Reason, the reason text in the wide column.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="t2">
+      <span>Click an interface line, then a reason line.
+      <span class="expect">The line opens and shows the tracker rows behind the number as a
+      small table, open rows first.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="t3">
+      <span><strong>⎘ Copy rows</strong> on an opened line → paste into Excel, then into a Teams
+      chat.
+      <span class="expect">Excel: one cell per column. Teams: a table.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="t4">
+      <span>⬇ Download HTML, open the file.
+      <span class="expect">Same page, no copy buttons; the lines still open on click.</span></span></label>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="box b-slate">
+  <div class="box-head">5 · 📄 Incidents report + Email Reports</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="r1">
+      <span>Board header → <strong>📄 Incidents report</strong>.
+      <span class="where">→ /sustain-issues/report</span>
+      <span class="expect">A table per Status group (count per group in the header), one row
+      per incident: Incident · Date · Requestor · Title · Assigned to · newest comment. No
+      next step, no button bar; a plain filter row (incident/title, Requestor, Assigned to)
+      and the "⬇ Download HTML" link.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="r2">
+      <span>Email Reports: look at the checkboxes.
+      <span class="where">→ /email-report</span>
+      <span class="expect">Two new choices: "Sustainphase Issues — ASPEN Incidents Report" and
+      "Sustainphase Issues — Totals".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="r3">
+      <span>Global 🔍: type an incident number, then a word from a title.
+      <span class="expect">Block "Sustainphase Issues" lists the incident; the hit opens the
+      board.</span></span></label>
+  </div>
+</div>
+
+<p class="hint">Small judgment calls of this build are listed as questions in
+<a href="MarinaCheckSoon.html">MarinaCheckSoon</a> (section "Added 2026-09-03").</p>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0903b-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

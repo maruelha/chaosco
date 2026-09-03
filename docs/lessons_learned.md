@@ -10,6 +10,20 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## A `summary::before` arrow is a grid item (2026-09-03)
+
+**What happened:** the Totals report lays each expandable line out as a
+CSS grid on the `<summary>`. The ▸ marker is a `::before` pseudo-element
+— and generated content participates in the grid, so it silently took
+column 1 and pushed every real column one slot to the right: the reason
+text landed in a 5rem count column, the count in the wide one [USER:
+"the reason field is really tiny and the count field huge"].
+**What it cost:** one round with Marina.
+**Now:** when a `summary` (or any element) with a `::before`/`::after`
+is a grid/flex container, the pseudo-element counts as the first/last
+child — reserve its column and put NO placeholder element before the
+content. Fixed in `sustain_totals.html` / `_sustain_report.css.html`.
+
 ## A db function name is global — the facade star-imports everything (2026-09-03)
 
 **What happened:** a new `list_links` in `app/db/blockers.py` (blocker ↔
