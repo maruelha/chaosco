@@ -76,13 +76,12 @@
 <p class="empty">Nothing imported yet — upload the Go-Live defect tracker first.</p>
 {% else %}
 <details class="line total"><summary class="cols-itf">
-  <span></span><span>Namespace</span><span>Interface</span><span>Version</span><span>Name</span><span>Variant in /aif/err</span><span>Index tables</span><span class="num">All</span><span class="num">Open</span>
+  <span>Namespace</span><span>Interface</span><span>Version</span><span>Name</span><span>Variant in /aif/err</span><span>Index tables</span><span class="num">All</span><span class="num">Open</span>
 </summary></details>
 {% for r in totals.rows %}
 <details class="line" id="itf-{{ loop.index }}">
   <summary class="cols-itf">
-    <span></span>
-    <span class="mono">{{ r.namespace or '—' }}</span>
+  <span class="mono">{{ r.namespace or '—' }}</span>
     <span class="mono">{{ r.interface or '—' }}</span>
     <span>{{ r.version or '' }}</span>
     <span>{{ r.name or '' }}</span>
@@ -97,8 +96,7 @@
 {% for r in totals.extra %}
 <details class="line extra" title="Interface value on the tracker that is on no row of the Total tab — listed so the totals add up">
   <summary class="cols-itf">
-    <span></span>
-    <span style="color:#92400e">(not on the Total tab)</span>
+  <span style="color:#92400e">(not on the Total tab)</span>
     <span class="mono">{{ r.interface }}</span>
     <span></span><span></span><span></span><span></span>
     <span class="num">{{ r.total_all }}</span>
@@ -108,7 +106,7 @@
 </details>
 {% endfor %}
 <details class="line total"><summary class="cols-itf">
-  <span></span><span>Total</span><span></span><span></span><span></span><span></span><span></span>
+  <span>Total</span><span></span><span></span><span></span><span></span><span></span>
   <span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
 </summary></details>
 {% endif %}
@@ -118,13 +116,12 @@
 <p class="empty">No reasons yet.</p>
 {% else %}
 <details class="line total"><summary class="cols-rsn">
-  <span></span><span>Reason</span><span class="num">All</span><span class="num">Open</span>
+  <span>Reason</span><span class="num">All</span><span class="num">Open</span>
 </summary></details>
 {% for r in reasons %}
 <details class="line">
   <summary class="cols-rsn">
-    <span></span>
-    <span>{{ r.reason }}</span>
+  <span>{{ r.reason }}</span>
     <span class="num">{{ r.total_all }}</span>
     <span class="num{% if not r.total_open %} zero{% endif %}">{{ r.total_open }}</span>
   </summary>
@@ -132,7 +129,7 @@
 </details>
 {% endfor %}
 <details class="line total"><summary class="cols-rsn">
-  <span></span><span>Total</span><span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
+  <span>Total</span><span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
 </summary></details>
 {% endif %}
 
