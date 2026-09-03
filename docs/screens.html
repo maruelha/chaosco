@@ -1254,7 +1254,7 @@
         <span class="feat-label">Click a line</span>
         <span class="feat-value">2026-09-03 [USER] — every interface / extra / reason line is a plain <code>&lt;details&gt;</code>: open it and the tracker rows behind the number appear as a table (open rows first). <strong>⎘ Copy rows</strong> per block (screen only) copies the table as HTML AND tab-separated text in one go — Teams/Outlook get a table, Excel gets cells.</span>
         <span class="feat-label">Report</span>
-        <span class="feat-value">Standalone template (delegated-report pattern) but with NO button toolbar [USER 2026-09-03: "the buttons on the top of the report make NO sense at all"] — a text "⬇ Download HTML" link in the header line is the only control. The download keeps the click-to-open (no script needed) and drops link + copy buttons; a browser print shows only the opened lines. Email Reports choice <code>sustain_totals</code>.</span>
+        <span class="feat-value">Standalone template (delegated-report pattern); the toolbar carries ONLY ⬇ Download HTML [USER 2026-09-03: "it doesnt make sense to have buttons that try to link to the board"]. Column-header and grand-total bars are plain rows, not clickable. The download keeps the click-to-open (no script needed) and drops toolbar + copy buttons; a browser print shows only the opened lines. Email Reports choice <code>sustain_totals</code>.</span>
       </div>
     </div>
   </div>
@@ -1265,7 +1265,7 @@
       <span class="screen-url">GET /sustain-issues/report · GET /sustain-issues/report/download</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">2026-09-03 [USER: "a good overview in HTML - more like a table … the board is good for checking, not for scanning"]. One row per incident — Incident · Date · Requestor · Title · Assigned to · Latest comment/action — <strong>grouped by Status</strong> (order of first appearance, "(no status)" last), <strong>newest comment only</strong>, <strong>no next step</strong> [USER: "leave next step out for now"]. Header stats: total + per status. No button toolbar [USER] — a text "⬇ Download HTML" link in the header line and a plain screen-only filter row (incident/title text · Requestor · Assigned to · Clear). The download = dated standalone file; Email Reports choice <code>sustain_incidents</code>. Button 📄 Incidents report in the board header.</p>
+      <p class="screen-desc">2026-09-03 [USER: "a good overview in HTML - more like a table … the board is good for checking, not for scanning"]. One row per incident — Incident · Date · Requestor · Title · Assigned to · Latest comment/action — <strong>grouped by Status</strong> (order of first appearance, "(no status)" last), <strong>newest comment only</strong>, <strong>no next step</strong> [USER: "leave next step out for now"]. Header stats: total + per status. Toolbar with ⬇ Download HTML only [USER: no links back to the board on a report] + a screen-only filter row (incident/title text · Requestor · Assigned to · Clear). The download = dated standalone file; Email Reports choice <code>sustain_incidents</code>. Button 📄 Incidents report in the board header.</p>
     </div>
   </div>
 

@@ -45,12 +45,19 @@
   {% endif %}
 {% endmacro %}
 
-{# no button toolbar on the reports [USER 2026-09-03] — only a text download link #}
+{% if not download %}
+<div class="toolbar">
+  {# no links back to the board on a report [USER 2026-09-03: "it doesnt make
+     sense to have buttons that try to link to the board"] — download only #}
+  <span class="toolbar-title">Sustainphase Issues — Totals</span>
+  <a href="{{ url_for('sustain_issues.sustain_totals_download') }}" class="btn">⬇ Download HTML</a>
+</div>
+{% endif %}
 <div class="report-header">
   <div>
     <div class="rh-eyebrow">UAT Coordination · Sustainphase Issues</div>
     <div class="rh-title">Totals — issue solutions per interface and per reason</div>
-    <div class="rh-date">{{ today }} · computed from the Issue Solution tracker · click a line to see the rows that count toward it{% if not download %} · <a href="{{ url_for('sustain_issues.sustain_totals_download') }}" class="dl-link">⬇ Download HTML</a>{% endif %}</div>
+    <div class="rh-date">{{ today }} · computed from the Issue Solution tracker · click a line to see the rows that count toward it</div>
   </div>
   <div class="rh-stats">
     <div><div class="rh-stat-val">{{ totals.total_all }}</div><div class="rh-stat-lbl">rows</div></div>
@@ -65,9 +72,9 @@
 {% if not totals.rows and not totals.extra %}
 <p class="empty">Nothing imported yet — upload the Go-Live defect tracker first.</p>
 {% else %}
-<details class="line total"><summary class="cols-itf">
-  <span>Namespace</span><span>Interface</span><span>Version</span><span>Name</span><span>Variant in /aif/err</span><span>Index tables</span><span class="num">All</span><span class="num">Open</span>
-</summary></details>
+<div class="line-head cols-itf">
+  <span></span><span>Namespace</span><span>Interface</span><span>Version</span><span>Name</span><span>Variant in /aif/err</span><span>Index tables</span><span class="num">All</span><span class="num">Open</span>
+</div>
 {% for r in totals.rows %}
 <details class="line" id="itf-{{ loop.index }}">
   <summary class="cols-itf">
@@ -95,19 +102,19 @@
   <div class="line-body">{{ rows_table(r.solutions, 'extra-rows-' ~ loop.index) }}</div>
 </details>
 {% endfor %}
-<details class="line total"><summary class="cols-itf">
-  <span>Total</span><span></span><span></span><span></span><span></span><span></span>
+<div class="line-sum cols-itf">
+  <span></span><span>Total</span><span></span><span></span><span></span><span></span><span></span>
   <span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
-</summary></details>
+</div>
 {% endif %}
 
 <div class="sec-label"><span>Total issue # per reason</span><span class="cnt">{{ reasons|length }}</span></div>
 {% if not reasons %}
 <p class="empty">No reasons yet.</p>
 {% else %}
-<details class="line total"><summary class="cols-rsn">
-  <span>Reason</span><span class="num">All</span><span class="num">Open</span>
-</summary></details>
+<div class="line-head cols-rsn">
+  <span></span><span>Reason</span><span class="num">All</span><span class="num">Open</span>
+</div>
 {% for r in reasons %}
 <details class="line">
   <summary class="cols-rsn">
@@ -118,9 +125,9 @@
   <div class="line-body">{{ rows_table(r.solutions, 'rsn-rows-' ~ loop.index) }}</div>
 </details>
 {% endfor %}
-<details class="line total"><summary class="cols-rsn">
-  <span>Total</span><span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
-</summary></details>
+<div class="line-sum cols-rsn">
+  <span></span><span>Total</span><span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
+</div>
 {% endif %}
 
 {% if not download %}

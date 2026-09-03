@@ -61,8 +61,11 @@
   details.line > summary .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
   details.line > summary .num.zero { font-weight: 400; }
   details.line.extra > summary { background: #fffbeb; }
-  details.line.total > summary { background: #f1f5f9; font-weight: 700; cursor: default; }
-  details.line.total > summary::before { content: ""; }
+  /* column header + grand-total rows: plain, NOT clickable */
+  .line-head, .line-sum { display: grid; align-items: center; gap: 0.6rem; padding: 0.3rem 0.7rem; font-size: 0.85rem; }
+  .line-head { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; border-bottom: 2px solid #e2e8f0; margin-bottom: 0.35rem; }
+  .line-sum { font-weight: 700; border-top: 2px solid #334155; margin-top: 0.35rem; }
+  .line-head .num, .line-sum .num { text-align: right; font-variant-numeric: tabular-nums; }
   .line-body { padding: 0.3rem 0.7rem 0.7rem 1.6rem; border-top: 1px solid #f1f5f9; }
   .line-body .actions { display: flex; justify-content: flex-end; margin-bottom: 0.3rem; }
   .cols-itf { grid-template-columns: 1rem 6rem 8rem 4rem 1fr 8rem 7rem 5rem 5rem; }
