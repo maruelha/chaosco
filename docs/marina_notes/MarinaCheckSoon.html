@@ -902,6 +902,56 @@ as they come up (convention in CLAUDE.md).</p>
   </div>
 </div>
 
+<h2 class="date">Added 2026-09-03</h2>
+<div class="box b-slate">
+  <div class="box-head">Sales XLS reverse check · Jira "Blocks" auto-attach · Links per mini app · Blockers back-to-row — my calls</div>
+  <div class="box-body">
+    <p style="margin:0 0 0.5rem; font-size:0.9rem">Click-through in
+    <a href="SessionTest_2026-09-03.html">SessionTest_2026-09-03</a>. Dialog-not-page,
+    two apps to start, names-as-links in Copy all, "Blocked section only", "no reverse
+    marker" were your calls; these were mine.</p>
+    <label class="task"><input type="checkbox" data-k="sx0903-yes-values">
+      <span><strong>What counts as "Delegated testing = yes"</strong>: yes / y / x / true / 1
+      / ja, case-insensitive, spaces trimmed. Anything else (blank, no, "planned") = not
+      delegated. Tell me if your column uses another word.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="sx0903-scope">
+      <span><strong>"Not on the board" is checked against every board ticket incl. 📦
+      Backlog</strong> (the same rows the SalesXLS marker pass sees). A delegated = yes ID
+      that only matches a parked ticket therefore does NOT appear in the missing list.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="jl0903-report-marker">
+      <span><strong>The ⚠ "not in Jira" marker is also on the status report</strong> (small
+      text after the chip), not only on the board and the ticket detail. Remove from the
+      report if it is noise there.
+      <span class="where">&#8594; /delegated/report</span></span></label>
+    <label class="task"><input type="checkbox" data-k="jl0903-no-verdict">
+      <span><strong>A blocker that is not in the export gets no verdict</strong> — its links
+      are neither confirmed nor marked. So a hand-attached defect that you never added to
+      the Jira filter will never get a ⚠. Extend the filter if you want every defect
+      judged.
+      <span class="where">&#8594; /blockers/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="jl0903-non-story">
+      <span><strong>A "blocks" link to a ticket that is not a user story is skipped</strong>
+      (counted, not attached, not shown). Fine as long as blockers only block stories.
+      <span class="where">&#8594; /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="la0903-dialog-global">
+      <span><strong>The 🔗 dialog lives in the base layout of every page</strong> (invisible
+      until a button opens it); only Delegated and Sustain have the button. Harmless, but
+      say so if you would rather have it only where the button is.
+      <span class="where">&#8594; any page</span></span></label>
+    <label class="task"><input type="checkbox" data-k="la0903-column-name">
+      <span><strong>Wording</strong>: the filter/column on the Links card says "Mini app", the
+      form row says "Show in mini app", the button says "🔗 Links (n)". Rename freely.
+      <span class="where">&#8594; /links</span></span></label>
+    <label class="task"><input type="checkbox" data-k="bk0903-back-target">
+      <span><strong>Blocker "← Back to list" always goes to the Blockers list</strong>, even
+      when you opened the blocker from a chip on the Delegated board. Want it to return to
+      wherever you came from instead?
+      <span class="where">&#8594; /blockers/&lt;id&gt;</span></span></label>
+  </div>
+</div>
+
 <script>
 // remember ticks in this browser
 document.querySelectorAll('label.task input').forEach(cb => {

@@ -602,7 +602,8 @@ happen."] Design settled in chat (both recommendations accepted):
 same file-upload pattern as the other two uploads (dated copy
 `data/uploads/delegated_salesxls_<timestamp>.xlsx`; no filename check
 beyond `.xlsx`). Parse-only in `app/sales_xls_importer.py`
-(`parse_sales_xls`): reads the workbook's **"All Countries Combined"**
+(`parse_sales_xls_rows`; `parse_sales_xls` = ids only): reads the
+workbook's **"All Countries Combined"**
 tab, column **Solman ID** (header matched ignoring case and spaces — the
 first build looked for "SolmanID" and never found Marina's column, fixed
 2026-09-02 [USER]), returns the non-empty values (de-duplicated,

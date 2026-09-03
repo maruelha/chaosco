@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Test Plan — 2026-09-03 — Sales XLS row 2 + reverse check, Jira Blocks auto-attach, Links per mini app, Blockers back-to-row</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color:#1d1d1f;
+         max-width: 56rem; margin: 2rem auto; padding: 0 1.2rem; line-height: 1.5; }
+  h1 { font-size: 1.4rem; }
+  .hint { color:#666; font-size:0.88rem; }
+  .box { background:#fff; border:1px solid #e2e2ea; border-radius:10px;
+         box-shadow:0 1px 3px rgba(0,0,0,.06); margin:1.1rem 0; overflow:hidden; }
+  .box-head { padding:0.6rem 1.1rem; color:#fff; font-weight:700; display:flex; gap:0.6rem; }
+  .box-body { padding:0.7rem 1.2rem 0.9rem; font-size:0.92rem; }
+  .b-blue .box-head { background:#2b6cb0; } .b-green .box-head { background:#1a7f37; }
+  .b-purple .box-head { background:#6d28d9; } .b-amber .box-head { background:#b45309; }
+  .b-slate .box-head { background:#334155; } .b-teal .box-head { background:#0e7490; }
+  .b-red .box-head { background:#c1121f; }
+  label.task { display:flex; gap:0.6rem; align-items:flex-start; padding:0.45rem 0;
+               border-bottom:1px solid #f2f2f6; cursor:pointer; }
+  label.task:last-child { border-bottom:none; }
+  label.task input { margin-top:0.25rem; }
+  label.task.done { opacity:0.45; text-decoration:line-through; }
+  .where { color:#2b6cb0; font-size:0.8rem; font-weight:600; }
+  code { background:#f0f0f5; border-radius:4px; padding:0 4px; font-size:0.85em; }
+  a { color:#2b6cb0; }
+  .expect { color:#166534; font-size:0.85rem; }
+  .prep { background:#fff7ed; border:1px solid #fdba74; border-radius:8px;
+          padding:0.7rem 1rem; font-size:0.9rem; margin:1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>🧪 Session Test Plan — 2026-09-03</h1>
+<p class="hint">Four things: the <strong>Sales XLS</strong> upload (header on row 2, the
+"delegated = yes but not on the board" list), the Delegated upload's <strong>auto-attach
+from Jira "Blocks" links</strong> with the ⚠ marker, <strong>Links per mini app</strong>
+(🔗 button + dialog on two boards), and the Blockers <strong>back-to-row</strong> fix.
+Ticks are remembered by this browser. Links assume
+<a href="http://127.0.0.1:8010" target="_blank">http://127.0.0.1:8010</a>.</p>
+
+<div class="prep">⚠️ <strong>First: <code>git pull</code>, then restart the app</strong>
+(<code>run_web.bat</code>). Two small migrations run at startup, safe to re-run: two new
+columns on the blocker-links table (every existing link becomes "manual"), and two new
+small tables (Sales XLS check result, link ↔ app). Nothing is lost.
+<br><br><em>Git:</em> everything is committed and pushed — nothing waits on your machine.</div>
+
+<!-- 1 -->
+<div class="box b-amber">
+  <div class="box-head">1 · Sales XLS — header on row 2 + the reverse check</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="x1">
+      <span>Board → <strong>⤒ Sales XLS</strong> with your REAL sales workbook (empty row 1,
+      headers on row 2).
+      <span class="where">→ /delegated/</span>
+      <span class="expect">No column error any more. Message: "…(n Solman ID values): a marked
+      Yes · b newly marked No · c left unchanged · d rows delegated = yes, e of them NOT on
+      the board".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="x2">
+      <span>Look above the count strip.
+      <span class="expect">Amber section "Sales XLS: delegated = yes, but NOT on this board"
+      with the file name, the time, and one chip per Solman ID (click a chip to select it for
+      copying). Badge = the count. If nothing is missing: a green "✓ every delegated = yes
+      Solman ID is on the board" line and the section is collapsed.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="x3">
+      <span>Spot-check two chips against the workbook.
+      <span class="expect">Both have "Delegated testing" = yes in the Excel and no ticket
+      summary on the board contains that Solman ID. See MarinaCheckSoon for what counts as
+      "yes".</span></span></label>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="box b-red">
+  <div class="box-head">2 · Delegated upload — blockers attached from Jira "Blocks" links</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="j1">
+      <span>Before uploading: on the Blockers page note one defect that you attached BY HAND
+      to a test case Jira does not link it to (or attach one now via a blocked row's
+      Manage blockers).
+      <span class="where">→ /blockers/ · /delegated/</span></span></label>
+    <label class="task"><input type="checkbox" data-k="j2">
+      <span><strong>⤒ Upload &amp; import</strong> your delegated Jira XML export.
+      <span class="expect">Message ends with "· n blocker links from Jira" and, if it
+      applies, "· ⚠ m blocker link(s) not in Jira, kept: S4DEF-… → S4ECOM-…". Nothing was
+      detached.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="j3">
+      <span>Open the Blocked section.
+      <span class="expect">Blocked test cases now carry the chips of the defects that block
+      them in Jira — without you attaching anything. A hand-attached link Jira does not know
+      shows the chip with amber fill and a <strong>⚠</strong>; hover it: "attached here but NOT
+      linked in Jira (since date) — kept; unlink here or link it in Jira".</span></span></label>
+    <label class="task"><input type="checkbox" data-k="j4">
+      <span>Open that test case's Details page and the status report.
+      <span class="expect">Same ⚠ chip on the detail page; the status report shows "⚠ not in
+      Jira" after the chip text. Other sections of the board show nothing new (blocked
+      section only, as agreed).</span></span></label>
+    <label class="task"><input type="checkbox" data-k="j5">
+      <span>Add the missing link in Jira, re-export, upload again.
+      <span class="expect">The ⚠ disappears from that chip; the link itself was never
+      touched.</span></span></label>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="box b-blue">
+  <div class="box-head">3 · Links per mini app</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="l1">
+      <span>Links card → open a link (or + Add Link).
+      <span class="where">→ /links</span>
+      <span class="expect">New row "Show in mini app" with two checkboxes: Delegated Testing,
+      Core South Sustainphase Monitoring. Tick Delegated Testing, Save.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l2">
+      <span>Back on the Links list.
+      <span class="expect">New "Mini app" filter next to Tags; a Mini app column with a
+      "🔗 Delegated Testing" chip on that link. Filter by Delegated Testing → only that
+      link.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l3">
+      <span>Delegated board header → <strong>🔗 Links (1)</strong>.
+      <span class="where">→ /delegated/</span>
+      <span class="expect">A dialog over the board: the link as a button (opens in a new
+      tab ↗) + a ⎘ copy button; "Manage on the Links card…" bottom left; "📋 Copy all"
+      bottom right. Close with ✕ — you are still where you were.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l4">
+      <span>Tick a second link for the app, then <strong>Copy all</strong> and paste into a
+      Teams chat, and once into a plain text field.
+      <span class="expect">Teams: a bullet list of the link NAMES, each clickable. Plain
+      text: "• name — url" lines.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="l5">
+      <span>Sustain card header → 🔗 Links.
+      <span class="where">→ /sustain/</span>
+      <span class="expect">Dimmed "🔗 Links" (no count) until a link is ticked for Core South
+      Sustainphase Monitoring; the dialog then says so and points to the Links
+      card.</span></span></label>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="box b-slate">
+  <div class="box-head">4 · Blockers — back to the row</div>
+  <div class="box-body">
+    <label class="task"><input type="checkbox" data-k="b1">
+      <span>Scroll down the Blockers list, open a blocker's Detail, change something, Save,
+      then press <strong>← Back to list</strong> (or the Blockers breadcrumb).
+      <span class="where">→ /blockers/</span>
+      <span class="expect">The list opens AT that row, tinted light amber — not at the
+      top.</span></span></label>
+    <label class="task"><input type="checkbox" data-k="b2">
+      <span>On the list, scroll down and change a Team select or ✔ Close a blocker.
+      <span class="expect">The page refreshes and stays at the same scroll position.</span></span></label>
+  </div>
+</div>
+
+<p class="hint">Small judgment calls of this build are listed as questions in
+<a href="MarinaCheckSoon.html">MarinaCheckSoon</a> (section "Added 2026-09-03").</p>
+
+<script>
+document.querySelectorAll('label.task input').forEach(cb => {
+  const key = 'st0903-' + cb.dataset.k;
+  cb.checked = localStorage.getItem(key) === '1';
+  cb.closest('label').classList.toggle('done', cb.checked);
+  cb.addEventListener('change', () => {
+    localStorage.setItem(key, cb.checked ? '1' : '0');
+    cb.closest('label').classList.toggle('done', cb.checked);
+  });
+});
+</script>
+</body>
+</html>

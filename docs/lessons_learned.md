@@ -10,6 +10,18 @@ promote-lessons step (story → rule → test). Newest first.
 
 ---
 
+## A db function name is global — the facade star-imports everything (2026-09-03)
+
+**What happened:** a new `list_links` in `app/db/blockers.py` (blocker ↔
+ticket links) shadowed `app/db/reference.py`'s `list_links` (the Links
+card) because `app/database.py` does `from app.db.<module> import *` for
+every module. Four tests in unrelated files went red; the blockers suite
+itself was green.
+**What it cost:** one full-suite run to notice, one rename.
+**Now:** db function names carry their entity (`list_blocker_links`) —
+rule in `coding_guidelines.md` § Naming; a duplicate-name test is queued
+for review round 2.
+
 ## Giving a list-only entity a detail page reroutes its notes (2026-09-02)
 
 **What happened:** Sustain call-outs had notes on the list page only

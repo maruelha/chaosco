@@ -17,9 +17,10 @@ again and again, filterable and copyable. The GLOBAL counterpart to
 **Columns**: `description` (NOT NULL — the display name), `url` (NOT NULL),
 `area`, `tool`, `tags`, timestamps.
 
-- **List**: multi-select filters for area, tool and tags plus a free-text
-  search; options from the values in use (`get_link_options`). One-click copy
-  per row.
+- **List**: multi-select filters for area, tool, tags and (since
+  2026-09-03) mini app, plus a free-text search; options from the values in
+  use (`get_link_options`), the app list from `app/mini_apps.py`. One-click
+  copy per row.
 - **Detail**: the form plus the shared notes section (registry key `link`).
 - **Incoming**: inbox items routed to `link` appear in the amber
   `_incoming_section.html` block at the top of the list — attach one to a link

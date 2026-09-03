@@ -140,6 +140,13 @@ module: someone else is probably reading its data.**
   existing one by name/ticket, or a NEW one created from the note, see
   `sustain.md`) — adding a target means touching `_INBOX_TARGET_TYPES`,
   the picker and a search/exists branch.
+- **Links-card links can be attached to mini apps** (2026-09-03,
+  `link_apps` + the Flask-free registry `app/mini_apps.py`): the app's page
+  header shows `ui.app_links_button(slug, count)`, and ONE dialog in
+  `base.html` (fed by `/links/for/<slug>.json`) lists them everywhere.
+  Delegated Testing and Core South Sustainphase Monitoring to start —
+  adding an app = registry entry + button + count in the route
+  (`links.md`).
 - **Status report buckets** for Retail and ECOM come from ONE config
   (`config/status_mappings.yaml`) via `reporter.py`.
 - **`db/core.py` still holds the older shared tables** (defects, spillover,

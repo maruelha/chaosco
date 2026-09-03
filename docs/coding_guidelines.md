@@ -45,4 +45,12 @@ JSON-or-redirect convention currently described in
 
 ## Naming
 
+- **Function names in `app/db/*` must be unique across the whole package.**
+  `app/database.py` star-imports every db module, so two modules defining
+  the same name silently shadow each other through the facade (2026-09-03:
+  a new `blockers.list_links` hid `reference.list_links` and broke four
+  unrelated tests). Prefix with the entity (`list_blocker_links`). A test
+  that fails on duplicate public names across `app/db/` is on the list for
+  review round 2.
+
 *(filled from review-round-2 findings)*
