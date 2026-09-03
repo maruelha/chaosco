@@ -2,81 +2,81 @@
 {% import '_macros.html' as ui %}
 {% block title %}Sustainphase Issues — Test Coordination{% endblock %}
 
-{# Build plan step 3 (2026-08-28): expandable-row list (kpd pattern — no
-   wide table to scroll), Channel/ASPEN STATUS/Country/Priority filters,
-   open vs closed split by Date Closed, red chip when the issue blocks
-   execution. Callouts + next step are Marina's authored fields
-   (sustain_issue_annotations), saved onblur. #}
+{# Rewritten 2026-09-03 [USER]: the board is the "ASPEN Incidents" tab of
+   the Go-Live defect tracker — every column, expandable rows (kpd pattern),
+   column G as a HISTORY (newest on top, older ones below), the shared notes
+   component + the next-step component per incident, filters: incident
+   number (text) · Requestor · Status · Assigned To. #}
 
-{% macro issue_row(i) %}
-<details class="si-row" data-key="{{ i.issue_key }}"
-         data-channel="{{ i.channel or '' }}" data-status="{{ i.aspen_status or '' }}"
-         data-country="{{ i.country or '' }}" data-priority="{{ i.priority or '' }}">
+{% macro incident_row(i) %}
+<details class="si-row" data-key="{{ i.incident_number }}"
+         data-search="{{ (i.incident_number ~ ' ' ~ (i.title or ''))|lower }}"
+         data-requestor="{{ i.requestor or '' }}" data-status="{{ i.status or '' }}"
+         data-assigned="{{ i.assigned_to or '' }}">
   <summary>
-    <span class="mono" {% if i.former_placeholder %}title="formerly {{ i.former_placeholder }}"{% endif %}>{{ i.issue_key }}</span>
-    <strong>{{ i.short_description or '(no description)' }}</strong>
-    {% if i.aspen_status %}<span class="chip chip--none">{{ i.aspen_status }}</span>{% endif %}
-    {% if i.priority %}<span style="color:#666; font-size:0.8rem">{{ i.priority }}</span>{% endif %}
-    {% if (i.blocks_execution or '')|lower|trim in ('yes', 'y') %}
-    <span class="chip" style="background:#c1121f; color:#fff">blocks execution</span>
-    {% endif %}
-    {% if i.callouts %}<span title="{{ i.callouts }}">📣</span>{% endif %}
+    <span class="mono">{{ i.incident_number }}</span>
+    <strong>{{ i.title or '(no title)' }}</strong>
+    {% if i.status %}<span class="chip chip--none">{{ i.status }}</span>{% endif %}
+    {% if i.notes %}<span class="notes-count-badge" title="{{ i.notes|length }} note(s)">{{ i.notes|length }}</span>{% endif %}
     {% if i.next_step %}<span style="color:#2b6cb0; font-size:0.78rem" title="next step">→ {{ i.next_step }}</span>{% endif %}
     <span style="color:#999; font-size:0.78rem; margin-left:auto">
-      {{ i.channel or '—' }} · {{ i.country or '—' }}
-      {%- if i.date_reported %} · reported {{ i.date_reported }}{% endif -%}
-      {%- if i.date_closed %} · closed {{ i.date_closed }}{% endif -%}
+      {{ i.date or '—' }} · {{ i.requestor or '—' }} · {{ i.assigned_to or 'unassigned' }}
     </span>
   </summary>
   <div class="kpd-row-body">
-    {% if i.description %}<p><strong>Description:</strong> {{ i.description }}</p>{% endif %}
-    {% if i.comment %}<p><strong>Comment (Excel):</strong> {{ i.comment }}</p>{% endif %}
-    <p style="color:#666">
-      {%- set meta = [] -%}
-      {%- if i.sales_dtc %}{% set _ = meta.append('Sales/DTC: ' ~ i.sales_dtc) %}{% endif -%}
-      {%- if i.raised_by %}{% set _ = meta.append('Raised by ' ~ i.raised_by) %}{% endif -%}
-      {%- if i.assigned_to %}{% set _ = meta.append('Assigned to ' ~ i.assigned_to) %}{% endif -%}
-      {%- if i.tech_team %}{% set _ = meta.append('Tech team ' ~ i.tech_team) %}{% endif -%}
-      {%- if i.order_number %}{% set _ = meta.append('Order ' ~ i.order_number) %}{% endif -%}
-      {%- if i.scenario %}{% set _ = meta.append('Scenario: ' ~ i.scenario) %}{% endif -%}
-      {%- if i.affected_testcases %}{% set _ = meta.append('Testcases: ' ~ i.affected_testcases) %}{% endif -%}
-      {%- if i.retest_dependency %}{% set _ = meta.append('Retest dep.: ' ~ i.retest_dependency) %}{% endif -%}
-      {%- if i.defect_reason %}{% set _ = meta.append('Reason: ' ~ i.defect_reason) %}{% endif -%}
-      {{ meta|join(' · ') if meta else '' }}
+    <p style="color:#666; font-size:0.85rem">
+      <strong>Date</strong> {{ i.date or '—' }} ·
+      <strong>Requestor</strong> {{ i.requestor or '—' }} ·
+      <strong>Status</strong> {{ i.status or '—' }} ·
+      <strong>Assigned to</strong> {{ i.assigned_to or '—' }} ·
+      <span title="first import / last import that carried this incident">seen {{ (i.first_seen or '')[:10] }} → {{ (i.last_seen or '')[:10] }}</span>
     </p>
-    <div style="display:flex; gap:0.6rem; align-items:flex-start; flex-wrap:wrap; margin-top:0.5rem">
-      <textarea class="si-callouts" data-key="{{ i.issue_key }}" rows="2"
-                placeholder="call-outs / my comment…"
-                style="flex:1 1 18rem; font-size:0.85rem"
-                onblur="siCalloutsSave(this)">{{ i.callouts or '' }}</textarea>
-      <span style="display:flex; gap:0.3rem; align-items:center; flex:1 1 18rem">
-        <input type="text" class="rt-comment si-ns" data-key="{{ i.issue_key }}"
-               value="{{ i.next_step or '' }}" placeholder="next step…"
-               style="flex:1" onblur="siNsSave(this)">
-        <button type="button" class="btn btn-sm js-ns-archive"
-                title="archive the current next step and start fresh"
-                data-entity-type="sustain_issue" data-entity-id="{{ i.issue_key }}"
-                data-ns-target='input.si-ns[data-key="{{ i.issue_key }}"]'>↻</button>
-        <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
-                data-entity-type="sustain_issue" data-entity-id="{{ i.issue_key }}"
-                data-ns-label="{{ i.issue_key }} — {{ i.short_description or '' }}">🕘</button>
-      </span>
+    {# column G history: newest first; a changed text is ADDED on top by the
+       import, an unchanged one leaves the list as it is [USER] #}
+    <div style="margin:0.5rem 0">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:0.3rem">Latest comment / action</div>
+      {% for c in i.comments %}
+      <div class="si-comment{% if loop.first %} si-comment--latest{% endif %}">
+        <span class="si-comment-date" title="first seen in an upload">{{ (c.first_seen or '')[:10] }}</span>
+        <span>{{ c.text }}</span>
+      </div>
+      {% else %}
+      <p style="color:#aaa; font-size:0.85rem">— no comment yet —</p>
+      {% endfor %}
     </div>
+    <div style="display:flex; gap:0.3rem; align-items:center; margin:0.6rem 0">
+      <input type="text" class="rt-comment si-ns" data-key="{{ i.incident_number }}"
+             value="{{ i.next_step or '' }}" placeholder="next step…"
+             style="flex:1" onblur="siNsSave(this)">
+      <button type="button" class="btn btn-sm js-ns-archive"
+              title="archive the current next step and start fresh"
+              data-entity-type="sustain_incident" data-entity-id="{{ i.incident_number }}"
+              data-ns-target='input.si-ns[data-key="{{ i.incident_number }}"]'>↻</button>
+      <button type="button" class="btn btn-sm js-ns-history" title="next-step history"
+              data-entity-type="sustain_incident" data-entity-id="{{ i.incident_number }}"
+              data-ns-label="{{ i.incident_number }} — {{ i.title or '' }}">🕘</button>
+    </div>
+    {% with entity_type=notes_entity, entity_id=i.incident_number, notes=i.notes, notes_return_to='list' %}
+      {% include '_notes_section.html' %}
+    {% endwith %}
   </div>
 </details>
 {% endmacro %}
 
 {% block content %}
-{% call ui.page_header('Sustainphase Issues', 'Defects from the '
-                       ~ 'DTC_Sustainphase_Tracking workbook (Defects tab) — '
-                       ~ 'upserted per upload; issues without an ASPEN id get '
-                       ~ 'a SUS-nnn placeholder until it arrives.') %}
+{% call ui.page_header('Sustainphase Issues', 'ASPEN incidents from the '
+                       ~ 'Go-Live defect tracker workbook — upserted per upload by '
+                       ~ 'incident number; the latest comment/action is kept as a history.') %}
+<a href="{{ url_for('sustain_issues.sustain_solutions') }}" class="btn"
+   title="the Issue Solution tracker tab — read-only table with filters">🧩 Issue solutions</a>
+<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn"
+   title="the Total tab, computed: issues per interface (all / open) and per reason">Σ Totals</a>
 <form method="post" action="{{ url_for('sustain_issues.sustain_issues_upload') }}"
       enctype="multipart/form-data" style="display:inline">
   <input type="file" name="file" accept=".xlsx" required
          style="font-size:0.8rem; max-width:15rem">
   <button type="submit" class="btn btn-primary"
-          title="upload the DTC_Sustainphase_Tracking workbook">
+          title="upload the Go-Live defect tracker workbook — all three tabs are imported">
     ⤒ Upload &amp; import</button>
 </form>
 {% endcall %}
@@ -90,82 +90,70 @@
 </div>
 {% endif %}
 
-{% if not issues %}
+{% if not incidents %}
 <p style="color:#888; margin:0.6rem 0 1rem">
-  No issues yet — pick the <strong>DTC_Sustainphase_Tracking</strong>
+  No incidents yet — pick the <strong>Go-Live defect tracker</strong>
   workbook above and press <strong>⤒ Upload &amp; import</strong>.
-  (An empty Defects tab imports fine — the list fills as the team logs
-  defects.)
+  (An empty ASPEN Incidents tab imports fine — the list fills as the team
+  logs incidents.)
 </p>
 {% else %}
 
-{%- set open_issues = issues|rejectattr('date_closed')|list -%}
-{%- set closed_issues = issues|selectattr('date_closed')|list -%}
-
 <div class="ui-filterbar" style="margin-bottom:0.8rem">
-  {% for field, label in [('channel', 'Channel'), ('status', 'ASPEN status'),
-                          ('country', 'Country'), ('priority', 'Priority')] %}
-  {%- set values = [] -%}
-  {%- for i in issues -%}
-    {%- set v = i.channel if field == 'channel' else (i.aspen_status if field == 'status'
-                else (i.country if field == 'country' else i.priority)) -%}
-    {%- if v and v not in values %}{% set _ = values.append(v) %}{% endif -%}
-  {%- endfor -%}
+  <input type="text" id="si-filter-search" placeholder="incident number / title…"
+         oninput="siApplyFilters()" style="min-width:14rem"
+         title="type part of an incident number or title">
+  {% for field, label in [('requestor', 'Requestor'), ('status', 'Status'),
+                          ('assigned', 'Assigned to')] %}
+  {%- set values = filter_options['assigned_to' if field == 'assigned' else field] -%}
   <select id="si-filter-{{ field }}" onchange="siApplyFilters()">
     <option value="">{{ label }}: all</option>
-    {% for v in values|sort %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+    {% for v in values %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
   </select>
   {% endfor %}
+  <button type="button" class="btn btn-sm" onclick="siClearFilters()">Clear</button>
   <span id="si-filter-info" style="color:#888; font-size:0.82rem"></span>
 </div>
 
-{% call ui.section('Open issues', 'blue', badge=open_issues|length) %}
-{% for i in open_issues %}{{ issue_row(i) }}{% else %}
-<p style="color:#888; margin:0.6rem 1rem">No open issues.</p>
-{% endfor %}
-{% endcall %}
-
-{% call ui.section('Closed', 'slate', badge=closed_issues|length, open=False) %}
-{% for i in closed_issues %}{{ issue_row(i) }}{% else %}
-<p style="color:#888; margin:0.6rem 1rem">Nothing closed yet.</p>
-{% endfor %}
+{% call ui.section('ASPEN incidents', 'blue', badge=incidents|length) %}
+{% for i in incidents %}{{ incident_row(i) }}{% endfor %}
 {% endcall %}
 
 <script>
 function siApplyFilters() {
+  const q = document.getElementById('si-filter-search').value.trim().toLowerCase();
   const f = {};
-  ['channel', 'status', 'country', 'priority'].forEach(k => {
+  ['requestor', 'status', 'assigned'].forEach(k => {
     f[k] = document.getElementById('si-filter-' + k).value;
   });
-  const active = Object.values(f).some(v => v);
+  const active = q || Object.values(f).some(v => v);
   let shown = 0, hidden = 0;
   document.querySelectorAll('details.si-row').forEach(d => {
-    const ok = (!f.channel || d.dataset.channel === f.channel)
+    const ok = (!q || d.dataset.search.includes(q))
+            && (!f.requestor || d.dataset.requestor === f.requestor)
             && (!f.status || d.dataset.status === f.status)
-            && (!f.country || d.dataset.country === f.country)
-            && (!f.priority || d.dataset.priority === f.priority);
+            && (!f.assigned || d.dataset.assigned === f.assigned);
     d.style.display = ok ? '' : 'none';
     ok ? shown++ : hidden++;
   });
   document.getElementById('si-filter-info').textContent =
     active ? (shown + ' shown, ' + hidden + ' hidden') : '';
 }
-
-function siSave(el, url, payload) {
-  fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(payload) })
+function siClearFilters() {
+  document.getElementById('si-filter-search').value = '';
+  ['requestor', 'status', 'assigned'].forEach(k => {
+    document.getElementById('si-filter-' + k).value = '';
+  });
+  siApplyFilters();
+}
+function siNsSave(el) {
+  fetch('/sustain-issues/incident/' + encodeURIComponent(el.dataset.key) + '/next-step',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ next_step: el.value }) })
     .then(r => { if (!r.ok) throw new Error();
                  el.style.borderColor = '#1a7f37';
                  setTimeout(() => { el.style.borderColor = ''; }, 800); })
     .catch(() => { el.style.borderColor = '#c00'; alert('Saving failed — try again.'); });
-}
-function siCalloutsSave(el) {
-  siSave(el, '/sustain-issues/issue/' + encodeURIComponent(el.dataset.key) + '/callouts',
-         { callouts: el.value });
-}
-function siNsSave(el) {
-  siSave(el, '/sustain-issues/issue/' + encodeURIComponent(el.dataset.key) + '/next-step',
-         { next_step: el.value });
 }
 </script>
 {% include '_next_step_history.html' %}

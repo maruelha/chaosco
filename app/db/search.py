@@ -152,29 +152,22 @@ def search_order_number(conn: sqlite3.Connection, q: str) -> list[dict]:
             "SELECT id, entity_type, entity_id, heading, note FROM notes"
             " WHERE heading LIKE ? OR note LIKE ? LIMIT 20", (like, like)))])
 
-    # -- 8. Sustainphase Issues (2026-08-28) — order number, issue key,
-    # ASPEN Defect ID AND the former SUS-nnn placeholder (a promoted
-    # issue must stay findable by its old placeholder [USER]). New SQL →
-    # portable case-insensitive LIKE.
+    # -- 8. Sustainphase Issues (rewritten 2026-09-03) — ASPEN incident
+    # number + title (Go-Live defect tracker). Portable case-insensitive LIKE.
     try:
         si_rows = _rows_to_dicts(conn.execute(
-            "SELECT issue_key, defect_id, former_placeholder,"
-            " short_description, order_number FROM sustain_issues"
-            " WHERE LOWER(order_number) LIKE LOWER(?)"
-            "    OR LOWER(issue_key) LIKE LOWER(?)"
-            "    OR LOWER(former_placeholder) LIKE LOWER(?) LIMIT 20",
-            (like, like, like)))
+            "SELECT incident_number, title FROM sustain_incidents"
+            " WHERE LOWER(incident_number) LIKE LOWER(?)"
+            "    OR LOWER(title) LIKE LOWER(?) LIMIT 20", (like, like)))
     except sqlite3.OperationalError:
         si_rows = []  # module not initialised in this DB
-    si_hits = []
-    for r in si_rows:
-        matched = [x for x in (r["order_number"], r["issue_key"],
-                               r["former_placeholder"])
-                   if x and q.lower() in str(x).lower()]
-        si_hits.append({
-            "type": "sustain_issue", "id": r["issue_key"],
-            "label": f"{r['issue_key']} — {r['short_description'] or ''}".rstrip(" —"),
-            "match": " · ".join(matched)})
+    si_hits = [{
+        "type": "sustain_incident", "id": r["incident_number"],
+        "label": f"{r['incident_number']} — {r['title'] or ''}".rstrip(" —"),
+        "match": r["incident_number"]
+                 if q.lower() in r["incident_number"].lower()
+                 else _snippet(r["title"], q)}
+        for r in si_rows]
     _add("Sustainphase Issues", si_hits)
 
     # -- 9. Smoke scenarios (2026-08-28 [USER]) — scenario names + step

@@ -1,21 +1,33 @@
-"""Sustainphase Issues (planning chat 2026-08-28).
+"""Sustainphase Issues — storage (rewritten 2026-09-03 [USER]).
 
-Imported from the **Defects tab** of `DTC_Sustainphase_Tracking….xlsx`
-(uploaded on the card — see docs/claude/sustain-issues.md). Unlike the
-replace-per-tab verticals this one UPSERTS: the natural key is the ASPEN
-Defect ID, but issues can exist before they are in ASPEN [USER
-2026-08-28] — those get an auto-assigned `SUS-nnn` placeholder key and
-are matched across uploads by their normalized short description. When
-the real Defect ID later appears the issue is "promoted": the key
-switches to the Defect ID, annotations move along, and the placeholder
-is kept in `former_placeholder` — no longer visible, still searchable.
-Issues that disappear from the upload are kept (last_seen shows
-staleness). The workbook's "Exists in production" column is ignored
-entirely [USER].
+Source since 2026-09-03: the **Go-Live defect tracker** workbook, three
+tabs → three imported tables (import pattern: one tab = one importer +
+one table), plus two authored tables:
 
-`sustain_issue_annotations` is USER-AUTHORED (Marina's call-outs +
-next step, archive entity `sustain_issue`) — imports never touch it
-except to follow a key promotion.
+- `sustain_incidents`            ← tab "ASPEN Incidents" (upsert by
+                                    Incident Number; rows without one are
+                                    skipped [USER])
+- `sustain_incident_comments`    ← column G "Latest comment/action" as a
+                                    HISTORY: a new text is added ON TOP,
+                                    the same text leaves it untouched
+                                    [USER: "add on top instead of
+                                    overwriting"]
+- `sustain_incident_annotations` — authored next step per incident
+- `sustain_issue_solutions`      ← tab "Issue Solution tracker", replaced
+                                    wholesale per upload (rows have no
+                                    identity; read-only page)
+- `sustain_interfaces`           ← tab "Total" (the interface list),
+                                    replaced per upload; the totals are
+                                    COMPUTED here (interface_totals /
+                                    reason_totals), never read from the
+                                    sheet
+
+The 2026-08-28 Defects-tab model (`sustain_issues` + SUS-nnn placeholders)
+was RETIRED on 2026-09-03 [USER: "replace"] — its tables may still exist
+in older DB files, untouched and unused.
+
+Every table has a technical primary key [USER 2026-09-01]. Portable SQL
+only (rule 7).
 """
 from __future__ import annotations
 
@@ -26,53 +38,62 @@ from pathlib import Path
 
 from app.db.core import get_connection
 
-PLACEHOLDER_PREFIX = "SUS-"
-
-# imported issue fields, in workbook column order (minus the ignored
-# "Exists in production"); defect_id/short_description handled separately
-FIELD_COLUMNS = [
-    "channel", "sales_dtc", "aspen_status", "description", "comment",
-    "raised_by", "order_number", "date_reported", "date_closed",
-    "priority", "assigned_to", "tech_team", "country", "scenario",
-    "affected_testcases", "retest_dependency", "blocks_execution",
-    "defect_reason", "excel_row",
-]
-
 _SCHEMA = """
-CREATE TABLE IF NOT EXISTS sustain_issues (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    issue_key           TEXT NOT NULL UNIQUE,
-    defect_id           TEXT,
-    former_placeholder  TEXT,
-    channel             TEXT,
-    sales_dtc           TEXT,
-    aspen_status        TEXT,
-    short_description   TEXT,
-    description         TEXT,
-    comment             TEXT,
-    raised_by           TEXT,
-    order_number        TEXT,
-    date_reported       TEXT,
-    date_closed         TEXT,
-    priority            TEXT,
-    assigned_to         TEXT,
-    tech_team           TEXT,
-    country             TEXT,
-    scenario            TEXT,
-    affected_testcases  TEXT,
-    retest_dependency   TEXT,
-    blocks_execution    TEXT,
-    defect_reason       TEXT,
-    excel_row           INTEGER,
-    first_seen          TEXT,
-    last_seen           TEXT
+CREATE TABLE IF NOT EXISTS sustain_incidents (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_number TEXT NOT NULL UNIQUE,
+    date            TEXT,
+    requestor       TEXT,
+    title           TEXT,
+    status          TEXT,
+    assigned_to     TEXT,
+    latest_comment  TEXT,
+    excel_row       INTEGER,
+    first_seen      TEXT,
+    last_seen       TEXT
 );
 
-CREATE TABLE IF NOT EXISTS sustain_issue_annotations (
-    issue_key  TEXT PRIMARY KEY,
-    callouts   TEXT,
-    next_step  TEXT,
-    updated_at TEXT
+CREATE TABLE IF NOT EXISTS sustain_incident_comments (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_number TEXT NOT NULL,
+    text            TEXT NOT NULL,
+    first_seen      TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_sustain_incident_comments
+    ON sustain_incident_comments(incident_number, id);
+
+CREATE TABLE IF NOT EXISTS sustain_incident_annotations (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_number TEXT NOT NULL UNIQUE,
+    next_step       TEXT,
+    updated_at      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sustain_issue_solutions (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner              TEXT,
+    interface          TEXT,
+    msg                TEXT,
+    text               TEXT,
+    external_reference TEXT,
+    inc_reference      TEXT,
+    reason             TEXT,
+    solution           TEXT,
+    status             TEXT,
+    excel_row          INTEGER,
+    imported_at        TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sustain_interfaces (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    namespace     TEXT,
+    interface     TEXT,
+    version       TEXT,
+    name          TEXT,
+    variant       TEXT,
+    index_tables  TEXT,
+    sort_order    INTEGER NOT NULL DEFAULT 0,
+    imported_at   TEXT
 );
 """
 
@@ -95,187 +116,256 @@ def _rows_to_dicts(cursor: sqlite3.Cursor) -> list[dict]:
     return [dict(zip(cols, row)) for row in cursor.fetchall()]
 
 
-def _norm_desc(text) -> str:
-    """Fallback identity for issues without a Defect ID: lowercased,
-    whitespace-collapsed short description."""
-    return re.sub(r"\s+", " ", str(text or "")).strip().casefold()
+def _norm_text(text) -> str:
+    """Comparison form for the comment history: whitespace collapsed,
+    trimmed — a re-saved Excel that only re-wrapped the text is NOT a new
+    comment."""
+    return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
-def _next_placeholder(conn: sqlite3.Connection) -> str:
-    """SUS-001, SUS-002, … — numbers are never reused (a promoted issue
-    keeps its old placeholder in former_placeholder, which counts)."""
-    top = 0
-    for (key,) in conn.execute(
-            "SELECT issue_key FROM sustain_issues WHERE issue_key LIKE ?"
-            " UNION SELECT former_placeholder FROM sustain_issues"
-            " WHERE former_placeholder LIKE ?",
-            (PLACEHOLDER_PREFIX + "%", PLACEHOLDER_PREFIX + "%")):
-        try:
-            top = max(top, int(key[len(PLACEHOLDER_PREFIX):]))
-        except (TypeError, ValueError):
-            continue
-    return f"{PLACEHOLDER_PREFIX}{top + 1:03d}"
+# ---------------------------------------------------------------------------
+# ASPEN Incidents
+# ---------------------------------------------------------------------------
+
+INCIDENT_FIELDS = ("date", "requestor", "title", "status", "assigned_to",
+                   "latest_comment")
 
 
-def _update_fields(conn: sqlite3.Connection, issue_id: int, row: dict) -> None:
-    sets = ", ".join(f"{c} = ?" for c in FIELD_COLUMNS)
-    conn.execute(
-        f"UPDATE sustain_issues SET {sets}, short_description = ?,"
-        f" last_seen = ? WHERE id = ?",
-        [row.get(c) for c in FIELD_COLUMNS]
-        + [row.get("short_description"), _now(), issue_id])
-
-
-def upsert_issues(conn: sqlite3.Connection, rows: list[dict]) -> dict:
-    """Upsert one upload's Defects rows. Returns
-    {'inserted': n, 'updated': n, 'promoted': n} — promoted = a
-    placeholder issue whose real ASPEN Defect ID arrived in this upload.
-    Rows with neither Defect ID nor short description are skipped
-    (nothing to identify them by). Issues absent from the upload are
-    KEPT (last_seen shows staleness)."""
-    counts = {"inserted": 0, "updated": 0, "promoted": 0}
+def upsert_incidents(conn: sqlite3.Connection, rows: list[dict]) -> dict:
+    """Upsert by incident_number; the comment history gets a new entry
+    when column G changed. Returns {'inserted', 'updated', 'new_comments'}.
+    Rows without an incident number are the caller's business (skipped
+    and counted in the importer)."""
+    now = _now()
+    counts = {"inserted": 0, "updated": 0, "new_comments": 0}
     with conn:
-        for row in rows:
-            defect_id = (str(row.get("defect_id")).strip()
-                         if row.get("defect_id") is not None else "")
-            desc_norm = _norm_desc(row.get("short_description"))
-            if not defect_id and not desc_norm:
-                continue
-            if defect_id:
-                hit = conn.execute(
-                    "SELECT id FROM sustain_issues WHERE defect_id = ?",
-                    (defect_id,)).fetchone()
-                if hit:
-                    _update_fields(conn, hit[0], row)
-                    counts["updated"] += 1
-                    continue
-                # new Defect ID — did we track it as a placeholder before?
-                placeholder = None
-                if desc_norm:
-                    for cand in _rows_to_dicts(conn.execute(
-                            "SELECT id, issue_key, short_description"
-                            " FROM sustain_issues WHERE defect_id IS NULL")):
-                        if _norm_desc(cand["short_description"]) == desc_norm:
-                            placeholder = cand
-                            break
-                if placeholder:
-                    conn.execute(
-                        "UPDATE sustain_issues SET issue_key = ?,"
-                        " defect_id = ?, former_placeholder = ? WHERE id = ?",
-                        (defect_id, defect_id, placeholder["issue_key"],
-                         placeholder["id"]))
-                    conn.execute(
-                        "UPDATE sustain_issue_annotations SET issue_key = ?"
-                        " WHERE issue_key = ?",
-                        (defect_id, placeholder["issue_key"]))
-                    _update_fields(conn, placeholder["id"], row)
-                    counts["promoted"] += 1
-                    continue
-                key, is_new = defect_id, True
+        for r in rows:
+            key = r["incident_number"]
+            existing = conn.execute(
+                "SELECT id FROM sustain_incidents WHERE incident_number = ?",
+                (key,)).fetchone()
+            if existing:
+                conn.execute(
+                    "UPDATE sustain_incidents SET date=?, requestor=?, title=?,"
+                    " status=?, assigned_to=?, latest_comment=?, excel_row=?,"
+                    " last_seen=? WHERE incident_number=?",
+                    (r.get("date"), r.get("requestor"), r.get("title"),
+                     r.get("status"), r.get("assigned_to"), r.get("latest_comment"),
+                     r.get("excel_row"), now, key))
+                counts["updated"] += 1
             else:
-                # no Defect ID — match existing placeholder by description
-                match = None
-                for cand in _rows_to_dicts(conn.execute(
-                        "SELECT id, short_description FROM sustain_issues"
-                        " WHERE defect_id IS NULL")):
-                    if _norm_desc(cand["short_description"]) == desc_norm:
-                        match = cand
-                        break
-                if match:
-                    _update_fields(conn, match["id"], row)
-                    counts["updated"] += 1
-                    continue
-                key, is_new = _next_placeholder(conn), True
-            if is_new:
-                now = _now()
-                cur = conn.execute(
-                    "INSERT INTO sustain_issues (issue_key, defect_id,"
-                    " short_description, first_seen, last_seen)"
-                    " VALUES (?, ?, ?, ?, ?)",
-                    (key, defect_id or None, row.get("short_description"),
-                     now, now))
-                _update_fields(conn, cur.lastrowid, row)
+                conn.execute(
+                    "INSERT INTO sustain_incidents (incident_number, date, requestor,"
+                    " title, status, assigned_to, latest_comment, excel_row,"
+                    " first_seen, last_seen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (key, r.get("date"), r.get("requestor"), r.get("title"),
+                     r.get("status"), r.get("assigned_to"), r.get("latest_comment"),
+                     r.get("excel_row"), now, now))
                 counts["inserted"] += 1
+            # comment history: newest first; only a CHANGED text is added
+            text = _norm_text(r.get("latest_comment"))
+            if text:
+                newest = conn.execute(
+                    "SELECT text FROM sustain_incident_comments"
+                    " WHERE incident_number = ? ORDER BY id DESC LIMIT 1",
+                    (key,)).fetchone()
+                if newest is None or _norm_text(newest[0]) != text:
+                    conn.execute(
+                        "INSERT INTO sustain_incident_comments"
+                        " (incident_number, text, first_seen) VALUES (?, ?, ?)",
+                        (key, text, now))
+                    counts["new_comments"] += 1
     return counts
 
 
-def issue_count(conn: sqlite3.Connection) -> int:
-    """Total tracked issues — dashboard card badge. Tolerant of the table
-    not existing yet (partial-init test fixtures)."""
-    try:
-        return conn.execute(
-            "SELECT COUNT(*) FROM sustain_issues").fetchone()[0]
-    except sqlite3.OperationalError:
-        return 0
-
-
-def list_issues(conn: sqlite3.Connection) -> list[dict]:
-    """All tracked issues in workbook order (excel_row; keeps the Excel's
-    reading order, stale kept issues sort by their last position)."""
+def list_incidents(conn: sqlite3.Connection) -> list[dict]:
+    """All incidents, newest date first (then incident number desc)."""
     try:
         return _rows_to_dicts(conn.execute(
-            "SELECT * FROM sustain_issues ORDER BY excel_row, id"))
+            "SELECT * FROM sustain_incidents"
+            " ORDER BY COALESCE(date, '') DESC, incident_number DESC"))
     except sqlite3.OperationalError:
         return []
 
 
-def get_issue(conn: sqlite3.Connection, issue_key: str) -> dict | None:
+def get_incident(conn: sqlite3.Connection, incident_number: str) -> dict | None:
     rows = _rows_to_dicts(conn.execute(
-        "SELECT * FROM sustain_issues WHERE issue_key = ?", (issue_key,)))
+        "SELECT * FROM sustain_incidents WHERE incident_number = ?",
+        (incident_number,)))
     return rows[0] if rows else None
 
 
-# --- authored annotations (call-outs + next step) -----------------------
-
-def get_sustain_issue_annotations(conn: sqlite3.Connection) -> dict[str, dict]:
-    """{issue_key: {'callouts': ..., 'next_step': ...}}."""
+def incident_count(conn: sqlite3.Connection) -> int:
+    """Dashboard badge — tolerant of the table not existing yet."""
     try:
-        return {k: {"callouts": c, "next_step": ns}
-                for k, c, ns in conn.execute(
-                    "SELECT issue_key, callouts, next_step"
-                    " FROM sustain_issue_annotations")}
+        return conn.execute("SELECT COUNT(*) FROM sustain_incidents").fetchone()[0]
+    except sqlite3.OperationalError:
+        return 0
+
+
+def comments_by_incident(conn: sqlite3.Connection) -> dict[str, list[dict]]:
+    """{incident_number: [{text, first_seen}, …]} newest first — one query
+    for the whole board."""
+    out: dict[str, list[dict]] = {}
+    try:
+        rows = _rows_to_dicts(conn.execute(
+            "SELECT incident_number, text, first_seen FROM sustain_incident_comments"
+            " ORDER BY incident_number, id DESC"))
+    except sqlite3.OperationalError:
+        return out
+    for r in rows:
+        out.setdefault(r["incident_number"], []).append(
+            {"text": r["text"], "first_seen": r["first_seen"]})
+    return out
+
+
+# ---- authored next step ----------------------------------------------------
+
+def get_incident_annotations(conn: sqlite3.Connection) -> dict[str, dict]:
+    try:
+        return {r["incident_number"]: r for r in _rows_to_dicts(conn.execute(
+            "SELECT incident_number, next_step, updated_at"
+            " FROM sustain_incident_annotations"))}
     except sqlite3.OperationalError:
         return {}
 
 
-def get_sustain_issue_next_step(conn: sqlite3.Connection,
-                                issue_key: str) -> str | None:
+def get_sustain_incident_next_step(conn: sqlite3.Connection,
+                                   incident_number: str) -> str | None:
     row = conn.execute(
-        "SELECT next_step FROM sustain_issue_annotations WHERE issue_key=?",
-        (issue_key,)).fetchone()
+        "SELECT next_step FROM sustain_incident_annotations WHERE incident_number = ?",
+        (incident_number,)).fetchone()
     return row[0] if row else None
 
 
-def set_sustain_issue_next_step(conn: sqlite3.Connection, issue_key: str,
-                                next_step: str | None) -> None:
-    """Only-this-field upsert (inline edit + archive entity
-    'sustain_issue')."""
+def set_sustain_incident_next_step(conn: sqlite3.Connection, incident_number: str,
+                                   value: str | None) -> None:
+    value = (value or "").strip() or None
     with conn:
         conn.execute("""
-            INSERT INTO sustain_issue_annotations (issue_key, next_step, updated_at)
+            INSERT INTO sustain_incident_annotations (incident_number, next_step, updated_at)
             VALUES (?, ?, ?)
-            ON CONFLICT(issue_key) DO UPDATE SET
+            ON CONFLICT(incident_number) DO UPDATE SET
                 next_step  = excluded.next_step,
                 updated_at = excluded.updated_at
-        """, (issue_key, (next_step or "").strip() or None, _now()))
+        """, (incident_number, value, _now()))
 
 
-def get_sustain_issue_callouts(conn: sqlite3.Connection,
-                               issue_key: str) -> str | None:
-    row = conn.execute(
-        "SELECT callouts FROM sustain_issue_annotations WHERE issue_key=?",
-        (issue_key,)).fetchone()
-    return row[0] if row else None
+# ---------------------------------------------------------------------------
+# Issue Solution tracker (replaced wholesale per upload)
+# ---------------------------------------------------------------------------
+
+SOLUTION_FIELDS = ("owner", "interface", "msg", "text", "external_reference",
+                   "inc_reference", "reason", "solution", "status")
+
+# a tracker row counts as OPEN unless its Status is in this family
+# (case-insensitive) — adjust here if the team's wording differs
+SOLUTION_CLOSED_STATUSES = {"closed", "done", "resolved", "solved",
+                            "completed", "fixed"}
 
 
-def set_sustain_issue_callouts(conn: sqlite3.Connection, issue_key: str,
-                               callouts: str | None) -> None:
-    """Only-this-field upsert — Marina's call-outs/comment per issue."""
+def solution_is_open(status) -> bool:
+    return _norm_text(status).casefold() not in SOLUTION_CLOSED_STATUSES
+
+
+def replace_solutions(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    now = _now()
     with conn:
-        conn.execute("""
-            INSERT INTO sustain_issue_annotations (issue_key, callouts, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(issue_key) DO UPDATE SET
-                callouts   = excluded.callouts,
-                updated_at = excluded.updated_at
-        """, (issue_key, (callouts or "").strip() or None, _now()))
+        conn.execute("DELETE FROM sustain_issue_solutions")
+        conn.executemany(
+            "INSERT INTO sustain_issue_solutions (owner, interface, msg, text,"
+            " external_reference, inc_reference, reason, solution, status,"
+            " excel_row, imported_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [tuple(r.get(f) for f in SOLUTION_FIELDS) + (r.get("excel_row"), now)
+             for r in rows])
+    return len(rows)
+
+
+def list_solutions(conn: sqlite3.Connection) -> list[dict]:
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT * FROM sustain_issue_solutions ORDER BY excel_row, id"))
+    except sqlite3.OperationalError:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# Interfaces (tab "Total") + the computed totals
+# ---------------------------------------------------------------------------
+
+INTERFACE_FIELDS = ("namespace", "interface", "version", "name", "variant",
+                    "index_tables")
+
+
+def replace_interfaces(conn: sqlite3.Connection, rows: list[dict]) -> int:
+    now = _now()
+    with conn:
+        conn.execute("DELETE FROM sustain_interfaces")
+        conn.executemany(
+            "INSERT INTO sustain_interfaces (namespace, interface, version, name,"
+            " variant, index_tables, sort_order, imported_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [tuple(r.get(f) for f in INTERFACE_FIELDS) + (i, now)
+             for i, r in enumerate(rows)])
+    return len(rows)
+
+
+def list_interfaces(conn: sqlite3.Connection) -> list[dict]:
+    try:
+        return _rows_to_dicts(conn.execute(
+            "SELECT * FROM sustain_interfaces ORDER BY sort_order, id"))
+    except sqlite3.OperationalError:
+        return []
+
+
+def _key(value) -> str:
+    return _norm_text(value).casefold()
+
+
+def interface_totals(conn: sqlite3.Connection) -> dict:
+    """The Total sheet, COMPUTED [USER 2026-09-03]: per listed interface
+    the number of Issue-Solution-tracker rows whose Interface matches
+    (Interface column only, case-insensitive) — once over ALL rows, once
+    over OPEN rows only. Tracker interfaces that are on no listed row
+    ("n/a" among them) get their own rows at the bottom, so the grand
+    total equals the tracker's row count [USER: "just so the totals add
+    up"]. Returns {'rows': [...], 'extra': [...], 'total_all', 'total_open'}."""
+    solutions = list_solutions(conn)
+    all_by_key: dict[str, int] = {}
+    open_by_key: dict[str, int] = {}
+    label_by_key: dict[str, str] = {}
+    for s in solutions:
+        k = _key(s.get("interface"))
+        label_by_key.setdefault(k, _norm_text(s.get("interface")) or "(blank)")
+        all_by_key[k] = all_by_key.get(k, 0) + 1
+        if solution_is_open(s.get("status")):
+            open_by_key[k] = open_by_key.get(k, 0) + 1
+    rows = []
+    seen: set[str] = set()
+    for i in list_interfaces(conn):
+        k = _key(i.get("interface"))
+        seen.add(k)
+        rows.append({**i, "total_all": all_by_key.get(k, 0),
+                     "total_open": open_by_key.get(k, 0)})
+    extra = [{"interface": label_by_key[k], "total_all": all_by_key[k],
+              "total_open": open_by_key.get(k, 0)}
+             for k in sorted(all_by_key, key=lambda k: label_by_key[k].casefold())
+             if k not in seen]
+    return {"rows": rows, "extra": extra,
+            "total_all": len(solutions),
+            "total_open": sum(1 for s in solutions if solution_is_open(s.get("status")))}
+
+
+def reason_totals(conn: sqlite3.Connection) -> list[dict]:
+    """[{reason, total_all, total_open}, …] over the tracker's Reason
+    column, most frequent first; a blank reason is reported as "(blank)"."""
+    counts: dict[str, dict] = {}
+    for s in list_solutions(conn):
+        label = _norm_text(s.get("reason")) or "(blank)"
+        k = label.casefold()
+        entry = counts.setdefault(k, {"reason": label, "total_all": 0, "total_open": 0})
+        entry["total_all"] += 1
+        if solution_is_open(s.get("status")):
+            entry["total_open"] += 1
+    return sorted(counts.values(),
+                  key=lambda e: (-e["total_all"], e["reason"].casefold()))

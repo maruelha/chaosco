@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% import '_macros.html' as ui %}
+{% block title %}Issue Solution tracker — Sustainphase Issues{% endblock %}
+{% block container_class %}container--wide{% endblock %}
+
+{# The "Issue Solution tracker" tab (2026-09-03 [USER]): a plain read-only
+   table, replaced wholesale per upload. Dropdown filters per heading except
+   Text / Reason / Solution, which get ONE text search. Client-side. #}
+
+{% block content %}
+{% call ui.page_header('Issue Solution tracker', 'The Issue Solution tracker tab of the '
+                       ~ 'Go-Live defect tracker — read-only, replaced by every upload.') %}
+<a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
+<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn">Σ Totals</a>
+{% endcall %}
+
+{% if not rows %}
+<p style="color:#888; margin:0.6rem 0 1rem">Nothing imported yet — upload the
+  Go-Live defect tracker on the <a href="{{ url_for('sustain_issues.sustain_issues_home') }}">Sustainphase Issues</a> page.</p>
+{% else %}
+<div class="ui-filterbar" style="margin-bottom:0.8rem">
+  <input type="text" id="sol-filter-search" placeholder="search Text / Reason / Solution…"
+         oninput="solApply()" style="min-width:16rem">
+  {% for field, label in [('owner', 'Owner'), ('interface', 'Interface'), ('msg', 'Msg'),
+                          ('external_reference', 'External ref.'), ('inc_reference', 'INC ref.'),
+                          ('status', 'Status')] %}
+  <select id="sol-filter-{{ field }}" onchange="solApply()">
+    <option value="">{{ label }}: all</option>
+    {% for v in filter_options[field] %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  <button type="button" class="btn btn-sm" onclick="solClear()">Clear</button>
+  <span id="sol-filter-info" style="color:#888; font-size:0.82rem"></span>
+</div>
+
+{% call ui.section('Issue solutions', 'teal', badge=rows|length) %}
+<table class="rt-table">
+  <thead>
+    <tr>
+      <th style="width:7rem">Owner</th>
+      <th style="width:8rem">Interface</th>
+      <th style="width:6rem">Msg</th>
+      <th>Text</th>
+      <th style="width:8rem">External ref.</th>
+      <th style="width:8rem">INC ref.</th>
+      <th style="width:12rem">Reason</th>
+      <th>Solution</th>
+      <th style="width:6.5rem">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr class="sol-row"
+        data-owner="{{ r.owner or '' }}" data-interface="{{ r.interface or '' }}"
+        data-msg="{{ r.msg or '' }}" data-external_reference="{{ r.external_reference or '' }}"
+        data-inc_reference="{{ r.inc_reference or '' }}" data-status="{{ r.status or '' }}"
+        data-search="{{ ((r.text or '') ~ ' ' ~ (r.reason or '') ~ ' ' ~ (r.solution or ''))|lower }}">
+      <td>{{ r.owner or '—' }}</td>
+      <td class="mono" style="font-size:0.8rem">{{ r.interface or '—' }}</td>
+      <td>{{ r.msg or '—' }}</td>
+      <td style="white-space:normal">{{ r.text or '' }}</td>
+      <td>{{ r.external_reference or '—' }}</td>
+      <td class="mono" style="font-size:0.8rem">{{ r.inc_reference or '—' }}</td>
+      <td style="white-space:normal">{{ r.reason or '—' }}</td>
+      <td style="white-space:normal">{{ r.solution or '' }}</td>
+      <td>{% if r.status %}<span class="chip chip--none">{{ r.status }}</span>{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endcall %}
+
+<script>
+const SOL_FIELDS = ['owner', 'interface', 'msg', 'external_reference', 'inc_reference', 'status'];
+function solApply() {
+  const q = document.getElementById('sol-filter-search').value.trim().toLowerCase();
+  const f = {};
+  SOL_FIELDS.forEach(k => { f[k] = document.getElementById('sol-filter-' + k).value; });
+  const active = q || Object.values(f).some(v => v);
+  let shown = 0, hidden = 0;
+  document.querySelectorAll('tr.sol-row').forEach(tr => {
+    let ok = !q || tr.dataset.search.includes(q);
+    SOL_FIELDS.forEach(k => { if (f[k] && tr.dataset[k] !== f[k]) ok = false; });
+    tr.style.display = ok ? '' : 'none';
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('sol-filter-info').textContent =
+    active ? (shown + ' shown, ' + hidden + ' hidden') : '';
+}
+function solClear() {
+  document.getElementById('sol-filter-search').value = '';
+  SOL_FIELDS.forEach(k => { document.getElementById('sol-filter-' + k).value = ''; });
+  solApply();
+}
+</script>
+{% endif %}
+{% endblock %}

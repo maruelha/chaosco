@@ -1207,21 +1207,49 @@
 
   <div class="screen-card" id="sustain-issues">
     <div class="screen-card-header">
-      <span class="screen-title">Sustainphase Issues — List &amp; Upload</span>
-      <span class="screen-url">GET /sustain-issues/ · POST /sustain-issues/upload · POST /sustain-issues/issue/&lt;key&gt;/callouts|next-step</span>
+      <span class="screen-title">Sustainphase Issues — ASPEN incidents board &amp; upload</span>
+      <span class="screen-url">GET /sustain-issues/ · POST /sustain-issues/upload · POST /sustain-issues/incident/&lt;no&gt;/next-step</span>
     </div>
     <div class="screen-card-body">
-      <p class="screen-desc">Added 2026-08-28. Defects from the <strong>Defects tab</strong> of <code>DTC_Sustainphase_Tracking….xlsx</code> (file picker, name must contain <code>DTC_Sustainphase_Tracking</code>; columns mapped by header name, "Exists in production" ignored [USER]). <strong>Upserted</strong> by ASPEN Defect ID; issues not yet in ASPEN get a <code>SUS-nnn</code> placeholder key (matched across uploads by short description) — when the real id arrives the issue is promoted and the placeholder stays searchable as "formerly SUS-nnn" tooltip. Expandable rows (kpd pattern), split into Open / Closed (Date Closed) sections.</p>
+      <p class="screen-desc">Rewritten 2026-09-03 [USER: "replace"]. The <strong>ASPEN Incidents</strong> tab of the <code>Go-Live defect tracker</code> workbook (file picker, filename must contain "Go-Live defect tracker"; all three tabs import in one go). One expandable row per incident with EVERY column: incident number · title · status chip · notes badge · next-step preview · date / requestor / assignee in the summary; meta line, the <strong>comment history</strong>, next step and notes in the body. Upserted by incident number; rows without one are skipped and counted.</p>
+      <div class="features">
+        <span class="feat-label">Comment history (column G)</span>
+        <span class="feat-value">"Latest comment/action" is kept as a history: a CHANGED text is added on top with its first-seen date, the same text leaves the list untouched [USER: "add on top instead of overwriting"]. Newest entry highlighted, older ones below.</span>
+        <span class="feat-label">Filters</span>
+        <span class="feat-value">Text search over incident number + title; Requestor · Status · Assigned to dropdowns (distinct values in use); Clear; shown/hidden counter (client-side).</span>
+        <span class="feat-label">Authored</span>
+        <span class="feat-value">Next step (inline blur-save, ↻ archive / 🕘 history via the generic component, entity <code>sustain_incident</code>) + the shared <a href="#notes">notes component</a> per incident (headings, text, 📷/📎 attachments, Ctrl+V; add/edit/delete land back on the board).</span>
+        <span class="feat-label">Search</span>
+        <span class="feat-value">Global 🔍 finds incidents by number and title; hits open the board.</span>
+        <span class="feat-label">Dashboard card</span>
+        <span class="feat-value">"Sustainphase Issues" with an incident-count badge (<code>db_sustain_issues.incident_count</code>).</span>
+        <span class="feat-label">Header buttons</span>
+        <span class="feat-value">🧩 Issue solutions · Σ Totals · ⤒ Upload &amp; import.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen-card" id="sustain-solutions">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Issues — Issue Solution tracker</span>
+      <span class="screen-url">GET /sustain-issues/solutions</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">2026-09-03 [USER: "another page just a simple table not any edit possibility"]. The <strong>Issue Solution tracker</strong> tab as one read-only table (Owner · Interface · Msg · Text · External ref. · INC ref. · Reason · Solution · Status), replaced wholesale by every upload.</p>
       <div class="features">
         <span class="feat-label">Filters</span>
-        <span class="feat-value">Channel · ASPEN status · Country · Priority dropdowns (client-side, distinct values); red <strong>blocks execution</strong> chip on issues with "Does it block execution" = yes.</span>
-        <span class="feat-label">Authored fields</span>
-        <span class="feat-value">Call-outs/comment textarea (📣 marker in the summary) + next step with ↻ archive / 🕘 history (entity <code>sustain_issue</code>) — saved onblur, survive uploads, follow a key promotion.</span>
-        <span class="feat-label">Search</span>
-        <span class="feat-value">Global 🔍 finds issues by order number, key and former placeholder; same change added "Smoke scenarios" and "Delegated Testing" search groups.</span>
-        <span class="feat-label">Dashboard card</span>
-        <span class="feat-value">"Sustainphase Issues" with an issue-count badge (<code>db_sustain_issues.issue_count</code>), placed after Sustainphase Monitoring.</span>
+        <span class="feat-value">Dropdowns for every heading EXCEPT Text / Reason / Solution — those three share ONE text search [USER]; Clear; shown/hidden counter (client-side).</span>
       </div>
+    </div>
+  </div>
+
+  <div class="screen-card" id="sustain-totals">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Issues — Totals</span>
+      <span class="screen-url">GET /sustain-issues/totals</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">2026-09-03 [USER]. The <strong>Total</strong> tab, COMPUTED instead of copied: the interface list (Namespace · Interface · Version · Name · Variant · Index tables) with <strong>Total (all)</strong> = Issue-Solution-tracker rows whose Interface matches (Interface column only, case-insensitive) and <strong>Total (open)</strong> = the same over rows whose Status is not closed/done/resolved/solved/completed/fixed. Tracker interfaces on no listed row ("n/a", …) get their own "(not on the Total tab)" rows so the grand total equals the tracker's row count. Below it the same two numbers per <strong>Reason</strong>. Stat cards on top: rows · open · interfaces.</p>
     </div>
   </div>
 

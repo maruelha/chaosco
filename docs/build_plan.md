@@ -165,9 +165,12 @@ Build log → `docs/archive/build_plan_done_2026-09-01.md`. Still open:
   (on top of total test cases)") — to confirm
 - ECOM has no equivalent list yet; the module is Retail-only on purpose
 
-### Sustainphase Issues (`/sustain-issues/`) — ✅ BUILT 2026-08-28
+### Sustainphase Issues (`/sustain-issues/`) — ✅ BUILT 2026-08-28, REWRITTEN 2026-09-03
 
-Build log → `docs/archive/build_plan_done_2026-09-01.md`. **Parked [USER 2026-08-28]:** SPOT_CHECKS tab → its own
+Build log → `docs/archive/build_plan_done_2026-09-01.md`; the 2026-09-03
+rewrite (Go-Live defect tracker: incidents board + comment history,
+Issue Solution tracker page, computed Totals page) is logged in
+`docs/archive/session_2026-09-03_*.md` and `docs/claude/sustain-issues.md`. **Parked [USER 2026-08-28]:** SPOT_CHECKS tab → its own
 similar upload-and-view mini app, ANOTHER session. SMOKETEST_KT tab stays
 ignored (KT tracking lives on the Smoke scenarios).
 

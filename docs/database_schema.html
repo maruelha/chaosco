@@ -280,8 +280,11 @@
     <li><a href="#smoke_annotations">smoke_annotations</a></li>
     <li><a href="#sustain_tasks">sustain_tasks</a></li>
     <li><a href="#sustain_task_details">sustain_task_details</a></li>
-    <li><a href="#sustain_issues">sustain_issues</a></li>
-    <li><a href="#sustain_issue_annotations">sustain_issue_annotations</a></li>
+    <li><a href="#sustain_incidents">sustain_incidents</a></li>
+    <li><a href="#sustain_incident_comments">sustain_incident_comments</a></li>
+    <li><a href="#sustain_incident_annotations">sustain_incident_annotations</a></li>
+    <li><a href="#sustain_issue_solutions">sustain_issue_solutions</a></li>
+    <li><a href="#sustain_interfaces">sustain_interfaces</a></li>
 
     <li class="group-label">Jira Store</li>
     <li><a href="#jira_issues">jira_issues</a></li>
@@ -853,42 +856,94 @@
 <div class="group">
   <div class="group-heading">Sustainphase Issues — imported (upserted), + authored annotations</div>
 
-  <!-- sustain_issues -->
-  <div class="table-card" id="sustain_issues">
+  <!-- sustain_incidents -->
+  <div class="table-card" id="sustain_incidents">
     <div class="table-card-header">
-      <span class="tname">sustain_issues</span>
+      <span class="tname">sustain_incidents</span>
       <span class="badge badge-imported">Imported</span>
-      <span class="tdesc">Defects tab of DTC_Sustainphase_Tracking….xlsx, UPSERTED per upload (not replaced): key = ASPEN Defect ID, or an auto-assigned SUS-nnn placeholder until the id arrives (matched across uploads by normalized short description; on promotion the placeholder moves to former_placeholder — invisible but searchable, numbers never reused). Issues absent from an upload are kept (last_seen). "Exists in production" is ignored at import [USER 2026-08-28].</span>
+      <span class="tdesc">"ASPEN Incidents" tab of the Go-Live defect tracker workbook (2026-09-03 [USER] — replaced the 2026-08-28 Defects-tab table <code>sustain_issues</code>, which may linger unused in older DB files). UPSERTED per upload by Incident Number; rows without one are skipped. Column G lives in <code>sustain_incident_comments</code> as a history.</span>
     </div>
     <table>
       <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
       <tbody>
         <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
-        <tr><td class="col-name">issue_key</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> UNIQUE</td><td class="note-text">defect_id when known, else SUS-nnn placeholder</td></tr>
-        <tr><td class="col-name">defect_id</td><td class="col-type">TEXT</td><td></td><td class="note-text">ASPEN Defect ID (NULL until it exists)</td></tr>
-        <tr><td class="col-name">former_placeholder</td><td class="col-type">TEXT</td><td></td><td class="note-text">old SUS-nnn key after promotion — searchable, shown only as tooltip</td></tr>
-        <tr><td class="col-name">channel · sales_dtc · aspen_status · short_description · description · comment · raised_by · order_number · date_reported · date_closed · priority · assigned_to · tech_team · country · scenario · affected_testcases · retest_dependency · blocks_execution · defect_reason</td><td class="col-type">TEXT</td><td></td><td class="note-text">imported Defects-tab columns (dates as ISO; blocks_execution drives the red chip; order_number feeds the global search)</td></tr>
-        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">list order</td></tr>
-        <tr><td class="col-name">first_seen / last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">upsert bookkeeping; stale kept issues show an old last_seen</td></tr>
+        <tr><td class="col-name">incident_number</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> UNIQUE</td><td class="note-text">the ASPEN incident number — upsert key, notes/next-step entity id</td></tr>
+        <tr><td class="col-name">date · requestor · title · status · assigned_to · latest_comment</td><td class="col-type">TEXT</td><td></td><td class="note-text">the tab's columns B–G as imported (date → ISO); <code>latest_comment</code> = the CURRENT column G text, its history is the comments table</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">row in the last upload</td></tr>
+        <tr><td class="col-name">first_seen / last_seen</td><td class="col-type">TEXT</td><td></td><td class="note-text">first / last upload that carried the incident</td></tr>
       </tbody>
     </table>
-    <div class="relations"><strong>List/upload:</strong> <code>GET /sustain-issues/</code> · <code>POST /sustain-issues/upload</code> &nbsp;·&nbsp; <strong>Storage:</strong> <code>app/db/sustain_issues.py</code> &nbsp;·&nbsp; <strong>Importer:</strong> <code>app/sustain_issues_importer.py</code> &nbsp;·&nbsp; <strong>Search:</strong> order number + issue_key + former_placeholder</div>
+    <div class="relations"><strong>Board/upload:</strong> <code>GET /sustain-issues/</code> · <code>POST /sustain-issues/upload</code></div>
   </div>
 
-  <!-- sustain_issue_annotations -->
-  <div class="table-card" id="sustain_issue_annotations">
+  <!-- sustain_incident_comments -->
+  <div class="table-card" id="sustain_incident_comments">
     <div class="table-card-header">
-      <span class="tname">sustain_issue_annotations</span>
-      <span class="badge badge-authored">Authored</span>
-      <span class="tdesc">Marina's call-outs/comment + next step per issue — imports never touch it except to follow a key promotion (SUS-nnn → Defect ID). Next step wired into the generic /next-steps archive as entity type 'sustain_issue'.</span>
+      <span class="tname">sustain_incident_comments</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">History of column G "Latest comment/action" per incident (2026-09-03 [USER: "add on top instead of overwriting"]): the import adds a row only when the text CHANGED against the newest stored one; never edited, never deleted.</span>
     </div>
     <table>
       <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td class="col-name">issue_key</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text">= sustain_issues.issue_key (migrated on promotion)</td></tr>
-        <tr><td class="col-name">callouts</td><td class="col-type">TEXT</td><td></td><td class="note-text">call-outs textarea in the expanded row; 📣 marker in the summary</td></tr>
-        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">live next step; ↻ archives into next_step_history (entity 'sustain_issue')</td></tr>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td class="note-text">order = age (newest = highest)</td></tr>
+        <tr><td class="col-name">incident_number</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> <span class="tag tag-fk">FK → sustain_incidents</span></td><td></td></tr>
+        <tr><td class="col-name">text</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">whitespace-collapsed comment text</td></tr>
+        <tr><td class="col-name">first_seen</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span></td><td class="note-text">upload time the text first appeared</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- sustain_incident_annotations -->
+  <div class="table-card" id="sustain_incident_annotations">
+    <div class="table-card-header">
+      <span class="tname">sustain_incident_annotations</span>
+      <span class="badge badge-authored">Authored</span>
+      <span class="tdesc">Marina's next step per incident (2026-09-03) — imports never touch it; ↻/🕘 via the generic next-step archive (entity <code>sustain_incident</code>). Notes live in the shared <code>notes</code> table.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">incident_number</td><td class="col-type">TEXT</td><td><span class="tag tag-nn">NOT NULL</span> UNIQUE</td><td class="note-text">upsert key (<code>ON CONFLICT DO UPDATE</code>)</td></tr>
+        <tr><td class="col-name">next_step</td><td class="col-type">TEXT</td><td></td><td class="note-text">live next step; NULL after ↻ archive</td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- sustain_issue_solutions -->
+  <div class="table-card" id="sustain_issue_solutions">
+    <div class="table-card-header">
+      <span class="tname">sustain_issue_solutions</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">"Issue Solution tracker" tab of the Go-Live defect tracker (2026-09-03) — REPLACED wholesale per upload (rows have no identity); read-only page <code>/sustain-issues/solutions</code>; the source of the computed Totals.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">owner · interface · msg · text · external_reference · inc_reference · reason · solution · status</td><td class="col-type">TEXT</td><td></td><td class="note-text">the tab's nine columns as imported (the unnamed 10th column is ignored); <code>status</code> decides open/closed for the totals</td></tr>
+        <tr><td class="col-name">excel_row</td><td class="col-type">INTEGER</td><td></td><td class="note-text">row in the upload (display order)</td></tr>
+        <tr><td class="col-name">imported_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- sustain_interfaces -->
+  <div class="table-card" id="sustain_interfaces">
+    <div class="table-card-header">
+      <span class="tname">sustain_interfaces</span>
+      <span class="badge badge-imported">Imported</span>
+      <span class="tdesc">The interface list of the "Total" tab (2026-09-03) — replaced per upload. The sheet's "Total Issue #" column is NOT imported: the totals are computed from <code>sustain_issue_solutions</code> (<code>interface_totals</code>, all / open) on <code>/sustain-issues/totals</code>.</span>
+    </div>
+    <table>
+      <thead><tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="col-name">id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-ai">AI</span></td><td></td></tr>
+        <tr><td class="col-name">namespace · interface · version · name · variant · index_tables</td><td class="col-type">TEXT</td><td></td><td class="note-text">the list's six columns; <code>interface</code> is what a tracker row's Interface is matched against (case-insensitive)</td></tr>
+        <tr><td class="col-name">sort_order</td><td class="col-type">INTEGER</td><td><span class="tag tag-nn">NOT NULL</span> DEFAULT 0</td><td class="note-text">sheet order</td></tr>
+        <tr><td class="col-name">imported_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
   </div>

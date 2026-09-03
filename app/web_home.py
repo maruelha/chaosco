@@ -48,7 +48,7 @@ def dashboard():
         from app.db import sustain as db_sustain
         sustain_count      = db_sustain.task_count(conn)
         from app.db import sustain_issues as db_si
-        sustain_issue_count = db_si.issue_count(conn)
+        sustain_issue_count = db_si.incident_count(conn)
     finally:
         conn.close()
     return render_template("dashboard.html", inbox_count=inbox_count,

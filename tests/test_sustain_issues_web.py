@@ -1,9 +1,10 @@
-"""Sustainphase Issues card (build plan step 2, 2026-08-28): upload page
-+ file-picker import wiring."""
+"""Sustainphase Issues pages (rewritten 2026-09-03 [USER]): upload of the
+Go-Live defect tracker, the incidents board (comment history, filters,
+notes + next step), the read-only Issue Solution tracker page, the
+computed Totals page."""
 import io
 from datetime import datetime
 
-import openpyxl
 import pytest
 
 from app import database
@@ -11,25 +12,9 @@ from app.db import sustain_issues as db_si
 import app.web_sustain_issues as web_si
 from app.web import app
 
-from tests.test_sustain_issues_importer import HEADERS
+from tests.test_sustain_issues_importer import workbook_bytes
 
-FILENAME = "DTC_Sustainphase_Tracking (1).xlsx"
-
-
-def _xlsx_bytes(rows=None) -> bytes:
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Defects"
-    ws.append(HEADERS)
-    default = [["Retail", "DTC", "Open", "ASPEN-1", "Settlement file missing",
-                None, None, "Marina", "4711088", datetime(2026, 8, 28), None,
-                "High", None, None, "France", None, None, None, "yes", "no",
-                None]]
-    for r in (default if rows is None else rows):
-        ws.append(r)
-    buf = io.BytesIO()
-    wb.save(buf)
-    return buf.getvalue()
+FILENAME = "Go-Live defect tracker (1).xlsx"
 
 
 @pytest.fixture()
@@ -41,143 +26,120 @@ def client(tmp_path, monkeypatch):
                         lambda: database.get_connection(db_path))
     monkeypatch.setitem(web_si._cfg, "database_path", str(db_path))
     monkeypatch.setattr(web_si, "_UPLOAD_FOLDER", tmp_path / "uploads")
-    # the generic next-step archive (entity 'sustain_issue') runs in its
-    # own module
     import app.web_next_steps as web_next_steps
+    import app.web_notes as web_notes
     from app.db import next_steps as db_ns
     db_ns.init_schema(db_path)
     monkeypatch.setattr(web_next_steps, "_get_conn",
                         lambda: database.get_connection(db_path))
-    return app.test_client()
+    monkeypatch.setattr(web_notes, "_db_path", db_path)
+    c = app.test_client()
+    c.db_path = db_path
+    return c
 
 
 def _upload(client, data=None, filename=FILENAME):
-    data = data if data is not None else _xlsx_bytes()
+    data = data if data is not None else workbook_bytes(
+        incidents=[["INC001", datetime(2026, 9, 1), "Anna", "Invoice missing", "Open",
+                    "Tom", "first look"],
+                   ["INC002", datetime(2026, 9, 2), "Ben", "Price wrong", "Closed",
+                    None, None]],
+        solutions=[["Tom", "SALES", "E1", "Order rejected", None, "INC001", "Mapping",
+                    "Fix mapping", "Open", None],
+                   ["Anna", "n/a", None, "Unknown thing", None, None, "Data", "Reload",
+                    "Closed", None]])
     return client.post("/sustain-issues/upload", data={
         "file": (io.BytesIO(data), filename)})
 
 
-def test_home_shows_empty_state(client):
+def test_home_empty_state_and_filename_guard(client):
     html = client.get("/sustain-issues/").get_data(as_text=True)
-    assert "Sustainphase Issues" in html
-    assert "No issues yet" in html
-
-
-def test_upload_imports_and_reports_counts(client):
-    resp = _upload(client)
-    assert resp.status_code == 302 and "si_ok=1" in resp.headers["Location"]
-    html = client.get(resp.headers["Location"]).get_data(as_text=True)
-    assert "1 new" in html
-
-    conn = web_si._get_conn()
-    try:
-        assert db_si.issue_count(conn) == 1
-    finally:
-        conn.close()
-
-
-def test_upload_rejects_wrong_files(client):
-    resp = _upload(client, filename="notes.txt")
+    assert "No incidents yet" in html and "Go-Live defect tracker" in html
+    resp = _upload(client, filename="Something.xlsx")
     assert "si_ok=0" in resp.headers["Location"]
-    resp = _upload(client, filename="DTC_UAT_testtracking_ROE.xlsx")
-    assert "si_ok=0" in resp.headers["Location"]
-    resp = client.post("/sustain-issues/upload", data={})
-    assert "si_ok=0" in resp.headers["Location"]
-
-
-def test_upload_empty_defects_tab_is_ok(client):
-    resp = _upload(client, data=_xlsx_bytes(rows=[]))
+    resp = _upload(client, filename="go-live defect tracker (2).xlsx")   # case-insensitive
     assert "si_ok=1" in resp.headers["Location"]
 
 
-def test_upload_dated_copy_kept(client, tmp_path):
-    _upload(client)
-    assert len(list((tmp_path / "uploads").glob("sustain_issues_*.xlsx"))) == 1
+def test_upload_board_history_filters_notes_and_next_step(client):
+    from urllib.parse import unquote_plus
+    resp = _upload(client)
+    loc = unquote_plus(resp.headers["Location"])
+    assert "2 incidents — 2 new · 0 updated · 1 new comments" in loc
+    assert "2 issue-solution rows" in loc and "interfaces" in loc
 
-
-# ---------------------------------------------------------------------------
-# List view (build plan step 3)
-
-def _two_row_bytes():
-    return _xlsx_bytes(rows=[
-        ["Retail", "DTC", "Open", "ASPEN-1", "Settlement file missing",
-         None, None, "Marina", "4711088", datetime(2026, 8, 28), None,
-         "High", None, None, "France", None, None, None, "yes", "no", None],
-        ["eCom", "Sales", "Closed", "ASPEN-2", "Wrong VAT on invoice",
-         None, None, None, None, datetime(2026, 8, 20),
-         datetime(2026, 8, 27), "Medium", None, None, "Italy", None, None,
-         None, "no", "no", None],
-    ])
-
-
-def test_list_splits_open_and_closed_with_filters(client):
-    _upload(client, data=_two_row_bytes())
     html = client.get("/sustain-issues/").get_data(as_text=True)
-    # open/closed split by Date Closed (the filterbar above the sections
-    # also contains the string "Closed", so anchor inside the sections)
-    open_block = html.split("Open issues", 1)[1].split("Closed", 1)[0]
-    assert "ASPEN-1" in open_block
-    assert "Wrong VAT on invoice" not in open_block
-    assert "ASPEN-2" in html
-    # blocks-execution red chip only on the blocking issue
-    assert html.count("blocks execution") == 1
-    # filter dropdowns carry the distinct values
-    assert 'id="si-filter-channel"' in html
-    assert '<option value="Retail">Retail</option>' in html
-    assert '<option value="Closed">Closed</option>' in html
-    # data attributes drive the client-side filter
-    assert 'data-channel="eCom" data-status="Closed"' in html
+    assert "INC001" in html and "Invoice missing" in html
+    assert 'data-requestor="Anna"' in html and 'data-assigned="Tom"' in html
+    assert 'data-status="Closed"' in html
+    assert "first look" in html and "si-comment--latest" in html
+    # filter bar: text search + the three dropdowns from the values in use
+    assert 'id="si-filter-search"' in html
+    assert '<option value="Anna">' in html and '<option value="Closed">' in html
+    assert '<option value="Tom">' in html
+    # notes component per incident + next-step buttons
+    assert 'id="notes-sustain_incident-INC001"' in html
+    assert 'data-entity-type="sustain_incident" data-entity-id="INC001"' in html
 
-
-def test_list_renders_callouts_and_next_step(client):
-    _upload(client, data=_two_row_bytes())
-    client.post("/sustain-issues/issue/ASPEN-1/callouts",
-                json={"callouts": "mgmt attention"})
-    client.post("/sustain-issues/issue/ASPEN-1/next-step",
-                json={"next_step": "retest FR"})
+    # second upload: changed comment on INC001 goes ON TOP, INC002 unchanged
+    _upload(client, workbook_bytes(
+        incidents=[["INC001", datetime(2026, 9, 1), "Anna", "Invoice missing",
+                    "In Progress", "Tom", "fixed in AIF"],
+                   ["INC002", datetime(2026, 9, 2), "Ben", "Price wrong", "Closed",
+                    None, None]]))
     html = client.get("/sustain-issues/").get_data(as_text=True)
-    assert "mgmt attention" in html and "📣" in html
-    assert "→ retest FR" in html
+    body = html.split('data-key="INC001"')[1].split("</details>")[0]
+    assert body.index("fixed in AIF") < body.index("first look")
+    assert 'data-status="In Progress"' in html
 
-
-def test_placeholder_promotion_shows_former_id(client):
-    # first upload without ASPEN id -> SUS-001; second with it -> promoted
-    no_id = _xlsx_bytes(rows=[
-        ["Retail", "DTC", "Open", None, "Settlement file missing", None,
-         None, None, None, None, None, "High", None, None, "France", None,
-         None, None, "no", "no", None]])
-    _upload(client, data=no_id)
+    # next step inline save + the generic archive entity
+    r = client.post("/sustain-issues/incident/INC001/next-step",
+                    json={"next_step": "call Tom"})
+    assert r.get_json()["ok"]
     html = client.get("/sustain-issues/").get_data(as_text=True)
-    assert "SUS-001" in html
-    _upload(client)   # default row carries ASPEN-1, same description
-    html = client.get("/sustain-issues/").get_data(as_text=True)
-    assert 'title="formerly SUS-001"' in html
-    assert ">SUS-001<" not in html   # placeholder no longer a visible key
-
-
-def test_next_step_archive_via_generic_component(client):
-    _upload(client)
-    client.post("/sustain-issues/issue/ASPEN-1/next-step",
-                json={"next_step": "chase GBS"})
-    resp = client.post("/next-steps/sustain_issue/ASPEN-1/archive")
-    data = resp.get_json()
-    assert data["ok"] and data["archived"] == "chase GBS"
-    listing = client.get("/next-steps/sustain_issue/ASPEN-1/list.json").get_json()
-    assert [i["next_step"] for i in listing["items"]] == ["chase GBS"]
-
-
-def test_callouts_and_next_step_save(client):
-    _upload(client)
-    resp = client.post("/sustain-issues/issue/ASPEN-1/callouts",
-                       json={"callouts": "mgmt attention"})
-    assert resp.get_json()["ok"]
-    resp = client.post("/sustain-issues/issue/ASPEN-1/next-step",
-                       json={"next_step": "retest FR"})
-    assert resp.get_json()["ok"]
-    conn = web_si._get_conn()
+    assert "→ call Tom" in html
+    r = client.post("/next-steps/sustain_incident/INC001/archive")
+    assert r.status_code == 200
+    conn = database.get_connection(client.db_path)
     try:
-        anns = db_si.get_sustain_issue_annotations(conn)
-        assert anns["ASPEN-1"] == {"callouts": "mgmt attention",
-                                   "next_step": "retest FR"}
+        assert db_si.get_sustain_incident_next_step(conn, "INC001") is None
     finally:
         conn.close()
+
+    # a note on an incident lands back on the list
+    r = client.post("/n/sustain_incident/INC001/add",
+                    data={"heading": "Call", "note": "spoke to Tom", "return_to": "list"})
+    assert r.status_code == 302 and "/sustain-issues/" in r.headers["Location"]
+    html = client.get("/sustain-issues/").get_data(as_text=True)
+    assert "spoke to Tom" in html
+    assert client.get("/n/sustain_incident/NOPE/add").status_code == 404
+
+
+def test_solutions_page_is_read_only_with_filters_and_search(client):
+    _upload(client)
+    html = client.get("/sustain-issues/solutions").get_data(as_text=True)
+    assert "Order rejected" in html and "Fix mapping" in html
+    assert 'id="sol-filter-search"' in html
+    for f in ("owner", "interface", "msg", "external_reference", "inc_reference", "status"):
+        assert f'id="sol-filter-{f}"' in html
+    assert 'id="sol-filter-reason"' not in html          # Reason is in the text search
+    assert '<option value="n/a">' in html and '<option value="INC001">' in html
+    assert 'data-search="order rejected mapping fix mapping"' in html
+    assert "<form" not in html.split("page-header")[1]   # no edit possibility
+
+
+def test_totals_page_computes_per_interface_and_reason(client):
+    _upload(client)
+    html = client.get("/sustain-issues/totals").get_data(as_text=True)
+    sales = html.split("SALES</td>")[1].split("</tr>")[0]
+    assert sales.count(">1</td>") == 2                    # all 1, open 1
+    assert "(not on the Total tab)" in html and "n/a" in html
+    assert "Total issue # per reason" in html
+    assert "Mapping" in html and "Data" in html
+    # grand total = tracker row count
+    conn = database.get_connection(client.db_path)
+    try:
+        t = db_si.interface_totals(conn)
+    finally:
+        conn.close()
+    assert t["total_all"] == 2 and t["total_open"] == 1

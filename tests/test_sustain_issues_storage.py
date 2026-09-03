@@ -1,137 +1,88 @@
-"""Sustainphase Issues (build plan step 1, 2026-08-28): storage —
-upsert by Defect ID with SUS-nnn placeholder keys for issues not yet in
-ASPEN (placeholder stays searchable as former id once the real Defect ID
-arrives), plus the authored annotations (call-outs + next step)."""
+"""Sustainphase Issues storage (rewritten 2026-09-03 [USER]): incident
+upsert + column-G comment history, next step, solutions/interfaces
+replacement, and the COMPUTED totals."""
+import pytest
+
 from app import database
 from app.db import sustain_issues as db_si
 
 
-def _row(defect_id=None, short_description="Settlement file missing",
-         **extra):
-    row = {
-        "defect_id": defect_id, "short_description": short_description,
-        "channel": "Retail", "sales_dtc": "DTC", "aspen_status": "Open",
-        "description": None, "comment": None, "raised_by": "Marina",
-        "order_number": None, "date_reported": "2026-08-28",
-        "date_closed": None, "priority": "High", "assigned_to": None,
-        "tech_team": None, "country": "France", "scenario": None,
-        "affected_testcases": None, "retest_dependency": None,
-        "blocks_execution": None, "defect_reason": None, "excel_row": 2,
-    }
-    row.update(extra)
-    return row
-
-
-def _setup(tmp_path):
-    db_path = tmp_path / "s.db"
+@pytest.fixture()
+def conn(tmp_path):
+    db_path = tmp_path / "si.db"
     database.init_db(db_path).close()
     db_si.init_schema(db_path)
-    return database.get_connection(db_path)
+    c = database.get_connection(db_path)
+    yield c
+    c.close()
 
 
-def test_upsert_by_defect_id_updates_not_duplicates(tmp_path):
-    conn = _setup(tmp_path)
-    try:
-        counts = db_si.upsert_issues(conn, [
-            _row("ASPEN-1", aspen_status="Open")])
-        assert counts == {"inserted": 1, "updated": 0, "promoted": 0}
-        counts = db_si.upsert_issues(conn, [
-            _row("ASPEN-1", aspen_status="Closed",
-                 date_closed="2026-08-29")])
-        assert counts == {"inserted": 0, "updated": 1, "promoted": 0}
-        issues = db_si.list_issues(conn)
-        assert len(issues) == 1
-        assert issues[0]["issue_key"] == "ASPEN-1"
-        assert issues[0]["aspen_status"] == "Closed"
-    finally:
-        conn.close()
+def _inc(no, comment=None, **kw):
+    return {"incident_number": no, "date": "2026-09-01", "requestor": "Anna",
+            "title": f"Title {no}", "status": "Open", "assigned_to": None,
+            "latest_comment": comment, "excel_row": 2, **kw}
 
 
-def test_placeholder_assignment_and_stability(tmp_path):
-    conn = _setup(tmp_path)
-    try:
-        db_si.upsert_issues(conn, [
-            _row(None, "Settlement file missing"),
-            _row(None, "Wrong VAT on invoice"),
-        ])
-        keys = [i["issue_key"] for i in db_si.list_issues(conn)]
-        assert sorted(keys) == ["SUS-001", "SUS-002"]
-        # re-upload, still no ASPEN ids -> matched by short description,
-        # keys stay stable, nothing duplicated
-        counts = db_si.upsert_issues(conn, [
-            _row(None, "Settlement file missing", aspen_status="In Progress"),
-            _row(None, "  wrong vat on INVOICE "),   # normalized match
-        ])
-        assert counts == {"inserted": 0, "updated": 2, "promoted": 0}
-        assert len(db_si.list_issues(conn)) == 2
-    finally:
-        conn.close()
+def test_upsert_keeps_a_comment_history_on_top_and_ignores_same_text(conn):
+    counts = db_si.upsert_incidents(conn, [_inc("INC1", "first look"), _inc("INC2")])
+    assert counts == {"inserted": 2, "updated": 0, "new_comments": 1}
+    # same text (re-wrapped whitespace) → no new entry; changed text → on top
+    counts = db_si.upsert_incidents(conn, [_inc("INC1", "first   look", status="In Progress")])
+    assert counts == {"inserted": 0, "updated": 1, "new_comments": 0}
+    counts = db_si.upsert_incidents(conn, [_inc("INC1", "fixed in AIF")])
+    assert counts["new_comments"] == 1
+    history = db_si.comments_by_incident(conn)["INC1"]
+    assert [h["text"] for h in history] == ["fixed in AIF", "first look"]   # newest first
+    assert history[0]["first_seen"]
+    assert "INC2" not in db_si.comments_by_incident(conn)               # no comment, no entry
+    # going BACK to an older text is a change too (it is a new latest text)
+    db_si.upsert_incidents(conn, [_inc("INC1", "first look")])
+    assert [h["text"] for h in db_si.comments_by_incident(conn)["INC1"]][0] == "first look"
+    assert db_si.get_incident(conn, "INC1")["status"] == "Open"
+    assert db_si.incident_count(conn) == 2
+    assert [i["incident_number"] for i in db_si.list_incidents(conn)] == ["INC2", "INC1"]
 
 
-def test_aspen_id_arrival_promotes_placeholder(tmp_path):
-    conn = _setup(tmp_path)
-    try:
-        db_si.upsert_issues(conn, [_row(None, "Settlement file missing")])
-        db_si.set_sustain_issue_callouts(conn, "SUS-001", "escalated to GBS")
-        db_si.set_sustain_issue_next_step(conn, "SUS-001", "chase ASPEN id")
-
-        counts = db_si.upsert_issues(conn, [
-            _row("ASPEN-77", "Settlement file missing")])
-        assert counts == {"inserted": 0, "updated": 0, "promoted": 1}
-        issues = db_si.list_issues(conn)
-        assert len(issues) == 1
-        issue = issues[0]
-        assert issue["issue_key"] == "ASPEN-77"
-        assert issue["defect_id"] == "ASPEN-77"
-        # the placeholder is no longer the key but stays searchable
-        assert issue["former_placeholder"] == "SUS-001"
-        # annotations moved along with the key
-        anns = db_si.get_sustain_issue_annotations(conn)
-        assert anns["ASPEN-77"]["callouts"] == "escalated to GBS"
-        assert anns["ASPEN-77"]["next_step"] == "chase ASPEN id"
-        assert "SUS-001" not in anns
-        # the next new placeholder does NOT reuse SUS-001
-        db_si.upsert_issues(conn, [_row(None, "Another new issue")])
-        assert [i["issue_key"] for i in db_si.list_issues(conn)
-                if i["issue_key"].startswith("SUS-")] == ["SUS-002"]
-    finally:
-        conn.close()
+def test_next_step_roundtrip(conn):
+    db_si.upsert_incidents(conn, [_inc("INC1")])
+    assert db_si.get_sustain_incident_next_step(conn, "INC1") is None
+    db_si.set_sustain_incident_next_step(conn, "INC1", "call Tom")
+    assert db_si.get_sustain_incident_next_step(conn, "INC1") == "call Tom"
+    assert db_si.get_incident_annotations(conn)["INC1"]["next_step"] == "call Tom"
+    db_si.set_sustain_incident_next_step(conn, "INC1", "  ")
+    assert db_si.get_sustain_incident_next_step(conn, "INC1") is None
 
 
-def test_annotations_upsert_only_their_field(tmp_path):
-    conn = _setup(tmp_path)
-    try:
-        db_si.set_sustain_issue_callouts(conn, "ASPEN-1", "watch this")
-        db_si.set_sustain_issue_next_step(conn, "ASPEN-1", "retest FR")
-        db_si.set_sustain_issue_callouts(conn, "ASPEN-1", "updated")
-        anns = db_si.get_sustain_issue_annotations(conn)
-        assert anns["ASPEN-1"] == {"callouts": "updated",
-                                   "next_step": "retest FR"}
-        assert db_si.get_sustain_issue_next_step(conn, "ASPEN-1") == "retest FR"
-        db_si.set_sustain_issue_next_step(conn, "ASPEN-1", "")
-        assert db_si.get_sustain_issue_next_step(conn, "ASPEN-1") is None
-    finally:
-        conn.close()
+def _sol(interface, status="Open", reason="Mapping", **kw):
+    return {"owner": "Tom", "interface": interface, "msg": None, "text": "t",
+            "external_reference": None, "inc_reference": None, "reason": reason,
+            "solution": None, "status": status, "excel_row": 2, **kw}
 
 
-def test_rows_without_id_and_description_are_skipped(tmp_path):
-    conn = _setup(tmp_path)
-    try:
-        counts = db_si.upsert_issues(conn, [
-            _row(None, None), _row(None, "   ")])
-        assert counts == {"inserted": 0, "updated": 0, "promoted": 0}
-        assert db_si.list_issues(conn) == []
-    finally:
-        conn.close()
-
-
-def test_empty_db_is_tolerated(tmp_path):
-    db_path = tmp_path / "bare.db"
-    database.init_db(db_path).close()   # no sustain_issues init_schema
-    conn = database.get_connection(db_path)
-    try:
-        assert db_si.issue_count(conn) == 0
-        assert db_si.list_issues(conn) == []
-        assert db_si.get_sustain_issue_annotations(conn) == {}
-    finally:
-        conn.close()
+def test_totals_per_interface_all_and_open_with_extra_rows_and_reasons(conn):
+    db_si.replace_interfaces(conn, [
+        {"namespace": "/RFMPI", "interface": "SALES"},
+        {"namespace": "/SDSLS", "interface": "SO_BULK_I"},
+        {"namespace": "ZSD_I", "interface": "SO_MULTI"}])
+    db_si.replace_solutions(conn, [
+        _sol("SALES"), _sol("sales ", status="Closed"), _sol("SALES", reason="Data"),
+        _sol("SO_BULK_I", status="Resolved", reason="Data"),
+        _sol("n/a"), _sol("N/A", status="Done", reason=None),
+        _sol("ZZ_NEW", reason="Mapping")])
+    t = db_si.interface_totals(conn)
+    by = {r["interface"]: r for r in t["rows"]}
+    assert (by["SALES"]["total_all"], by["SALES"]["total_open"]) == (3, 2)
+    assert (by["SO_BULK_I"]["total_all"], by["SO_BULK_I"]["total_open"]) == (1, 0)
+    assert (by["SO_MULTI"]["total_all"], by["SO_MULTI"]["total_open"]) == (0, 0)
+    # unlisted interfaces get their own rows so the totals add up [USER]
+    assert [(e["interface"], e["total_all"], e["total_open"]) for e in t["extra"]] == \
+        [("n/a", 2, 1), ("ZZ_NEW", 1, 1)]
+    assert t["total_all"] == 7 and t["total_open"] == 4
+    assert sum(r["total_all"] for r in t["rows"]) + sum(e["total_all"] for e in t["extra"]) == 7
+    reasons = db_si.reason_totals(conn)
+    assert [(r["reason"], r["total_all"], r["total_open"]) for r in reasons] == \
+        [("Mapping", 4, 3), ("Data", 2, 1), ("(blank)", 1, 0)]
+    # replacement is wholesale
+    db_si.replace_solutions(conn, [])
+    assert db_si.interface_totals(conn)["total_all"] == 0
+    assert db_si.list_solutions(conn) == []

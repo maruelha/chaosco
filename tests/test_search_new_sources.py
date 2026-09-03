@@ -1,5 +1,5 @@
 """Global search — the 2026-08-28 sources: Sustainphase Issues (incl.
-former SUS-nnn placeholders), Smoke scenarios (name + ASPEN ticket) and
+incident number + title since 2026-09-03), Smoke scenarios (name + ASPEN ticket) and
 the dedicated Delegated Testing group."""
 import pytest
 
@@ -25,13 +25,9 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(web_search, "_db_path", db_path)
     conn = database.get_connection(db_path)
     try:
-        db_si.upsert_issues(conn, [{
-            "defect_id": None, "short_description": "Settlement file missing",
-            "order_number": "4711088"}])
-        # promote: real ASPEN id arrives -> former placeholder SUS-001
-        db_si.upsert_issues(conn, [{
-            "defect_id": "ASPEN-9", "short_description": "Settlement file missing",
-            "order_number": "4711088"}])
+        db_si.upsert_incidents(conn, [{
+            "incident_number": "INC001", "title": "Invoice missing",
+            "status": "Open"}])
         db_smoke.replace_all(conn, [{
             "row_id": 100, "ws": "eCOM", "package": "Click & Collect",
             "scenario": "Fulfill Click and Collect order",
@@ -54,16 +50,12 @@ def _groups(client, q):
     return {g["group"]: g["hits"] for g in data["groups"]}
 
 
-def test_sustain_issue_found_by_order_key_and_former_placeholder(client):
-    by_order = _groups(client, "4711088")["Sustainphase Issues"]
-    assert by_order[0]["label"].startswith("ASPEN-9")
-    assert "/sustain-issues/" in by_order[0]["url"]
-    # the promoted issue is still findable by its old placeholder
-    by_placeholder = _groups(client, "SUS-001")["Sustainphase Issues"]
-    assert by_placeholder[0]["label"].startswith("ASPEN-9")
-    assert "SUS-001" in by_placeholder[0]["match"]
-    by_key = _groups(client, "aspen-9")["Sustainphase Issues"]
-    assert len(by_key) == 1
+def test_sustain_incident_found_by_number_and_title(client):
+    by_no = _groups(client, "inc00")["Sustainphase Issues"]
+    assert by_no[0]["label"].startswith("INC001")
+    assert "/sustain-issues/" in by_no[0]["url"]
+    by_title = _groups(client, "invoice missing")["Sustainphase Issues"]
+    assert by_title[0]["label"] == "INC001 — Invoice missing"
 
 
 def test_smoke_scenarios_found_by_name_and_aspen_ticket(client):

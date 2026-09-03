@@ -89,8 +89,8 @@
   </div>
 
   <div class="action-card">
-    <h2>Sustainphase Issues {% if sustain_issue_count %}<span class="notes-count-badge">{{ sustain_issue_count }}</span>{% endif %}</h2>
-    <p>Defects from the DTC_Sustainphase_Tracking workbook (Defects tab) — upserted by ASPEN Defect ID with SUS-nnn placeholders until the id arrives; filters, open/closed split, call-outs + next steps.</p>
+    <h2>Sustainphase Issues {% if sustain_issue_count %}<span class="notes-count-badge" title="ASPEN incidents">{{ sustain_issue_count }}</span>{% endif %}</h2>
+    <p>ASPEN incidents, issue solutions and totals from the Go-Live defect tracker workbook — comment history, notes and next steps per incident.</p>
     <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn btn-primary">Open</a>
   </div>
 

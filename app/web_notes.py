@@ -185,6 +185,13 @@ REGISTRY: dict[str, NoteEntity] = {
         lambda c, i: database.get_callout(c, int(i)),
         lambda r: r.get("name") or r.get("topic") or f"Call-out #{r['id']}", int,
     ),
+    # Sustainphase Issues (2026-09-03 [USER]) — notes per ASPEN incident on
+    # the list page (expandable row), keyed by incident number; no detail page
+    "sustain_incident": NoteEntity(
+        "Sustainphase Issues", "sustain_issues.sustain_issues_home", None, None,
+        lambda c, i: database.get_incident(c, str(i)),
+        lambda r: f"{r['incident_number']} — {r.get('title') or ''}".rstrip(" —"), str,
+    ),
     # Sustain day notes (2026-09-02 [USER]) — notes on one imported
     # (day, stream) tab, entity_id "<day>|<stream>"; NOT call-outs. The
     # detail page is the day report, addressed by two URL parts.

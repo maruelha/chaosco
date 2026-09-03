@@ -40,7 +40,7 @@ a dangling `[[link]]` fails the test suite.
 | Blockers | `/blockers/` | `db/blockers.py` → `blockers`, `blocker_links` | `delegated.md` |
 | CORE SOUTH Smoke Testing | `/smoke/`, `/smoke/ecom`, `/smoke/retail` | `db/smoke.py` → `smoke_scenarios`, `smoke_steps`, `smoke_annotations` | `smoke.md` |
 | Core South Sustainphase Monitoring | `/sustain/`, `/sustain/summary` | `db/sustain.py` → `sustain_tasks`, `sustain_task_details`; `db/sustain_callouts.py` → `sustain_callouts` | `sustain.md` |
-| Sustainphase Issues | `/sustain-issues/` | `db/sustain_issues.py` → `sustain_issues`, `sustain_issue_annotations` | `sustain-issues.md` |
+| Sustainphase Issues | `/sustain-issues/` (+ `/solutions`, `/totals`) | `db/sustain_issues.py` → `sustain_incidents`, `sustain_incident_comments`, `sustain_incident_annotations`, `sustain_issue_solutions`, `sustain_interfaces` | `sustain-issues.md` |
 
 ### Retail requirements & gaps
 

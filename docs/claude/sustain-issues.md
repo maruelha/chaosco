@@ -1,101 +1,108 @@
 # Sustainphase Issues (`/sustain-issues/`)
 
 **Type:** mini app
-**URL:** `/sustain-issues/`
-**Storage:** `app/db/sustain_issues.py` → `sustain_issues`, `sustain_issue_annotations`
+**URL:** `/sustain-issues/` · `/sustain-issues/solutions` · `/sustain-issues/totals`
+**Storage:** `app/db/sustain_issues.py` → `sustain_incidents`, `sustain_incident_comments`, `sustain_incident_annotations`, `sustain_issue_solutions`, `sustain_interfaces`; notes in the shared `notes` table, entity `('sustain_incident', <incident number>)`
 **Routes:** `app/web_sustain_issues.py`; importer `app/sustain_issues_importer.py`
-**Templates:** `sustain_issues.html`
-**Tests:** `tests/test_sustain_issues_importer.py`, `tests/test_sustain_issues_storage.py`, `tests/test_sustain_issues_web.py`
+**Templates:** `sustain_issues.html` · `sustain_solutions.html` · `sustain_totals.html`
+**Tests:** `tests/test_sustain_issues_importer.py`, `tests/test_sustain_issues_storage.py`, `tests/test_sustain_issues_web.py`, `tests/test_search_new_sources.py`
 
 ## Purpose
 
-Defect list for the sustain phase, imported from the **Defects tab** of
-`DTC_Sustainphase_Tracking….xlsx` (planning chat 2026-08-28; built the
-same day). Sits next to Sustainphase Monitoring and Smoke Testing on the
-dashboard but is deliberately NOT linked to them [USER].
+The go-live incident list for the sustain phase, imported from the
+**Go-Live defect tracker** workbook (rewritten 2026-09-03 [USER] — the
+2026-08-28 version read the Defects tab of `DTC_Sustainphase_Tracking`,
+see "History" below). Sits next to Sustainphase Monitoring and Smoke
+Testing on the dashboard but is deliberately NOT linked to them [USER].
 
-## Source workbook
+## Source workbook — `Go-Live defect tracker[ (n)].xlsx`
 
-Tabs: `SMOKETEST_KT` (ignored — KT tracking lives on the Smoke scenarios
-instead), `SPOT_CHECKS` (**parked**: its own similar upload-and-view mini
-app, another session), `Defects` (imported), `Datasheet` (dropdown
-values, ignored). Upload: file picker, filename must contain
-`DTC_Sustainphase_Tracking` (prefix/suffix vary, browser " (1)" copies
-work), dated copy `data/uploads/sustain_issues_*.xlsx`.
+Upload: file picker on the card, filename must **contain** `Go-Live
+defect tracker` (case-insensitive; browser " (1)" copies work), dated
+copy `data/uploads/sustain_issues_*.xlsx`. **One tab = one importer + one
+table** (import pattern); columns are mapped by NORMALIZED HEADER NAME
+PREFIX, never by position. Empty tabs import fine (the template starts
+empty). A sample without data lives in `Download/`.
 
-Defects tab: headers in row 1 (they contain newlines/explanatory text →
-the importer maps columns by NORMALIZED HEADER NAME PREFIX, never by
-position). Columns → fields: Channel, Sales or DTC → sales_dtc,
-ASPEN STATUS → aspen_status, Defect ID → defect_id, Short description,
-more Defect description → description, Comment, raised by, order number,
-Date Reported/Closed (dates → ISO), Priority, Assigned to, Tech Team,
-Country, Scenario, affected testcases, Retest Dependency, Does it block
-execution → blocks_execution, Defect reason. **"Exists in production" is
-ignored entirely [USER].** The tab started as an empty template — an
-empty import is ok (0 rows), the list fills as the team logs defects.
+| Tab | Headers (row 1 unless noted) | Table | Rule |
+|---|---|---|---|
+| `ASPEN Incidents` | Incident Number · Date · Requestor · Title · Status · Assigned To · Latest comment/action | `sustain_incidents` (+ `sustain_incident_comments`) | **upsert by Incident Number**; rows without one are SKIPPED and counted in the flash message [USER] |
+| `Issue Solution tracker` | Owner · Interface · Msg · Text · External Reference · INC reference, if any · Reason · Solution · Status (+ an unnamed 10th column, ignored) | `sustain_issue_solutions` | **replaced wholesale** per upload — rows have no identity, the page is read-only |
+| `Total` | group titles on row 2, the list header (Namespace · Interface · Version · Name · Variant in /aif/err · Index tables) on **row 3** — located by its "Namespace" cell, not assumed | `sustain_interfaces` | replaced per upload; the sheet's own "Total Issue #" column is IGNORED — totals are computed (below) |
 
-## The key model (USER design 2026-08-28)
+## Column G is a HISTORY (2026-09-03 [USER])
 
-Issues can exist before they are in ASPEN. `issue_key` (UNIQUE) is the
-ASPEN Defect ID when known, else an auto-assigned **`SUS-nnn`
-placeholder** (numbers never reused). Upsert per upload:
+[USER: "check if there is a new text - and then add on top instead of
+overwriting every time (but of course if it is the same text it should
+remain the same)"]. `upsert_incidents` compares the row's "Latest
+comment/action" (whitespace-collapsed) with the NEWEST stored entry for
+that incident: different → a new `sustain_incident_comments` row with
+`first_seen` = upload time; same → nothing. Going back to an older text
+counts as a change (it is a new latest text). The board shows the newest
+entry highlighted, the older ones below it, each with its first-seen
+date. The flash message counts "n new comments".
 
-- row has a Defect ID → update the issue with that defect_id, or
-  **promote** a placeholder issue matched by normalized short
-  description: key switches to the Defect ID, annotations follow, the
-  old key is kept in `former_placeholder` — no longer visible (tooltip
-  "formerly SUS-nnn" on the key), but **still searchable**.
-- row has no Defect ID → match an existing placeholder issue by
-  normalized short description, else insert with the next placeholder.
-- rows with neither id nor description are skipped; issues absent from
-  an upload are KEPT (`last_seen` shows staleness).
+## Board — `/sustain-issues/`
 
-Caveat (flagged in MarinaCheckSoon): renaming a placeholder issue's
-short description in the Excel before its ASPEN id arrives makes it a
-NEW issue — the description is the only identity a placeholder has.
+Expandable rows (kpd pattern), every ASPEN column: summary = incident
+number · title · status chip · notes badge · next-step preview · date /
+requestor / assignee; body = the meta line (incl. first/last seen), the
+comment history, the **next step** (inline save `POST
+/sustain-issues/incident/<no>/next-step`, ↻ archive / 🕘 history via
+the generic component, registry entity `sustain_incident`), and the
+**shared notes component** (headings, text, 📷/📎 attachments, Ctrl+V;
+`web_notes.REGISTRY['sustain_incident']`, list-only, `notes_return_to=
+'list'`, 404 guard = the incident must exist). Filters (client-side):
+a text box over incident number + title, dropdowns Requestor / Status /
+Assigned to from the values in use, Clear. Buttons in the header: 🧩
+Issue solutions, Σ Totals, the upload.
 
-## Storage — `app/db/sustain_issues.py`
+## Issue Solution tracker — `/sustain-issues/solutions`
 
-`sustain_issues` (imported, upserted as above) +
-`sustain_issue_annotations` (USER-AUTHORED: `callouts` — Marina's
-call-outs/comment — and `next_step`; only-field upserts; keyed by
-issue_key, migrated on promotion). Next-step archive entity
-`sustain_issue` in `web_next_steps.REGISTRY`.
+[USER: "on another page just a simple table not any edit possibility"]:
+one `rt-table`, all nine columns. Filters: dropdowns for every heading
+EXCEPT Text / Reason / Solution, which share ONE text search [USER];
+client-side, rows carry `data-*` + a lowercased `data-search`.
 
-## Web — `app/web_sustain_issues.py` (Blueprint `/sustain-issues/`)
+## Totals — `/sustain-issues/totals`
 
-Card page = upload + the list: **expandable rows** (kpd pattern,
-`details.si-row` in the shared expandable-row CSS — deliberately no wide
-table). Summary: key (former placeholder as tooltip), short description,
-ASPEN-status chip, priority, red **blocks execution** chip
-(blocks_execution yes/y), 📣 call-outs marker, blue → next-step preview,
-channel · country · dates. Body: description, Excel comment, meta line,
-call-outs textarea + next-step input (saved onblur via
-`POST /sustain-issues/issue/<key>/callouts|next-step`) with ↻/🕘.
-Client-side filters: Channel / ASPEN status / Country / Priority
-(distinct values). Sections: Open (no Date Closed) / Closed (collapsed).
+[USER: "the total number should be calculated - the number of rows where
+value in Interface on Issue Solution tracker match"; "two totals - one
+with match of all lines - one only with the open ones"; "n/a … should be
+a separate row … just so the totals add up"; "also a total report on the
+reason"]. `db_sustain_issues.interface_totals` / `reason_totals` (pure
+over the two tables, tested):
 
-## Search
+- per listed interface: **Total (all)** = tracker rows whose Interface
+  equals it (Interface column ONLY, case-insensitive, whitespace-trimmed)
+  and **Total (open)** = the same over rows whose Status is not in
+  `SOLUTION_CLOSED_STATUSES` (closed / done / resolved / solved /
+  completed / fixed — adjust there if the team's wording differs);
+- tracker interfaces on NO listed row ("n/a", a new one) → extra rows
+  "(not on the Total tab)" at the bottom, so the grand total equals the
+  tracker's row count;
+- a grand-total row, and the same two numbers per **Reason** ("(blank)"
+  for empty reasons), most frequent first.
 
-Global 🔍 block "Sustainphase Issues": order number, issue key AND
-former placeholder (`LOWER(...) LIKE LOWER(?)` — portable SQL). Added at
-the same time [USER]: "Smoke scenarios" (name + step ASPEN ticket, ws
-picks /smoke/ecom vs /smoke/retail) and a dedicated "Delegated Testing"
-group (delegated-tagged tickets → delegated ticket detail).
+## Search + dashboard
 
-## Pieces
+Global 🔍 block "Sustainphase Issues": incident number + title
+(`LOWER(...) LIKE LOWER(?)`), hits open the board. Dashboard card badge
+= `incident_count`.
 
-- `app/db/sustain_issues.py` — schema + all SQL (incl. upsert/promotion)
-- `app/sustain_issues_importer.py` — Defects tab → upsert
-- `app/web_sustain_issues.py` — Blueprint (home/list, upload, callouts,
-  next-step)
-- `app/templates/sustain_issues.html` — list page (macro `issue_row`)
-- Tests: `tests/test_sustain_issues_storage.py`,
-  `test_sustain_issues_importer.py`, `test_sustain_issues_web.py`,
-  `test_search_new_sources.py`
+## History
 
-Build steps: `docs/build_plan.md` → "Sustainphase Issues".
+- **2026-08-28 → 2026-09-03: the Defects-tab model.** The first build
+  imported the Defects tab of `DTC_Sustainphase_Tracking….xlsx` into
+  `sustain_issues` with SUS-nnn placeholders promoted to ASPEN ids, plus
+  a call-outs textarea. Replaced on 2026-09-03 [USER: "replace"] when the
+  real tracker turned out to be the Go-Live defect tracker; the old
+  tables may still exist in DB files created before that — unused,
+  untouched, droppable (MarinaCheckSoon). The next-step archive entity
+  `sustain_issue` became `sustain_incident`; old archived next steps
+  under the former entity are not migrated (the old keys were ASPEN
+  defect ids, not incident numbers).
 
 ## Related
 
-`[[sustain]]` · `[[smoke]]` · `[[defects]]` · `[[notes]]` · `[[next-steps]]`
+`[[sustain]]` · `[[smoke]]` · `[[notes]]` · `[[next-steps]]` · `[[search]]`

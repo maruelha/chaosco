@@ -38,7 +38,7 @@ def _url_for_hit(hit_type: str, hit_id) -> str | None:
             return url_for("retail_detail", retail_id=hit_id)
         if hit_type == "defect":
             return url_for("defect_detail", defect_id=hit_id)
-        if hit_type == "sustain_issue":
+        if hit_type == "sustain_incident":
             return url_for("sustain_issues.sustain_issues_home")
         if hit_type == "delegated":
             return url_for("delegated.delegated_ticket_detail",

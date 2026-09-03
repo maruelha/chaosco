@@ -131,11 +131,12 @@ app/
                     never trusts the workbook's cached formulas;
                     importer sustain_importer.py)
   web_sustain_issues.py  Sustainphase Issues Blueprint (/sustain-issues/
-                    — Defects tab of DTC_Sustainphase_Tracking….xlsx,
-                    upserted by ASPEN Defect ID with SUS-nnn placeholder
-                    keys until the id arrives (then searchable as former
-                    id); expandable rows, filters, authored call-outs +
-                    next steps; storage db/sustain_issues.py, importer
+                    — the Go-Live defect tracker workbook since 2026-09-03:
+                    ASPEN Incidents board (upsert by incident number,
+                    column-G comment HISTORY, notes + next step, filters),
+                    /solutions read-only Issue Solution tracker table,
+                    /totals computed per interface all/open + per reason;
+                    storage db/sustain_issues.py, importer
                     sustain_issues_importer.py)
   web_retail_tracker.py   tracker Blueprint (/retail-tracker/...)
   web_connections.py      entity-connections Blueprint (/connections/...,
@@ -163,9 +164,10 @@ app/
   sustain_importer.py  GBS Operations checklist → sustain_tasks/
                     sustain_task_details (tab pattern (Retail|eCom)_<date>,
                     parent = Task ID row, detail = outline level ≥ 1)
-  sustain_issues_importer.py  Sustainphase tracking Defects tab →
-                    sustain_issues (columns mapped by header name,
-                    Exists-in-production ignored, upsert w/ placeholders)
+  sustain_issues_importer.py  Go-Live defect tracker → sustain_incidents
+                    (+ comment history) / sustain_issue_solutions /
+                    sustain_interfaces (three tabs, headers by name,
+                    Total-tab header row located)
   solman_sync.py    SolMan status sync (POST /solman-sync)
   archiver.py       Excel archive w/ SHA-256 dedup;  main.py = CLI pipeline
   reporter.py       retail report buckets;  report_exporter.py = HTML+PPTX export
