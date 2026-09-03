@@ -202,6 +202,46 @@ def extract_latest_comment_orders(comments: list[dict]) -> dict:
     return {"orders": [], "source": None}
 
 
+# Issue links (2026-09-03 [USER]: "the defects and tasks show which issues
+# they block in the xml"). The RSS export nests them as
+#   <issuelinks><issuelinktype><name>Blocks</name>
+#     <outwardlinks description="blocks"><issuelink><issuekey>KEY</issuekey>…
+#     <inwardlinks description="is blocked by">…
+# Only the link type named "Blocks" counts [USER: Cloners etc. ignored].
+# Both directions are read so a defect's "blocks S4ECOM-1" and a story's
+# "is blocked by S4DEF-1" yield the same pair — the caller pairs them up.
+BLOCKS_LINK_TYPE = "blocks"
+
+
+def _blocks_links(item) -> dict:
+    """{"outward": [keys this issue blocks], "inward": [keys blocking it]}
+    from the item's <issuelinks>; both lists deduped, order kept."""
+    out: dict[str, list[str]] = {"outward": [], "inward": []}
+    for lt in item.findall(".//issuelinks/issuelinktype"):
+        if (lt.findtext("name") or "").strip().casefold() != BLOCKS_LINK_TYPE:
+            continue
+        for direction in ("outward", "inward"):
+            for k in lt.findall(f"./{direction}links/issuelink/issuekey"):
+                key = _text(k)
+                if key and key not in out[direction]:
+                    out[direction].append(key)
+    return out
+
+
+def blocked_pairs(issues: list[dict]) -> set[tuple[str, str]]:
+    """{(blocker_key, blocked_key), …} over a whole export — the union of
+    every outward "blocks" link and every inward "is blocked by" link, so
+    the pair is found even when only one side of it is in the file."""
+    pairs: set[tuple[str, str]] = set()
+    for iss in issues:
+        links = iss.get("blocks") or {}
+        for k in links.get("outward", []):
+            pairs.add((iss["jira_key"], k))
+        for k in links.get("inward", []):
+            pairs.add((k, iss["jira_key"]))
+    return pairs
+
+
 def parse_jira_xml(path: Path) -> list[dict]:
     """Parse a Jira RSS XML export into issue dicts (incl. comments)."""
     text = Path(path).read_text(encoding="utf-8", errors="replace")
@@ -232,6 +272,7 @@ def parse_jira_xml(path: Path) -> list[dict]:
                 labels.append(val)
         cf = _customfields(item)
         issues.append({
+            "blocks": _blocks_links(item),
             "jira_key": key,
             "solman_id": _split_solman_id(summary),
             "summary": summary,

@@ -290,3 +290,75 @@ def test_run_jira_import_clear_errors(db_path, tmp_path):
     empty = tmp_path / "empty"; empty.mkdir()
     cfg["jira_folder"] = str(empty)
     assert "no .xml file" in run_jira_import(cfg)["error"]
+
+
+# ---------------------------------------------------------------------------
+# "Blocks" issue links (2026-09-03 [USER]) — Marina's real export shape:
+# <issuelinks><issuelinktype><name>Blocks</name><outwardlinks description=
+# "blocks"><issuelink><issuekey>…; a "Cloners" type sits next to it and
+# must be ignored.
+
+LINKS_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="0.92"><channel>
+  <item>
+    <key id="1">S4DEF-3001</key>
+    <summary>SM3001_Pricing wrong</summary>
+    <type id="1">Defect</type>
+    <status id="3">Open</status>
+    <issuelinks>
+      <issuelinktype id="10000">
+        <name>Blocks</name>
+        <outwardlinks description="blocks">
+          <issuelink><issuekey id="7768633">S4ECOM-1356</issuekey></issuelink>
+          <issuelink><issuekey id="7768634">S4ECOM-1357</issuekey></issuelink>
+          <issuelink><issuekey id="7768633">S4ECOM-1356</issuekey></issuelink>
+        </outwardlinks>
+      </issuelinktype>
+      <issuelinktype id="10001">
+        <name>Cloners</name>
+        <outwardlinks description="clones">
+          <issuelink><issuekey id="7965388">TRANS4M-13529</issuekey></issuelink>
+        </outwardlinks>
+      </issuelinktype>
+    </issuelinks>
+  </item>
+  <item>
+    <key id="2">S4ECOM-1357</key>
+    <summary>SM1357_A story</summary>
+    <type id="17">Story</type>
+    <status id="3">Blocked</status>
+    <issuelinks>
+      <issuelinktype id="10000">
+        <name>Blocks</name>
+        <inwardlinks description="is blocked by">
+          <issuelink><issuekey id="1">S4DEF-3001</issuekey></issuelink>
+          <issuelink><issuekey id="9">S4DEF-3009</issuekey></issuelink>
+        </inwardlinks>
+      </issuelinktype>
+    </issuelinks>
+  </item>
+  <item>
+    <key id="3">S4ECOM-1358</key>
+    <summary>SM1358_No links at all</summary>
+    <type id="17">Story</type>
+    <status id="3">Open</status>
+  </item>
+</channel></rss>
+"""
+
+
+def test_parse_reads_blocks_links_both_directions_and_ignores_other_types(tmp_path):
+    from app.jira_importer import blocked_pairs
+    p = tmp_path / "links.xml"
+    p.write_text(LINKS_XML, encoding="utf-8")
+    issues = {i["jira_key"]: i for i in parse_jira_xml(p)}
+    assert issues["S4DEF-3001"]["blocks"] == {
+        "outward": ["S4ECOM-1356", "S4ECOM-1357"],   # deduped, Cloners ignored
+        "inward": []}
+    assert issues["S4ECOM-1357"]["blocks"] == {
+        "outward": [], "inward": ["S4DEF-3001", "S4DEF-3009"]}
+    assert issues["S4ECOM-1358"]["blocks"] == {"outward": [], "inward": []}
+    # the whole export as (blocker, blocked) pairs — one side is enough
+    assert blocked_pairs(list(issues.values())) == {
+        ("S4DEF-3001", "S4ECOM-1356"), ("S4DEF-3001", "S4ECOM-1357"),
+        ("S4DEF-3009", "S4ECOM-1357")}
