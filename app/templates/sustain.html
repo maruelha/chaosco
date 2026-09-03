@@ -10,6 +10,7 @@
    title="due vs completed vs pending per stream + the attention list">📊 Management summary</a>
 <a href="{{ url_for('note_pages.note_page', slug='sustain_meeting_summaries') }}" class="btn"
    title="daily AI meeting summaries, kept for future reference — searchable by keyword">📝 Meeting summaries</a>
+{{ ui.app_links_button('sustain', app_links_count) }}
 <a href="{{ url_for('note_pages.note_page', slug='sustain_wow') }}" class="btn"
    title="decision log — what the sustain team agreed on, as notes">🤝 Ways of working</a>
 <form method="post" action="{{ url_for('sustain.sustain_upload') }}"

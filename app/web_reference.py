@@ -402,18 +402,41 @@ def links_list():
     areas       = request.args.getlist("area")
     tools       = request.args.getlist("tool")
     tags        = request.args.getlist("tag")
+    apps        = request.args.getlist("app")
     search      = request.args.get("search", "").strip()
     conn = _get_conn()
     try:
         rows    = database.list_links(conn, areas=areas or None, tools=tools or None,
-                                      tags=tags or None, search=search or None)
+                                      tags=tags or None, search=search or None,
+                                      apps=apps or None)
         options = database.get_link_options(conn)
+        apps_by_link = database.link_apps_by_link(conn)
         incoming = database.list_incoming_notes(conn, "link")
     finally:
         conn.close()
+    from app.mini_apps import APPS
     return render_template("links.html", rows=rows, options=options,
-                           incoming=incoming,
-                           areas=areas, tools=tools, tags=tags, search=search)
+                           incoming=incoming, mini_apps=APPS,
+                           apps_by_link=apps_by_link,
+                           areas=areas, tools=tools, tags=tags, apps=apps,
+                           search=search)
+
+
+@app.route("/links/for/<slug>.json")
+def links_for_app_json(slug: str):
+    """The 🔗 dialog's data (2026-09-03 [USER]): the links attached to one
+    mini app. 404 for a slug not in app/mini_apps.APPS."""
+    from app.mini_apps import APPS
+    if slug not in APPS:
+        return jsonify({"ok": False, "error": "unknown app"}), 404
+    conn = _get_conn()
+    try:
+        rows = database.list_links_for_app(conn, slug)
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "app": APPS[slug]["title"],
+                    "links": [{"id": r["id"], "description": r["description"],
+                               "url": r["url"]} for r in rows]})
 
 
 @app.route("/links/new", methods=["GET", "POST"])
@@ -430,10 +453,13 @@ def link_new():
                 tool=_f("tool"),
                 tags=_f("tags"),
             )
+            database.set_link_apps(conn, row["id"], request.form.getlist("app"))
         finally:
             conn.close()
         return redirect(url_for("link_detail", link_id=row["id"], saved="1"))
-    return render_template("link_detail.html", record={}, is_new=True, saved=False)
+    from app.mini_apps import APPS
+    return render_template("link_detail.html", record={}, is_new=True, saved=False,
+                           mini_apps=APPS, link_apps=[])
 
 
 @app.route("/links/<int:link_id>", methods=["GET", "POST"])
@@ -454,14 +480,18 @@ def link_detail(link_id: int):
                 tool=_f("tool"),
                 tags=_f("tags"),
             )
+            database.set_link_apps(conn, link_id, request.form.getlist("app"))
+        link_apps = database.get_link_apps(conn, link_id)
         notes = database.list_notes(conn, "link", str(link_id))
         attachments_by_note = database.get_attachments_for_notes(conn, [n["id"] for n in notes])
     finally:
         conn.close()
     if request.method == "POST":
         return redirect(url_for("link_detail", link_id=link_id, saved="1"))
+    from app.mini_apps import APPS
     return render_template("link_detail.html", record=record, is_new=False, saved=saved,
-                           notes=notes, attachments_by_note=attachments_by_note)
+                           notes=notes, attachments_by_note=attachments_by_note,
+                           mini_apps=APPS, link_apps=link_apps)
 
 
 @app.route("/links/<int:link_id>/delete", methods=["POST"])

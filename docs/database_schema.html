@@ -347,6 +347,7 @@
     <li><a href="#encouragement_people">encouragement_people</a></li>
     <li><a href="#encouragements">encouragements</a></li>
     <li><a href="#links">links</a></li>
+    <li><a href="#link_apps">link_apps</a></li>
     <li><a href="#contacts">contacts</a></li>
     <li><a href="#test_learnings">test_learnings</a></li>
     <li><a href="#test_limitations">test_limitations</a></li>
@@ -1549,6 +1550,25 @@
         <tr><td class="col-name">tags</td><td class="col-type">TEXT</td><td></td><td class="note-text">Comma-separated free-text tags (filter)</td></tr>
         <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
         <tr><td class="col-name">updated_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- link_apps -->
+  <div class="table-card" id="link_apps">
+    <div class="table-card-header">
+      <span class="tname">link_apps</span>
+      <span class="badge badge-planning">Planning</span>
+      <span class="tdesc">Link ↔ mini app references (2026-09-03 [USER]): which mini apps list a Links-card link behind their 🔗 Links button. A link may belong to several apps; the app list is the code registry <code>app/mini_apps.APPS</code> (slugs validated on write). Replaced as a set per link save; deleted with the link.</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Column</th><th>Type</th><th>Constraints</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-name">link_id</td><td class="col-type">INTEGER</td><td><span class="tag tag-pk">PK</span> <span class="tag tag-fk">FK → links</span></td><td></td></tr>
+        <tr><td class="col-name">app_slug</td><td class="col-type">TEXT</td><td><span class="tag tag-pk">PK</span></td><td class="note-text"><code>delegated</code> · <code>sustain</code> (… more via the registry)</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">TEXT</td><td></td><td></td></tr>
       </tbody>
     </table>
   </div>

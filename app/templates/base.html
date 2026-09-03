@@ -145,6 +145,86 @@
 }());
 </script>
 
+{# ---- 🔗 Links-per-app dialog (2026-09-03 [USER]) — ONE dialog for every
+   mini app; opened by ui.app_links_button(slug, count) buttons anywhere
+   (delegated `.js-open-app-links[data-app-slug]`), fed by
+   /links/for/<slug>.json. Open ↗ / copy per link + "Copy all" (HTML +
+   plain-text clipboard flavors: names as links in Teams, "name — url"
+   lines elsewhere). Editing stays on the Links card. #}
+<dialog id="app-links-dialog" class="filter-dlg" style="max-width:34rem">
+  <div class="dlg-header">
+    <div class="dlg-title" id="app-links-title">🔗 Links</div>
+    <button type="button" class="enh-close-btn" id="app-links-close">✕</button>
+  </div>
+  <div class="dlg-body" id="app-links-list"></div>
+  <div class="dlg-footer" style="justify-content:space-between">
+    <a href="/links" style="font-size:0.8rem">Manage on the Links card…</a>
+    <button type="button" class="btn btn-primary" id="app-links-copy-all" title="copy every link as a list — paste into Teams (clickable names) or anywhere (name — url)">📋 Copy all</button>
+  </div>
+</dialog>
+<script>
+(function () {
+  const dlg = document.getElementById('app-links-dialog');
+  if (!dlg) return;
+  const title = document.getElementById('app-links-title');
+  const list = document.getElementById('app-links-list');
+  const copyAll = document.getElementById('app-links-copy-all');
+  let current = [];
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&#34;');
+  }
+  function render(data) {
+    title.textContent = '🔗 Links — ' + data.app;
+    current = data.links;
+    if (!current.length) {
+      list.innerHTML = '<p style="color:#999;font-size:0.85rem">No links attached to this app yet — open a link on the Links card and tick the app.</p>';
+      copyAll.disabled = true;
+      return;
+    }
+    copyAll.disabled = false;
+    list.innerHTML = current.map(l =>
+      '<div style="display:flex;align-items:center;gap:0.4rem;padding:3px 0">' +
+      `<a href="${esc(l.url)}" target="_blank" rel="noopener" class="btn btn-sm" style="flex:1;text-align:left" title="${esc(l.url)}">${esc(l.description)} ↗</a>` +
+      `<button type="button" class="btn btn-sm app-links-copy" data-url="${esc(l.url)}" title="copy this link">⎘</button>` +
+      '</div>').join('');
+  }
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.js-open-app-links');
+    if (!btn) return;
+    fetch('/links/for/' + encodeURIComponent(btn.dataset.appSlug) + '.json')
+      .then(r => r.json())
+      .then(data => { if (data.ok) { render(data); dlg.showModal(); } });
+  });
+  document.getElementById('app-links-close').addEventListener('click', () => dlg.close());
+  list.addEventListener('click', e => {
+    const cp = e.target.closest('.app-links-copy');
+    if (!cp) return;
+    navigator.clipboard.writeText(cp.dataset.url).then(() => {
+      cp.textContent = '✓'; setTimeout(() => { cp.textContent = '⎘'; }, 1200);
+    });
+  });
+  copyAll.addEventListener('click', async () => {
+    const html = '<ul>' + current.map(l => `<li><a href="${esc(l.url)}">${esc(l.description)}</a></li>`).join('') + '</ul>';
+    const text = current.map(l => '• ' + l.description + ' — ' + l.url).join('\n');
+    const orig = copyAll.textContent;
+    try {
+      if (window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], {type: 'text/html'}),
+          'text/plain': new Blob([text], {type: 'text/plain'}),
+        })]);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+      copyAll.textContent = '✓ Copied';
+    } catch (err) {
+      copyAll.textContent = 'Copy failed: ' + err.message;
+    }
+    setTimeout(() => { copyAll.textContent = orig; }, 2000);
+  });
+}());
+</script>
+
 {# ---- Future Enhancements floating panel ---- #}
 <div id="enh-widget">
   <button id="enh-toggle" class="enh-toggle-btn" title="Future Enhancements">

@@ -418,10 +418,15 @@ def list_links(
     tools: list[str] | None = None,
     tags: list[str] | None = None,
     search: str | None = None,
+    apps: list[str] | None = None,
 ) -> list[dict]:
+    # ORDER BY LOWER(...) — portable (was COLLATE NOCASE) [rule 7]
     rows = _rows_to_dicts(conn.execute(
-        "SELECT * FROM links ORDER BY description COLLATE NOCASE"
+        "SELECT * FROM links ORDER BY LOWER(description)"
     ))
+    if apps:
+        by_link = link_apps_by_link(conn)
+        rows = [r for r in rows if set(by_link.get(r["id"], [])) & set(apps)]
     if areas:
         rows = [r for r in rows if r.get("area") in areas]
     if tools:
@@ -480,7 +485,55 @@ def update_link(
 
 def delete_link(conn: sqlite3.Connection, link_id: int) -> None:
     with conn:
+        conn.execute("DELETE FROM link_apps WHERE link_id = ?", (link_id,))
         conn.execute("DELETE FROM links WHERE id = ?", (link_id,))
+
+
+# --- link ↔ mini app references (2026-09-03 [USER]) -------------------------
+# A link may belong to several apps; the app list is app/mini_apps.APPS.
+
+def set_link_apps(conn: sqlite3.Connection, link_id: int, slugs: list[str]) -> None:
+    """Replace the link's app set (unknown slugs are dropped)."""
+    from app.mini_apps import is_app
+    now = datetime.now().isoformat(timespec="seconds")
+    keep = sorted({s for s in slugs if is_app(s)})
+    with conn:
+        conn.execute("DELETE FROM link_apps WHERE link_id = ?", (link_id,))
+        conn.executemany(
+            "INSERT INTO link_apps (link_id, app_slug, created_at) VALUES (?, ?, ?)",
+            [(link_id, s, now) for s in keep])
+
+
+def get_link_apps(conn: sqlite3.Connection, link_id: int) -> list[str]:
+    return [r[0] for r in conn.execute(
+        "SELECT app_slug FROM link_apps WHERE link_id = ? ORDER BY app_slug",
+        (link_id,))]
+
+
+def link_apps_by_link(conn: sqlite3.Connection) -> dict[int, list[str]]:
+    """{link_id: [slug, …]} for the whole list page — one query."""
+    out: dict[int, list[str]] = {}
+    for link_id, slug in conn.execute(
+            "SELECT link_id, app_slug FROM link_apps ORDER BY link_id, app_slug"):
+        out.setdefault(link_id, []).append(slug)
+    return out
+
+
+def list_links_for_app(conn: sqlite3.Connection, slug: str) -> list[dict]:
+    """The links attached to one app, by name — feeds the 🔗 dialog."""
+    return _rows_to_dicts(conn.execute(
+        "SELECT l.* FROM links l JOIN link_apps a ON a.link_id = l.id"
+        " WHERE a.app_slug = ? ORDER BY LOWER(l.description)", (slug,)))
+
+
+def count_links_for_app(conn: sqlite3.Connection, slug: str) -> int:
+    """For the header button's "(n)" — tolerant of a missing table
+    (partial-init test fixtures)."""
+    try:
+        return conn.execute(
+            "SELECT COUNT(*) FROM link_apps WHERE app_slug = ?", (slug,)).fetchone()[0]
+    except sqlite3.OperationalError:
+        return 0
 
 
 # ---------------------------------------------------------------------------

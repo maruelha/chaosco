@@ -87,6 +87,9 @@ app/
   web_core.py       Flask app object + shared web plumbing (no routes)
   web_home|defects|spillover|retail|reports|planning|reference.py
                     feature route modules (flat endpoint names, shared app)
+  mini_apps.py      Flask-free registry of mini apps (slug → title, home) —
+                    first user: Links-card links attached to apps, the 🔗
+                    Links button/dialog (ui.app_links_button + base.html)
   web_notes.py      generic notes Blueprint (/n/...)
   web_next_steps.py next-step archive Blueprint (/next-steps/..., registry;
                     storage db/next_steps.py; include _next_step_history.html)

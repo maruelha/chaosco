@@ -103,6 +103,16 @@
    dialog once on the page). chats = chats_by_entity.get(<entity_id as string>).
      {{ ui.chat_row_button(chats_by_entity.get(r.jira_id), 'jira', r.jira_id, r.jira_id) }}
 #}
+{# 🔗 Links button for a mini app's page header (2026-09-03 [USER]) — opens
+   the global dialog in base.html with the links attached to that app on
+   the Links card (app/mini_apps.APPS). Pass the count from the route
+   (database.count_links_for_app). Dims when the app has none. #}
+{% macro app_links_button(slug, count) -%}
+  <button type="button" class="btn js-open-app-links" data-app-slug="{{ slug }}"
+          {% if not count %}style="opacity:.55"{% endif %}
+          title="{% if count %}{{ count }} link{{ 's' if count != 1 }} from the Links card — open or copy{% else %}no links attached to this app yet — tick it on a link's edit page on the Links card{% endif %}">🔗 Links{% if count %} ({{ count }}){% endif %}</button>
+{%- endmacro %}
+
 {% macro chat_row_button(chats, entity_type, entity_id, name='') -%}
   {%- if chats and chats|length == 1 -%}
     <a href="{{ chats[0].url }}" target="_blank" rel="noopener" class="btn btn-sm"

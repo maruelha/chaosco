@@ -104,6 +104,7 @@ def delegated_list():
             conn, [i["jira_key"] for i in issues])
         hidden_non_story = _hidden_non_story(conn)
         sales_xls_check = db_delegated.get_sales_xls_check(conn)
+        app_links_count = database.count_links_for_app(conn, "delegated")
         # MB join (2026-08-28 [USER]): the ECOM tab's row for the same
         # Jira ID — MB Status column on four buckets, full card on detail
         mb_rows = db_ecom.ecom_rows_for_jira_keys(
@@ -135,6 +136,7 @@ def delegated_list():
         note_counts=note_counts,
         hidden_non_story=hidden_non_story,
         sales_xls_check=sales_xls_check,
+        app_links_count=app_links_count,
         jira_ok=request.args.get("jira_ok"),
         jira_msg=request.args.get("jira_msg"),
     )

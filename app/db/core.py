@@ -242,6 +242,15 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             updated_at  TEXT
         );
 
+        -- link ↔ mini app references (2026-09-03 [USER]) — a Links-card link
+        -- can belong to several apps; slugs validated against app/mini_apps.py
+        CREATE TABLE IF NOT EXISTS link_apps (
+            link_id    INTEGER NOT NULL,   -- FK links
+            app_slug   TEXT NOT NULL,      -- app/mini_apps.APPS key
+            created_at TEXT,
+            PRIMARY KEY (link_id, app_slug)
+        );
+
         CREATE TABLE IF NOT EXISTS contacts (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             name        TEXT NOT NULL,

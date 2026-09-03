@@ -2030,7 +2030,9 @@
         <span class="feat-label">Incoming section (2026-07-16)</span>
         <span class="feat-value">Amber "📥 Incoming" card on top (only when non-empty): inbox items routed here, parked at <code>('link', 'incoming')</code>; attach each to an existing link via target search or delete — never auto-connected. Shared <code>_incoming_section.html</code> include.</span>
         <span class="feat-label">Columns</span>
-        <span class="feat-value">Description · URL (clickable) · Area · Tool · Tags</span>
+        <span class="feat-value">Description · URL (clickable) · Area · Tool · <strong>Mini app</strong> (2026-09-03 — 🔗 chips of the apps the link is attached to) · Tags</span>
+        <span class="feat-label">Mini app filter + 🔗 dialog</span>
+        <span class="feat-value">2026-09-03 [USER] — a "Mini app" filter dialog next to Area/Tool/Tags. The other side: every mini app in <code>app/mini_apps.APPS</code> (Delegated Testing, Core South Sustainphase Monitoring to start) shows a <strong>🔗 Links (n)</strong> button in its page header (<code>ui.app_links_button</code>, dimmed when none) that opens ONE global dialog (<code>base.html</code>, fed by <code>GET /links/for/&lt;slug&gt;.json</code>): open ↗ + copy per link, <strong>📋 Copy all</strong> (clickable names in Teams, "name — url" lines in plain text), "Manage on the Links card…". Nothing is edited in the dialog.</span>
         <span class="feat-label">Filters</span>
         <span class="feat-value">
           <span class="pill pill-filter">Area (multi)</span>
@@ -2058,7 +2060,7 @@
       <p class="screen-desc">Create or edit a link entry.</p>
       <div class="features">
         <span class="feat-label">Fields</span>
-        <span class="feat-value">Description (required) · URL (required) · Area · Tool · Tags (comma-separated)</span>
+        <span class="feat-value">Description (required) · URL (required) · Area · Tool · <strong>Show in mini app</strong> (2026-09-03 [USER] — one checkbox per app in <code>app/mini_apps.APPS</code>; ticked apps list the link behind their 🔗 Links button; stored in <code>link_apps</code>) · Tags (comma-separated)</span>
         <span class="feat-label">Actions</span>
         <span class="feat-value"><span class="pill pill-action">Save</span> · <span class="pill pill-action">Delete</span> (AJAX, then redirect to list)</span>
         <span class="feat-label">Table written</span>

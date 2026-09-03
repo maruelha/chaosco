@@ -66,7 +66,7 @@ a dangling `[[link]]` fails the test suite.
 | Follow-ups | `/followups` | `db/core.py` → `followups`, `followup_options` | `follow-ups.md` |
 | CS Follow-Up Tracker | `/cs_followups` | `db/core.py` → `cs_followups` | `cs-follow-ups.md` |
 | Encouragements | `/encouragements` | `db/core.py` → `encouragements`, `encouragement_people` | `encouragements.md` |
-| Links | `/links` | `db/core.py` → `links` | `links.md` |
+| Links | `/links` (+ `/links/for/<slug>.json`) | `db/core.py` → `links`, `link_apps` (link ↔ mini app, registry `app/mini_apps.py`) | `links.md` |
 | Contacts | `/contacts` | `db/core.py` → `contacts` | `contacts.md` |
 | Teams Chats & channels | `/teams-chats/` | `db/teams_chats.py` → `teams_chats`, `teams_chat_refs` | `teams-chats.md` |
 | Message Types | `/message-types` | `db/message_types.py` → `message_types` | `message-types.md` |

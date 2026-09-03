@@ -48,6 +48,7 @@ def sustain_home():
             t["note_count"] = day_note_counts.get(
                 db_sustain.day_key(t["day"], t["stream"]), 0)
         callouts = db_sc.list_callouts(conn, include_closed=show_closed)
+        app_links_count = database.count_links_for_app(conn, "sustain")
         for c in callouts:
             c["notes"] = database.list_notes(conn, "sustain_callout", str(c["id"]))
             c["note_count"] = len(c["notes"])
@@ -59,6 +60,7 @@ def sustain_home():
         "sustain.html",
         tabs=tabs,
         callouts=callouts,
+        app_links_count=app_links_count,
         attachments_by_note=attachments_by_note,
         show_closed=show_closed,
         callout_channels=db_sc.CALLOUT_CHANNELS,

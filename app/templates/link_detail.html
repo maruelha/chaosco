@@ -61,6 +61,20 @@
                placeholder="e.g. Confluence, Jira, SharePoint…">
       </div>
 
+      {# mini apps (2026-09-03 [USER]) — tick where this link belongs; the
+         app's page gets a 🔗 Links button that lists it #}
+      <div class="form-field">
+        <label>Show in mini app</label>
+        <div style="display:flex; flex-wrap:wrap; gap:0.4rem 1.2rem">
+          {% for slug, a in mini_apps.items() %}
+          <label style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.9rem; font-weight:400">
+            <input type="checkbox" name="app" value="{{ slug }}" {% if slug in link_apps %}checked{% endif %}> {{ a.title }}
+          </label>
+          {% endfor %}
+        </div>
+        <p style="font-size:0.78rem;color:#8e8e93;margin-top:0.3rem">The app's page header gets a 🔗 Links button listing every link ticked here.</p>
+      </div>
+
       <div class="form-field">
         <label for="f-tags">Tags</label>
         <input type="text" id="f-tags" name="tags"
