@@ -1513,6 +1513,8 @@ tr.sustain-detail td { background:#fafafd; border-bottom:1px solid #f0f0f5;
 .chip--pass, .rt-chip--pass   { background:#1a7f37; color:#fff; }
 .chip--other, .rt-chip--other { background:#fff; border-color:#d97706; color:#b45309; }
 .chip--none, .rt-chip--none   { background:#f0f0f5; color:#9a9aa5; }
+/* the row a detail page jumped back to (#blk-<id>, 2026-09-03) */
+tr:target > td { background:#fef3c7; }
 /* blocker link the Jira export does NOT confirm (2026-09-03) — kept, marked */
 .chip--warn, .rt-chip--warn   { background:#fef3c7; border-color:#d97706; color:#92400e; }
 .chip--target, .rt-chip--target { box-shadow:0 0 0 2px #c1121f; }

@@ -3,7 +3,8 @@
 
 {% block content %}
 <div class="breadcrumb">
-  <a href="{{ url_for('blockers.blockers_list') }}">Blockers</a>
+  {# back to the list AT THIS ROW, not the top (2026-09-03 [USER]) #}
+  <a href="{{ url_for('blockers.blockers_list') }}{% if not is_new %}#blk-{{ record.blocker_id }}{% endif %}">Blockers</a>
   <span>›</span>
   <span>{% if is_new %}New Blocker{% else %}{{ record.name or ('Blocker ' ~ record.blocker_id) }}{% endif %}</span>
 </div>
@@ -105,7 +106,7 @@
 
   <div class="btn-row">
     <button type="submit" class="btn btn-primary">Save</button>
-    <a href="{{ url_for('blockers.blockers_list') }}" class="btn">Cancel</a>
+    <a href="{{ url_for('blockers.blockers_list') }}{% if not is_new %}#blk-{{ record.blocker_id }}{% endif %}" class="btn">{% if is_new %}Cancel{% else %}← Back to list{% endif %}</a>
     {% if not is_new %}
     <span class="last-edited" style="margin-left:auto">Last saved: {{ record.updated_at or '—' }}</span>
     {% endif %}

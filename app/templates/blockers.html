@@ -3,7 +3,9 @@
 {% block title %}Blockers — Test Coordination{% endblock %}
 
 {% macro blocker_row(b, closed_view, type_label=None) %}
-<tr>
+{# row anchor (2026-09-03 [USER: "when I edit a blocker and go back I jump
+   to the top"]) — the detail page's back links target #blk-<id> #}
+<tr id="blk-{{ b.blocker_id }}">
   {% if type_label is not none %}<td>{{ type_label }}</td>{% endif %}
   <td>{{ b.name }}</td>
   <td class="mono" style="font-size:0.8rem">
@@ -122,8 +124,19 @@
 // a RELOAD makes the browser restore form values by position, which
 // shifted every Team/Next step one row down after ✔ Close removed a row.
 function blkRefresh() {
+  // keep the scroll position across the fresh navigation (2026-09-03 [USER])
+  try { sessionStorage.setItem('blk-scroll', String(window.scrollY)); } catch (e) {}
   window.location.replace(window.location.pathname + window.location.search);
 }
+(function () {
+  try {
+    const y = sessionStorage.getItem('blk-scroll');
+    if (y !== null && !window.location.hash) {
+      sessionStorage.removeItem('blk-scroll');
+      window.scrollTo(0, parseInt(y, 10) || 0);
+    }
+  } catch (e) {}
+}());
 function blkNsSave(input) {
   const body = new URLSearchParams({ next_step: input.value });
   fetch('/blockers/' + input.dataset.id + '/next-step', { method: 'POST', body })

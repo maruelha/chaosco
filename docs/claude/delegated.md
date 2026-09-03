@@ -458,6 +458,12 @@ blocks one or more delegated tickets. Design decisions:
 - Tests: `tests/test_blockers.py` (storage, list/detail pages, notes,
   board-exclusion, attach/detach/quick-create, blocked_ticket_counts),
   `tests/test_delegated_web.py` (goal toggle, chips on board + detail).
+- **Back to the row, not the top (2026-09-03)** [USER: "when I edit a
+  blocker and go back to the page I directly jump to the top"]: list rows
+  carry `id="blk-<id>"`, the detail page's breadcrumb and "← Back to list"
+  button target `#blk-<id>` (the row is tinted via `tr:target`), and
+  `blkRefresh()` on the list keeps the scroll position across its fresh
+  navigation (sessionStorage) after ✔ Close / team save.
 - **Bug fixed 2026-09-01** [USER: closing a defect "copied the values
   down the line"]: after ✔ Close reloaded the list, every Team/Next step
   (and Impact) value appeared one row lower. Not a save bug — the DB was

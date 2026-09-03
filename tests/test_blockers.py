@@ -532,3 +532,19 @@ def test_links_carry_source_and_jira_missing_stamp(tmp_path):
         assert db_blockers.list_blocker_links(conn)[0]["jira_missing_since"] is None
     finally:
         conn.close()
+
+
+def test_detail_page_goes_back_to_its_row_not_the_top(client):
+    """[USER 2026-09-03]: list rows have an anchor, the detail page's back
+    links target it."""
+    c, db_path = client
+    conn = database.get_connection(db_path)
+    try:
+        b = db_blockers.create_blocker(conn, "defect", "Pricing", "S4DEF-1")
+    finally:
+        conn.close()
+    lst = c.get("/blockers/").get_data(as_text=True)
+    assert f'<tr id="blk-{b["blocker_id"]}">' in lst
+    detail = c.get(f"/blockers/{b['blocker_id']}").get_data(as_text=True)
+    assert detail.count(f'/blockers/#blk-{b["blocker_id"]}') == 2   # breadcrumb + back button
+    assert "← Back to list" in detail
