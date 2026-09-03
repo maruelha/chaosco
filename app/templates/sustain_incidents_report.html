@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASPEN Incidents Report — {{ today }}</title>
+  {% include '_sustain_report.css.html' %}
+  <style>
+    table.tbl td.wrap { white-space: pre-wrap; }
+    .sec-status { margin-top: 1.4rem; }
+  </style>
+</head>
+<body>
+
+{# ASPEN incidents REPORT (2026-09-03 [USER]: "a good overview in HTML - more
+   like a table - the board is good for checking but not for scanning"):
+   one row per incident, grouped by Status [USER], newest comment only
+   [USER], NO next step [USER: "leave next step out for now"]. Standalone
+   (download=True drops the toolbar); filters are screen-only. #}
+
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">ASPEN Incidents Report</span>
+  <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
+  <a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn">Σ Totals</a>
+  <a href="{{ url_for('sustain_issues.sustain_incidents_report_download') }}" class="btn">⬇ Download HTML</a>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+{% endif %}
+
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Sustainphase Issues</div>
+    <div class="rh-title">ASPEN Incidents</div>
+    <div class="rh-date">{{ today }} · from the Go-Live defect tracker · grouped by status, newest comment/action per incident</div>
+  </div>
+  <div class="rh-stats">
+    <div><div class="rh-stat-val">{{ total }}</div><div class="rh-stat-lbl">incidents</div></div>
+    {% for g in groups %}
+    <div><div class="rh-stat-val">{{ g.incidents|length }}</div><div class="rh-stat-lbl">{{ g.status }}</div></div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if not download and total %}
+<div class="toolbar" id="rf-bar">
+  <input type="text" id="rf-search" placeholder="incident number / title…" oninput="rfApply()"
+         style="padding:0.3rem 0.6rem; border:1px solid #cbd5e1; border-radius:5px; font-size:0.8rem; min-width:14rem">
+  {% for field, label in [('requestor', 'Requestor'), ('assigned', 'Assigned to')] %}
+  <select id="rf-{{ field }}" onchange="rfApply()" style="font-size:0.8rem">
+    <option value="">{{ label }}: all</option>
+    {% for v in filter_options[field] %}<option value="{{ v }}">{{ v }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  <button type="button" class="btn btn-sm" onclick="rfClear()">Clear</button>
+  <span id="rf-info" style="color:#64748b; font-size:0.78rem"></span>
+</div>
+{% endif %}
+
+{% if not total %}
+<p class="empty">No incidents yet — upload the Go-Live defect tracker on the Sustainphase Issues page.</p>
+{% endif %}
+
+{% for g in groups %}
+<div class="sec-status">
+  <div class="sec-label"><span>{{ g.status }}</span><span class="cnt">{{ g.incidents|length }}</span></div>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th style="width:7.5rem">Incident</th>
+        <th style="width:6rem">Date</th>
+        <th style="width:8rem">Requestor</th>
+        <th style="width:22%">Title</th>
+        <th style="width:8rem">Assigned to</th>
+        <th>Latest comment / action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in g.incidents %}
+      <tr class="rf-row" data-search="{{ (i.incident_number ~ ' ' ~ (i.title or ''))|lower }}"
+          data-requestor="{{ i.requestor or '' }}" data-assigned="{{ i.assigned_to or '' }}">
+        <td class="mono">{{ i.incident_number }}</td>
+        <td>{{ i.date or '—' }}</td>
+        <td>{{ i.requestor or '—' }}</td>
+        <td class="wrap">{{ i.title or '' }}</td>
+        <td>{{ i.assigned_to or '—' }}</td>
+        <td class="wrap">{{ i.latest_comment or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if not download %}
+<script>
+function rfApply() {
+  const q = document.getElementById('rf-search').value.trim().toLowerCase();
+  const req = document.getElementById('rf-requestor').value;
+  const asg = document.getElementById('rf-assigned').value;
+  let shown = 0, hidden = 0;
+  document.querySelectorAll('tr.rf-row').forEach(tr => {
+    const ok = (!q || tr.dataset.search.includes(q))
+            && (!req || tr.dataset.requestor === req)
+            && (!asg || tr.dataset.assigned === asg);
+    tr.style.display = ok ? '' : 'none';
+    ok ? shown++ : hidden++;
+  });
+  document.getElementById('rf-info').textContent =
+    (q || req || asg) ? (shown + ' shown, ' + hidden + ' hidden') : '';
+}
+function rfClear() {
+  document.getElementById('rf-search').value = '';
+  document.getElementById('rf-requestor').value = '';
+  document.getElementById('rf-assigned').value = '';
+  rfApply();
+}
+</script>
+{% endif %}
+</body>
+</html>

@@ -1246,10 +1246,26 @@
   <div class="screen-card" id="sustain-totals">
     <div class="screen-card-header">
       <span class="screen-title">Sustainphase Issues — Totals</span>
-      <span class="screen-url">GET /sustain-issues/totals</span>
+      <span class="screen-url">GET /sustain-issues/totals · GET /sustain-issues/totals/download</span>
     </div>
     <div class="screen-card-body">
       <p class="screen-desc">2026-09-03 [USER]. The <strong>Total</strong> tab, COMPUTED instead of copied: the interface list (Namespace · Interface · Version · Name · Variant · Index tables) with <strong>Total (all)</strong> = Issue-Solution-tracker rows whose Interface matches (Interface column only, case-insensitive) and <strong>Total (open)</strong> = the same over rows whose Status is not closed/done/resolved/solved/completed/fixed. Tracker interfaces on no listed row ("n/a", …) get their own "(not on the Total tab)" rows so the grand total equals the tracker's row count. Below it the same two numbers per <strong>Reason</strong>. Stat cards on top: rows · open · interfaces.</p>
+      <div class="features">
+        <span class="feat-label">Click a line</span>
+        <span class="feat-value">2026-09-03 [USER] — every interface / extra / reason line is a plain <code>&lt;details&gt;</code>: open it and the tracker rows behind the number appear as a table (open rows first). <strong>⎘ Copy rows</strong> per block (screen only) copies the table as HTML AND tab-separated text in one go — Teams/Outlook get a table, Excel gets cells.</span>
+        <span class="feat-label">Report</span>
+        <span class="feat-value">Standalone template (delegated-report pattern): ⬇ Download HTML keeps the click-to-open (no script needed) and drops toolbar + copy buttons; Print prints only the opened lines. Email Reports choice <code>sustain_totals</code>.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen-card" id="sustain-incidents-report">
+    <div class="screen-card-header">
+      <span class="screen-title">Sustainphase Issues — ASPEN Incidents Report</span>
+      <span class="screen-url">GET /sustain-issues/report · GET /sustain-issues/report/download</span>
+    </div>
+    <div class="screen-card-body">
+      <p class="screen-desc">2026-09-03 [USER: "a good overview in HTML - more like a table … the board is good for checking, not for scanning"]. One row per incident — Incident · Date · Requestor · Title · Assigned to · Latest comment/action — <strong>grouped by Status</strong> (order of first appearance, "(no status)" last), <strong>newest comment only</strong>, <strong>no next step</strong> [USER: "leave next step out for now"]. Header stats: total + per status. Screen-only filter bar (incident/title text · Requestor · Assigned to). ⬇ Download HTML = dated standalone file; Email Reports choice <code>sustain_incidents</code>. Button 📄 Incidents report in the board header.</p>
     </div>
   </div>
 

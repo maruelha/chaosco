@@ -11,7 +11,7 @@ No SQL here.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from flask import (Blueprint, jsonify, redirect, render_template, request,
@@ -142,16 +142,74 @@ def sustain_solutions():
                          "inc_reference", "status")})
 
 
+def _download(html: str, stem: str, today: str):
+    return html, 200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": f'attachment; filename="{stem}_{today}.html"',
+    }
+
+
+def totals_context(conn) -> dict:
+    """The Total sheet, computed: per interface (all / open) with the rows
+    behind each line, the unlisted interfaces ("n/a", …) as extra rows, a
+    grand total, and the reasons report [USER 2026-09-03]. Shared by the
+    page, the download and the Email Reports attachment."""
+    return {"totals": db_si.interface_totals(conn),
+            "reasons": db_si.reason_totals(conn),
+            "closed_statuses": sorted(db_si.SOLUTION_CLOSED_STATUSES),
+            "today": date.today().strftime("%Y-%m-%d")}
+
+
 @bp.route("/totals")
 def sustain_totals():
-    """The Total sheet, computed: per interface (all / open), the unlisted
-    interfaces ("n/a", …) as extra rows, a grand total, and the reasons
-    report [USER 2026-09-03]."""
     conn = _get_conn()
     try:
-        totals = db_si.interface_totals(conn)
-        reasons = db_si.reason_totals(conn)
+        ctx = totals_context(conn)
     finally:
         conn.close()
-    return render_template("sustain_totals.html", totals=totals, reasons=reasons,
-                           closed_statuses=sorted(db_si.SOLUTION_CLOSED_STATUSES))
+    return render_template("sustain_totals.html", **ctx)
+
+
+@bp.route("/totals/download")
+def sustain_totals_download():
+    """Dated standalone snapshot — the expandable lines survive (plain
+    <details>), toolbar + copy buttons are dropped."""
+    conn = _get_conn()
+    try:
+        ctx = totals_context(conn)
+    finally:
+        conn.close()
+    html = render_template("sustain_totals.html", **ctx, download=True)
+    return _download(html, "sustain_totals", ctx["today"])
+
+
+def incidents_report_context(conn) -> dict:
+    """ASPEN incidents REPORT [USER 2026-09-03: table for scanning, grouped
+    by status, newest comment only, no next step]."""
+    groups = db_si.incidents_by_status(conn)
+    flat = [i for g in groups for i in g["incidents"]]
+    return {"groups": groups, "total": len(flat),
+            "filter_options": {"requestor": _distinct(flat, "requestor"),
+                               "assigned": _distinct(flat, "assigned_to")},
+            "today": date.today().strftime("%Y-%m-%d")}
+
+
+@bp.route("/report")
+def sustain_incidents_report():
+    conn = _get_conn()
+    try:
+        ctx = incidents_report_context(conn)
+    finally:
+        conn.close()
+    return render_template("sustain_incidents_report.html", **ctx)
+
+
+@bp.route("/report/download")
+def sustain_incidents_report_download():
+    conn = _get_conn()
+    try:
+        ctx = incidents_report_context(conn)
+    finally:
+        conn.close()
+    html = render_template("sustain_incidents_report.html", **ctx, download=True)
+    return _download(html, "sustain_incidents", ctx["today"])

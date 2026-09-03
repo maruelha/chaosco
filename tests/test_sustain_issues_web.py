@@ -131,11 +131,21 @@ def test_solutions_page_is_read_only_with_filters_and_search(client):
 def test_totals_page_computes_per_interface_and_reason(client):
     _upload(client)
     html = client.get("/sustain-issues/totals").get_data(as_text=True)
-    sales = html.split("SALES</td>")[1].split("</tr>")[0]
-    assert sales.count(">1</td>") == 2                    # all 1, open 1
+    sales = html.split('<span class="mono">SALES</span>')[1].split("</summary>")[0]
+    assert sales.count('class="num">1</span>') == 2       # all 1, open 1
     assert "(not on the Total tab)" in html and "n/a" in html
     assert "Total issue # per reason" in html
     assert "Mapping" in html and "Data" in html
+    # click a line → its rows [USER]: the SALES line's body holds the tracker row
+    body = html.split('<span class="mono">SALES</span>')[1].split("</details>")[0]
+    assert "Order rejected" in body and "Fix mapping" in body and "INC001" in body
+    assert "⎘ Copy rows" in body and "siCopyRows" in html
+    # the download keeps the expandable lines, drops toolbar + copy buttons
+    resp = client.get("/sustain-issues/totals/download")
+    assert 'attachment; filename="sustain_totals_' in resp.headers["Content-Disposition"]
+    dl = resp.get_data(as_text=True)
+    assert "<details" in dl and "Order rejected" in dl
+    assert "Copy rows" not in dl and "siCopyRows" not in dl and 'class="toolbar"' not in dl
     # grand total = tracker row count
     conn = database.get_connection(client.db_path)
     try:
@@ -143,3 +153,38 @@ def test_totals_page_computes_per_interface_and_reason(client):
     finally:
         conn.close()
     assert t["total_all"] == 2 and t["total_open"] == 1
+
+
+def test_incidents_report_groups_by_status_newest_comment_no_next_step(client):
+    _upload(client)
+    client.post("/sustain-issues/incident/INC001/next-step", json={"next_step": "call Tom"})
+    html = client.get("/sustain-issues/report").get_data(as_text=True)
+    assert "ASPEN Incidents" in html
+    open_part = html.split("<span>Open</span>")[1].split("sec-status")[0]
+    closed_part = html.split("<span>Closed</span>")[1]
+    assert "INC001" in open_part and "INC002" not in open_part
+    assert "INC002" in closed_part
+    assert "first look" in open_part                      # newest comment only
+    assert "call Tom" not in html                         # no next step [USER]
+    assert 'id="rf-search"' in html and '<option value="Anna">' in html
+    resp = client.get("/sustain-issues/report/download")
+    assert 'attachment; filename="sustain_incidents_' in resp.headers["Content-Disposition"]
+    dl = resp.get_data(as_text=True)
+    assert "INC001" in dl and 'class="toolbar"' not in dl and "rfApply" not in dl
+
+
+def test_both_reports_are_email_report_choices(client):
+    from app.emailer import REPORT_CHOICES, gather_attachments
+    from app import web_core
+    keys = [k for k, _ in REPORT_CHOICES]
+    assert "sustain_incidents" in keys and "sustain_totals" in keys
+    _upload(client)
+    conn = database.get_connection(client.db_path)
+    try:
+        out = gather_attachments(conn, {}, web_core.app,
+                                 ["sustain_incidents", "sustain_totals"], "2026-09-03")
+    finally:
+        conn.close()
+    assert [n for n, _ in out] == ["sustain_incidents_2026-09-03.html",
+                                   "sustain_totals_2026-09-03.html"]
+    assert "INC001" in out[0][1] and "SALES" in out[1][1]

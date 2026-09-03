@@ -67,10 +67,12 @@
 {% call ui.page_header('Sustainphase Issues', 'ASPEN incidents from the '
                        ~ 'Go-Live defect tracker workbook — upserted per upload by '
                        ~ 'incident number; the latest comment/action is kept as a history.') %}
+<a href="{{ url_for('sustain_issues.sustain_incidents_report') }}" class="btn" target="_blank"
+   title="table-style report of all incidents, grouped by status — for scanning">📄 Incidents report</a>
 <a href="{{ url_for('sustain_issues.sustain_solutions') }}" class="btn"
    title="the Issue Solution tracker tab — read-only table with filters">🧩 Issue solutions</a>
-<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn"
-   title="the Total tab, computed: issues per interface (all / open) and per reason">Σ Totals</a>
+<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn" target="_blank"
+   title="the Total tab, computed: issues per interface (all / open) and per reason — click a line for its rows">Σ Totals</a>
 <form method="post" action="{{ url_for('sustain_issues.sustain_issues_upload') }}"
       enctype="multipart/form-data" style="display:inline">
   <input type="file" name="file" accept=".xlsx" required

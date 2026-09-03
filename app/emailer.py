@@ -46,6 +46,9 @@ REPORT_CHOICES = [
     # the two Teams-paste lists (2026-09-02 [USER: "email reports only"])
     ("delegated_dtc_blockers", "Delegated Testing — DTC O2C Blockers"),
     ("delegated_settlement", "Delegated Testing — Settlement File Waiting List"),
+    # Sustainphase Issues reports (2026-09-03 [USER])
+    ("sustain_incidents", "Sustainphase Issues — ASPEN Incidents Report"),
+    ("sustain_totals", "Sustainphase Issues — Totals"),
 ]
 
 DEFAULT_SUBJECT = "UAT status reports — {date}"
@@ -205,6 +208,13 @@ def gather_attachments(conn: sqlite3.Connection, cfg: dict, flask_app,
         resp = flask_app.test_client().get("/delegated/settlement/download")
         out.append((f"delegated_settlement_{day}.html",
                     resp.get_data(as_text=True)))
+    # Sustainphase Issues downloads are clean standalone HTML too
+    if "sustain_incidents" in reports:
+        resp = flask_app.test_client().get("/sustain-issues/report/download")
+        out.append((f"sustain_incidents_{day}.html", resp.get_data(as_text=True)))
+    if "sustain_totals" in reports:
+        resp = flask_app.test_client().get("/sustain-issues/totals/download")
+        out.append((f"sustain_totals_{day}.html", resp.get_data(as_text=True)))
     return out
 
 

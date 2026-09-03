@@ -44,7 +44,8 @@ purpose — and its **Management Report**, both separate choices) · Delegated
 Testing Report + Management Summary (since 2026-08-26, the pair attaches the
 clean `/delegated/*/download` renders; Delegated Testing Overview joined
 2026-08-31; the two Teams-paste lists **DTC O2C Blockers** + **Settlement
-File Waiting List** joined 2026-09-02 [USER: "email reports only" — they are
+File Waiting List** joined 2026-09-02; **Sustainphase Issues — ASPEN
+Incidents Report** + **Totals** joined 2026-09-03 [USER: "email reports only" — they are
 deliberately NOT on the Export Reports card]) · Missing Test Cases (Retail)
 (since 2026-08-30).
 

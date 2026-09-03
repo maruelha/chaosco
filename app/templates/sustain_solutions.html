@@ -11,7 +11,7 @@
 {% call ui.page_header('Issue Solution tracker', 'The Issue Solution tracker tab of the '
                        ~ 'Go-Live defect tracker — read-only, replaced by every upload.') %}
 <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
-<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn">Σ Totals</a>
+<a href="{{ url_for('sustain_issues.sustain_totals') }}" class="btn" target="_blank">Σ Totals</a>
 {% endcall %}
 
 {% if not rows %}

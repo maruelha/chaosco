@@ -1,106 +1,172 @@
-{% extends "base.html" %}
-{% import '_macros.html' as ui %}
-{% block title %}Totals — Sustainphase Issues{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sustainphase Issues — Totals — {{ today }}</title>
+  {% include '_sustain_report.css.html' %}
+</head>
+<body>
 
-{# The "Total" tab, COMPUTED (2026-09-03 [USER]): per listed interface the
-   number of Issue-Solution-tracker rows whose Interface matches — once over
-   all rows, once over open rows only. Tracker interfaces on no listed row
-   ("n/a", …) get their own rows so the grand total adds up; then the same
-   two numbers per Reason. #}
+{# The "Total" tab, COMPUTED (2026-09-03 [USER]) and made a REPORT (same
+   day): standalone template — in-app page WITH toolbar + copy buttons,
+   download=True drops both. Every line is a plain <details>: click it and
+   the tracker rows that count toward it appear (works in the downloaded
+   file too — no script needed). Copy per block = HTML table + TSV. #}
 
-{% block content %}
-{% call ui.page_header('Totals', 'Issue-solution rows per interface and per reason — '
-                       ~ 'computed from the Issue Solution tracker, not read from the sheet.') %}
-<a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
-<a href="{{ url_for('sustain_issues.sustain_solutions') }}" class="btn">🧩 Issue solutions</a>
-{% endcall %}
+{% macro rows_table(rows, block_id) %}
+  {% if rows %}
+  {% if not download %}
+  <div class="actions">
+    <button type="button" class="btn btn-sm" onclick="siCopyRows(this, '{{ block_id }}')"
+            title="copy these rows — a table for Teams/Outlook, tab-separated for Excel">⎘ Copy rows</button>
+  </div>
+  {% endif %}
+  <table class="tbl" id="{{ block_id }}">
+    <thead><tr><th>Owner</th><th>Interface</th><th>Msg</th><th>Text</th><th>External ref.</th><th>INC ref.</th><th>Reason</th><th>Solution</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for s in rows %}
+      <tr>
+        <td>{{ s.owner or '' }}</td>
+        <td class="mono">{{ s.interface or '' }}</td>
+        <td>{{ s.msg or '' }}</td>
+        <td>{{ s.text or '' }}</td>
+        <td>{{ s.external_reference or '' }}</td>
+        <td class="mono">{{ s.inc_reference or '' }}</td>
+        <td>{{ s.reason or '' }}</td>
+        <td>{{ s.solution or '' }}</td>
+        <td><span class="chip{% if s.is_open %} chip--open{% endif %}">{{ s.status or '—' }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">no tracker rows</p>
+  {% endif %}
+{% endmacro %}
 
-{% call ui.stat_cards() %}
-  {{ ui.stat_card(totals.total_all, 'issue-solution rows', 'info') }}
-  {{ ui.stat_card(totals.total_open, 'of them open', 'open') }}
-  {{ ui.stat_card(totals.rows|length, 'interfaces on the Total tab', 'info') }}
-{% endcall %}
-<p style="color:#888; font-size:0.82rem; margin:-0.6rem 0 1rem">
-  "Open" = the tracker row's Status is not one of: {{ closed_statuses|join(', ') }}.
-  A match is on the <strong>Interface</strong> column only, case-insensitive.
-</p>
+{% if not download %}
+<div class="toolbar">
+  <span class="toolbar-title">Sustainphase Issues — Totals</span>
+  <a href="{{ url_for('sustain_issues.sustain_issues_home') }}" class="btn">← Sustainphase Issues</a>
+  <a href="{{ url_for('sustain_issues.sustain_solutions') }}" class="btn">🧩 Issue solutions</a>
+  <a href="{{ url_for('sustain_issues.sustain_incidents_report') }}" class="btn">📄 Incidents report</a>
+  <a href="{{ url_for('sustain_issues.sustain_totals_download') }}" class="btn">⬇ Download HTML</a>
+  <button class="btn" onclick="window.print()">Print</button>
+</div>
+{% endif %}
 
-{% call ui.section('Total issue # per interface', 'blue', badge=totals.total_all) %}
+<div class="report-header">
+  <div>
+    <div class="rh-eyebrow">UAT Coordination · Sustainphase Issues</div>
+    <div class="rh-title">Totals — issue solutions per interface and per reason</div>
+    <div class="rh-date">{{ today }} · computed from the Issue Solution tracker · click a line to see the rows that count toward it</div>
+  </div>
+  <div class="rh-stats">
+    <div><div class="rh-stat-val">{{ totals.total_all }}</div><div class="rh-stat-lbl">rows</div></div>
+    <div><div class="rh-stat-val">{{ totals.total_open }}</div><div class="rh-stat-lbl">open</div></div>
+    <div><div class="rh-stat-val">{{ totals.rows|length }}</div><div class="rh-stat-lbl">interfaces</div></div>
+  </div>
+</div>
+<p class="hint">"Open" = the tracker row's Status is not one of: {{ closed_statuses|join(', ') }}.
+  A match is on the <strong>Interface</strong> column only, case-insensitive.</p>
+
+<div class="sec-label"><span>Total issue # per interface</span><span class="cnt">{{ totals.total_all }}</span></div>
 {% if not totals.rows and not totals.extra %}
-<p style="color:#888; margin:0.6rem 1rem">Nothing imported yet — upload the Go-Live defect tracker first.</p>
+<p class="empty">Nothing imported yet — upload the Go-Live defect tracker first.</p>
 {% else %}
-<table class="rt-table">
-  <thead>
-    <tr>
-      <th style="width:7rem">Namespace</th>
-      <th style="width:9rem">Interface</th>
-      <th style="width:5rem">Version</th>
-      <th>Name</th>
-      <th style="width:9rem">Variant in /aif/err</th>
-      <th style="width:8rem">Index tables</th>
-      <th style="width:6rem; text-align:right" title="tracker rows with this Interface">Total (all)</th>
-      <th style="width:6rem; text-align:right" title="tracker rows with this Interface whose Status is open">Total (open)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in totals.rows %}
-    <tr>
-      <td class="mono" style="font-size:0.8rem">{{ r.namespace or '—' }}</td>
-      <td class="mono" style="font-size:0.8rem">{{ r.interface or '—' }}</td>
-      <td>{{ r.version or '' }}</td>
-      <td style="white-space:normal">{{ r.name or '' }}</td>
-      <td>{{ r.variant or '' }}</td>
-      <td>{{ r.index_tables or '' }}</td>
-      <td style="text-align:right{% if not r.total_all %}; color:#bbb{% endif %}">{{ r.total_all }}</td>
-      <td style="text-align:right{% if not r.total_open %}; color:#bbb{% endif %}">{{ r.total_open }}</td>
-    </tr>
-    {% endfor %}
-    {% for r in totals.extra %}
-    <tr class="sustain-total-extra" title="Interface value on the tracker that is on no row of the Total tab — listed so the totals add up">
-      <td style="color:#888">(not on the Total tab)</td>
-      <td class="mono" style="font-size:0.8rem">{{ r.interface }}</td>
-      <td colspan="4"></td>
-      <td style="text-align:right">{{ r.total_all }}</td>
-      <td style="text-align:right{% if not r.total_open %}; color:#bbb{% endif %}">{{ r.total_open }}</td>
-    </tr>
-    {% endfor %}
-    <tr style="font-weight:700; border-top:2px solid #334155">
-      <td colspan="6">Total</td>
-      <td style="text-align:right">{{ totals.total_all }}</td>
-      <td style="text-align:right">{{ totals.total_open }}</td>
-    </tr>
-  </tbody>
-</table>
+<details class="line total"><summary class="cols-itf">
+  <span></span><span>Namespace</span><span>Interface</span><span>Version</span><span>Name</span><span>Variant in /aif/err</span><span>Index tables</span><span class="num">All</span><span class="num">Open</span>
+</summary></details>
+{% for r in totals.rows %}
+<details class="line" id="itf-{{ loop.index }}">
+  <summary class="cols-itf">
+    <span></span>
+    <span class="mono">{{ r.namespace or '—' }}</span>
+    <span class="mono">{{ r.interface or '—' }}</span>
+    <span>{{ r.version or '' }}</span>
+    <span>{{ r.name or '' }}</span>
+    <span>{{ r.variant or '' }}</span>
+    <span>{{ r.index_tables or '' }}</span>
+    <span class="num{% if not r.total_all %} zero{% endif %}">{{ r.total_all }}</span>
+    <span class="num{% if not r.total_open %} zero{% endif %}">{{ r.total_open }}</span>
+  </summary>
+  <div class="line-body">{{ rows_table(r.solutions, 'itf-rows-' ~ loop.index) }}</div>
+</details>
+{% endfor %}
+{% for r in totals.extra %}
+<details class="line extra" title="Interface value on the tracker that is on no row of the Total tab — listed so the totals add up">
+  <summary class="cols-itf">
+    <span></span>
+    <span style="color:#92400e">(not on the Total tab)</span>
+    <span class="mono">{{ r.interface }}</span>
+    <span></span><span></span><span></span><span></span>
+    <span class="num">{{ r.total_all }}</span>
+    <span class="num{% if not r.total_open %} zero{% endif %}">{{ r.total_open }}</span>
+  </summary>
+  <div class="line-body">{{ rows_table(r.solutions, 'extra-rows-' ~ loop.index) }}</div>
+</details>
+{% endfor %}
+<details class="line total"><summary class="cols-itf">
+  <span></span><span>Total</span><span></span><span></span><span></span><span></span><span></span>
+  <span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
+</summary></details>
 {% endif %}
-{% endcall %}
 
-{% call ui.section('Total issue # per reason', 'teal', badge=reasons|length) %}
+<div class="sec-label"><span>Total issue # per reason</span><span class="cnt">{{ reasons|length }}</span></div>
 {% if not reasons %}
-<p style="color:#888; margin:0.6rem 1rem">No reasons yet.</p>
+<p class="empty">No reasons yet.</p>
 {% else %}
-<table class="rt-table">
-  <thead>
-    <tr>
-      <th>Reason</th>
-      <th style="width:6rem; text-align:right">Total (all)</th>
-      <th style="width:6rem; text-align:right">Total (open)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in reasons %}
-    <tr>
-      <td style="white-space:normal">{{ r.reason }}</td>
-      <td style="text-align:right">{{ r.total_all }}</td>
-      <td style="text-align:right{% if not r.total_open %}; color:#bbb{% endif %}">{{ r.total_open }}</td>
-    </tr>
-    {% endfor %}
-    <tr style="font-weight:700; border-top:2px solid #334155">
-      <td>Total</td>
-      <td style="text-align:right">{{ totals.total_all }}</td>
-      <td style="text-align:right">{{ totals.total_open }}</td>
-    </tr>
-  </tbody>
-</table>
+<details class="line total"><summary class="cols-rsn">
+  <span></span><span>Reason</span><span class="num">All</span><span class="num">Open</span>
+</summary></details>
+{% for r in reasons %}
+<details class="line">
+  <summary class="cols-rsn">
+    <span></span>
+    <span>{{ r.reason }}</span>
+    <span class="num">{{ r.total_all }}</span>
+    <span class="num{% if not r.total_open %} zero{% endif %}">{{ r.total_open }}</span>
+  </summary>
+  <div class="line-body">{{ rows_table(r.solutions, 'rsn-rows-' ~ loop.index) }}</div>
+</details>
+{% endfor %}
+<details class="line total"><summary class="cols-rsn">
+  <span></span><span>Total</span><span class="num">{{ totals.total_all }}</span><span class="num">{{ totals.total_open }}</span>
+</summary></details>
 {% endif %}
-{% endcall %}
-{% endblock %}
+
+{% if not download %}
+<script>
+// Copy one block's rows: text/html = the table itself (Teams / Outlook /
+// Word keep it a table), text/plain = tab-separated (Excel pastes into
+// cells). Same two-flavor technique as the delegated Teams lists.
+async function siCopyRows(btn, tableId) {
+  const table = document.getElementById(tableId);
+  const lines = [];
+  table.querySelectorAll('tr').forEach(tr => {
+    lines.push(Array.from(tr.querySelectorAll('th, td'))
+      .map(c => c.textContent.replace(/\s+/g, ' ').trim()).join('\t'));
+  });
+  const html = '<table>' + table.innerHTML + '</table>';
+  const text = lines.join('\n');
+  const orig = btn.textContent;
+  try {
+    if (window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], {type: 'text/html'}),
+        'text/plain': new Blob([text], {type: 'text/plain'}),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+    btn.textContent = '✓ Copied';
+  } catch (e) {
+    btn.textContent = 'Copy failed: ' + e.message;
+  }
+  setTimeout(() => { btn.textContent = orig; }, 2000);
+}
+</script>
+{% endif %}
+</body>
+</html>

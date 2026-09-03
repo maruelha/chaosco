@@ -1,0 +1,70 @@
+{# Shared inline CSS for the Sustainphase Issues reports (2026-09-03):
+   Totals (expandable lines) + ASPEN incidents report. Inline on purpose —
+   standalone downloads / email attachments must not depend on style.css
+   (same rule as the delegated reports). #}
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 13px; color: #1e293b; background: #fff;
+    padding: 2rem 2.5rem; line-height: 1.5; max-width: 1200px; margin: 0 auto;
+  }
+  .toolbar {
+    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 0.6rem 1rem; margin-bottom: 1.75rem;
+  }
+  .toolbar-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; flex: 1; }
+  .btn {
+    display: inline-block; padding: 0.3rem 0.75rem; border-radius: 5px;
+    border: 1px solid #cbd5e1; background: #fff; cursor: pointer;
+    font-size: 0.8rem; text-decoration: none; color: #334155; font-family: inherit;
+  }
+  .btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+  .btn-sm { padding: 0.15rem 0.5rem; font-size: 0.75rem; }
+  .report-header {
+    border-bottom: 3px solid #1e293b; padding-bottom: 1.1rem; margin-bottom: 1.5rem;
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem;
+  }
+  .rh-eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: 0.12em; color: #64748b; margin-bottom: 0.25rem; }
+  .rh-title { font-size: 1.45rem; font-weight: 800; color: #0f172a; }
+  .rh-date  { font-size: 0.8rem; color: #64748b; margin-top: 0.3rem; }
+  .rh-stats { display: flex; gap: 1.6rem; }
+  .rh-stat-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1; text-align: right; }
+  .rh-stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em;
+                 color: #94a3b8; margin-top: 0.15rem; text-align: right; }
+  .sec-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+               letter-spacing: 0.1em; color: #64748b; margin: 1.6rem 0 0.6rem; display: flex; gap: 0.6rem; align-items: center; }
+  .sec-label .cnt { background: #e2e8f0; color: #334155; border-radius: 999px; padding: 0 0.5rem; font-size: 0.7rem; }
+  .hint { color: #64748b; font-size: 0.8rem; margin: -0.4rem 0 1rem; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  table.tbl th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em;
+                 color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 0.35rem 0.5rem; }
+  table.tbl td { border-bottom: 1px solid #f1f5f9; padding: 0.35rem 0.5rem; vertical-align: top; }
+  table.tbl td.num, table.tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.tbl tr.total td { font-weight: 700; border-top: 2px solid #334155; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+  .zero { color: #cbd5e1; }
+  .chip { display: inline-block; border: 1px solid #cbd5e1; border-radius: 999px; padding: 0 0.5rem;
+          font-size: 0.72rem; color: #334155; background: #f8fafc; white-space: nowrap; }
+  .chip--open { border-color: #b45309; color: #92400e; background: #fef3c7; }
+  /* expandable lines (plain <details> — works in the downloaded file, no script) */
+  details.line { border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 0.35rem; background: #fff; }
+  details.line > summary { list-style: none; cursor: pointer; display: grid; align-items: center; gap: 0.6rem;
+                           padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+  details.line > summary::-webkit-details-marker { display: none; }
+  details.line > summary::before { content: "▸"; color: #94a3b8; font-size: 0.8rem; }
+  details.line[open] > summary::before { content: "▾"; }
+  details.line > summary .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  details.line > summary .num.zero { font-weight: 400; }
+  details.line.extra > summary { background: #fffbeb; }
+  details.line.total > summary { background: #f1f5f9; font-weight: 700; cursor: default; }
+  details.line.total > summary::before { content: ""; }
+  .line-body { padding: 0.3rem 0.7rem 0.7rem 1.6rem; border-top: 1px solid #f1f5f9; }
+  .line-body .actions { display: flex; justify-content: flex-end; margin-bottom: 0.3rem; }
+  .cols-itf { grid-template-columns: 1rem 6rem 8rem 4rem 1fr 8rem 7rem 5rem 5rem; }
+  .cols-rsn { grid-template-columns: 1rem 1fr 5rem 5rem; }
+  .empty { color: #94a3b8; font-size: 0.82rem; }
+  @media print { .toolbar, .actions { display: none !important; } body { padding: 0; } }
+</style>

@@ -1,10 +1,10 @@
 # Sustainphase Issues (`/sustain-issues/`)
 
 **Type:** mini app
-**URL:** `/sustain-issues/` · `/sustain-issues/solutions` · `/sustain-issues/totals`
+**URL:** `/sustain-issues/` · `/sustain-issues/solutions` · `/sustain-issues/totals` (+ `/download`) · `/sustain-issues/report` (+ `/download`)
 **Storage:** `app/db/sustain_issues.py` → `sustain_incidents`, `sustain_incident_comments`, `sustain_incident_annotations`, `sustain_issue_solutions`, `sustain_interfaces`; notes in the shared `notes` table, entity `('sustain_incident', <incident number>)`
 **Routes:** `app/web_sustain_issues.py`; importer `app/sustain_issues_importer.py`
-**Templates:** `sustain_issues.html` · `sustain_solutions.html` · `sustain_totals.html`
+**Templates:** `sustain_issues.html` · `sustain_solutions.html` · `sustain_totals.html` · `sustain_incidents_report.html` · `_sustain_report.css.html` (shared inline CSS of the two reports)
 **Tests:** `tests/test_sustain_issues_importer.py`, `tests/test_sustain_issues_storage.py`, `tests/test_sustain_issues_web.py`, `tests/test_search_new_sources.py`
 
 ## Purpose
@@ -83,6 +83,35 @@ over the two tables, tested):
   tracker's row count;
 - a grand-total row, and the same two numbers per **Reason** ("(blank)"
   for empty reasons), most frequent first.
+
+**Click a line → its rows + copy; the page IS a report (2026-09-03, second
+round [USER: "click on a line and get the rows shown that applies to -
+and to be able to copy it somewhere"; "the totals would love to have a
+report"])**: `sustain_totals.html` is a standalone template in the
+delegated-report pattern (in-app WITH toolbar, `download=True` without).
+Every interface / extra / reason line is a plain `<details>`; open it and
+the tracker rows behind the number appear as a table (open rows first —
+`_solutions_with_open_flag`, attached as `solutions` on every totals
+row). **⎘ Copy rows** per block (screen only) writes two clipboard
+flavors — the table as HTML (Teams / Outlook / Word keep it a table) and
+tab-separated text (Excel pastes into cells). The download keeps the
+click-to-open (no script needed) and drops toolbar + copy buttons; a
+print shows only the opened lines. `GET /sustain-issues/totals/download`,
+Email Reports choice `sustain_totals`.
+
+## ASPEN incidents report — `/sustain-issues/report` (2026-09-03 [USER])
+
+[USER: "the board is good for checking - but not so good for scanning"]:
+a table-style standalone report (`sustain_incidents_report.html`,
+`incidents_report_context`), one row per incident — Incident · Date ·
+Requestor · Title · Assigned to · Latest comment/action — **grouped by
+Status** (`db_sustain_issues.incidents_by_status`: groups in order of
+first appearance over the date-desc list, "(no status)" last), **newest
+comment only**, **no next step** [USER: "leave next step out for now"].
+Screen-only filter bar (incident/title text, Requestor, Assigned to).
+`/report/download` = dated standalone file (toolbar + filters dropped),
+Email Reports choice `sustain_incidents`. Button 📄 Incidents report in
+the board header; the board keeps the full history + notes.
 
 ## Search + dashboard
 

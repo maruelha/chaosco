@@ -178,6 +178,20 @@ def upsert_incidents(conn: sqlite3.Connection, rows: list[dict]) -> dict:
     return counts
 
 
+def incidents_by_status(conn: sqlite3.Connection) -> list[dict]:
+    """[{status, incidents}, …] for the incidents REPORT [USER 2026-09-03:
+    grouped by status]: groups in order of first appearance of the status
+    over the date-desc list, "(no status)" last; incidents inside keep the
+    list order (newest date first)."""
+    groups: dict[str, list[dict]] = {}
+    for i in list_incidents(conn):
+        groups.setdefault(_norm_text(i.get("status")) or "(no status)", []).append(i)
+    ordered = [{"status": k, "incidents": v} for k, v in groups.items() if k != "(no status)"]
+    if "(no status)" in groups:
+        ordered.append({"status": "(no status)", "incidents": groups["(no status)"]})
+    return ordered
+
+
 def list_incidents(conn: sqlite3.Connection) -> list[dict]:
     """All incidents, newest date first (then incident number desc)."""
     try:
@@ -330,15 +344,17 @@ def interface_totals(conn: sqlite3.Connection) -> dict:
     ("n/a" among them) get their own rows at the bottom, so the grand
     total equals the tracker's row count [USER: "just so the totals add
     up"]. Returns {'rows': [...], 'extra': [...], 'total_all', 'total_open'}."""
-    solutions = list_solutions(conn)
+    solutions = _solutions_with_open_flag(conn)
     all_by_key: dict[str, int] = {}
     open_by_key: dict[str, int] = {}
     label_by_key: dict[str, str] = {}
+    rows_by_key: dict[str, list[dict]] = {}
     for s in solutions:
         k = _key(s.get("interface"))
         label_by_key.setdefault(k, _norm_text(s.get("interface")) or "(blank)")
         all_by_key[k] = all_by_key.get(k, 0) + 1
-        if solution_is_open(s.get("status")):
+        rows_by_key.setdefault(k, []).append(s)
+        if s["is_open"]:
             open_by_key[k] = open_by_key.get(k, 0) + 1
     rows = []
     seen: set[str] = set()
@@ -346,26 +362,39 @@ def interface_totals(conn: sqlite3.Connection) -> dict:
         k = _key(i.get("interface"))
         seen.add(k)
         rows.append({**i, "total_all": all_by_key.get(k, 0),
-                     "total_open": open_by_key.get(k, 0)})
+                     "total_open": open_by_key.get(k, 0),
+                     "solutions": rows_by_key.get(k, [])})
     extra = [{"interface": label_by_key[k], "total_all": all_by_key[k],
-              "total_open": open_by_key.get(k, 0)}
+              "total_open": open_by_key.get(k, 0),
+              "solutions": rows_by_key[k]}
              for k in sorted(all_by_key, key=lambda k: label_by_key[k].casefold())
              if k not in seen]
     return {"rows": rows, "extra": extra,
             "total_all": len(solutions),
-            "total_open": sum(1 for s in solutions if solution_is_open(s.get("status")))}
+            "total_open": sum(1 for s in solutions if s["is_open"])}
+
+
+def _solutions_with_open_flag(conn: sqlite3.Connection) -> list[dict]:
+    """Tracker rows with `is_open`, open ones first (then sheet order) — the
+    rows a Totals line expands to [USER 2026-09-03: "click on a line and get
+    the rows shown that applies to"]."""
+    rows = [{**s, "is_open": solution_is_open(s.get("status"))}
+            for s in list_solutions(conn)]
+    return sorted(rows, key=lambda s: (not s["is_open"], s.get("excel_row") or 0))
 
 
 def reason_totals(conn: sqlite3.Connection) -> list[dict]:
     """[{reason, total_all, total_open}, …] over the tracker's Reason
     column, most frequent first; a blank reason is reported as "(blank)"."""
     counts: dict[str, dict] = {}
-    for s in list_solutions(conn):
+    for s in _solutions_with_open_flag(conn):
         label = _norm_text(s.get("reason")) or "(blank)"
         k = label.casefold()
-        entry = counts.setdefault(k, {"reason": label, "total_all": 0, "total_open": 0})
+        entry = counts.setdefault(k, {"reason": label, "total_all": 0,
+                                      "total_open": 0, "solutions": []})
         entry["total_all"] += 1
-        if solution_is_open(s.get("status")):
+        entry["solutions"].append(s)
+        if s["is_open"]:
             entry["total_open"] += 1
     return sorted(counts.values(),
                   key=lambda e: (-e["total_all"], e["reason"].casefold()))
